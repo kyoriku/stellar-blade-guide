@@ -1,5 +1,5 @@
 import React from "react";
-import MediaDisplay from "../../../components/Media";
+import MediaDisplay from "../../../components/MediaDisplay";
 
 const Plant = () => {
   const content = [
