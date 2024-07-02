@@ -1,0 +1,16 @@
+.skeleton-title {
+  margin-bottom: 6px !important;
+}
+
+.skeleton-subtitle {
+  margin-bottom: 19px !important;
+}
+
+.skeleton-container {
+  display: flex !important;
+}
+
+.skeleton-item {
+  margin: 0 8px !important;
+  border-radius: 0.375rem !important;
+}
