@@ -10,7 +10,7 @@ const {
   getCityUnderground,
   getCrater,
   getEidos7Continued
-} = require('../../../controllers/collectibles-controller');
+} = require('../../../controllers/collectibles/eidos-7-controller');
 
 // const { authMiddleware } = require('../../../utils/auth');
 

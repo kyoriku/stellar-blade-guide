@@ -29,3 +29,5 @@ router.route('/plant').get(getPlant);
 router.route('/great-canyon-continued').get(getGreatCanyonContinued);
 router.route('/forbidden-area').get(getForbiddenArea);
 router.route('/wasteland-continued').get(getWastelandContinued);
+
+module.exports = router;

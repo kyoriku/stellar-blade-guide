@@ -17,6 +17,7 @@ const SilentStreet = () => (
     fetchCollectibles={getSilentStreet}
     title="Silent Street"
     id="silent-street"
+    skeletonLength={[18]}
   />
 );
 
@@ -25,6 +26,7 @@ const ParkingTower = () => (
     fetchCollectibles={getParkingTower}
     title="Parking Tower"
     id="parking-tower"
+    skeletonLength={[19]}
   />
 );
 
@@ -33,6 +35,7 @@ const AbandonedStation = () => (
     fetchCollectibles={getAbandonedStation}
     title="Abandoned Station"
     id="abandoned-station"
+    skeletonLength={[4]}
   />
 );
 
@@ -41,6 +44,7 @@ const FloodedCommercialSector = () => (
     fetchCollectibles={getFloodedCommercialSector}
     title="Flooded Commercial Sector"
     id="flooded-commercial-sector"
+    skeletonLength={[15]}
   />
 );
 
@@ -49,6 +53,7 @@ const MemoryTower = () => (
     fetchCollectibles={getMemoryTower}
     title="Memory Tower"
     id="memory-tower"
+    skeletonLength={[9]}
   />
 );
 
@@ -57,6 +62,7 @@ const ConstructionZone = () => (
     fetchCollectibles={getConstructionZone}
     title="Construction Zone"
     id="construction-zone"
+    skeletonLength={[17]}
   />
 );
 
@@ -65,6 +71,7 @@ const CityUnderground = () => (
     fetchCollectibles={getCityUnderground}
     title="City Underground"
     id="city-underground"
+    skeletonLength={[14]}
   />
 );
 
@@ -73,6 +80,7 @@ const Crater = () => (
     fetchCollectibles={getCrater}
     title="Crater"
     id="crater"
+    skeletonLength={[2]}
   />
 );
 
@@ -81,6 +89,12 @@ const Eidos7Continued = () => (
     fetchCollectibles={getEidos7Continued}
     title="Eidos 7 Continued"
     id="eidos-7-continued"
+    skeletonLength={[19]}
+    extraContent={
+      <p>
+        <i>The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them.</i>
+      </p>
+    }
   />
 );
 

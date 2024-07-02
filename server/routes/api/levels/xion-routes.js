@@ -3,7 +3,7 @@ const {
   getAllXionCollectibles,
   getXion,
   getXionContinued 
-} = require('../../../controllers/collectibles-controller');
+} = require('../../../controllers/collectibles/xion-controller');
 
 // Route to get all Xion collectibles
 router.route('/').get(getAllXionCollectibles);
