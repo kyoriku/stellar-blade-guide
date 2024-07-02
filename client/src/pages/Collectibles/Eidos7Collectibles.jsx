@@ -1,8 +1,17 @@
-// src/pages/Eidos7Collectibles.jsx
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
-import { SilentStreet, ParkingTower, AbandonedStation } from "./CollectiblesPages";
+import {
+  SilentStreet,
+  ParkingTower,
+  AbandonedStation,
+  FloodedCommercialSector,
+  MemoryTower,
+  ConstructionZone,
+  CityUnderground,
+  Crater,
+  Eidos7Continued
+} from "./CollectiblesPages";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
 
@@ -63,12 +72,12 @@ const Eidos7Collectibles = () => {
           <SilentStreet />
           <ParkingTower />
           <AbandonedStation />
-          {/* <FloodedCommercialSector />
+          <FloodedCommercialSector />
           <MemoryTower />
           <ConstructionZone />
           <CityUnderground />
           <Crater />
-          <Eidos7Continued /> */}
+          <Eidos7Continued />
           <div className='text-end pb-5 pe-2'>
             <p className='m-0 fw-bold'>Next guide »</p>
             <h5>

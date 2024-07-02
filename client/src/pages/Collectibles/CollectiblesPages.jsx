@@ -1,7 +1,16 @@
-// src/pages/CollectiblesPages.jsx
 import React from "react";
 import Collectibles from "../../components/Collectibles";
-import { getSilentStreet, getParkingTower, getAbandonedStation, } from '../../utils/API/eidos7';
+import { 
+  getSilentStreet, 
+  getParkingTower, 
+  getAbandonedStation,
+  getFloodedCommercialSector,
+  getMemoryTower,
+  getConstructionZone,
+  getCityUnderground,
+  getCrater,
+  getEidos7Continued
+} from '../../utils/API/eidos7';
 
 const SilentStreet = () => (
   <Collectibles
@@ -27,29 +36,87 @@ const AbandonedStation = () => (
   />
 );
 
-const Xion = () => (
+const FloodedCommercialSector = () => (
   <Collectibles
-    fetchCollectibles={getXion}
-    title="Xion"
-    id="xion"
-    renderItem={(item, index, content) => {
-      const isLastItem = index === content.length - 1;
-      const isNextTextArray = !isLastItem && Array.isArray(content[index + 1].text);
-      const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
-      const addBottomMargin = item.id === 24;
-
-      return (
-        <MediaDisplay
-          key={item.id}
-          title={item.title}
-          text={item.text}
-          images={item.images}
-          showHr={showHr}
-          addBottomMargin={addBottomMargin}
-        />
-      );
-    }}
+    fetchCollectibles={getFloodedCommercialSector}
+    title="Flooded Commercial Sector"
+    id="flooded-commercial-sector"
   />
 );
 
-export { SilentStreet, ParkingTower, AbandonedStation, Xion };
+const MemoryTower = () => (
+  <Collectibles
+    fetchCollectibles={getMemoryTower}
+    title="Memory Tower"
+    id="memory-tower"
+  />
+);
+
+const ConstructionZone = () => (
+  <Collectibles
+    fetchCollectibles={getConstructionZone}
+    title="Construction Zone"
+    id="construction-zone"
+  />
+);
+
+const CityUnderground = () => (
+  <Collectibles
+    fetchCollectibles={getCityUnderground}
+    title="City Underground"
+    id="city-underground"
+  />
+);
+
+const Crater = () => (
+  <Collectibles
+    fetchCollectibles={getCrater}
+    title="Crater"
+    id="crater"
+  />
+);
+
+const Eidos7Continued = () => (
+  <Collectibles
+    fetchCollectibles={getEidos7Continued}
+    title="Eidos 7 Continued"
+    id="eidos-7-continued"
+  />
+);
+
+// const Xion = () => (
+//   <Collectibles
+//     fetchCollectibles={getXion}
+//     title="Xion"
+//     id="xion"
+//     renderItem={(item, index, content) => {
+//       const isLastItem = index === content.length - 1;
+//       const isNextTextArray = !isLastItem && Array.isArray(content[index + 1].text);
+//       const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
+//       const addBottomMargin = item.id === 24;
+
+//       return (
+//         <MediaDisplay
+//           key={item.id}
+//           title={item.title}
+//           text={item.text}
+//           images={item.images}
+//           showHr={showHr}
+//           addBottomMargin={addBottomMargin}
+//         />
+//       );
+//     }}
+//   />
+// );
+
+export { 
+  SilentStreet, 
+  ParkingTower, 
+  AbandonedStation,
+  FloodedCommercialSector,
+  MemoryTower,
+  ConstructionZone,
+  CityUnderground,
+  Crater,
+  Eidos7Continued,
+};

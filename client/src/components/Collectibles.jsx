@@ -36,7 +36,7 @@ const Collectibles = ({ fetchCollectibles, title, id, renderItem }) => {
               title={item.title}
               text={item.text}
               images={item.images}
-              showHr={index !== content.length - 1}
+              showHr={index !== content.length - 1 || item.text}
             />
           )
         ))
