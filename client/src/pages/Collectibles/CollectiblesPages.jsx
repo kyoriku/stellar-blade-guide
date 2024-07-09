@@ -1,5 +1,6 @@
 import React from "react";
 import Collectibles from "../../components/Collectibles";
+import SkeletonLarge from "../../components/SkeletonLarge";
 import MediaDisplay from "../../components/MediaDisplay";
 import {
   getSilentStreet,
@@ -104,7 +105,8 @@ const Eidos7Continued = () => (
 );
 
 const Xion = () => (
-  <Collectibles
+  <SkeletonLarge
+  // <Collectibles
     fetchCollectibles={getXion}
     title="Xion"
     id="xion"
@@ -130,7 +132,8 @@ const Xion = () => (
 );
 
 const XionContinued = () => (
-  <Collectibles
+  <SkeletonLarge
+  // <Collectibles
     fetchCollectibles={getXionContinued}
     title="Xion (Continued)"
     id="xion-continued"
