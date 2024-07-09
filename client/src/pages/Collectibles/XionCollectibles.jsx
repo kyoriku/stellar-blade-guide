@@ -3,8 +3,13 @@ import { Link } from 'react-router-dom';
 
 import useWindowSize from "../../hooks/WindowSize";
 
-import Xion from "./Xion/Xion";
-import XionContinued from "./Xion/XionContinued";
+// import Xion from "./Xion/Xion";
+// import XionContinued from "./Xion/XionContinued";
+
+import {
+  Xion,
+  XionContinued
+} from "./CollectiblesPages";
 
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';

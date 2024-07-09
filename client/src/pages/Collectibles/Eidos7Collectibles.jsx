@@ -78,6 +78,7 @@ const Eidos7Collectibles = () => {
           <CityUnderground />
           <Crater />
           <Eidos7Continued />
+          <hr></hr>
           <div className='text-end pb-5 pe-2'>
             <p className='m-0 fw-bold'>Next guide »</p>
             <h5>

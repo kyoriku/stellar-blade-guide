@@ -1,8 +1,9 @@
 import React from "react";
 import Collectibles from "../../components/Collectibles";
-import { 
-  getSilentStreet, 
-  getParkingTower, 
+import MediaDisplay from "../../components/MediaDisplay";
+import {
+  getSilentStreet,
+  getParkingTower,
   getAbandonedStation,
   getFloodedCommercialSector,
   getMemoryTower,
@@ -11,6 +12,10 @@ import {
   getCrater,
   getEidos7Continued
 } from '../../utils/API/eidos7';
+import {
+  getXion,
+  getXionContinued
+} from '../../utils/API/xion';
 
 const SilentStreet = () => (
   <Collectibles
@@ -98,34 +103,62 @@ const Eidos7Continued = () => (
   />
 );
 
-// const Xion = () => (
-//   <Collectibles
-//     fetchCollectibles={getXion}
-//     title="Xion"
-//     id="xion"
-//     renderItem={(item, index, content) => {
-//       const isLastItem = index === content.length - 1;
-//       const isNextTextArray = !isLastItem && Array.isArray(content[index + 1].text);
-//       const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
-//       const addBottomMargin = item.id === 24;
+const Xion = () => (
+  <Collectibles
+    fetchCollectibles={getXion}
+    title="Xion"
+    id="xion"
+    skeletonLength={[44]}
+    renderItem={(item, index, content) => {
+      const isLastItem = index === content.length - 1;
+      const isNextTextArray = !isLastItem && Array.isArray(content[index + 1].text);
+      const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
+      const addBottomMargin = item.id === 24;
 
-//       return (
-//         <MediaDisplay
-//           key={item.id}
-//           title={item.title}
-//           text={item.text}
-//           images={item.images}
-//           showHr={showHr}
-//           addBottomMargin={addBottomMargin}
-//         />
-//       );
-//     }}
-//   />
-// );
+      return (
+        <MediaDisplay
+          key={item.id}
+          title={item.title}
+          text={item.text}
+          images={item.images}
+          showHr={showHr}
+          addBottomMargin={addBottomMargin}
+        />
+      );
+    }}
+  />
+);
 
-export { 
-  SilentStreet, 
-  ParkingTower, 
+const XionContinued = () => (
+  <Collectibles
+    fetchCollectibles={getXionContinued}
+    title="Xion (Continued)"
+    id="xion-continued"
+    skeletonLength={[16]}
+    extraContent={
+      <p>
+        <i>The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them.</i>
+      </p>
+    }
+    renderItem={(item, index, content) => {
+      const isLastList = index === content.length - 1 || !Array.isArray(content[index + 1].text);
+
+      return (
+        <MediaDisplay
+          key={item.id}
+          title={item.title}
+          text={item.text}
+          images={item.images}
+          showHr={!Array.isArray(item.text) || isLastList}
+        />
+      );
+    }}
+  />
+);
+
+export {
+  SilentStreet,
+  ParkingTower,
   AbandonedStation,
   FloodedCommercialSector,
   MemoryTower,
@@ -133,4 +166,6 @@ export {
   CityUnderground,
   Crater,
   Eidos7Continued,
+  Xion,
+  XionContinued
 };

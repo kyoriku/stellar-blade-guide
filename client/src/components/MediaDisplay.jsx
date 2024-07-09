@@ -39,63 +39,63 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
     );
   };
 
-const renderImages = () => {
-  if (images.length >= 4) {
-    return (
-      <div>
-        <table>
-          <tbody>
-            <tr>
-              <td className="px-1 px-md-2 pb-2 pb-md-3">
-                <a href={images[0].src} className="glightbox" data-gallery="gallery1">
-                  <img
-                    src={images[0].src}
-                    alt={images[0].alt}
-                    className="img-fluid rounded"
-                    loading='lazy'
-                    width='443'
-                    height='249.19'
-                  />
-                </a>
-              </td>
-              <td className="px-1 px-md-2 pb-2 pb-md-3">
-                <a href={images[1].src} className="glightbox" data-gallery="gallery1">
-                  <img
-                    src={images[1].src}
-                    alt={images[1].alt}
-                    className="img-fluid rounded"
-                    loading='lazy'
-                    width='443'
-                    height='249.19'
-                  />
-                </a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <table>
-          <tbody>
-            <tr>
-              {images.slice(2).map((image) => (
-                <td key={image.id} className="px-1 px-md-2">
-                  <a href={image.src} className="glightbox" data-gallery="gallery1">
+  const renderImages = () => {
+    if (images.length >= 4) {
+      return (
+        <div>
+          <table>
+            <tbody>
+              <tr>
+                <td className="px-1 px-md-2 pb-2 pb-md-3">
+                  <a href={images[0].src} className="glightbox" data-gallery="gallery1">
                     <img
-                      src={image.src}
-                      alt={image.alt}
-                      className={`img-fluid rounded ${addBottomMargin ? 'mb-3' : ''}`}
+                      src={images[0].src}
+                      alt={images[0].alt}
+                      className="img-fluid rounded"
                       loading='lazy'
                       width='443'
                       height='249.19'
                     />
                   </a>
                 </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    );
-  }
+                <td className="px-1 px-md-2 pb-2 pb-md-3">
+                  <a href={images[1].src} className="glightbox" data-gallery="gallery1">
+                    <img
+                      src={images[1].src}
+                      alt={images[1].alt}
+                      className="img-fluid rounded"
+                      loading='lazy'
+                      width='443'
+                      height='249.19'
+                    />
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table>
+            <tbody>
+              <tr>
+                {images.slice(2).map((image) => (
+                  <td key={image.id} className="px-1 px-md-2">
+                    <a href={image.src} className="glightbox" data-gallery="gallery1">
+                      <img
+                        src={image.src}
+                        alt={image.alt}
+                        className={`img-fluid rounded ${addBottomMargin ? 'mb-3' : ''}`}
+                        loading='lazy'
+                        width='443'
+                        height='249.19'
+                      />
+                    </a>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      );
+    }
 
     return (
       <table>
@@ -107,7 +107,7 @@ const renderImages = () => {
                   <img
                     src={image.src}
                     alt={image.alt}
-                    className={`img-fluid rounded ${addBottomMargin ? 'mb-3' : ''}`}
+                    className={`img-fluid rounded img-bg ${addBottomMargin ? 'mb-3' : ''}`}
                     loading='lazy'
                     width='902'
                     height='507.38'
