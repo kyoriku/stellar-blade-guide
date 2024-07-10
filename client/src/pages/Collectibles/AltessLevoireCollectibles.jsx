@@ -26,7 +26,7 @@ const AltessLevoireCollectibles = () => {
   };
 
   const TOC = (
-    <nav id="toc" className={`sticky-top ${!isMobile ? 'border-end' : ''}`}>
+    <nav id="toc" className={`sticky-top ${!isMobile ? '' : ''}`}>
       <h4>Contents</h4>
       <ul className="nav flex-column sidebar">
         <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
@@ -53,11 +53,11 @@ const AltessLevoireCollectibles = () => {
     <div className="container bg-white">
       <div className="row">
         {!isMobile && (
-          <div className="col-md-3 ps-2 pe-4">
+          <div className="col-lg-3 border-start bg-white">
             {TOC}
           </div>
         )}
-        <div className={`col-md-9 px-4 ${!isMobile ? 'pe-5' : ''}`}>
+        <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Stellar Blade - Altess Levoire Collectibles</h1>
           {isMobile && TOC}
           <ResearchLab />

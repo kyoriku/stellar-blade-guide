@@ -8,7 +8,7 @@ function Home() {
       <div className="banner">
         <img src="/assets/images/stellar_blade_banner.jpg" alt="Stellar Blade Banner" loading="lazy"/>
       </div>
-      <div className="content">
+      <div className="content bg-white border">
         <h1>Stellar Blade Guide</h1>
         <p>Welcome to the ultimate Stellar Blade walkthrough and collectibles guide.</p>
         <p>Explore our meticulously crafted guides and enjoy stunning screenshots taken directly from the game.</p>

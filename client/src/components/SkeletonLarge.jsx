@@ -37,7 +37,7 @@ const SkeletonLarge = ({ fetchCollectibles, title, id, renderItem, extraContent,
           <Skeleton animation="wave" height={20} width="90%" className="skeleton-title" />
           <Skeleton animation="wave" height={20} width="40%" className="skeleton-subtitle" />
           <div className="skeleton-container">
-            <Skeleton animation="wave" height={434} width={776} variant="rounded" className="skeleton-item" />
+            <Skeleton animation="wave" height={444} width={796} variant="rounded" className="skeleton-item" />
           </div>
           <hr></hr>
         </div>
