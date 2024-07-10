@@ -3,7 +3,7 @@ const { getAllCollectibles } = require('../../controllers/collectibles-controlle
 const eidos7Routes = require('./levels/eidos-7-routes');
 const xionRoutes = require('./levels/xion-routes');
 const wastelandRoutes = require('./levels/wasteland-routes');
-// const altessLevoireRoutes = require('./levels/altessLevoire-routes');
+const altessLevoireRoutes = require('./levels/altess-levoire-routes');
 // const matrix11Routes = require('./levels/matrix11-routes');
 // const greatDesertRoutes = require('./levels/greatDesert-routes');
 // const abyssLevoireRoutes = require('./levels/abyssLevoire-routes');
@@ -15,7 +15,7 @@ router.route('/').get(getAllCollectibles);
 router.use('/eidos-7', eidos7Routes);
 router.use('/xion', xionRoutes);
 router.use('/wasteland', wastelandRoutes);
-// router.use('/altess-levoire', altessLevoireRoutes);
+router.use('/altess-levoire', altessLevoireRoutes);
 // router.use('/matrix-11', matrix11Routes);
 // router.use('/great-desert', greatDesertRoutes);
 // router.use('/abyss-levoire', abyssLevoireRoutes);
