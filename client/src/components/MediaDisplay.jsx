@@ -123,7 +123,7 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
 
   return (
     <div>
-      {renderText()}
+      {/* {renderText()} */}
       {renderImages()}
       {showHr && <hr />}
     </div>

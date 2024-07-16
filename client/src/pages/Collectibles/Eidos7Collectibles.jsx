@@ -1,9 +1,11 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
+import SilentStreet from './Eidos7/SilentStreet';
+import ParkingTower from './Eidos7/ParkingTower';
 import {
-  SilentStreet,
-  ParkingTower,
+  // SilentStreet,
+  // ParkingTower,
   AbandonedStation,
   FloodedCommercialSector,
   MemoryTower,
@@ -14,6 +16,7 @@ import {
 } from "./CollectiblesPages";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
+import '../../styles/Collectibles.css';
 
 const Eidos7Collectibles = () => {
   const size = useWindowSize();
