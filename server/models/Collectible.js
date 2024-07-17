@@ -22,8 +22,15 @@ const collectibleSchema = new Schema(
       }
     },
     type: {
-      type: String,
+      type: Schema.Types.Mixed,
       required: true,
+      validate: {
+        validator: function(value) {
+          // Validate that the value is either a string or an array
+          return typeof value === 'string' || Array.isArray(value);
+        },
+        message: props => `${props.value} is not a valid type for 'text'. Should be a string or an array.`
+      }
     },
     level: {
       type: String,
