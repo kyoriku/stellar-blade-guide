@@ -11,7 +11,7 @@ const SilentStreet = () => {
   const staticContent = [
     {
       id: 1,
-      title: "Passcode - Eidos 7 - r0ar0a",
+      title: "Passcode - r0ar0a",
       text: "In the first garage/storage room on the left on Silent Street, where the Creepers crash out of the wall.",
     },
     {
@@ -123,7 +123,7 @@ const SilentStreet = () => {
       <h3>▽ Silent Street Collectibles</h3>
       <hr className="w-75"></hr>
       {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item) => (
+      {staticContent.map((item, index) => (
         <div key={item.id}>
           <p>
             <strong>{item.title}</strong>
@@ -152,7 +152,7 @@ const SilentStreet = () => {
               images={content.find((data) => data.id === item.id)?.images || []}
             />
           )}
-          <hr></hr>
+          {index !== content.length - 1 && <hr />}
         </div>
       ))}
     </div>

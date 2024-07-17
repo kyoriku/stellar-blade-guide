@@ -3,17 +3,24 @@ import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 import SilentStreet from './Eidos7/SilentStreet';
 import ParkingTower from './Eidos7/ParkingTower';
-import {
-  // SilentStreet,
-  // ParkingTower,
-  AbandonedStation,
-  FloodedCommercialSector,
-  MemoryTower,
-  ConstructionZone,
-  CityUnderground,
-  Crater,
-  Eidos7Continued
-} from "./CollectiblesPages";
+import AbandonedStation from './Eidos7/AbandonedStation';
+import FloodedCommercialSector from './Eidos7/FloodedCommercialSector';
+import MemoryTower from './Eidos7/MemoryTower';
+import ConstructionZone from './Eidos7/ConstructionZone';
+import CityUnderground from './Eidos7/CityUnderground';
+import Crater from './Eidos7/Crater';
+import Eidos7Continued from './Eidos7/Eidos7Continued';
+// import {
+//   SilentStreet,
+//   ParkingTower,
+//   AbandonedStation,
+//   FloodedCommercialSector,
+//   MemoryTower,
+//   ConstructionZone,
+//   CityUnderground,
+//   Crater,
+//   Eidos7Continued
+// } from "./CollectiblesPages";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
 import '../../styles/Collectibles.css';

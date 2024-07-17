@@ -128,7 +128,7 @@ const ParkingTower = () => {
       <h3>▽ Parking Tower Collectibles</h3>
       <hr className='w-75'></hr>
       {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item) => (
+      {staticContent.map((item, index) => (
         <div key={item.id}>
           <p>
             <strong>{item.title}</strong>
@@ -157,7 +157,7 @@ const ParkingTower = () => {
               images={content.find((data) => data.id === item.id)?.images || []}
             />
           )}
-          <hr></hr>
+          {index !== content.length - 1 && <hr />}
         </div>
       ))}
     </div>
