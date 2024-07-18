@@ -1,11 +1,109 @@
 import React, { useEffect, useState } from "react";
 import MediaDisplay from "../../../components/MediaDisplay";
 import { getXionContinued } from '../../../utils/API/xion';
-import LoadingSpinner from '../../../components/LoadingSpinner';
+import { Skeleton } from "@mui/material";
 
 const XionContinued = () => {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const staticContent = [
+    {
+      id: 1,
+      title: "Document - Messages - Request Letter",
+      text: "Speak to the young girl to the south of the entrance to Xion (down the ladder). She'll give you this document, which will start the “Oblivion” side quest.",
+    },
+    {
+      id: 2,
+      title: "Available to purchase from Lyle:",
+      text: [
+        "Document - Book - Light of the Colony",
+        "Document - Book - Angel Accepting Shed Tears",
+        "Document - Book - For a Better World",
+        "Document - Book - Book of Quotes 1",
+        "Document - Book - Eidos Company Promotion",
+        "Document - Book - Tattered Report 1",
+        "Document - Series - Notes on EVE Protocol 2",
+      ],
+    },
+    {
+      id: 3,
+      title: "Lyle Level 2 Affinity:",
+      text: [
+        "Nano Suit Design Pattern: Daily Biker",
+        "Nano Suit Design Pattern: Black Full Dress",
+      ],
+    },
+    {
+      id: 4,
+      title: "Lyle Level 3 Affinity:",
+      text: [
+        "Nano Suit Design Pattern: Junk Mechanic",
+        "Nano Suit Design Pattern: Daily Denim",
+      ],
+    },
+    {
+      id: 5,
+      title: "Locked Supply Chest",
+      text: "Next to Sisters' Junk is a chest that can be opened once you've found Tommy in the “Life of the Scavengers” side quest.",
+    },
+    {
+      id: 6,
+      title: "Legion Supply Box / Document - Journal - Aaron's Journal",
+      text: "Return to the area where the “Angel of Death” side quest ambush took place and you can enter the garage now with the aSaSaS code (which can be found in the Junkyard in the Wasteland).",
+    },
+    {
+      id: 7,
+      title: "Legion Supply Box",
+      text: "West of Gwen Hair Salon is a locked door. Use the passcode naEdrr to open it, which you get from the Great Desert, to the south-southeast of the Solar Tower in the south.",
+    },
+    {
+      id: 8,
+      title: "Document - Promotions - To My Allies",
+      text: "Just south of the Gwen Hair Salon, at some point, you'll find a document, which will start the side quest “A United People Cannot be Defended.” Didn't show up until we returned from a prolonged stint in the Great Desert.",
+    },
+    {
+      id: 9,
+      title: "Document - Series - The Last 72 Years 4",
+      text: "Opposite the southernmost Waypoint in Xion (triggered by some completion of a side quest, we imagine).",
+    },
+    {
+      id: 10,
+      title: "Document - Promotions - Introducing the Ark-Tech's Ark!",
+      text: "Speak to Mann after returning from Altess Levoire to start the “Lost Ark side” mission. Follow the waypoint to the northeast of Xion, and you will come across the body of the radical.",
+    },
+    {
+      id: 11,
+      title: "Document - Promotions - Experience Ark-Tech's Ark!",
+      text: "After investigating the body, head over to the second location that has just been marked on your map. Check at the device next to the entrance of the Ark for this document.",
+    },
+    {
+      id: 12,
+      title: "Memorystick - Lament of the Trapped",
+      text: "Once inside, you have to investigate four bodies in order to determine what happened inside of the Ark. The first one is right at the door.",
+    },
+    {
+      id: 13,
+      title: "Memorystick - Monolog of a Trapped Man",
+      text: "The second body is in a small room on the left side, kneeling by a chair.",
+    },
+    {
+      id: 14,
+      title: "Memorystick - Let Me Out",
+      text: "The next body is in the big room on the right side, by a large pile of bodies.",
+    },
+    {
+      id: 15,
+      title: "Memorystick - Who Are You Guys",
+      text: "The last body is in the same room as the previous one, turn around and you'll see it against the wall by one of the doors.",
+    },
+    {
+      id: 16,
+      title: "Document - Promotions - Ark-Tech Delivers Its Best Service By Protecting Its Customers!",
+      text: "Check the large monitor inside the same room, it's just up the steps from the pile of bodies.",
+    },
+  ];
 
   useEffect(() => {
     fetchXionContinuedCollectibles();
@@ -17,34 +115,77 @@ const XionContinued = () => {
       setContent(data);
     } catch (err) {
       console.error(err);
+      setError("Failed to fetch collectibles. Please try again");
     } finally {
       setIsLoading(false);
     }
-  }
+  };
+
+  const renderText = (text, title) => {
+    if (Array.isArray(text)) {
+      return (
+        <div>
+          <strong>{title}</strong>
+          <ul>
+            {text.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      );
+    } else {
+      return (
+        <p>
+          <strong>{title}</strong>
+          <span> &#8211; </span>
+          {text}
+        </p>
+      );
+    }
+  };
 
   return (
     <div>
-      <hr id="xion-continued"></hr>
+      <hr id="xion-continued" />
       <h3>▽ Xion Collectibles (Continued)</h3>
       <p><i>The next set of collectibles won’t be available on your first time through the area, and require a side quest/progressing the story to access them.</i></p>
-      <hr className="w-75"></hr>
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        content.map((item, index) => {
-          const isLastList = index === content.length - 1 || !Array.isArray(content[index + 1].text);
+      <hr className="w-75" />
+      {error && <p className="error-message">{error}</p>}
+      {staticContent.map((item, index) => {
+        const isLastItem = index === staticContent.length - 1;
+        const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
+        const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
 
-          return (
-            <MediaDisplay
-              key={item.id}
-              title={item.title}
-              text={item.text}
-              images={item.images}
-              showHr={!Array.isArray(item.text) || isLastList}
-            />
-          );
-        })
-      )}
+        return (
+          <div key={item.id}>
+            {renderText(item.text, item.title)}
+            {isLoading ? (
+              <div className="skeleton-container">
+                <Skeleton
+                  animation="wave"
+                  height={219}
+                  width={388}
+                  variant="rounded"
+                  className="skeleton-item"
+                />
+                <Skeleton
+                  animation="wave"
+                  height={219}
+                  width={388}
+                  variant="rounded"
+                  className="skeleton-item"
+                />
+              </div>
+            ) : (
+              <MediaDisplay
+                images={content.find((data) => data.id === item.id)?.images || []}
+              />
+            )}
+            {showHr && <hr />}
+          </div>
+        );
+      })}
+      {staticContent.length > 0 && <hr />}
     </div>
   );
 };
