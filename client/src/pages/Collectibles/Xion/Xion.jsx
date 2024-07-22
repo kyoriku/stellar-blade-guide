@@ -26,7 +26,7 @@ const Xion = () => {
     },
     {
       id: 4,
-      title: "Document - Series (The Xion #3",
+      title: "Document - Series - The Xion #3",
       text: "After coming out of the Presence Chamber (and a load of cutscenes), head to the left-hand corner of the room you enter into.",
     },
     {
@@ -36,47 +36,47 @@ const Xion = () => {
     },
     {
       id: 6,
-      title: "Document - Promotions (Attention, Citizens! 2)",
+      title: "Document - Promotions - Attention, Citizens! 2",
       text: "A few steps left of the waypoint near where Adam and Lily parted ways with you outside of the Presence Chamber.",
     },
     {
       id: 7,
-      title: "Document - Promotions (Attention, Citizens! 1)",
+      title: "Document - Promotions - Attention, Citizens! 1",
       text: "Just to the right of the waypoint.",
     },
     {
       id: 8,
-      title: "Document -  Promotions (Funding Announcements: Colony Bound Rocket)",
+      title: "Document -  Promotions - Funding Announcements: Colony Bound Rocket",
       text: "From the waypoint, turn 180 degrees and run forward. On a metal shutter, to the right of a blue work desk.",
     },
     {
       id: 9,
-      title: "Document - Series (Plastic Hearts, Vol 5)",
+      title: "Document - Series - Plastic Hearts, Vol 5",
       text: "Head down the stairs next to the last collectible, until you hit Gwen Hair Salon. Then take a left down the stairs. The collectible is on a barrel down that corridor (that has a dead-end with a red banner).",
     },
     {
       id: 10,
-      title: "Can (The Machinetta Americano)",
+      title: "Can - The Machinetta Americano",
       text: "Do a 180 from the last collectible, and up high on the other side of the street/alleyway, is a Fiz machine. Interact and it'll drop this can.",
     },
     {
       id: 11,
-      title: "Document - Promotions (Help Wanted)",
+      title: "Document - Promotions - Help Wanted",
       text: "Leave the alleyway and head towards Sisters' Junk. When you see the Liquor neon sign, there's a collectible to the left of it, near a doorway (down a few steps).",
     },
     {
       id: 12,
-      title: "Document - Series (The Truth, Article 2)",
+      title: "Document - Series - The Truth, Article 2",
       text: "Do another 180 and head towards the vending machines behind you. To its left is a blue newspaper box. Interact with it. It's opposite the stairs up to Sisters' Junk.",
     },
     {
       id: 13,
-      title: "Document - Promotions (For You Dimwits Still Believing In Mother Sphere)",
+      title: "Document - Promotions - For You Dimwits Still Believing In Mother Sphere",
       text: "After heading up the stairs to Sisters' Junk, take a left and there's another poster there, in the corner near the fence.",
     },
     {
       id: 14,
-      title: "Document - Promotions (Curse the Heaven's Royalty)",
+      title: "Document - Promotions - Curse the Heaven's Royalty",
       text: "Before going down the stairs to Sisters' Junk, head up the stairs to the right of them. The poster is on a metal shutter up the stairs to the right.",
     },
     {
@@ -86,22 +86,22 @@ const Xion = () => {
     },
     {
       id: 16,
-      title: "Document - Promotions (Prayer Meeting Guide)",
+      title: "Document - Promotions - Prayer Meeting Guide",
       text: "From the previous chest, go down the stairs and head right. The poster is on a metal shutter to the right.",
     },
     {
       id: 17,
-      title: "Can (Mountain Sparkle Mont Blanc)",
+      title: "Can - Mountain Sparkle Mont Blanc",
       text: "To the left of the previous poster (above Sisters' Junk), is another Fiz machine where you can get this can.",
     },
     {
       id: 18,
-      title: "Document - Series (The Lost 72 Years 2)",
+      title: "Document - Series - The Lost 72 Years 2",
       text: "To the left of Sisters' Junk is this book.",
     },
     {
       id: 19,
-      title: "Document - Promotions (Xion Freedom Liberation Alliance Flyer)",
+      title: "Document - Promotions - Xion Freedom Liberation Alliance Flyer",
       text: "Down the stairs from Sisters' Junk, take a right (south) until you reach a steam grate on the floor, and then head left. The poster is on a metal shutter in the thin alleyway.",
     },
     {
@@ -121,7 +121,7 @@ const Xion = () => {
     },
     {
       id: 23,
-      title: "Document - Series (The Lost 72 Years 1)",
+      title: "Document - Series - The Lost 72 Years 1",
       text: "On the bench opposite Roxanne and the Bulletin Board.",
     },
     {
@@ -170,17 +170,17 @@ const Xion = () => {
     },
     {
       id: 29,
-      title: "Document - Promotions (Angels Are Rigged)",
+      title: "Document - Promotions - Angels Are Rigged",
       text: "On the wall by the body for the Missing Husband Request, near The Last Gulp.",
     },
     {
       id: 30,
-      title: "Memorystick (Matthew's Memory)",
+      title: "Memorystick - Matthew's Memory",
       text: "On the ground directly to the left of the Angel Is A Lie poster.",
     },
     {
       id: 31,
-      title: "Document - Series (The Xion #5)",
+      title: "Document - Series - The Xion #5",
       text: "By the fence at the end of the same alley as the previous document and memorystick.",
     },
     {
@@ -190,7 +190,7 @@ const Xion = () => {
     },
     {
       id: 33,
-      title: "Document - Series (The Xion #1)",
+      title: "Document - Series - The Xion #1",
       text: "Just to the left of the Fiz machine is this document.",
     },
     {
@@ -210,7 +210,7 @@ const Xion = () => {
     },
     {
       id: 37,
-      title: "Document - Log Data (CT27932)",
+      title: "Document - Log Data - CT27932",
       text: "Visit the console in The Cradle, underneath Xion after accepting the Sleeping Beauty Request and you'll get this document.",
     },
     {
@@ -220,7 +220,7 @@ const Xion = () => {
     },
     {
       id: 39,
-      title: "Document - Series (Book of Faith and Wisdom 2:1-4), Series (The Lost 72 Years 3) & Book (How to Speak with Style)",
+      title: "Document - Series - Book of Faith and Wisdom 2:1-4, Series - The Lost 72 Years 3, & Book - How to Speak with Style",
       text: "In the alleyway to the right of the exit (as if you're leaving Xion to head back to the ship), at the end of said alleyway is a book store. You'll find these books on the shelves.",
     },
     {
