@@ -159,7 +159,7 @@ const Eidos7Continued = () => {
               images={content.find((data) => data.id === item.id)?.images || []}
             />
           )}
-          {index !== content.length - 1 && <hr />}
+          <hr></hr>
         </div>
       ))}
     </div>
