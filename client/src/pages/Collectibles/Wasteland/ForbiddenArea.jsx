@@ -1,90 +1,87 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import MediaDisplay from "../../../components/MediaDisplay";
+import { getForbiddenArea } from "../../../utils/API/wasteland";
+import { Skeleton } from "@mui/material";
 
 const ForbiddenArea = () => {
-  const content = [
+  const [content, setContent] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const staticContent = [
     {
       id: 1,
       title: "Can - Cryo The Clear",
       text: "Head down the rope into the large pit in the southeast Scrap Plains and into a cell-like door on the western side of the structure. Probably about midway up. This is the location of the “Life of the Scavengers” side quest.",
-      images: [
-        {
-          id: 1,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/1-Can-Cryo The Clear.1.jpg",
-          alt: "Can - Cryo The Clear"
-        },
-        {
-          id: 2,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/1-Can-Cryo The Clear.2.jpg",
-          alt: "Can - Cryo The Clear"
-        },
-        {
-          id: 3,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/1-Can-Cryo The Clear.3.jpg",
-          alt: "Can - Cryo The Clear"
-        },
-        {
-          id: 4,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/1-Can-Cryo The Clear.4.jpg",
-          alt: "Can - Cryo The Clear"
-        },
-        {
-          id: 5,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/1-Can-Cryo The Clear.5.jpg",
-          alt: "Can - Cryo The Clear"
-        }
-      ]
     },
     {
       id: 2,
-      title: "Memorystick (Tommy's Testament)",
+      title: "Memorystick - Tommy's Testament",
       text: "Interact with Tommy's body after defeating the Brute.",
-      images: [
-        {
-          id: 6,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/3-Memorystick-Tommy's Testament.1.jpg",
-          alt: "Memorystick (Tommy's Testament)"
-        },
-        {
-          id: 7,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/3-Memorystick-Tommy's Testament.2.jpg",
-          alt: "Memorystick (Tommy's Testament)"
-        }
-      ]
     },
     {
       id: 3,
       title: "Nano Suit - Sporty Yellow",
       text: "In a chest where the Brute came from in the Forbidden Area. Directly behind Tommy's body.",
-      images: [
-        {
-          id: 8,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/4-Sporty Yellow Nano Suit.1.jpg",
-          alt: "Nano Suit - Sporty Yellow"
-        },
-        {
-          id: 9,
-          src: "/assets/images/Wasteland/10-ForbiddenArea/4-Sporty Yellow Nano Suit.2.jpg",
-          alt: "Nano Suit - Sporty Yellow"
-        }
-      ]
     }
   ];
 
+  useEffect(() => {
+    fetchForbiddenAreaCollectibles();
+  }, []);
+
+  const fetchForbiddenAreaCollectibles = async () => {
+    try {
+      const data = await getForbiddenArea();
+      setContent(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch collectibles. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div>
-      <h3 id="forbidden-area">Forbidden Area Collectibles</h3>
-      {content.map((item) => (
-        <MediaDisplay
-          key={item.id}
-          title={item.title}
-          text={item.text}
-          images={item.images}
-          showHr={item.text}
-        />
+      <hr id="forbidden-area"></hr>
+      <h3>▽ Forbidden Area Collectibles</h3>
+      <hr className="w-75"></hr>
+      {error && <p className="error-message">{error}</p>}
+      {staticContent.map((item, index) => (
+        <div key={item.id}>
+          <p>
+            <strong>{item.title}</strong>
+            <span> &#8211; </span>
+            {item.text}
+          </p>
+          {isLoading ? (
+            <div className="skeleton-container">
+              <Skeleton
+                animation="wave"
+                height={217}
+                width={388}
+                variant="rounded"
+                className="skeleton-item"
+              />
+              <Skeleton
+                animation="wave"
+                height={217}
+                width={388}
+                variant="rounded"
+                className="skeleton-item"
+              />
+            </div>
+          ) : (
+            <MediaDisplay
+              images={content.find((data) => data.id === item.id)?.images || []}
+            />
+          )}
+          {index !== content.length - 1 && <hr />}
+        </div>
       ))}
     </div>
   );
-}
+};
 
 export default ForbiddenArea

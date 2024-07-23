@@ -76,7 +76,7 @@ const WastelandCollectibles = () => {
           <h1 className="mt-3 mb-0">Stellar Blade - Wasteland Collectibles</h1>
           {isMobile && TOC}
           <BarrenLands />
-          {/* <GreatCanyon />
+          <GreatCanyon />
           <ScrapPlains />
           <OilStorageFacility />
           <ScrapYard />
@@ -85,7 +85,7 @@ const WastelandCollectibles = () => {
           <Plant />
           <GreatCanyonContinued />
           <ForbiddenArea />
-          <WastelandContinued /> */}
+          <WastelandContinued />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>

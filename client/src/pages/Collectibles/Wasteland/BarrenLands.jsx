@@ -171,6 +171,7 @@ const BarrenLands = () => {
       setIsLoading(false);
     }
   };
+
   return (
     <div>
       <hr id="barren-lands"></hr>

@@ -1,58 +1,28 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import MediaDisplay from "../../../components/MediaDisplay";
+import { getScrapYard } from "../../../utils/API/wasteland";
+import { Skeleton } from "@mui/material";
 
 const ScrapYard = () => {
-  const content = [
+  const [content, setContent] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const staticContent = [
     {
       id: 1,
-      title: "Supply Camp (Scrap Yard Entrance)",
+      title: "Supply Camp - Scrap Yard Entrance",
       text: "Follow the path down from the northeast and you'll come to a small robot town (Scrap Yard), as well as this Supply Camp.",
-      images: [
-        {
-          id: 1,
-          src: "/assets/images/Wasteland/5-ScrapYard/1-Supply Camp-Scrap Yard Entrance.1.jpg",
-          alt: "Supply Camp (Scrap Yard Entrance)"
-        },
-        {
-          id: 2,
-          src: "/assets/images/Wasteland/5-ScrapYard/1-Supply Camp-Scrap Yard Entrance.2.jpg",
-          alt: "Supply Camp (Scrap Yard Entrance)"
-        }
-      ]
     },
     {
       id: 2,
       title: "Legion Supply Box",
       text: "in the northeast corner of the Scrap Yard, but even with a yellow box, the ladder appears not to have collision detection. Come back when you have the Double Jump if you can't get it.",
-      images: [
-        {
-          id: 3,
-          src: "/assets/images/Wasteland/5-ScrapYard/3-Legion Supply Box.1.jpg",
-          alt: "Legion Supply Box"
-        },
-        {
-          id: 4,
-          src: "/assets/images/Wasteland/5-ScrapYard/3-Legion Supply Box.2.jpg",
-          alt: "Legion Supply Box"
-        }
-      ]
     },
     {
       id: 3,
       title: "Legion Supply Box",
       text: "There's another one in the south corner of the area. Climb up and jump over a fence to reach the back wall.",
-      images: [
-        {
-          id: 5,
-          src: "/assets/images/Wasteland/5-ScrapYard/4-Legion Supply Box.1.jpg",
-          alt: "Legion Supply Box"
-        },
-        {
-          id: 6,
-          src: "/assets/images/Wasteland/5-ScrapYard/4-Legion Supply Box.2.jpg",
-          alt: "Legion Supply Box"
-        }
-      ]
     },
     {
       id: 4,
@@ -72,7 +42,6 @@ const ScrapYard = () => {
         "Metal-Framed Glasses",
         "Cat's Eye Glasses",
       ],
-      images: []
     },
     {
       id: 5,
@@ -83,7 +52,6 @@ const ScrapYard = () => {
         "Polygonal-Framed Glasses",
         "Square-Framed Glasses",
       ],
-      images: []
     },
     {
       id: 6,
@@ -94,58 +62,91 @@ const ScrapYard = () => {
         "Orange Aviators",
         "Oversized Sunglasses",
       ],
-      images: [
-        {
-          id: 7,
-          src: "/assets/images/Wasteland/5-ScrapYard/5-D1G-g2r.1.jpg",
-          alt: "Document - Information - Service Drones"
-        },
-        {
-          id: 8,
-          src: "/assets/images/Wasteland/5-ScrapYard/5-D1G-g2r.2.jpg",
-          alt: "Document - Series - Plastic Hearts, Vol. 2"
-        },
-        {
-          id: 9,
-          src: "/assets/images/Wasteland/5-ScrapYard/5-D1G-g2r.3.jpg",
-          alt: "Document - Information - Conspiracy"
-        },
-      ]
     },
     {
       id: 7,
       title: "Locked Supply Chest",
       text: "Leave D1G-g2r's Scrap Yard and head southeast. Unlock the gate (to open the shortcut) and then unlock the Locked Chest (with the d-pad mini-game).",
-      images: [
-        {
-          id: 10,
-          src: "/assets/images/Wasteland/5-ScrapYard/2-Locked Legion Supply Chest.1.jpg",
-          alt: "Locked Supply Chest"
-        },
-        {
-          id: 11,
-          src: "/assets/images/Wasteland/5-ScrapYard/2-Locked Legion Supply Chest.2.jpg",
-          alt: "Locked Supply Chest"
-        }
-      ]
     },
   ];
 
+  useEffect(() => {
+    fetchScrapYardCollectibles();
+  }, []);
+
+  const fetchScrapYardCollectibles = async () => {
+    try {
+      const data = await getScrapYard();
+      setContent(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch collectibles. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderText = (text, title) => {
+    if (Array.isArray(text)) {
+      return (
+        <div>
+          <strong>{title}</strong>
+          <ul>
+            {text.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      );
+    } else {
+      return (
+        <p>
+          <strong>{title}</strong>
+          <span> &#8211; </span>
+          {text}
+        </p>
+      );
+    }
+  };
+
   return (
     <div>
-      <h3 id="scrap-yard">Scrap Yard Collectibles</h3>
-      {content.map((item, index) => {
-        const isLastList = index === content.length - 1 || !Array.isArray(content[index + 1].text);
-        // const addBottomMargin = item.id === 5;
+      <hr id="scrap-yard"></hr>
+      <h3>▽  Scrap Yard Collectibles</h3>
+      <hr className="w-75" />
+      {error && <p className="error-message">{error}</p>}
+      {staticContent.map((item, index) => {
+        const isLastItem = index === staticContent.length - 1;
+        const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
+        const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
+
         return (
-          <MediaDisplay
-            key={item.id}
-            title={item.title}
-            text={item.text}
-            images={item.images}
-            showHr={!Array.isArray(item.text) || isLastList}
-          // addBottomMargin={addBottomMargin}
-          />
+          <div key={item.id}>
+            {renderText(item.text, item.title)}
+            {isLoading ? (
+              <div className="skeleton-container">
+                <Skeleton
+                  animation="wave"
+                  height={217}
+                  width={388}
+                  variant="rounded"
+                  className="skeleton-item"
+                />
+                <Skeleton
+                  animation="wave"
+                  height={217}
+                  width={388}
+                  variant="rounded"
+                  className="skeleton-item"
+                />
+              </div>
+            ) : (
+              <MediaDisplay
+                images={content.find((data) => data.id === item.id)?.images || []}
+              />
+            )}
+            {showHr && <hr />}
+          </div>
         );
       })}
     </div>
