@@ -115,14 +115,14 @@ const CityUnderground = () => {
             <div className="skeleton-container">
               <Skeleton
                 animation="wave"
-                height={219}
+                height={217}
                 width={388}
                 variant="rounded"
                 className="skeleton-item"
               />
               <Skeleton
                 animation="wave"
-                height={219}
+                height={217}
                 width={388}
                 variant="rounded"
                 className="skeleton-item"

@@ -102,7 +102,7 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
         <tbody>
           <tr>
             {images.map((image) => (
-              <td key={image.id} className="px-1 px-md-2">
+              <td key={image.id} className="px-1 px-md-2 py-0">
                 <a href={image.src} className="glightbox" data-gallery="gallery1">
                   <img
                     src={image.src}

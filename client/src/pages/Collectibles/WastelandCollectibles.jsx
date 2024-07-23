@@ -75,9 +75,8 @@ const WastelandCollectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Stellar Blade - Wasteland Collectibles</h1>
           {isMobile && TOC}
-          <hr className="divider"></hr>
           <BarrenLands />
-          <GreatCanyon />
+          {/* <GreatCanyon />
           <ScrapPlains />
           <OilStorageFacility />
           <ScrapYard />
@@ -86,7 +85,7 @@ const WastelandCollectibles = () => {
           <Plant />
           <GreatCanyonContinued />
           <ForbiddenArea />
-          <WastelandContinued />
+          <WastelandContinued /> */}
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
