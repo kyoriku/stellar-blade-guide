@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import MediaDisplay from "../../../components/MediaDisplay";
-import { getTopSecretResearchComplex } from '../../../utils/API/altessLevoire';
+import { getSecurityCenter } from '../../../utils/API/altessLevoire';
 import { Skeleton } from "@mui/material";
 
-const TopSecretResearchComplex = () => {
+const SecurityCenter = () => {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,18 +11,43 @@ const TopSecretResearchComplex = () => {
   const staticContent = [
     {
       id: 1,
-      title: "Legion Camp",
-      text: "As you come down the elevator, there's a camp just on the right.",
+      title: "Document - Messages - Humanity Liberation Front",
+      text: "In the control room where you have to open a door (after getting through the timed door), just interact with the computer on the right.",
+      type: "Document",
+      level: "Altess Levoire",
+      location: "Security Center",
+      images: [
+        {
+          id: 1,
+          src: "/assets/images/AltessLevoire/3-SecurityCenter/1-Document - Messages - Humanity Liberation Front.jpg",
+          alt: "Document - Messages - Humanity Liberation Front"
+        }
+      ]
     },
+    {
+      id: 2,
+      title: "Legion Supply Chest",
+      text: "By the door you just opened. Can't miss it.",
+      type: "Supply Chest",
+      level: "Altess Levoire",
+      location: "Security Center",
+      images: [
+        {
+          id: 2,
+          src: "/assets/images/AltessLevoire/3-SecurityCenter/2-Legion Supply Chest.jpg",
+          alt: "Legion Supply Chest"
+        }
+      ]
+    }
   ];
 
   useEffect(() => {
-    fetchTopSecretResearchComplexCollectibles();
+    fetchSecurityCenterCollectibles();
   }, []);
 
-  const fetchTopSecretResearchComplexCollectibles = async () => {
+  const fetchSecurityCenterCollectibles = async () => {
     try {
-      const data = await getTopSecretResearchComplex();
+      const data = await getSecurityCenter();
       setContent(data);
     } catch (err) {
       console.error(err);
@@ -39,8 +64,8 @@ const TopSecretResearchComplex = () => {
 
   return (
     <div>
-      <hr id="top-secret-research-complex"></hr>
-      <h3 >▽ Top-Secret Research Complex Collectibles</h3>
+      <hr id="security-center"></hr>
+      <h3>▽ Security Center Collectibles</h3>
       <hr className='w-75'></hr>
       {error && <p className="error-message">{error}</p>}
       {staticContent.map((item, index) => (
@@ -54,7 +79,7 @@ const TopSecretResearchComplex = () => {
             <div className="skeleton-container">
               <Skeleton
                 animation="wave"
-                height={443}
+                height={443.5}
                 width={796}
                 variant="rounded"
                 className="skeleton-item"
@@ -66,10 +91,10 @@ const TopSecretResearchComplex = () => {
             />
           )}
           {shouldRenderHr(index) && <hr />}
-          </div>
+        </div>
       ))}
     </div>
   );
 };
 
-export default TopSecretResearchComplex
+export default SecurityCenter

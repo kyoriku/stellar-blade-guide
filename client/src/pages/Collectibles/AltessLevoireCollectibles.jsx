@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom';
 
 import useWindowSize from "../../hooks/WindowSize";
 
-import ResearchLab from "./AltessLevoire/ResearchLab";
+import ResearchLabEntrance from "./AltessLevoire/ResearchLabEntrance";
+import PurificationScanner from "./AltessLevoire/PurificationScanner";
+import SecurityCenter from "./AltessLevoire/SecurityCenter";
 import SectorA07 from "./AltessLevoire/SectorA07";
-import SpecimenResearchLab from "./AltessLevoire/SpecimenResearchLab";
+import SpecimenPreservationLab from "./AltessLevoire/SpecimenPreservationLab";
 import TopSecretResearchComplex from "./AltessLevoire/TopSecretResearchComplex";
+import DetoriatedLobby from "./AltessLevoire/DeterioratedLobby";
+import AirVent from "./AltessLevoire/AirVent";
 
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -34,10 +38,14 @@ const AltessLevoireCollectibles = () => {
         <li className="nav-item"><Link to="/collectibles/wasteland">Wasteland</Link></li>
         <li className="nav-item"><Link to="/collectibles/altess-levoire" onClick={scrollToTop}>Altess Levoire</Link>
           <ul>
-            <li className="nav-item"><a className="nav-link" href="#research-lab">Research Lab</a></li>
+            <li className="nav-item"><a className="nav-link" href="#research-lab-entrance">Research Lab Entrance</a></li>
+            <li className="nav-item"><a className="nav-link" href="#purification-scanner">Purification Scanner</a></li>
+            <li className="nav-item"><a className="nav-link" href="#security-center">Security Center</a></li>
             <li className="nav-item"><a className="nav-link" href="#sector-a07">Sector A07</a></li>
-            <li className="nav-item"><a className="nav-link" href="#specimen-research-lab">Specimen Research Lab</a></li>
+            <li className="nav-item"><a className="nav-link" href="#specimen-preservation-lab">Specimen Preservation Lab</a></li>
             <li className="nav-item"><a className="nav-link" href="#top-secret-research-complex">Top Secret Research Complex</a></li>
+            <li className="nav-item"><a className="nav-link" href="#deteriorated-lobby">Deteriorated Lobby</a></li>
+            <li className="nav-item"><a className="nav-link" href="#air-vent">Air Vent</a></li>
           </ul>
         </li>
         <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link></li>
@@ -60,10 +68,14 @@ const AltessLevoireCollectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Stellar Blade - Altess Levoire Collectibles</h1>
           {isMobile && TOC}
-          <ResearchLab />
+          <ResearchLabEntrance />
+          <PurificationScanner />
+          <SecurityCenter />
           <SectorA07 />
-          <SpecimenResearchLab />
+          <SpecimenPreservationLab />
           <TopSecretResearchComplex />
+          <DetoriatedLobby />
+          <AirVent />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>

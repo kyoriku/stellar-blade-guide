@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import MediaDisplay from "../../../components/MediaDisplay";
-import { getTopSecretResearchComplex } from '../../../utils/API/altessLevoire';
+import { getDeterioratedLobby } from '../../../utils/API/altessLevoire';
 import { Skeleton } from "@mui/material";
 
-const TopSecretResearchComplex = () => {
+const DeterioratedLobby = () => {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,17 +12,32 @@ const TopSecretResearchComplex = () => {
     {
       id: 1,
       title: "Legion Camp",
-      text: "As you come down the elevator, there's a camp just on the right.",
+      text: "After you beat the ambush and make it up the lift.",
+    },
+    {
+      id: 2,
+      title: "Legion Supply Chest",
+      text: "Once you've cleared the monster covering the walkway, there's a cache before you move into the next room.",
+    },
+    {
+      id: 3,
+      title: "Passcode - unyaun",
+      text: "Head past the locked door that needs a keycode, go through the door with the green light next to it, and then there'll be a body on the right down there with a passcode.",
+    },
+    {
+      id: 4,
+      title: "Legion Supply Box",
+      text: "Carry on to the end of the corridor until you reach a door. Inside is a dead end, but also a Legion Supply Box.",
     },
   ];
 
   useEffect(() => {
-    fetchTopSecretResearchComplexCollectibles();
+    fetchDeterioratedLobbyCollectibles();
   }, []);
 
-  const fetchTopSecretResearchComplexCollectibles = async () => {
+  const fetchDeterioratedLobbyCollectibles = async () => {
     try {
-      const data = await getTopSecretResearchComplex();
+      const data = await getDeterioratedLobby();
       setContent(data);
     } catch (err) {
       console.error(err);
@@ -39,8 +54,8 @@ const TopSecretResearchComplex = () => {
 
   return (
     <div>
-      <hr id="top-secret-research-complex"></hr>
-      <h3 >▽ Top-Secret Research Complex Collectibles</h3>
+      <hr id="deteriorated-lobby"></hr>
+      <h3>▽ Deteriorated Lobby Collectibles</h3>
       <hr className='w-75'></hr>
       {error && <p className="error-message">{error}</p>}
       {staticContent.map((item, index) => (
@@ -72,4 +87,4 @@ const TopSecretResearchComplex = () => {
   );
 };
 
-export default TopSecretResearchComplex
+export default DeterioratedLobby;

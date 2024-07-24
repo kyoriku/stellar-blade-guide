@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import MediaDisplay from "../../../components/MediaDisplay";
-import { getTopSecretResearchComplex } from '../../../utils/API/altessLevoire';
+import { getSpecimenPreservationLab } from '../../../utils/API/altessLevoire';
 import { Skeleton } from "@mui/material";
 
-const TopSecretResearchComplex = () => {
+const SpecimenPreservationLab = () => {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,18 +11,33 @@ const TopSecretResearchComplex = () => {
   const staticContent = [
     {
       id: 1,
-      title: "Legion Camp",
-      text: "As you come down the elevator, there's a camp just on the right.",
+      title: "Legion Supply Chest",
+      text: "Up the ladder as you enter, and then head to the right and open the door on your right. Watch out for the 2 Infectors inside.",
     },
+    {
+      id: 2,
+      title: "Document - Announcements - Visitor Information",
+      text: "Follow the walkway to the right until you see a door with a broken red panel. The document is inside, on the left. Careful of ambushes!",
+    },
+    {
+      id: 3,
+      title: "Legion Supply Box",
+      text: "When you head back towards the ladder (clockwise), a door that was previously closed is now open. There's a box inside.",
+    },
+    {
+      id: 4,
+      title: "Robot - Document - Promotions - Eidos Company Promotion",
+      text: "In the far left room (as if you were facing the way you came in), there's a robot in there now.",
+    }
   ];
 
   useEffect(() => {
-    fetchTopSecretResearchComplexCollectibles();
+    fetchSpecimenPreservationLabCollectibles();
   }, []);
 
-  const fetchTopSecretResearchComplexCollectibles = async () => {
+  const fetchSpecimenPreservationLabCollectibles = async () => {
     try {
-      const data = await getTopSecretResearchComplex();
+      const data = await getSpecimenPreservationLab();
       setContent(data);
     } catch (err) {
       console.error(err);
@@ -39,8 +54,8 @@ const TopSecretResearchComplex = () => {
 
   return (
     <div>
-      <hr id="top-secret-research-complex"></hr>
-      <h3 >▽ Top-Secret Research Complex Collectibles</h3>
+      <hr id="specimen-preservation-lab"></hr>
+      <h3>▽ Specimen Preservation Lab Collectibles</h3>
       <hr className='w-75'></hr>
       {error && <p className="error-message">{error}</p>}
       {staticContent.map((item, index) => (
@@ -72,4 +87,4 @@ const TopSecretResearchComplex = () => {
   );
 };
 
-export default TopSecretResearchComplex
+export default SpecimenPreservationLab

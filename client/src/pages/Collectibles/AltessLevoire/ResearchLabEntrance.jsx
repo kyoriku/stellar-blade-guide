@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import MediaDisplay from "../../../components/MediaDisplay";
-import { getTopSecretResearchComplex } from '../../../utils/API/altessLevoire';
+import { getResearchLabEntrance } from '../../../utils/API/altessLevoire';
 import { Skeleton } from "@mui/material";
 
-const TopSecretResearchComplex = () => {
+const ResearchLabEntrance = () => {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,18 +11,18 @@ const TopSecretResearchComplex = () => {
   const staticContent = [
     {
       id: 1,
-      title: "Legion Camp",
-      text: "As you come down the elevator, there's a camp just on the right.",
+      title: "Document - Messages - You Are Fake",
+      text: "As you walk down the stairs when Lily says the timelines don't match up. Can't miss this one.",
     },
   ];
 
   useEffect(() => {
-    fetchTopSecretResearchComplexCollectibles();
+    fetchResearchLabEntranceCollectibles();
   }, []);
 
-  const fetchTopSecretResearchComplexCollectibles = async () => {
+  const fetchResearchLabEntranceCollectibles = async () => {
     try {
-      const data = await getTopSecretResearchComplex();
+      const data = await getResearchLabEntrance();
       setContent(data);
     } catch (err) {
       console.error(err);
@@ -39,8 +39,8 @@ const TopSecretResearchComplex = () => {
 
   return (
     <div>
-      <hr id="top-secret-research-complex"></hr>
-      <h3 >▽ Top-Secret Research Complex Collectibles</h3>
+      <hr id="research-lab-entrance"></hr>
+      <h3>▽ Research Lab Entrance Collectibles</h3>
       <hr className='w-75'></hr>
       {error && <p className="error-message">{error}</p>}
       {staticContent.map((item, index) => (
@@ -72,4 +72,4 @@ const TopSecretResearchComplex = () => {
   );
 };
 
-export default TopSecretResearchComplex
+export default ResearchLabEntrance
