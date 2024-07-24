@@ -25,13 +25,3 @@ router.route('/deteriorated-lobby').get(getDeterioratedLobby);
 router.route('/air-vent').get(getAirVent);
 
 module.exports = router;
-
-
-// research lab entrance
-// purification scanner
-// security center
-// sector a07
-// specimen preservation lab
-// top-secret research complex
-// deteriorated lobby
-// air vent

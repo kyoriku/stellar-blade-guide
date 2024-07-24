@@ -13,25 +13,11 @@ const PurificationScanner = () => {
       id: 1,
       title: "Document - Log Data - Booting Sequence",
       text: "After the wallrunning over the fallen floor section, it's on the floor in front of you.",
-      images: [
-        {
-          id: 1,
-          src: "/assets/images/AltessLevoire/1-PurificationScanner/2-Document - Log Data - Booting Sequence.jpg",
-          alt: "Document - Log Data - Booting Sequence"
-        }
-      ]
     },
     {
       id: 2,
       title: "Legion Camp",
       text: "After fighting your first infector, this will be in the main corridor.",
-      images: [
-        {
-          id: 2,
-          src: "/assets/images/AltessLevoire/1-PurificationScanner/3-Legion Camp.jpg",
-          alt: "Legion Camp"
-        }
-      ]
     },
   ];
 

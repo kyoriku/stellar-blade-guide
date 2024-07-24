@@ -13,31 +13,11 @@ const SecurityCenter = () => {
       id: 1,
       title: "Document - Messages - Humanity Liberation Front",
       text: "In the control room where you have to open a door (after getting through the timed door), just interact with the computer on the right.",
-      type: "Document",
-      level: "Altess Levoire",
-      location: "Security Center",
-      images: [
-        {
-          id: 1,
-          src: "/assets/images/AltessLevoire/3-SecurityCenter/1-Document - Messages - Humanity Liberation Front.jpg",
-          alt: "Document - Messages - Humanity Liberation Front"
-        }
-      ]
     },
     {
       id: 2,
       title: "Legion Supply Chest",
       text: "By the door you just opened. Can't miss it.",
-      type: "Supply Chest",
-      level: "Altess Levoire",
-      location: "Security Center",
-      images: [
-        {
-          id: 2,
-          src: "/assets/images/AltessLevoire/3-SecurityCenter/2-Legion Supply Chest.jpg",
-          alt: "Legion Supply Chest"
-        }
-      ]
     }
   ];
 
