@@ -117,6 +117,11 @@ const SilentStreet = () => {
     }
   };
 
+  const shouldRenderHr = (index) => {
+    if (isLoading) return index < staticContent.length - 1;
+    return index < staticContent.length - 1;
+  };
+
   return (
     <div>
       <hr id="silent-street"></hr>
@@ -152,7 +157,7 @@ const SilentStreet = () => {
               images={content.find((data) => data.id === item.id)?.images || []}
             />
           )}
-          {index !== content.length - 1 && <hr />}
+          {shouldRenderHr(index) && <hr />}
         </div>
       ))}
     </div>

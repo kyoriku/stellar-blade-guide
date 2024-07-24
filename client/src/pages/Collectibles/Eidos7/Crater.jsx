@@ -37,6 +37,11 @@ const Crater = () => {
     }
   };
 
+  const shouldRenderHr = (index) => {
+    if (isLoading) return index < staticContent.length - 1;
+    return index < staticContent.length - 1;
+  };
+
   return (
     <div>
       <hr id="crater"></hr>
@@ -54,15 +59,8 @@ const Crater = () => {
             <div className="skeleton-container">
               <Skeleton
                 animation="wave"
-                height={217}
-                width={388}
-                variant="rounded"
-                className="skeleton-item"
-              />
-              <Skeleton
-                animation="wave"
-                height={217}
-                width={388}
+                height={443}
+                width={796}
                 variant="rounded"
                 className="skeleton-item"
               />
@@ -72,7 +70,7 @@ const Crater = () => {
               images={content.find((data) => data.id === item.id)?.images || []}
             />
           )}
-          {index !== content.length - 1 && <hr />}
+          {shouldRenderHr(index) && <hr />}
         </div>
       ))}
     </div>
