@@ -7,6 +7,7 @@ import Eidos7Collectibles from './pages/Collectibles/Eidos7Collectibles.jsx';
 import XionCollectibles from './pages/Collectibles/XionCollectibles.jsx';
 import WastelandCollectibles from './pages/Collectibles/WastelandCollectibles.jsx';
 import AltessLevoireCollectibles from './pages/Collectibles/AltessLevoireCollectibles.jsx';
+import Matrix11Collectibles from './pages/Collectibles/Matrix11Collectibles.jsx';
 import Error from './components/Error';
 
 const router = createBrowserRouter([
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
       {
         path: 'collectibles/altess-levoire',
         element: <AltessLevoireCollectibles />,
+      },
+      {
+        path: 'collectibles/matrix-11',
+        element: <Matrix11Collectibles />,
       },
     ],
   },
