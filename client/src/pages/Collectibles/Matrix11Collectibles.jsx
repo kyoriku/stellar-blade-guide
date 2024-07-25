@@ -33,11 +33,11 @@ const Matrix11Collectibles = () => {
     <nav id="toc" className={`sticky-top ${!isMobile ? '' : ''}`}>
       <h4>Contents</h4>
       <ul className="nav flex-column sidebar">
-        <li className="nav-item"><Link to="/collectibles/eidos-7" onClick={scrollToTop}>Eidos 7</Link></li>
+        <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
         <li className="nav-item"><Link to="/collectibles/xion">Xion</Link></li>
         <li className="nav-item"><Link to="/collectibles/wasteland">Wasteland</Link></li>
         <li className="nav-item"><Link to="/collectibles/altess-levoire">Altess Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link>
+        <li className="nav-item"><Link to="/collectibles/matrix-11" onClick={scrollToTop}>Matrix 11</Link>
           <ul>
             <li className="nav-item"><a className="nav-link" href="#silent-street">Closed Off Platform</a></li>
             <li className="nav-item"><a className="nav-link" href="#parking-tower">Landfill</a></li>
