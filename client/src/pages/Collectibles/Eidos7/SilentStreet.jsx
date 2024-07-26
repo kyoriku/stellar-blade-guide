@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+
+import ContentText from "../../../components/ContentText";
 import MediaDisplay from "../../../components/MediaDisplay";
-import { getSilentStreet } from '../../../utils/API/eidos7';
-import { Skeleton } from "@mui/material";
+
+import { getSilentStreet } from "../../../utils/API/eidos7";
 
 const SilentStreet = () => {
   const [content, setContent] = useState([]);
@@ -124,17 +126,13 @@ const SilentStreet = () => {
 
   return (
     <div>
-      <hr id="silent-street"></hr>
+      <hr id="silent-street" />
       <h3>▽ Silent Street Collectibles</h3>
-      <hr className="w-75"></hr>
+      <hr className="w-75" />
       {error && <p className="error-message">{error}</p>}
       {staticContent.map((item, index) => (
         <div key={item.id}>
-          <p>
-            <strong>{item.title}</strong>
-            <span> &#8211; </span>
-            {item.text}
-          </p>
+          <ContentText title={item.title} text={item.text} />
           {isLoading ? (
             <div className="skeleton-container">
               <Skeleton
@@ -153,9 +151,7 @@ const SilentStreet = () => {
               />
             </div>
           ) : (
-            <MediaDisplay
-              images={content.find((data) => data.id === item.id)?.images || []}
-            />
+            <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
           )}
           {shouldRenderHr(index) && <hr />}
         </div>
