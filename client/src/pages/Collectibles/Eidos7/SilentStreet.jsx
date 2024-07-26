@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
 
 import { getSilentStreet } from "../../../utils/API/eidos7";
@@ -134,22 +135,7 @@ const SilentStreet = () => {
         <div key={item.id}>
           <ContentText title={item.title} text={item.text} />
           {isLoading ? (
-            <div className="skeleton-container">
-              <Skeleton
-                animation="wave"
-                height={217}
-                width={388}
-                variant="rounded"
-                className="skeleton-item"
-              />
-              <Skeleton
-                animation="wave"
-                height={217}
-                width={388}
-                variant="rounded"
-                className="skeleton-item"
-              />
-            </div>
+            <SkeletonLoader />
           ) : (
             <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
           )}
