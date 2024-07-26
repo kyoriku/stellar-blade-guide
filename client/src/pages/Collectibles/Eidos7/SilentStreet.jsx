@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
+import HrComponent from "../../../components/HrComponent";
 
 import { getSilentStreet } from "../../../utils/API/eidos7";
 
@@ -139,7 +140,7 @@ const SilentStreet = () => {
           ) : (
             <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
           )}
-          {shouldRenderHr(index) && <hr />}
+          <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
         </div>
       ))}
     </div>
