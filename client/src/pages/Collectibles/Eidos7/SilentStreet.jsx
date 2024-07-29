@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Header from "../../../components/Header";
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
@@ -121,9 +122,7 @@ const SilentStreet = () => {
 
   return (
     <div>
-      <hr id="silent-street" />
-      <h3>▽ Silent Street Collectibles</h3>
-      <hr className="w-75" />
+      <Header id="silent-street" title="▽ Silent Street Collectibles" />
       {error && <p className="error-message">{error}</p>}
       {staticContent.map((item, index) => (
         <div key={item.id}>
