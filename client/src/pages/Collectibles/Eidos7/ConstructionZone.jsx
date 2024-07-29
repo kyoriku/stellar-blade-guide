@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
+import HrComponent from "../../../components/HrComponent";
 import { getConstructionZone } from '../../../utils/API/eidos7';
-import { Skeleton } from "@mui/material";
 
 const ConstructionZone = () => {
   const [content, setContent] = useState([]);
@@ -95,7 +97,7 @@ const ConstructionZone = () => {
       text: "Use the crane to destroy the right wall this time, and use the beam to get across into that room. This Nano Suit is inside.",
     }
   ]
-  
+
   useEffect(() => {
     fetchConstructionZoneCollectibles();
   }, []);
@@ -112,11 +114,6 @@ const ConstructionZone = () => {
     }
   };
 
-  const shouldRenderHr = (index) => {
-    if (isLoading) return index < staticContent.length - 1;
-    return index < staticContent.length - 1;
-  };
-
   return (
     <div>
       <hr id="construction-zone"></hr>
@@ -125,34 +122,13 @@ const ConstructionZone = () => {
       {error && <p className="error-message">{error}</p>}
       {staticContent.map((item, index) => (
         <div key={item.id}>
-          <p>
-            <strong>{item.title}</strong>
-            <span> &#8211; </span>
-            {item.text}
-          </p>
+          <ContentText title={item.title} text={item.text} />
           {isLoading ? (
-            <div className="skeleton-container">
-              <Skeleton
-                animation="wave"
-                height={217}
-                width={388}
-                variant="rounded"
-                className="skeleton-item"
-              />
-              <Skeleton
-                animation="wave"
-                height={217}
-                width={388}
-                variant="rounded"
-                className="skeleton-item"
-              />
-            </div>
+            <SkeletonLoader />
           ) : (
-            <MediaDisplay
-              images={content.find((data) => data.id === item.id)?.images || []}
-            />
+            <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
           )}
-          {shouldRenderHr(index) && <hr />}
+          <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
         </div>
       ))}
     </div>

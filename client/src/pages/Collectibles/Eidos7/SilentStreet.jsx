@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
-
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
 import HrComponent from "../../../components/HrComponent";
-
 import { getSilentStreet } from "../../../utils/API/eidos7";
 
 const SilentStreet = () => {
@@ -119,11 +117,6 @@ const SilentStreet = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const shouldRenderHr = (index) => {
-    if (isLoading) return index < staticContent.length - 1;
-    return index < staticContent.length - 1;
   };
 
   return (
