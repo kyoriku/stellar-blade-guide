@@ -9,7 +9,7 @@ import CollapsedRailBridge from "./Matrix11/CollapsedRailBridge";
 import UndergroundSewer from "./Matrix11/UndergroundSewer";
 import RottenLabyrinth from "./Matrix11/RottenLabyrinth";
 import TemporaryArmoury from "./Matrix11/TemporaryArmoury";
-// import TrainGraveyard from "./Matrix11/TrainGraveyard";
+import TrainGraveyard from "./Matrix11/TrainGraveyard";
 
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -73,7 +73,7 @@ const Matrix11Collectibles = () => {
           <UndergroundSewer />
           <RottenLabyrinth />
           <TemporaryArmoury />
-          {/* <TrainGraveyard /> */}
+          <TrainGraveyard />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
