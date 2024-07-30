@@ -6,7 +6,7 @@ import useWindowSize from "../../hooks/WindowSize";
 import ClosedOffPlatform from "./Matrix11/ClosedOffPlatform";
 import Landfill from "./Matrix11/Landfill";
 import CollapsedRailBridge from "./Matrix11/CollapsedRailBridge";
-// import UndergroundSewer from "./Matrix11/UndergroundSewer";
+import UndergroundSewer from "./Matrix11/UndergroundSewer";
 // import RottenLabyrinth from "./Matrix11/RottenLabyrinth";
 // import TemporaryArmoury from "./Matrix11/TemporaryArmoury";
 // import TrainGraveyard from "./Matrix11/TrainGraveyard";
@@ -70,7 +70,7 @@ const Matrix11Collectibles = () => {
           <ClosedOffPlatform />
           <Landfill />
           <CollapsedRailBridge />
-          {/* <UndergroundSewer /> */}
+          <UndergroundSewer />
           {/* <RottenLabyrinth /> */}
           {/* <TemporaryArmoury /> */}
           {/* <TrainGraveyard /> */}
