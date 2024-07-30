@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import useWindowSize from "../../hooks/WindowSize";
 
-// import ClosedOffPlatform from "./Matrix11/ClosedOffPlatform";
+import ClosedOffPlatform from "./Matrix11/ClosedOffPlatform";
 // import Landfill from "./Matrix11/Landfill";
 // import CollapsedRailBridge from "./Matrix11/CollapsedRailBridge";
 // import UndergroundSewer from "./Matrix11/UndergroundSewer";
@@ -39,13 +39,13 @@ const Matrix11Collectibles = () => {
         <li className="nav-item"><Link to="/collectibles/altess-levoire">Altess Levoire</Link></li>
         <li className="nav-item"><Link to="/collectibles/matrix-11" onClick={scrollToTop}>Matrix 11</Link>
           <ul>
-            <li className="nav-item"><a className="nav-link" href="#silent-street">Closed Off Platform</a></li>
-            <li className="nav-item"><a className="nav-link" href="#parking-tower">Landfill</a></li>
-            <li className="nav-item"><a className="nav-link" href="#abandoned-station">Collapsed Rail Bridge</a></li>
-            <li className="nav-item"><a className="nav-link" href="#flooded-commercial-sector">Underground Sewer</a></li>
-            <li className="nav-item"><a className="nav-link" href="#memory-tower">Rotten Labyrinth</a></li>
-            <li className="nav-item"><a className="nav-link" href="#construction-zone">Temporary Armoury</a></li>
-            <li className="nav-item"><a className="nav-link" href="#city-underground">Train Graveyard</a></li>
+            <li className="nav-item"><a className="nav-link" href="#closed-off-platform">Closed Off Platform</a></li>
+            <li className="nav-item"><a className="nav-link" href="#landfill">Landfill</a></li>
+            <li className="nav-item"><a className="nav-link" href="#collapsed-rail-bridge">Collapsed Rail Bridge</a></li>
+            <li className="nav-item"><a className="nav-link" href="#underground-sewer">Underground Sewer</a></li>
+            <li className="nav-item"><a className="nav-link" href="#rotten-labyrinth">Rotten Labyrinth</a></li>
+            <li className="nav-item"><a className="nav-link" href="#temporary-armoury">Temporary Armoury</a></li>
+            <li className="nav-item"><a className="nav-link" href="#train-graveyard">Train Graveyard</a></li>
           </ul>
         </li>
         <li className="nav-item"><Link to="/collectibles/great-desert">Great Desert</Link></li>
@@ -67,13 +67,13 @@ const Matrix11Collectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Stellar Blade - Matrix 11 Collectibles</h1>
           {isMobile && TOC}
-          {/* <ClosedOffPlatform />
-          <Landfill />
-          <CollapsedRailBridge />
-          <UndergroundSewer />
-          <RottenLabyrinth />
-          <TemporaryArmoury />
-          <TrainGraveyard /> */}
+          <ClosedOffPlatform />
+          {/* <Landfill /> */}
+          {/* <CollapsedRailBridge /> */}
+          {/* <UndergroundSewer /> */}
+          {/* <RottenLabyrinth /> */}
+          {/* <TemporaryArmoury /> */}
+          {/* <TrainGraveyard /> */}
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
