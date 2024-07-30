@@ -8,7 +8,7 @@ import Landfill from "./Matrix11/Landfill";
 import CollapsedRailBridge from "./Matrix11/CollapsedRailBridge";
 import UndergroundSewer from "./Matrix11/UndergroundSewer";
 import RottenLabyrinth from "./Matrix11/RottenLabyrinth";
-// import TemporaryArmoury from "./Matrix11/TemporaryArmoury";
+import TemporaryArmoury from "./Matrix11/TemporaryArmoury";
 // import TrainGraveyard from "./Matrix11/TrainGraveyard";
 
 import '../../styles/Media.css';
@@ -72,7 +72,7 @@ const Matrix11Collectibles = () => {
           <CollapsedRailBridge />
           <UndergroundSewer />
           <RottenLabyrinth />
-          {/* <TemporaryArmoury /> */}
+          <TemporaryArmoury />
           {/* <TrainGraveyard /> */}
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
