@@ -7,7 +7,7 @@ import ClosedOffPlatform from "./Matrix11/ClosedOffPlatform";
 import Landfill from "./Matrix11/Landfill";
 import CollapsedRailBridge from "./Matrix11/CollapsedRailBridge";
 import UndergroundSewer from "./Matrix11/UndergroundSewer";
-// import RottenLabyrinth from "./Matrix11/RottenLabyrinth";
+import RottenLabyrinth from "./Matrix11/RottenLabyrinth";
 // import TemporaryArmoury from "./Matrix11/TemporaryArmoury";
 // import TrainGraveyard from "./Matrix11/TrainGraveyard";
 
@@ -71,7 +71,7 @@ const Matrix11Collectibles = () => {
           <Landfill />
           <CollapsedRailBridge />
           <UndergroundSewer />
-          {/* <RottenLabyrinth /> */}
+          <RottenLabyrinth />
           {/* <TemporaryArmoury /> */}
           {/* <TrainGraveyard /> */}
           <div className='d-flex justify-content-between pb-5'>
