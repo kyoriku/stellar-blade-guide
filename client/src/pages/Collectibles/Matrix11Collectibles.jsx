@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 
 import ClosedOffPlatform from "./Matrix11/ClosedOffPlatform";
-// import Landfill from "./Matrix11/Landfill";
+import Landfill from "./Matrix11/Landfill";
 // import CollapsedRailBridge from "./Matrix11/CollapsedRailBridge";
 // import UndergroundSewer from "./Matrix11/UndergroundSewer";
 // import RottenLabyrinth from "./Matrix11/RottenLabyrinth";
@@ -68,7 +68,7 @@ const Matrix11Collectibles = () => {
           <h1 className="mt-3 mb-0">Stellar Blade - Matrix 11 Collectibles</h1>
           {isMobile && TOC}
           <ClosedOffPlatform />
-          {/* <Landfill /> */}
+          <Landfill />
           {/* <CollapsedRailBridge /> */}
           {/* <UndergroundSewer /> */}
           {/* <RottenLabyrinth /> */}
