@@ -17,28 +17,6 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
     };
   }, []);
 
-  const renderText = () => {
-    if (Array.isArray(text)) {
-      return (
-        <div>
-          <strong>{title}</strong>
-          <ul>
-            {text.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
-    return (
-      <p>
-        <strong>{title}</strong>
-        <span> &#8211; </span>
-        {text}
-      </p>
-    );
-  };
-
   const renderImages = () => {
     if (images.length >= 4) {
       return (
@@ -122,11 +100,9 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
   };
 
   return (
-    <div>
-      {/* {renderText()} */}
+    <figure>
       {renderImages()}
-      {showHr && <hr />}
-    </div>
+    </figure>
   );
 };
 

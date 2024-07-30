@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
@@ -43,30 +45,32 @@ const AbandonedStation = () => {
       setContent(data);
     } catch (err) {
       console.error(err);
-      setError("Failed to fetch collectibles. Please try again later..");
+      setError("Failed to fetch collectibles. Please try again later.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div>
-      <hr id="abandoned-station"></hr>
-      <h3>▽ Abandoned Station Collectibles</h3>
-      <hr className='w-75'></hr>
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => (
-        <div key={item.id}>
-          <ContentText title={item.title} text={item.text} />
-          {isLoading ? (
-            <SkeletonLoader />
-          ) : (
-            <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
-          )}
-          <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+    <section>
+      <Header id="abandoned-station" title="▽ Abandoned Station Collectibles" />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => (
+            <article key={item.id}>
+              <ContentText title={item.title} text={item.text} />
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
+              )}
+              <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+            </article>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </section>
   );
 };
 

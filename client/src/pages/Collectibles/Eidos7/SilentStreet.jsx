@@ -122,21 +122,25 @@ const SilentStreet = () => {
   };
 
   return (
-    <div>
+    <section>
       <Header id="silent-street" title="▽ Silent Street Collectibles" />
       <ErrorMessage message={error} />
-      {staticContent.map((item, index) => (
-        <div key={item.id}>
-          <ContentText title={item.title} text={item.text} />
-          {isLoading ? (
-            <SkeletonLoader />
-          ) : (
-            <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
-          )}
-          <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => (
+            <article key={item.id}>
+              <ContentText title={item.title} text={item.text} />
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
+              )}
+              <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+            </article>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </section>
   );
 };
 
