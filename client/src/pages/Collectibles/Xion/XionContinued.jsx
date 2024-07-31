@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
+import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
+import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
+import HrComponent from "../../../components/HrComponent";
 import { getXionContinued } from '../../../utils/API/xion';
-import { Skeleton } from "@mui/material";
 
 const XionContinued = () => {
   const [content, setContent] = useState([]);
@@ -121,72 +125,39 @@ const XionContinued = () => {
     }
   };
 
-  const renderText = (text, title) => {
-    if (Array.isArray(text)) {
-      return (
-        <div>
-          <strong>{title}</strong>
-          <ul>
-            {text.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      );
-    } else {
-      return (
-        <p>
-          <strong>{title}</strong>
-          <span> &#8211; </span>
-          {text}
-        </p>
-      );
-    }
-  };
-
   return (
-    <div>
-      <hr id="xion-continued" />
-      <h3>▽ Xion Collectibles (Continued)</h3>
-      <p><i>The next set of collectibles won’t be available on your first time through the area, and require a side quest/progressing the story to access them.</i></p>
-      <hr className="w-75" />
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => {
-        const isLastItem = index === staticContent.length - 1;
-        const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
-        const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
+    <section>
+      <Header
+        id="xion-continued"
+        title="▽ Xion Collectibles (Continued)"
+        subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
+      />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => {
+            const isLastItem = index === staticContent.length - 1;
+            const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
+            const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
 
-        return (
-          <div key={item.id}>
-            {renderText(item.text, item.title)}
-            {isLoading ? (
-              <div className="skeleton-container">
-                <Skeleton
-                  animation="wave"
-                  height={217}
-                  width={388}
-                  variant="rounded"
-                  className="skeleton-item"
-                />
-                <Skeleton
-                  animation="wave"
-                  height={217}
-                  width={388}
-                  variant="rounded"
-                  className="skeleton-item"
-                />
-              </div>
-            ) : (
-              <MediaDisplay
-                images={content.find((data) => data.id === item.id)?.images || []}
-              />
-            )}
-            {showHr && <hr />}
-          </div>
-        );
-      })}
-      {staticContent.length > 0 && <hr />}
-    </div>
+            return (
+              <article key={item.id}>
+                <ContentText title={item.title} text={item.text} />
+                {isLoading ? (
+                  <SkeletonLoader />
+                ) : (
+                  <MediaDisplay
+                    images={content.find((data) => data.id === item.id)?.images || []}
+                  />
+                )}
+                {showHr && <hr />}
+              </article>
+            );
+          })}
+          <hr></hr>
+        </div>
+      )}
+    </section>
   );
 };
 

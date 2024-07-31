@@ -100,7 +100,7 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
   };
 
   return (
-    <figure>
+    <figure className='m-0'>
       {renderImages()}
     </figure>
   );
