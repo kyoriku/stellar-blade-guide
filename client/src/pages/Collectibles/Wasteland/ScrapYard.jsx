@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
+import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
+import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
 import { getScrapYard } from "../../../utils/API/wasteland";
-import { Skeleton } from "@mui/material";
 
 const ScrapYard = () => {
   const [content, setContent] = useState([]);
@@ -86,70 +89,37 @@ const ScrapYard = () => {
     }
   };
 
-  const renderText = (text, title) => {
-    if (Array.isArray(text)) {
-      return (
-        <div>
-          <strong>{title}</strong>
-          <ul>
-            {text.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      );
-    } else {
-      return (
-        <p>
-          <strong>{title}</strong>
-          <span> &#8211; </span>
-          {text}
-        </p>
-      );
-    }
-  };
-
   return (
-    <div>
-      <hr id="scrap-yard"></hr>
-      <h3>▽  Scrap Yard Collectibles</h3>
-      <hr className="w-75" />
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => {
-        const isLastItem = index === staticContent.length - 1;
-        const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
-        const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
+    <section>
+      <Header
+        id="scrap-yard"
+        title="▽ Scrap Yard Collectibles"
+      />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => {
+            const isLastItem = index === staticContent.length - 1;
+            const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
+            const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
 
-        return (
-          <div key={item.id}>
-            {renderText(item.text, item.title)}
-            {isLoading ? (
-              <div className="skeleton-container">
-                <Skeleton
-                  animation="wave"
-                  height={217}
-                  width={388}
-                  variant="rounded"
-                  className="skeleton-item"
-                />
-                <Skeleton
-                  animation="wave"
-                  height={217}
-                  width={388}
-                  variant="rounded"
-                  className="skeleton-item"
-                />
-              </div>
-            ) : (
-              <MediaDisplay
-                images={content.find((data) => data.id === item.id)?.images || []}
-              />
-            )}
-            {showHr && <hr />}
-          </div>
-        );
-      })}
-    </div>
+            return (
+              <article key={item.id}>
+                <ContentText title={item.title} text={item.text} />
+                {isLoading ? (
+                  <SkeletonLoader />
+                ) : (
+                  <MediaDisplay
+                    images={content.find((data) => data.id === item.id)?.images || []}
+                  />
+                )}
+                {showHr && <hr />}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 };
 

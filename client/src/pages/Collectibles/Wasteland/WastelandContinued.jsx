@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
+import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
+import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
+import HrComponent from "../../../components/HrComponent";
 import { getWastelandContinued } from "../../../utils/API/wasteland";
-import { Skeleton } from "@mui/material";
 
 const WastelandContinued = () => {
   const [content, setContent] = useState([]);
@@ -98,45 +102,29 @@ const WastelandContinued = () => {
   };
 
   return (
-    <div>
-      <hr id="wasteland-continued"></hr>
-      <h3>▽ Wasteland Collectibles (Continued)</h3>
-      <p><i>The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them.</i></p>
-      <hr className="w-75"></hr>
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => (
-        <div key={item.id}>
-          <p>
-            <strong>{item.title}</strong>
-            <span> &#8211; </span>
-            {item.text}
-          </p>
-          {isLoading ? (
-            <div className="skeleton-container">
-              <Skeleton
-                animation="wave"
-                height={217}
-                width={388}
-                variant="rounded"
-                className="skeleton-item"
-              />
-              <Skeleton
-                animation="wave"
-                height={217}
-                width={388}
-                variant="rounded"
-                className="skeleton-item"
-              />
-            </div>
-          ) : (
-            <MediaDisplay
-              images={content.find((data) => data.id === item.id)?.images || []}
-            />
-          )}
-          <hr></hr>
+    <section>
+      <Header
+        id="wasteland-continued"
+        title="▽ Wasteland Collectibles (Continued)"
+        subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
+      />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => (
+            <article key={item.id}>
+              <ContentText title={item.title} text={item.text} />
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
+              )}
+              <hr></hr>
+            </article>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </section>
   );
 };
 
