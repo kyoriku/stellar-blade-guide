@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import MediaDisplay from "../../../components/MediaDisplay";
-import { getAirVent } from '../../../utils/API/altessLevoire';
-import { Skeleton } from "@mui/material";
+import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
+import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
+import MediaDisplay from "../../../components/MediaDisplay"; import { getAirVent } from '../../../utils/API/altessLevoire';
 
 const AirVent = () => {
   const [content, setContent] = useState([]);
@@ -48,37 +50,25 @@ const AirVent = () => {
   };
 
   return (
-    <div>
-      <hr id="air-vent"></hr>
-      <h3>▽ Air Vent Collectibles</h3>
-      <hr className='w-75'></hr>
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => (
-        <div key={item.id}>
-          <p>
-            <strong>{item.title}</strong>
-            <span> &#8211; </span>
-            {item.text}
-          </p>
-          {isLoading ? (
-            <div className="skeleton-container">
-              <Skeleton
-                animation="wave"
-                height={443}
-                width={796}
-                variant="rounded"
-                className="skeleton-item"
-              />
-            </div>
-          ) : (
-            <MediaDisplay
-              images={content.find((data) => data.id === item.id)?.images || []}
-            />
-          )}
-          <hr></hr>
-          </div>
-      ))}
-    </div>
+    <section>
+      <Header id="air-vent" title="▽ Air Vent Collectibles" />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => (
+            <article key={item.id}>
+              <ContentText title={item.title} text={item.text} />
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
+              )}
+              <hr></hr>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
   );
 };
 

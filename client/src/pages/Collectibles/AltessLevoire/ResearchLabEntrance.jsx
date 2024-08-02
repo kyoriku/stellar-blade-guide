@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
+import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
+import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
+import HrComponent from "../../../components/HrComponent";
 import { getResearchLabEntrance } from '../../../utils/API/altessLevoire';
-import { Skeleton } from "@mui/material";
 
 const ResearchLabEntrance = () => {
   const [content, setContent] = useState([]);
@@ -32,43 +36,26 @@ const ResearchLabEntrance = () => {
     }
   };
 
-  const shouldRenderHr = (index) => {
-    if (isLoading) return index < staticContent.length - 1;
-    return index < staticContent.length - 1;
-  };
-
   return (
-    <div>
-      <hr id="research-lab-entrance"></hr>
-      <h3>▽ Research Lab Entrance Collectibles</h3>
-      <hr className='w-75'></hr>
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => (
-        <div key={item.id}>
-          <p>
-            <strong>{item.title}</strong>
-            <span> &#8211; </span>
-            {item.text}
-          </p>
-          {isLoading ? (
-            <div className="skeleton-container">
-              <Skeleton
-                animation="wave"
-                height={443}
-                width={796}
-                variant="rounded"
-                className="skeleton-item"
-              />
-            </div>
-          ) : (
-            <MediaDisplay
-              images={content.find((data) => data.id === item.id)?.images || []}
-            />
-          )}
-          {shouldRenderHr(index) && <hr />}
-          </div>
-      ))}
-    </div>
+    <section>
+      <Header id="research-lab-entrance" title="▽ Research Lab Entrance Collectibles" />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => (
+            <article key={item.id}>
+              <ContentText title={item.title} text={item.text} />
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
+              )}
+              <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
   );
 };
 
