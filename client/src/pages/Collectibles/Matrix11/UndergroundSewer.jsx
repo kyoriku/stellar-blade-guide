@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
@@ -91,21 +92,25 @@ const UndergroundSewer = () => {
   };
 
   return (
-    <div>
+    <section>
       <Header id="underground-sewer" title="▽ Underground Sewer Collectibles" />
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => (
-        <div key={item.id}>
-          <ContentText title={item.title} text={item.text} />
-          {isLoading ? (
-            <SkeletonLoader />
-          ) : (
-            <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
-          )}
-          <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => (
+            <article key={item.id}>
+              <ContentText title={item.title} text={item.text} />
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
+              )}
+              <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+            </article>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </section>
   );
 };
 

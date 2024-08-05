@@ -71,13 +71,13 @@ const Eidos7Collectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Stellar Blade - Eidos 7 Collectibles</h1>
           {isMobile && TOC}
-          <SilentStreet />
+          {/* <SilentStreet />
           <ParkingTower />
           <AbandonedStation />
           <FloodedCommercialSector />
           <MemoryTower />
           <ConstructionZone />
-          <CityUnderground />
+          <CityUnderground /> */}
           <Crater />
           <Eidos7Continued />
           <div className='text-end pb-5 pe-2'>

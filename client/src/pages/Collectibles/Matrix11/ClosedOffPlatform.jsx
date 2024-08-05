@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
@@ -43,7 +44,7 @@ const closedOffPlatform = () => {
       text: "Crash through the wooden struts down the stairs and the robot is right ahead.",
     },
     {
-      id: 7, 
+      id: 7,
       title: "Locked Supply Chest",
       text: "West of the next carriage, outside, is another chest.",
     },
@@ -121,21 +122,25 @@ const closedOffPlatform = () => {
   };
 
   return (
-    <div>
+    <section>
       <Header id="closed-off-platform" title="▽ Closed Off Platform Collectibles" />
-      {error && <p className="error-message">{error}</p>}
-      {staticContent.map((item, index) => (
-        <div key={item.id}>
-          <ContentText title={item.title} text={item.text} />
-          {isLoading ? (
-            <SkeletonLoader />
-          ) : (
-            <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
-          )}
-          <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+      <ErrorMessage message={error} />
+      {!error && (
+        <div>
+          {staticContent.map((item, index) => (
+            <article key={item.id}>
+              <ContentText title={item.title} text={item.text} />
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
+              )}
+              <HrComponent index={index} isLoading={isLoading} length={staticContent.length} />
+            </article>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </section>
   );
 };
 
