@@ -41,11 +41,6 @@ const SectorA07 = () => {
     }
   };
 
-  const shouldRenderHr = (index) => {
-    if (isLoading) return index < staticContent.length - 1;
-    return index < staticContent.length - 1;
-  };
-
   return (
     <section>
       <Header id="sector-a07" title="▽ Sector A07 Collectibles" />

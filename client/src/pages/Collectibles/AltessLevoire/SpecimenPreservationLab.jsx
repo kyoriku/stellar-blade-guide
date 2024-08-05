@@ -51,11 +51,6 @@ const SpecimenPreservationLab = () => {
     }
   };
 
-  const shouldRenderHr = (index) => {
-    if (isLoading) return index < staticContent.length - 1;
-    return index < staticContent.length - 1;
-  };
-
   return (
     <section>
       <Header id="specimen-preservation-lab" title="▽ Specimen Preservation LAb Collectibles" />

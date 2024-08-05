@@ -50,11 +50,6 @@ const DeterioratedLobby = () => {
     }
   };
 
-  const shouldRenderHr = (index) => {
-    if (isLoading) return index < staticContent.length - 1;
-    return index < staticContent.length - 1;
-  };
-
   return (
     <section>
       <Header id="deteriorated-lobby" title="▽ Deteriorated Lobby Collectibles" />

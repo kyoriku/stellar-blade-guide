@@ -41,11 +41,6 @@ const PurificationScanner = () => {
     }
   };
 
-  const shouldRenderHr = (index) => {
-    if (isLoading) return index < staticContent.length - 1;
-    return index < staticContent.length - 1;
-  };
-
   return (
     <section>
       <Header id="purification-scanner" title="▽ Purification Scanner Collectibles" />
