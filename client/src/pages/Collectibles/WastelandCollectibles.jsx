@@ -38,8 +38,7 @@ const WastelandCollectibles = () => {
       <ul className="nav flex-column sidebar">
         <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
         <li className="nav-item"><Link to="/collectibles/xion">Xion</Link></li>
-        <li className="nav-item">
-          <Link to="/collectibles/wasteland" onClick={scrollToTop}>Wasteland</Link>
+        <li className="nav-item"><Link to="/collectibles/wasteland" onClick={scrollToTop}>Wasteland</Link>
           <ul>
             <li className="nav-item"><a className="nav-link" href="#barren-lands">Barren Lands</a></li>
             <li className="nav-item"><a className="nav-link" href="#great-canyon">Great Canyon</a></li>

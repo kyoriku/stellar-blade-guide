@@ -32,8 +32,7 @@ const GreatDesertCollectibles = () => {
         <li className="nav-item"><Link to="/collectibles/wasteland">Wasteland</Link></li>
         <li className="nav-item"><Link to="/collectibles/altess-levoire">Altess Levoire</Link></li>
         <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link></li>
-        <li className="nav-item">
-          <Link to="/collectibles/great-desert" onClick={scrollToTop}>Great Desert</Link>
+        <li className="nav-item"><Link to="/collectibles/great-desert" onClick={scrollToTop}>Great Desert</Link>
           <ul>
             <li className="nav-item"><a className="nav-link" href="#solar-tower">Solar Tower</a></li>
             <li className="nav-item"><a className="nav-link" href="#collapsed-overpass">Collapsed Overpass</a></li>
