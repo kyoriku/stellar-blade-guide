@@ -53,7 +53,7 @@ const SpecimenPreservationLab = () => {
 
   return (
     <section>
-      <Header id="specimen-preservation-lab" title="▽ Specimen Preservation LAb Collectibles" />
+      <Header id="specimen-preservation-lab" title="▽ Specimen Preservation Lab Collectibles" />
       <ErrorMessage message={error} />
       {!error && (
         <div>
