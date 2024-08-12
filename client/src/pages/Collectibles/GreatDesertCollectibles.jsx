@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import useWindowSize from "../../hooks/WindowSize";
 
-// imports here
+import SolarTower from "./GreatDesert/SolarTower";
 
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -60,7 +60,7 @@ const GreatDesertCollectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Stellar Blade - Great Desert Collectibles</h1>
           {isMobile && TOC}
-          {/* pages here */}
+          <SolarTower />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
