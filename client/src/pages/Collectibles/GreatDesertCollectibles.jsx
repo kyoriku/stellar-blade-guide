@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 
 import SolarTower from "./GreatDesert/SolarTower";
+import CollapsedOverpass from "./GreatDesert/CollapsedOverpass";
 
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -61,6 +62,7 @@ const GreatDesertCollectibles = () => {
           <h1 className="mt-3 mb-0">Stellar Blade - Great Desert Collectibles</h1>
           {isMobile && TOC}
           <SolarTower />
+          <CollapsedOverpass />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
