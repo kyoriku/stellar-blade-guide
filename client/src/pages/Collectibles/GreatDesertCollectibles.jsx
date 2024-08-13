@@ -5,6 +5,7 @@ import useWindowSize from "../../hooks/WindowSize";
 
 import SolarTower from "./GreatDesert/SolarTower";
 import CollapsedOverpass from "./GreatDesert/CollapsedOverpass";
+import BuriedRuins from "./GreatDesert/BuriedRuins";
 
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -63,6 +64,7 @@ const GreatDesertCollectibles = () => {
           {isMobile && TOC}
           <SolarTower />
           <CollapsedOverpass />
+          <BuriedRuins />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
