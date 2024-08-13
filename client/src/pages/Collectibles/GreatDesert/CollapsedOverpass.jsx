@@ -135,7 +135,7 @@ const CollapsedOverpass = () => {
     <section>
       <Header id="collapsed-overpass" title="▽ Collapsed Overpass Collectibles" />
       <ErrorMessage message={error} />
-      
+      {!error && (
         <div>
           {staticContent.map((item, index) => (
             <article key={item.id}>
@@ -149,7 +149,7 @@ const CollapsedOverpass = () => {
             </article>
           ))}
         </div>
-      
+      )}
     </section>
   );
 };

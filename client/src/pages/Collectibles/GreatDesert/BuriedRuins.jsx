@@ -245,7 +245,7 @@ const BuriedRuins = () => {
     <section>
       <Header id="buried-ruins" title="▽ Buried Ruins Collectibles" />
       <ErrorMessage message={error} />
-      
+      {!error && (
         <div>
           {staticContent.map((item, index) => (
             <article key={item.id}>
@@ -259,7 +259,7 @@ const BuriedRuins = () => {
             </article>
           ))}
         </div>
-      
+      )}
     </section>
   );
 };

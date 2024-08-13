@@ -215,7 +215,7 @@ const NorthernGreatDesert = () => {
     <section>
       <Header id="northern-great-desert" title="▽ Northern Great Desert Collectibles" />
       <ErrorMessage message={error} />
-      
+      {!error && (
         <div>
           {staticContent.map((item, index) => (
             <article key={item.id}>
@@ -229,7 +229,7 @@ const NorthernGreatDesert = () => {
             </article>
           ))}
         </div>
-      
+      )}
     </section>
   );
 };

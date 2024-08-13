@@ -180,7 +180,7 @@ const SolarTower = () => {
     <section>
       <Header id="solar-tower" title="▽ Solar Tower Collectibles" />
       <ErrorMessage message={error} />
-      
+      {!error && (
         <div>
           {staticContent.map((item, index) => (
             <article key={item.id}>
@@ -194,7 +194,7 @@ const SolarTower = () => {
             </article>
           ))}
         </div>
-      
+      )}
     </section>
   );
 };

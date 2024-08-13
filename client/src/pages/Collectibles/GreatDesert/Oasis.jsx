@@ -100,7 +100,7 @@ const Oasis = () => {
     <section>
       <Header id="oasis" title="▽ Oasis Collectibles" />
       <ErrorMessage message={error} />
-      
+      {!error && (
         <div>
           {staticContent.map((item, index) => (
             <article key={item.id}>
@@ -114,7 +114,7 @@ const Oasis = () => {
             </article>
           ))}
         </div>
-      
+      )}
     </section>
   );
 };
