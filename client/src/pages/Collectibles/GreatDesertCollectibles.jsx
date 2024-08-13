@@ -6,7 +6,7 @@ import CollapsedOverpass from "./GreatDesert/CollapsedOverpass";
 import BuriedRuins from "./GreatDesert/BuriedRuins";
 import CentralGreatDesert from "./GreatDesert/CentralGreatDesert";
 import NorthernGreatDesert from "./GreatDesert/NorthernGreatDesert";
-// import Oasis from "./GreatDesert/Oasis";
+import Oasis from "./GreatDesert/Oasis";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
 import '../../styles/Collectibles.css';
@@ -67,7 +67,7 @@ const GreatDesertCollectibles = () => {
           <BuriedRuins />
           <CentralGreatDesert />
           <NorthernGreatDesert />
-          {/* <Oasis /> */}
+          <Oasis />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
