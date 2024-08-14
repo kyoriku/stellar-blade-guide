@@ -9,6 +9,7 @@ import WastelandCollectibles from './pages/Collectibles/WastelandCollectibles.js
 import AltessLevoireCollectibles from './pages/Collectibles/AltessLevoireCollectibles.jsx';
 import Matrix11Collectibles from './pages/Collectibles/Matrix11Collectibles.jsx';
 import GreatDesertCollectibles from './pages/Collectibles/GreatDesertCollectibles.jsx';
+import AbyssLevoireCollectibles from './pages/Collectibles/AbyssLevoireCollectibles.jsx';
 import Error from './components/Error';
 
 const router = createBrowserRouter([
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
       {
         path: 'collectibles/great-desert',
         element: <GreatDesertCollectibles />,
+      },
+      {
+        path: 'collectibles/abyss-levoire',
+        element: <AbyssLevoireCollectibles />,
       },
     ],
   },
