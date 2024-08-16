@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 import EmergencyExit from "./AbyssLevoire/EmergencyExit";
-// import ClosedLobby from "./AbyssLevoire/ClosedLobby";
+import ClosedLobby from "./AbyssLevoire/ClosedLobby";
 // import CapsuleClusterRoom from "./AbyssLevoire/CapsuleClusterRoom";
 // import UndergroundPassage from "./AbyssLevoire/UndergroundPassage";
 // import LaboratoryRuins from "./AbyssLevoire/LaboratoryRuins";
@@ -61,7 +61,7 @@ const AbyssLevoireCollectibles = () => {
           <h1 className="mt-3 mb-0">Abyss Levoire Collectibles</h1>
           {isMobile && TOC}
           <EmergencyExit />
-          {/* <ClosedLobby /> */}
+          <ClosedLobby />
           {/* <CapsuleClusterRoom /> */}
           {/* <UndergroundPassage /> */}
           {/* <LaboratoryRuins /> */}
