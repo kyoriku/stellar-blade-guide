@@ -1,4 +1,4 @@
-const { Collectible } = require('../../models/collectible');
+const { Collectible } = require('../../models');
 
 const eidos9Controller = {
   async getAllEidos9Collectibles(req, res) {
