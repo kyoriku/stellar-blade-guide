@@ -4,7 +4,7 @@ import useWindowSize from "../../hooks/WindowSize";
 import EmergencyExit from "./AbyssLevoire/EmergencyExit";
 import ClosedLobby from "./AbyssLevoire/ClosedLobby";
 import CapsuleClusterRoom from "./AbyssLevoire/CapsuleClusterRoom";
-// import UndergroundPassage from "./AbyssLevoire/UndergroundPassage";
+import UndergroundPassage from "./AbyssLevoire/UndergroundPassage";
 // import LaboratoryRuins from "./AbyssLevoire/LaboratoryRuins";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -63,7 +63,7 @@ const AbyssLevoireCollectibles = () => {
           <EmergencyExit />
           <ClosedLobby />
           <CapsuleClusterRoom />
-          {/* <UndergroundPassage /> */}
+          <UndergroundPassage />
           {/* <LaboratoryRuins /> */}
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
