@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 import EmergencyExit from "./AbyssLevoire/EmergencyExit";
 import ClosedLobby from "./AbyssLevoire/ClosedLobby";
-// import CapsuleClusterRoom from "./AbyssLevoire/CapsuleClusterRoom";
+import CapsuleClusterRoom from "./AbyssLevoire/CapsuleClusterRoom";
 // import UndergroundPassage from "./AbyssLevoire/UndergroundPassage";
 // import LaboratoryRuins from "./AbyssLevoire/LaboratoryRuins";
 import '../../styles/Media.css';
@@ -62,7 +62,7 @@ const AbyssLevoireCollectibles = () => {
           {isMobile && TOC}
           <EmergencyExit />
           <ClosedLobby />
-          {/* <CapsuleClusterRoom /> */}
+          <CapsuleClusterRoom />
           {/* <UndergroundPassage /> */}
           {/* <LaboratoryRuins /> */}
           <div className='d-flex justify-content-between pb-5'>
