@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 import FallenOverpass from './Eidos9/FallenOverpass';
-// import SubmergedCity from './Eidos9/SubmergedCity';
+import SubmergedCity from './Eidos9/SubmergedCity';
 // import Atelier from './Eidos9/Atelier';
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -57,7 +57,7 @@ const Eidos9Collectibles = () => {
           <h1 className="mt-3 mb-0">Eidos 9 Collectibles</h1>
           {isMobile && TOC}
           <FallenOverpass />
-          {/* <SubmergedCity /> */}
+          <SubmergedCity />
           {/* <Atelier /> */}
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
