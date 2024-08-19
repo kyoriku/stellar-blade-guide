@@ -5,7 +5,7 @@ import EmergencyExit from "./AbyssLevoire/EmergencyExit";
 import ClosedLobby from "./AbyssLevoire/ClosedLobby";
 import CapsuleClusterRoom from "./AbyssLevoire/CapsuleClusterRoom";
 import UndergroundPassage from "./AbyssLevoire/UndergroundPassage";
-// import LaboratoryRuins from "./AbyssLevoire/LaboratoryRuins";
+import LaboratoryRuins from "./AbyssLevoire/LaboratoryRuins";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
 import '../../styles/Collectibles.css';
@@ -64,7 +64,7 @@ const AbyssLevoireCollectibles = () => {
           <ClosedLobby />
           <CapsuleClusterRoom />
           <UndergroundPassage />
-          {/* <LaboratoryRuins /> */}
+          <LaboratoryRuins />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
