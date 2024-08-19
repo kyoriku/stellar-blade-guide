@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 import FallenOverpass from './Eidos9/FallenOverpass';
 import SubmergedCity from './Eidos9/SubmergedCity';
-// import Atelier from './Eidos9/Atelier';
+import Atelier from './Eidos9/Atelier';
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
 import '../../styles/Collectibles.css';
@@ -58,7 +58,7 @@ const Eidos9Collectibles = () => {
           {isMobile && TOC}
           <FallenOverpass />
           <SubmergedCity />
-          {/* <Atelier /> */}
+          <Atelier />
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>
