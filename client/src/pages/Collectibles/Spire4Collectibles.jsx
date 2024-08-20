@@ -45,6 +45,7 @@ const Spire4Collectibles = () => {
             <li className="nav-item"><a className="nav-link" href="#prestige-lounge">Prestige Lounge</a></li>
             <li className="nav-item"><a className="nav-link" href="#vermillion-garden">Vermillion Garden</a></li>
             <li className="nav-item"><a className="nav-link" href="#high-orbit-station">High Orbit Station</a></li>
+            <li className="nav-item"><a className="nav-link" href="#nest">Nest</a></li>
           </ul>
         </li>
       </ul>
