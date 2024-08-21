@@ -1,7 +1,18 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
-
+import OrcaSpaceComplex from "./Spire4/OrcaSpaceComplex";
+// import Hypertube from "./Spire4/Hypertube";
+// import SpaceLogisticsComplex from "./Spire4/SpaceLogisticsComplex";
+// import RaphaelSpaceCentre from "./Spire4/RaphaelSpaceCentre";
+// import CargoLift121 from "./Spire4/CargoLift121";
+// import MaintenanceSector from "./Spire4/MaintenanceSector";
+// import TowerOuterWall from "./Spire4/TowerOuterWall";
+// import PassengerLift161 from "./Spire4/PassengerLift161";
+// import PrestigeLounge from "./Spire4/PrestigeLounge";
+// import VermillionGarden from "./Spire4/VermillionGarden";
+// import HighOrbitStation from "./Spire4/HighOrbitStation";
+// import Nest from "./Spire4/Nest";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
 import '../../styles/Collectibles.css';
@@ -63,7 +74,18 @@ const Spire4Collectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Spire 4 Collectibles</h1>
           {isMobile && TOC}
-
+          <OrcaSpaceComplex />
+          {/* <Hypertube /> */}
+          {/* <SpaceLogisticsComplex /> */}
+          {/* <RaphaelSpaceCentre /> */}
+          {/* <CargoLift121 /> */}
+          {/* <MaintenanceSector /> */}
+          {/* <TowerOuterWall /> */}
+          {/* <PassengerLift161 /> */}
+          {/* <PrestigeLounge /> */}
+          {/* <VermillionGarden /> */}
+          {/* <HighOrbitStation /> */}
+          {/* <Nest /> */}
           <div className='text-start ps-2'>
             <p className='m-0 fw-bold'>« Previous guide</p>
             <h5><Link to="/collectibles/eidos-9" className='text-decoration-none'>Eidos 9 Collectibles</Link></h5>
