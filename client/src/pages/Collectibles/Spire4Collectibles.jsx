@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 import OrcaSpaceComplex from "./Spire4/OrcaSpaceComplex";
-// import Hypertube from "./Spire4/Hypertube";
+import Hypertube from "./Spire4/Hypertube";
 // import SpaceLogisticsComplex from "./Spire4/SpaceLogisticsComplex";
 // import RaphaelSpaceCentre from "./Spire4/RaphaelSpaceCentre";
 // import CargoLift121 from "./Spire4/CargoLift121";
@@ -75,7 +75,7 @@ const Spire4Collectibles = () => {
           <h1 className="mt-3 mb-0">Spire 4 Collectibles</h1>
           {isMobile && TOC}
           <OrcaSpaceComplex />
-          {/* <Hypertube /> */}
+          <Hypertube />
           {/* <SpaceLogisticsComplex /> */}
           {/* <RaphaelSpaceCentre /> */}
           {/* <CargoLift121 /> */}
