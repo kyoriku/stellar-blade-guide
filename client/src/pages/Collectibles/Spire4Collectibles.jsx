@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import useWindowSize from "../../hooks/WindowSize";
 import OrcaSpaceComplex from "./Spire4/OrcaSpaceComplex";
 import Hypertube from "./Spire4/Hypertube";
-// import SpaceLogisticsComplex from "./Spire4/SpaceLogisticsComplex";
+import SpaceLogisticsComplex from "./Spire4/SpaceLogisticsComplex";
 // import RaphaelSpaceCentre from "./Spire4/RaphaelSpaceCentre";
 // import CargoLift121 from "./Spire4/CargoLift121";
 // import MaintenanceSector from "./Spire4/MaintenanceSector";
@@ -76,7 +76,7 @@ const Spire4Collectibles = () => {
           {isMobile && TOC}
           <OrcaSpaceComplex />
           <Hypertube />
-          {/* <SpaceLogisticsComplex /> */}
+          <SpaceLogisticsComplex />
           {/* <RaphaelSpaceCentre /> */}
           {/* <CargoLift121 /> */}
           {/* <MaintenanceSector /> */}
