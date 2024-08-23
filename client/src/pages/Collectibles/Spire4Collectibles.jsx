@@ -4,7 +4,7 @@ import useWindowSize from "../../hooks/WindowSize";
 import OrcaSpaceComplex from "./Spire4/OrcaSpaceComplex";
 import Hypertube from "./Spire4/Hypertube";
 import SpaceLogisticsComplex from "./Spire4/SpaceLogisticsComplex";
-// import RaphaelSpaceCentre from "./Spire4/RaphaelSpaceCentre";
+import RaphaelSpaceCentre from "./Spire4/RaphaelSpaceCentre";
 // import CargoLift121 from "./Spire4/CargoLift121";
 // import MaintenanceSector from "./Spire4/MaintenanceSector";
 // import TowerOuterWall from "./Spire4/TowerOuterWall";
@@ -77,7 +77,7 @@ const Spire4Collectibles = () => {
           <OrcaSpaceComplex />
           <Hypertube />
           <SpaceLogisticsComplex />
-          {/* <RaphaelSpaceCentre /> */}
+          <RaphaelSpaceCentre />
           {/* <CargoLift121 /> */}
           {/* <MaintenanceSector /> */}
           {/* <TowerOuterWall /> */}
