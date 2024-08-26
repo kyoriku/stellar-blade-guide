@@ -9,7 +9,7 @@ import CargoLift121 from "./Spire4/CargoLift121";
 import MaintenanceSector from "./Spire4/MaintenanceSector";
 import TowerOuterWall from "./Spire4/TowerOuterWall";
 import PassengerLift161 from "./Spire4/PassengerLift161";
-// import PrestigeLounge from "./Spire4/PrestigeLounge";
+import PrestigeLounge from "./Spire4/PrestigeLounge";
 // import VermillionGarden from "./Spire4/VermillionGarden";
 // import HighOrbitStation from "./Spire4/HighOrbitStation";
 // import Nest from "./Spire4/Nest";
@@ -82,7 +82,7 @@ const Spire4Collectibles = () => {
           <MaintenanceSector />
           <TowerOuterWall />
           <PassengerLift161 />
-          {/* <PrestigeLounge /> */}
+          <PrestigeLounge />
           {/* <VermillionGarden /> */}
           {/* <HighOrbitStation /> */}
           {/* <Nest /> */}
