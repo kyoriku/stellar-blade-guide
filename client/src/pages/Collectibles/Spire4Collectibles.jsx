@@ -6,7 +6,7 @@ import Hypertube from "./Spire4/Hypertube";
 import SpaceLogisticsComplex from "./Spire4/SpaceLogisticsComplex";
 import RaphaelSpaceCentre from "./Spire4/RaphaelSpaceCentre";
 import CargoLift121 from "./Spire4/CargoLift121";
-// import MaintenanceSector from "./Spire4/MaintenanceSector";
+import MaintenanceSector from "./Spire4/MaintenanceSector";
 // import TowerOuterWall from "./Spire4/TowerOuterWall";
 // import PassengerLift161 from "./Spire4/PassengerLift161";
 // import PrestigeLounge from "./Spire4/PrestigeLounge";
@@ -79,7 +79,7 @@ const Spire4Collectibles = () => {
           <SpaceLogisticsComplex />
           <RaphaelSpaceCentre />
           <CargoLift121 />
-          {/* <MaintenanceSector /> */}
+          <MaintenanceSector />
           {/* <TowerOuterWall /> */}
           {/* <PassengerLift161 /> */}
           {/* <PrestigeLounge /> */}
