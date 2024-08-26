@@ -11,7 +11,7 @@ import TowerOuterWall from "./Spire4/TowerOuterWall";
 import PassengerLift161 from "./Spire4/PassengerLift161";
 import PrestigeLounge from "./Spire4/PrestigeLounge";
 import VermillionGarden from "./Spire4/VermillionGarden";
-// import HighOrbitStation from "./Spire4/HighOrbitStation";
+import HighOrbitStation from "./Spire4/HighOrbitStation";
 // import Nest from "./Spire4/Nest";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
@@ -84,7 +84,7 @@ const Spire4Collectibles = () => {
           <PassengerLift161 />
           <PrestigeLounge />
           <VermillionGarden />
-          {/* <HighOrbitStation /> */}
+          <HighOrbitStation />
           {/* <Nest /> */}
           <div className='text-start ps-2'>
             <p className='m-0 fw-bold'>« Previous guide</p>
