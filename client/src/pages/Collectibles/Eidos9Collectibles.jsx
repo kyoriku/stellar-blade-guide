@@ -1,12 +1,10 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
+import TableOfContents from '../../components/TableOfContents'
 import useWindowSize from "../../hooks/WindowSize";
 import FallenOverpass from './Eidos9/FallenOverpass';
 import SubmergedCity from './Eidos9/SubmergedCity';
 import Atelier from './Eidos9/Atelier';
-import '../../styles/Media.css';
-import '../../styles/Sidebar.css';
-import '../../styles/Collectibles.css';
 
 const Eidos9Collectibles = () => {
   const size = useWindowSize();
@@ -16,46 +14,37 @@ const Eidos9Collectibles = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-    });
-  };
-
-  const TOC = (
-    <nav id="toc" className={`sticky-top ${!isMobile ? '' : ''}`}>
-      <h4>Contents</h4>
-      <ul className="nav flex-column sidebar">
-        <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
-        <li className="nav-item"><Link to="/collectibles/xion">Xion</Link></li>
-        <li className="nav-item"><Link to="/collectibles/wasteland">Wasteland</Link></li>
-        <li className="nav-item"><Link to="/collectibles/altess-levoire">Altess Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link></li>
-        <li className="nav-item"><Link to="/collectibles/great-desert">Great Desert</Link></li>
-        <li className="nav-item"><Link to="/collectibles/abyss-levoire">Abyss Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/eidos-9" onClick={scrollToTop}>Eidos 9</Link>
-          <ul>
-            <li className="nav-item"><a className="nav-link" href="#fallen-overpass">Fallen Overpass</a></li>
-            <li className="nav-item"><a className="nav-link" href="#submerged-city">Submerged City</a></li>
-            <li className="nav-item"><a className="nav-link" href="#atelier">Atelier</a></li>
-          </ul>
-        </li>
-        <li className="nav-item"><Link to="/collectibles/spire-4">Spire 4</Link></li>
-      </ul>
-    </nav>
-  );
+  const tocLinks = [
+    { mainLink: "/collectibles/eidos-7", title: "Eidos 7" },
+    { mainLink: "/collectibles/xion", title: "Xion" },
+    { mainLink: "/collectibles/wasteland", title: "Wasteland" },
+    { mainLink: "/collectibles/altess-levoire", title: "Altess Levoire" },
+    { mainLink: "/collectibles/matrix-11", title: "Matrix 11" },
+    { mainLink: "/collectibles/great-desert", title: "Great Desert" },
+    { mainLink: "/collectibles/abyss-levoire", title: "Abyss Levoire" },
+    {
+      mainLink: "/collectibles/eidos-9",
+      title: "Eidos 9",
+      subLinks: [
+        { href: "#fallen-overpass", title: "Fallen Overpass" },
+        { href: "#submerged-city", title: "Submerged City" },
+        { href: "#atelier", title: "Atelier" },
+      ]
+    },
+    { mainLink: "/collectibles/spire-4", title: "Spire 4" },
+  ];
 
   return (
     <div className="container bg-white">
       <div className="row">
         {!isMobile && (
           <div className="col-lg-3 border-start bg-white">
-            {TOC}
+            <TableOfContents links={tocLinks} isMobile={isMobile} />
           </div>
         )}
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Eidos 9 Collectibles</h1>
-          {isMobile && TOC}
+          {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <FallenOverpass />
           <SubmergedCity />
           <Atelier />

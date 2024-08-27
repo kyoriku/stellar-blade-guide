@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
-
+import TableOfContents from '../../components/TableOfContents'
 import useWindowSize from "../../hooks/WindowSize";
-
 import ResearchLabEntrance from "./AltessLevoire/ResearchLabEntrance";
 import PurificationScanner from "./AltessLevoire/PurificationScanner";
 import SecurityCenter from "./AltessLevoire/SecurityCenter";
@@ -12,9 +11,6 @@ import TopSecretResearchComplex from "./AltessLevoire/TopSecretResearchComplex";
 import DetoriatedLobby from "./AltessLevoire/DeterioratedLobby";
 import AirVent from "./AltessLevoire/AirVent";
 
-import '../../styles/Media.css';
-import '../../styles/Sidebar.css';
-
 const AltessLevoireCollectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
@@ -23,51 +19,42 @@ const AltessLevoireCollectibles = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-    });
-  };
-
-  const TOC = (
-    <nav id="toc" className={`sticky-top ${!isMobile ? '' : ''}`}>
-      <h4>Contents</h4>
-      <ul className="nav flex-column sidebar">
-        <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
-        <li className="nav-item"><Link to="/collectibles/xion">Xion</Link></li>
-        <li className="nav-item"><Link to="/collectibles/wasteland">Wasteland</Link></li>
-        <li className="nav-item"><Link to="/collectibles/altess-levoire" onClick={scrollToTop}>Altess Levoire</Link>
-          <ul>
-            <li className="nav-item"><a className="nav-link" href="#research-lab-entrance">Research Lab Entrance</a></li>
-            <li className="nav-item"><a className="nav-link" href="#purification-scanner">Purification Scanner</a></li>
-            <li className="nav-item"><a className="nav-link" href="#security-center">Security Center</a></li>
-            <li className="nav-item"><a className="nav-link" href="#sector-a07">Sector A07</a></li>
-            <li className="nav-item"><a className="nav-link" href="#specimen-preservation-lab">Specimen Preservation Lab</a></li>
-            <li className="nav-item"><a className="nav-link" href="#top-secret-research-complex">Top Secret Research Complex</a></li>
-            <li className="nav-item"><a className="nav-link" href="#deteriorated-lobby">Deteriorated Lobby</a></li>
-            <li className="nav-item"><a className="nav-link" href="#air-vent">Air Vent</a></li>
-          </ul>
-        </li>
-        <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link></li>
-        <li className="nav-item"><Link to="/collectibles/great-desert">Great Desert</Link></li>
-        <li className="nav-item"><Link to="/collectibles/abyss-levoire">Abyss Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/eidos-9">Eidos 9</Link></li>
-        <li className="nav-item"><Link to="/collectibles/spire-4">Spire 4</Link></li>
-      </ul>
-    </nav>
-  );
+  const tocLinks = [
+    { mainLink: "/collectibles/eidos-7", title: "Eidos 7" },
+    { mainLink: "/collectibles/xion", title: "Xion" },
+    { mainLink: "/collectibles/wasteland", title: "Wasteland" },
+    {
+      mainLink: "/collectibles/altess-levoire",
+      title: "Altess Levoire",
+      subLinks: [
+        { href: "#research-lab-entrance", title: "Research Lab Entrance" },
+        { href: "#purification-scanner", title: "Purification Scanner" },
+        { href: "#security-center", title: "Security Center" },
+        { href: "#sector-a07", title: "Sector A07" },
+        { href: "#specimen-preservation-lab", title: "Specimen Preservation Lab" },
+        { href: "#top-secret-research-complex", title: "Top Secret Research Complex" },
+        { href: "#deteriorated-lobby", title: "Deteriorated Lobby" },
+        { href: "#air-vent", title: "Air Vent" },
+      ]
+    },
+    { mainLink: "/collectibles/matrix-11", title: "Matrix 11" },
+    { mainLink: "/collectibles/great-desert", title: "Great Desert" },
+    { mainLink: "/collectibles/abyss-levoire", title: "Abyss Levoire" },
+    { mainLink: "/collectibles/eidos-9", title: "Eidos 9" },
+    { mainLink: "/collectibles/spire-4", title: "Spire 4" },
+  ];
 
   return (
     <div className="container bg-white">
       <div className="row">
         {!isMobile && (
           <div className="col-lg-3 border-start bg-white">
-            {TOC}
+            <TableOfContents links={tocLinks} isMobile={isMobile} />
           </div>
         )}
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Altess Levoire Collectibles</h1>
-          {isMobile && TOC}
+          {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <ResearchLabEntrance />
           <PurificationScanner />
           <SecurityCenter />

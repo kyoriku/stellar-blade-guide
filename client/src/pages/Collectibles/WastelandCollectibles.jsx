@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
-
+import TableOfContents from '../../components/TableOfContents'
 import useWindowSize from "../../hooks/WindowSize";
-
 import BarrenLands from "./Wasteland/BarrenLands";
 import GreatCanyon from "./Wasteland/GreatCanyon";
 import ScrapPlains from "./Wasteland/ScrapPlains";
@@ -15,9 +14,6 @@ import GreatCanyonContinued from "./Wasteland/GreatCanyonContinued";
 import ForbiddenArea from "./Wasteland/ForbiddenArea";
 import WastelandContinued from "./Wasteland/WastelandContinued";
 
-import '../../styles/Media.css';
-import '../../styles/Sidebar.css';
-
 const WastelandCollectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
@@ -26,54 +22,45 @@ const WastelandCollectibles = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-    });
-  };
-
-  const TOC = (
-    <nav id="toc" className={`sticky-top ${!isMobile ? '' : ''}`}>
-      <h4>Contents</h4>
-      <ul className="nav flex-column sidebar">
-        <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
-        <li className="nav-item"><Link to="/collectibles/xion">Xion</Link></li>
-        <li className="nav-item"><Link to="/collectibles/wasteland" onClick={scrollToTop}>Wasteland</Link>
-          <ul>
-            <li className="nav-item"><a className="nav-link" href="#barren-lands">Barren Lands</a></li>
-            <li className="nav-item"><a className="nav-link" href="#great-canyon">Great Canyon</a></li>
-            <li className="nav-item"><a className="nav-link" href="#scrap-plains">Scrap Plains</a></li>
-            <li className="nav-item"><a className="nav-link" href="#oil-storage-facility">Oil Storage Facility</a></li>
-            <li className="nav-item"><a className="nav-link" href="#scrap-yard">Scrap Yard</a></li>
-            <li className="nav-item"><a className="nav-link" href="#wasteland-basin">Wasteland Basin</a></li>
-            <li className="nav-item"><a className="nav-link" href="#scrap-plains-continued">Scrap Plains (Continued)</a></li>
-            <li className="nav-item"><a className="nav-link" href="#plant">Plant</a></li>
-            <li className="nav-item"><a className="nav-link" href="#great-canyon-continued">Great Canyon (Continued)</a></li>
-            <li className="nav-item"><a className="nav-link" href="#forbidden-area">Forbidden Area</a></li>
-            <li className="nav-item"><a className="nav-link" href="#wasteland-continued">Wasteland (Continued)</a></li>
-          </ul>
-        </li>
-        <li className="nav-item"><Link to="/collectibles/altess-levoire">Altess Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link></li>
-        <li className="nav-item"><Link to="/collectibles/great-desert">Great Desert</Link></li>
-        <li className="nav-item"><Link to="/collectibles/abyss-levoire">Abyss Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/eidos-9">Eidos 9</Link></li>
-        <li className="nav-item"><Link to="/collectibles/spire-4">Spire 4</Link></li>
-      </ul>
-    </nav>
-  );
+  const tocLinks = [
+    { mainLink: "/collectibles/eidos-7", title: "Eidos 7" },
+    { mainLink: "/collectibles/xion", title: "Xion" },
+    {
+      mainLink: "/collectibles/wasteland",
+      title: "Wasteland",
+      subLinks: [
+        { href: "#barren-lands", title: "Barren Lands" },
+        { href: "#great-canyon", title: "Great Canyon" },
+        { href: "#scrap-plains", title: "Scrap Plains" },
+        { href: "#oil-storage-facility", title: "Oil Storage Facility" },
+        { href: "#scrap-yard", title: "Scrap Yard" },
+        { href: "#wasteland-basin", title: "Wasteland Basin" },
+        { href: "#scrap-plains-continued", title: "Scrap Plains (Continued)" },
+        { href: "#plant", title: "Plant" },
+        { href: "#great-canyon-continued", title: "Great Canyon (Continued)" },
+        { href: "#forbidden-area", title: "Forbidden Area" },
+        { href: "#wasteland-continued", title: "Wasteland (Continued)" },
+      ]
+    },
+    { mainLink: "/collectibles/altess-levoire", title: "Altess Levoire" },
+    { mainLink: "/collectibles/matrix-11", title: "Matrix 11" },
+    { mainLink: "/collectibles/great-desert", title: "Great Desert" },
+    { mainLink: "/collectibles/abyss-levoire", title: "Abyss Levoire" },
+    { mainLink: "/collectibles/eidos-9", title: "Eidos 9" },
+    { mainLink: "/collectibles/spire-4", title: "Spire 4" },
+  ];
 
   return (
     <div className="container bg-white">
       <div className="row">
         {!isMobile && (
           <div className="col-lg-3 border-start bg-white">
-            {TOC}
+            <TableOfContents links={tocLinks} isMobile={isMobile} />
           </div>
         )}
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Wasteland Collectibles</h1>
-          {isMobile && TOC}
+          {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <BarrenLands />
           <GreatCanyon />
           <ScrapPlains />

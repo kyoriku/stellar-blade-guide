@@ -1,14 +1,12 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
+import TableOfContents from '../../components/TableOfContents'
 import useWindowSize from "../../hooks/WindowSize";
 import EmergencyExit from "./AbyssLevoire/EmergencyExit";
 import ClosedLobby from "./AbyssLevoire/ClosedLobby";
 import CapsuleClusterRoom from "./AbyssLevoire/CapsuleClusterRoom";
 import UndergroundPassage from "./AbyssLevoire/UndergroundPassage";
 import LaboratoryRuins from "./AbyssLevoire/LaboratoryRuins";
-import '../../styles/Media.css';
-import '../../styles/Sidebar.css';
-import '../../styles/Collectibles.css';
 
 const AbyssLevoireCollectibles = () => {
   const size = useWindowSize();
@@ -18,48 +16,39 @@ const AbyssLevoireCollectibles = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-    });
-  };
-
-  const TOC = (
-    <nav id="toc" className={`sticky-top ${!isMobile ? '' : ''}`}>
-      <h4>Contents</h4>
-      <ul className="nav flex-column sidebar">
-        <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
-        <li className="nav-item"><Link to="/collectibles/xion">Xion</Link></li>
-        <li className="nav-item"><Link to="/collectibles/wasteland">Wasteland</Link></li>
-        <li className="nav-item"><Link to="/collectibles/altess-levoire">Altess Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link></li>
-        <li className="nav-item"><Link to="/collectibles/great-desert">Great Desert</Link></li>
-        <li className="nav-item"><Link to="/collectibles/abyss-levoire" onClick={scrollToTop}>Abyss Levoire</Link>
-          <ul>
-            <li className="nav-item"><a className="nav-link" href="#emergency-exit">Emergency Exit</a></li>
-            <li className="nav-item"><a className="nav-link" href="#closed-lobby">Closed Lobby</a></li>
-            <li className="nav-item"><a className="nav-link" href="#capsule-cluster-room">Capsule Cluster Room</a></li>
-            <li className="nav-item"><a className="nav-link" href="#underground-passage">Underground Passage</a></li>
-            <li className="nav-item"><a className="nav-link" href="#laboratory-ruins">Laboratory Ruins</a></li>
-          </ul>
-        </li>
-        <li className="nav-item"><Link to="/collectibles/eidos-9">Eidos 9</Link></li>
-        <li className="nav-item"><Link to="/collectibles/spire-4">Spire 4</Link></li>
-      </ul>
-    </nav>
-  );
+  const tocLinks = [
+    { mainLink: "/collectibles/eidos-7", title: "Eidos 7" },
+    { mainLink: "/collectibles/xion", title: "Xion" },
+    { mainLink: "/collectibles/wasteland", title: "Wasteland" },
+    { mainLink: "/collectibles/altess-levoire", title: "Altess Levoire" },
+    { mainLink: "/collectibles/matrix-11", title: "Matrix 11" },
+    { mainLink: "/collectibles/great-desert", title: "Great Desert" },
+    {
+      mainLink: "/collectibles/abyss-levoire",
+      title: "Abyss Levoire",
+      subLinks: [
+        { href: "#emergency-exit", title: "Emergency Exit" },
+        { href: "#closed-lobby", title: "Closed Lobby" },
+        { href: "#capsule-cluster-room", title: "Capsule Cluster Room" },
+        { href: "#underground-passage", title: "Underground Passage" },
+        { href: "#laboratory-ruins", title: "Laboratory Ruins" },
+      ]
+    },
+    { mainLink: "/collectibles/eidos-9", title: "Eidos 9" },
+    { mainLink: "/collectibles/spire-4", title: "Spire 4" },
+  ];
 
   return (
     <div className="container bg-white">
       <div className="row">
         {!isMobile && (
           <div className="col-lg-3 border-start bg-white">
-            {TOC}
+            <TableOfContents links={tocLinks} isMobile={isMobile} />
           </div>
         )}
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Abyss Levoire Collectibles</h1>
-          {isMobile && TOC}
+          {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <EmergencyExit />
           <ClosedLobby />
           <CapsuleClusterRoom />

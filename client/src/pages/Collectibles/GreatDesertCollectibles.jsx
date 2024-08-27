@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
+import TableOfContents from '../../components/TableOfContents'
 import useWindowSize from "../../hooks/WindowSize";
 import SolarTower from "./GreatDesert/SolarTower";
 import CollapsedOverpass from "./GreatDesert/CollapsedOverpass";
@@ -7,9 +8,6 @@ import BuriedRuins from "./GreatDesert/BuriedRuins";
 import CentralGreatDesert from "./GreatDesert/CentralGreatDesert";
 import NorthernGreatDesert from "./GreatDesert/NorthernGreatDesert";
 import Oasis from "./GreatDesert/Oasis";
-import '../../styles/Media.css';
-import '../../styles/Sidebar.css';
-import '../../styles/Collectibles.css';
 
 const GreatDesertCollectibles = () => {
   const size = useWindowSize();
@@ -19,49 +17,40 @@ const GreatDesertCollectibles = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-    });
-  };
-
-  const TOC = (
-    <nav id="toc" className={`sticky-top ${!isMobile ? '' : ''}`}>
-      <h4>Contents</h4>
-      <ul className="nav flex-column sidebar">
-        <li className="nav-item"><Link to="/collectibles/eidos-7">Eidos 7</Link></li>
-        <li className="nav-item"><Link to="/collectibles/xion">Xion</Link></li>
-        <li className="nav-item"><Link to="/collectibles/wasteland">Wasteland</Link></li>
-        <li className="nav-item"><Link to="/collectibles/altess-levoire">Altess Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/matrix-11">Matrix 11</Link></li>
-        <li className="nav-item"><Link to="/collectibles/great-desert" onClick={scrollToTop}>Great Desert</Link>
-          <ul>
-            <li className="nav-item"><a className="nav-link" href="#solar-tower">Solar Tower</a></li>
-            <li className="nav-item"><a className="nav-link" href="#collapsed-overpass">Collapsed Overpass</a></li>
-            <li className="nav-item"><a className="nav-link" href="#buried-ruins">Buried Ruins</a></li>
-            <li className="nav-item"><a className="nav-link" href="#central-great-desert">Central Great Desert</a></li>
-            <li className="nav-item"><a className="nav-link" href="#northern-great-desert">Northern Great Desert</a></li>
-            <li className="nav-item"><a className="nav-link" href="#oasis">Oasis</a></li>
-          </ul>
-        </li>
-        <li className="nav-item"><Link to="/collectibles/abyss-levoire">Abyss Levoire</Link></li>
-        <li className="nav-item"><Link to="/collectibles/eidos-9">Eidos 9</Link></li>
-        <li className="nav-item"><Link to="/collectibles/spire-4">Spire 4</Link></li>
-      </ul>
-    </nav>
-  );
+  const tocLinks = [
+    { mainLink: "/collectibles/eidos-7", title: "Eidos 7" },
+    { mainLink: "/collectibles/xion", title: "Xion" },
+    { mainLink: "/collectibles/wasteland", title: "Wasteland" },
+    { mainLink: "/collectibles/altess-levoire", title: "Altess Levoire" },
+    { mainLink: "/collectibles/matrix-11", title: "Matrix 11" },
+    {
+      mainLink: "/collectibles/great-desert",
+      title: "Great Desert",
+      subLinks: [
+        { href: "#solar-tower", title: "Solar Tower" },
+        { href: "#collapsed-overpass", title: "Collapsed Overpass" },
+        { href: "#buried-ruins", title: "Buried Ruins" },
+        { href: "#central-great-desert", title: "Central Great Desert" },
+        { href: "#northern-great-desert", title: "Northern Great Desert" },
+        { href: "#oasis", title: "Oasis" },
+      ]
+    },
+    { mainLink: "/collectibles/abyss-levoire", title: "Abyss Levoire" },
+    { mainLink: "/collectibles/eidos-9", title: "Eidos 9" },
+    { mainLink: "/collectibles/spire-4", title: "Spire 4" },
+  ];
 
   return (
     <div className="container bg-white">
       <div className="row">
         {!isMobile && (
           <div className="col-lg-3 border-start bg-white">
-            {TOC}
+            <TableOfContents links={tocLinks} isMobile={isMobile} />
           </div>
         )}
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Great Desert Collectibles</h1>
-          {isMobile && TOC}
+          {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <SolarTower />
           <CollapsedOverpass />
           <BuriedRuins />
