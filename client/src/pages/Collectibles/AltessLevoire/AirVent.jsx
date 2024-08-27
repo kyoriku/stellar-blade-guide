@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
-import ContentText from "../../../components/ContentText";
-import SkeletonLoader from "../../../components/SkeletonLoader";
-import MediaDisplay from "../../../components/MediaDisplay"; import { getAirVent } from '../../../utils/API/altessLevoire';
+import ContentSection from "../../../components/ContentSection";
+import { getAirVent } from '../../../utils/API/altessLevoire';
 
 const AirVent = () => {
   const [content, setContent] = useState([]);
@@ -53,21 +52,12 @@ const AirVent = () => {
     <section>
       <Header id="air-vent" title="▽ Air Vent Collectibles" />
       <ErrorMessage message={error} />
-      {!error && (
-        <div>
-          {staticContent.map((item, index) => (
-            <article key={item.id}>
-              <ContentText title={item.title} text={item.text} />
-              {isLoading ? (
-                <SkeletonLoader />
-              ) : (
-                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
-              )}
-              <hr></hr>
-            </article>
-          ))}
-        </div>
-      )}
+      <ContentSection
+        staticContent={staticContent}
+        content={content}
+        isLoading={isLoading}
+        alwaysShowFinalHr={true}
+      />
     </section>
   );
 };

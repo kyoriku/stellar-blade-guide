@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
-import ContentText from "../../../components/ContentText";
-import SkeletonLoader from "../../../components/SkeletonLoader";
-import MediaDisplay from "../../../components/MediaDisplay";
+import ContentSection from "../../../components/ContentSection";
 import { getScrapYard } from "../../../utils/API/wasteland";
 
 const ScrapYard = () => {
@@ -91,34 +89,13 @@ const ScrapYard = () => {
 
   return (
     <section>
-      <Header
-        id="scrap-yard"
-        title="▽ Scrap Yard Collectibles"
-      />
+      <Header id="scrap-yard" title="▽ Scrap Yard Collectibles" />
       <ErrorMessage message={error} />
-      {!error && (
-        <div>
-          {staticContent.map((item, index) => {
-            const isLastItem = index === staticContent.length - 1;
-            const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
-            const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
-
-            return (
-              <article key={item.id}>
-                <ContentText title={item.title} text={item.text} />
-                {isLoading ? (
-                  <SkeletonLoader />
-                ) : (
-                  <MediaDisplay
-                    images={content.find((data) => data.id === item.id)?.images || []}
-                  />
-                )}
-                {showHr && <hr />}
-              </article>
-            );
-          })}
-        </div>
-      )}
+      <ContentSection
+        staticContent={staticContent}
+        content={content}
+        isLoading={isLoading}
+      />
     </section>
   );
 };

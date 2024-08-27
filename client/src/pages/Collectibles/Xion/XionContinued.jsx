@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
-import ContentText from "../../../components/ContentText";
-import SkeletonLoader from "../../../components/SkeletonLoader";
-import MediaDisplay from "../../../components/MediaDisplay";
-import HrComponent from "../../../components/HrComponent";
+import ContentSection from "../../../components/ContentSection";
 import { getXionContinued } from '../../../utils/API/xion';
 
 const XionContinued = () => {
@@ -133,30 +130,12 @@ const XionContinued = () => {
         subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
       />
       <ErrorMessage message={error} />
-      {!error && (
-        <div>
-          {staticContent.map((item, index) => {
-            const isLastItem = index === staticContent.length - 1;
-            const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
-            const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
-
-            return (
-              <article key={item.id}>
-                <ContentText title={item.title} text={item.text} />
-                {isLoading ? (
-                  <SkeletonLoader />
-                ) : (
-                  <MediaDisplay
-                    images={content.find((data) => data.id === item.id)?.images || []}
-                  />
-                )}
-                {showHr && <hr />}
-              </article>
-            );
-          })}
-          <hr></hr>
-        </div>
-      )}
+      <ContentSection
+        staticContent={staticContent}
+        content={content}
+        isLoading={isLoading}
+        alwaysShowFinalHr={true}
+      />
     </section>
   );
 };

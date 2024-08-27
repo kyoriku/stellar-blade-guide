@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
-import ContentText from "../../../components/ContentText";
-import SkeletonLoader from "../../../components/SkeletonLoader";
-import MediaDisplay from "../../../components/MediaDisplay";
-import HrComponent from "../../../components/HrComponent";
+import ContentSection from "../../../components/ContentSection";
 import { getXion } from '../../../utils/API/xion';
 
 const Xion = () => {
@@ -271,37 +268,19 @@ const Xion = () => {
   }
 
   return (
-    <section>
-      <Header id="xion" title="▽ Xion Collectibles" />
-      <ErrorMessage message={error} />
-      {!error && (
-        <div>
-          {staticContent.map((item, index) => {
-            const isLastItem = index === staticContent.length - 1;
-            const isNextTextArray = !isLastItem && Array.isArray(staticContent[index + 1].text);
-            const showHr = !isLastItem && (!Array.isArray(item.text) || !isNextTextArray);
-            const addBottomMargin = item.id === 24;
-  
-            return (
-              <article key={item.id}>
-                <ContentText title={item.title} text={item.text} />
-                {isLoading ? (
-                  <SkeletonLoader />
-                ) : (
-                  <MediaDisplay
-                    images={content.find((data) => data.id === item.id)?.images || []}
-                    addBottomMargin={addBottomMargin}
-                  />
-                )}
-                {showHr && <hr />}
-                {addBottomMargin && <div className="bottom-margin" />}
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );  
+<section>
+  <Header id="xion" title="▽ Xion Collectibles" />
+  <ErrorMessage message={error} />
+  <ContentSection
+    staticContent={staticContent}
+    content={content}
+    isLoading={isLoading}
+    bottomMarginCondition={24}
+    additionalBottomMargin={true}
+  />
+</section>
+
+  );
 };
 
 export default Xion;

@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
-import ContentText from "../../../components/ContentText";
-import SkeletonLoader from "../../../components/SkeletonLoader";
-import MediaDisplay from "../../../components/MediaDisplay";
+import ContentSection from "../../../components/ContentSection";
 import { getEidos7Continued } from '../../../utils/API/eidos7';
 
 const Eidos7Continued = () => {
@@ -134,21 +132,12 @@ const Eidos7Continued = () => {
         subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
       />
       <ErrorMessage message={error} />
-      {!error && (
-        <div>
-          {staticContent.map((item, index) => (
-            <article key={item.id}>
-              <ContentText title={item.title} text={item.text} />
-              {isLoading ? (
-                <SkeletonLoader />
-              ) : (
-                <MediaDisplay images={content.find((data) => data.id === item.id)?.images || []} />
-              )}
-              <hr></hr>
-            </article>
-          ))}
-        </div>
-      )}
+      <ContentSection
+        staticContent={staticContent}
+        content={content}
+        isLoading={isLoading}
+        alwaysShowFinalHr={true}
+      />
     </section>
   );
 };
