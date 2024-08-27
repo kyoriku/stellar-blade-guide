@@ -29,7 +29,7 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
                     <img
                       src={images[0].src}
                       alt={images[0].alt}
-                      className="img-fluid rounded"
+                      className="img-fluid rounded img-bg"
                       loading='lazy'
                       width='443'
                       height='249.19'
@@ -41,7 +41,7 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
                     <img
                       src={images[1].src}
                       alt={images[1].alt}
-                      className="img-fluid rounded"
+                      className="img-fluid rounded img-bg"
                       loading='lazy'
                       width='443'
                       height='249.19'
@@ -60,7 +60,7 @@ const MediaDisplay = ({ title, text, images, showHr, addBottomMargin }) => {
                       <img
                         src={image.src}
                         alt={image.alt}
-                        className={`img-fluid rounded ${addBottomMargin ? 'mb-3' : ''}`}
+                        className={`img-fluid rounded img-bg ${addBottomMargin ? 'mb-3' : ''}`}
                         loading='lazy'
                         width='443'
                         height='249.19'
