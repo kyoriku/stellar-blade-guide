@@ -55,7 +55,7 @@ const XionCollectibles = () => {
           </div>
         )}
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
-          <h1 className="mt-3 mb-0">Stellar Blade - Xion Collectibles</h1>
+          <h1 className="mt-3 mb-0">Xion Collectibles</h1>
           {isMobile && TOC}
           <Xion />
           <XionContinued />
