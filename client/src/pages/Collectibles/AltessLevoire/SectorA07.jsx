@@ -46,6 +46,7 @@ const SectorA07 = () => {
         staticContent={staticContent}
         content={content}
         isLoading={isLoading}
+        skeletonVariant="large"
       />
     </section>
   );

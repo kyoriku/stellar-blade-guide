@@ -11,7 +11,6 @@ import ConstructionZone from './Eidos7/ConstructionZone';
 import CityUnderground from './Eidos7/CityUnderground';
 import Crater from './Eidos7/Crater';
 import Eidos7Continued from './Eidos7/Eidos7Continued';
-import '../../styles/Collectibles.css';
 
 const Eidos7Collectibles = () => {
   const size = useWindowSize();

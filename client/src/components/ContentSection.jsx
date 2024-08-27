@@ -7,6 +7,7 @@ const ContentSection = ({
   staticContent,
   content,
   isLoading,
+  skeletonVariant,
   bottomMarginCondition = null,
   additionalBottomMargin = false,
   alwaysShowFinalHr = false
@@ -23,7 +24,7 @@ const ContentSection = ({
           <article key={item.id}>
             <ContentText title={item.title} text={item.text} />
             {isLoading ? (
-              <SkeletonLoader />
+              <SkeletonLoader variant={skeletonVariant}/>
             ) : (
               <MediaDisplay
                 images={content.find((data) => data.id === item.id)?.images || []}

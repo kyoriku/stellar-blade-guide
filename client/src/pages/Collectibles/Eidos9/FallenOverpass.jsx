@@ -172,6 +172,7 @@ const FallenOverpass = () => {
         staticContent={staticContent}
         content={content}
         isLoading={isLoading}
+        skeletonVariant="large"
       />
     </section>
   );

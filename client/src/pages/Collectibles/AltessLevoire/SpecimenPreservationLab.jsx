@@ -56,6 +56,7 @@ const SpecimenPreservationLab = () => {
         staticContent={staticContent}
         content={content}
         isLoading={isLoading}
+        skeletonVariant="large"
       />
     </section>
   );
