@@ -12,7 +12,7 @@ import PassengerLift161 from "./Spire4/PassengerLift161";
 import PrestigeLounge from "./Spire4/PrestigeLounge";
 import VermillionGarden from "./Spire4/VermillionGarden";
 import HighOrbitStation from "./Spire4/HighOrbitStation";
-// import Nest from "./Spire4/Nest";
+import Nest from "./Spire4/Nest";
 import '../../styles/Media.css';
 import '../../styles/Sidebar.css';
 import '../../styles/Collectibles.css';
@@ -85,8 +85,8 @@ const Spire4Collectibles = () => {
           <PrestigeLounge />
           <VermillionGarden />
           <HighOrbitStation />
-          {/* <Nest /> */}
-          <div className='text-start ps-2'>
+          <Nest />
+          <div className='text-start pb-5 ps-2'>
             <p className='m-0 fw-bold'>« Previous guide</p>
             <h5><Link to="/collectibles/eidos-9" className='text-decoration-none'>Eidos 9 Collectibles</Link></h5>
           </div>
