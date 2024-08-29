@@ -37,7 +37,7 @@ const FloodedCommercialSector = () => {
     },
     {
       id: 6,
-      title: "Passcode - aau0B0",
+      title: "Passcode - ααμθβθ",
       text: "Head back across the ledges you used to get to this plaza and continue south. Climb up the yellow grabbable ledges and there'll be a group of stone monsters (1 real) by this corpse, underneath the Barker Drugs sign.",
     },
     {

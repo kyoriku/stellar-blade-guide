@@ -35,9 +35,19 @@ function Home() {
             </ul>
           </div>
           <div className="section">
-            <h2>Nano Suits</h2>
+            <h2>Collectibles</h2>
             <ul>
-              <li><Link to="/nano-suits" className="text-decoration-none">View All Nano Suits</Link></li>
+              <li><Link to="/collectibles/beta-cores" className="text-decoration-none">Beta Cores</Link></li>
+              <li><Link to="/collectibles/body-cores" className="text-decoration-none">Body Cores</Link></li>
+              <li><Link to="/collectibles/camps" className="text-decoration-none">Camps</Link></li>
+              <li><Link to="/collectibles/cans" className="text-decoration-none">Cans</Link></li>
+              <li><Link to="/collectibles/documents" className="text-decoration-none">Documents</Link></li>
+              <li><Link to="/collectibles/drone-packs" className="text-decoration-none">Drone Packs</Link></li>
+              <li><Link to="/collectibles/earrings" className="text-decoration-none">Earrings</Link></li>
+              <li><Link to="/collectibles/exospines" className="text-decoration-none">Exospines</Link></li>
+              <li><Link to="/collectibles/nano-suits" className="text-decoration-none">Nano Suits</Link></li>
+              <li><Link to="/collectibles/memorysticks" className="text-decoration-none">Memorysticks</Link></li>
+              <li><Link to="/collectibles/passcodes" className="text-decoration-none">Passcodes</Link></li>
             </ul>
           </div>
         </div>

@@ -42,7 +42,7 @@ const Eidos7Continued = () => {
     },
     {
       id: 7,
-      title: "Robot - Passcode",
+      title: "Robot - Passcode - αααδδκ",
       text: "In the path to the east of the Wayfield Diner (pretty much underneath it) is a robot with the passcode needed for the next chest.",
     },
     {

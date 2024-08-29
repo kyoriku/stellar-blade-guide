@@ -22,7 +22,7 @@ const MemoryTower = () => {
     },
     {
       id: 3,
-      title: "Memorystick - Artemis 8's Orders / Passcode - yuak0k",
+      title: "Memorystick - Artemis 8's Orders / Passcode - λμακθκ",
       text: "To the east of the pillar in the plaza is another corpse.",
     },
     {

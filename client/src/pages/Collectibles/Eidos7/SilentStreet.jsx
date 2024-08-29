@@ -3,6 +3,7 @@ import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
 import { getSilentStreet } from "../../../utils/API/eidos7";
+// import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibleTypes"
 
 const SilentStreet = () => {
   const [content, setContent] = useState([]);
@@ -12,7 +13,7 @@ const SilentStreet = () => {
   const staticContent = [
     {
       id: 1,
-      title: "Passcode - r0ar0a",
+      title: "Passcode - γθαγθα",
       text: "In the first garage/storage room on the left on Silent Street, where the Creepers crash out of the wall.",
     },
     {
@@ -67,7 +68,7 @@ const SilentStreet = () => {
     },
     {
       id: 12,
-      title: "Memorystick - The Last Words of the Hopeless / Passcode - B0ak0r",
+      title: "Memorystick - The Last Words of the Hopeless / Passcode - βθακθγ",
       text: "Head the correct way after the ambush, and as you get onto the balcony, and before you grab onto the poles, there's a corpse on your left with this passcode and memorystick.",
     },
     {
@@ -117,6 +118,19 @@ const SilentStreet = () => {
       setIsLoading(false);
     }
   };
+  
+  // const fetchSilentStreetCollectibles = async () => {
+  //   try {
+  //     const data = await getCollectiblesByLevelAndLocation('Eidos 7', 'Silent Street');
+  //     setContent(data);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError("Failed to fetch collectibles. Please try again later.");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+  
 
   return (
     <section>

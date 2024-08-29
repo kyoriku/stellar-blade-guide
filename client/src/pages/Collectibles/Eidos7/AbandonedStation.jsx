@@ -12,7 +12,7 @@ const AbandonedStation = () => {
   const staticContent = [
     {
       id: 1,
-      title: "Memorystick - Respite of the Hopeful / Passcode - oBukoB",
+      title: "Memorystick - Respite of the Hopeful / Passcode - δβμκδβ",
       text: "After entering the flooded facility, to the right of the first door (north wall) is a corpse underwater with both this memorystick and passcode.",
     },
     {

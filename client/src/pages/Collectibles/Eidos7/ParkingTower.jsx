@@ -3,6 +3,8 @@ import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
 import { getParkingTower } from '../../../utils/API/eidos7';
+// import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibleTypes"
+
 
 const ParkingTower = () => {
   const [content, setContent] = useState([]);
@@ -123,9 +125,21 @@ const ParkingTower = () => {
     }
   };
 
+  // const fetchParkingTowerCollectibles = async () => {
+  //   try {
+  //     const data = await getCollectiblesByLevelAndLocation('Eidos 7', 'Parking Tower');
+  //     setContent(data);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError("Failed to fetch collectibles. Please try again later.");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   return (
     <section>
-      <Header id="parking-tower" title="▽ Parking tower Collectibles" />
+      <Header id="parking-tower" title="▽ Parking Tower Collectibles" />
       <ErrorMessage message={error} />
       <ContentSection
         staticContent={staticContent}
