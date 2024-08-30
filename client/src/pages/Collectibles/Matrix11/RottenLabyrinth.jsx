@@ -27,7 +27,7 @@ const RottenLabyrinth = () => {
     },
     {
       id: 4,
-      title: "Robot - Passcode - yBKBdB (upside down y)",
+      title: "Robot - Passcode - λβκβδβ",
       text: "In the next room with 2 Cricket Butchers in them. Climb up the ladder to the west as you walk in, and then jump across to the other side. The robot is there."
     },
     {
@@ -78,7 +78,7 @@ const RottenLabyrinth = () => {
     {
       id: 14,
       title: "Locked Supply Chest",
-      text: "Next to the guitar is a locked chest (needs Passcode yBKBdB)."
+      text: "Next to the guitar is a locked chest (needs Passcode λβκβδβ)."
     },
     {
       id: 15,

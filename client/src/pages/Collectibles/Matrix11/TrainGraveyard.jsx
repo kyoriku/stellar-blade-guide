@@ -22,7 +22,7 @@ const TrainGraveyard = () => {
     },
     {
       id: 3,
-      title: "Passcode - unydKa",
+      title: "Passcode - μηλδκα",
       text: "About midway down, underneath 2 Skull monsters, inside a train carriage underwater, there's a corpse with a passcode."
     },
     {

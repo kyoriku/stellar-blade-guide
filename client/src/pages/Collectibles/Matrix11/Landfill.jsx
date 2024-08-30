@@ -28,7 +28,7 @@ const Landfill = () => {
     {
       id: 4,
       title: "Locked Supply Chest",
-      text: "In the middle of the landfill area. Passcode is from the body before (ardu0d). Also contains the Fusion Cell.",
+      text: "In the middle of the landfill area. Passcode is from the body before (αγδμθδ). Also contains the Fusion Cell.",
     },
     {
       id: 5,

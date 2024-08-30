@@ -97,7 +97,7 @@ const closedOffPlatform = () => {
     },
     {
       id: 18,
-      title: "Memorystick - Legionnaire 552's Advice / Passcode - ardu0d",
+      title: "Memorystick - Legionnaire 552's Advice / Passcode - αγδμθδ",
       text: "In the next corridor, head to the end and take a right. The corpse and passcode are at the end of that small corridor.",
     }
   ];

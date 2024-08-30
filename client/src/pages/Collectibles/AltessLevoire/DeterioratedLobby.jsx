@@ -22,7 +22,7 @@ const DeterioratedLobby = () => {
     },
     {
       id: 3,
-      title: "Passcode - unyaun",
+      title: "Passcode - μηλαμη",
       text: "Head past the locked door that needs a keycode, go through the door with the green light next to it, and then there'll be a body on the right down there with a passcode.",
     },
     {
