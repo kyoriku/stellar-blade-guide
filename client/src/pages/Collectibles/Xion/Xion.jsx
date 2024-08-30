@@ -201,7 +201,7 @@ const Xion = () => {
     },
     {
       id: 35,
-      title: "Robot - Passcode - 00KKKE",
+      title: "Robot - Passcode - θθκκκε",
       text: "In a metal crate in the far north of the map (to the left of Delloih, opposite the cafe near the entrance to Presence Chamber).",
     },
     {

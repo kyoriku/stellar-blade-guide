@@ -57,7 +57,7 @@ const XionContinued = () => {
     {
       id: 7,
       title: "Legion Supply Box",
-      text: "West of Gwen Hair Salon is a locked door. Use the passcode naEdrr to open it, which you get from the Great Desert, to the south-southeast of the Solar Tower in the south.",
+      text: "West of Gwen Hair Salon is a locked door. Use the passcode ηαεδγγ to open it, which you get from the Great Desert, to the south-southeast of the Solar Tower in the south.",
     },
     {
       id: 8,

@@ -52,7 +52,7 @@ const ScrapPlains = () => {
     },
     {
       id: 9,
-      title: "Robot - Passcode - rB0aya",
+      title: "Robot - Passcode - γβθαλα",
       text: "Southeast of the bus stop are some ruins with a robot inside.",
     },
     {
@@ -92,7 +92,7 @@ const ScrapPlains = () => {
     },
     {
       id: 17,
-      title: "Robot - Passcode - uyKLaB",
+      title: "Robot - Passcode - μλκιαβ",
       text: "As you keep heading up past the two turrets from below, look southwest and there'll be a robot there.",
     },
     {

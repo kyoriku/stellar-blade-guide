@@ -68,7 +68,7 @@ const WastelandContinued = () => {
     {
       id: 12,
       title: "Nano Suit - La Vie En Rose",
-      text: "Use the code B0aydS on the ship container to the west of the Western Grand Canyon Supply Camp (part of the “Recruit Passcode Specialists” Request).",
+      text: "Use the code βθαλδζ on the ship container to the west of the Western Grand Canyon Supply Camp (part of the “Recruit Passcode Specialists” Request).",
     },
     {
       id: 13,

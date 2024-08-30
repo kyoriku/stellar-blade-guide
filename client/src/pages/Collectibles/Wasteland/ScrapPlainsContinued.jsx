@@ -32,8 +32,8 @@ const ScrapPlainsContinued = () => {
     },
     {
       id: 5,
-      title: "Memorystick - Aaron's Memory / Passcode - aSaSaS",
-      text: "Hit the button near Albert's body, and then shoot the targets in the same order they appear to unlock where they came from. Down there is Aaron's body (and a passcode for Xion: aSaSaS).",
+      title: "Memorystick - Aaron's Memory / Passcode - αζαζαζ",
+      text: "Hit the button near Albert's body, and then shoot the targets in the same order they appear to unlock where they came from. Down there is Aaron's body (and a passcode for Xion: αζαζαζ).",
     },
     {
       id: 6,

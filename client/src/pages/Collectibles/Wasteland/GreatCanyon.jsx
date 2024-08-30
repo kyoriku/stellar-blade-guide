@@ -52,7 +52,7 @@ const GreatCanyon = () => {
     },
     {
       id: 9,
-      title: "Robot - Passcode - 0nrrrS",
+      title: "Robot - Passcode - θηγγγζ",
       text: "Inside the shipping container next to the memorystick one (still inside the ship). You get into it via the same shipping container.",
     },
     {
