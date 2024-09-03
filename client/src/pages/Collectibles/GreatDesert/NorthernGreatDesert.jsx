@@ -182,13 +182,13 @@ const NorthernGreatDesert = () => {
     },
     {
       id: 35,
-      title: "Robot - Passcode - yBLLda",
+      title: "Robot - Passcode - λβιιδα",
       text: "Just to the north of the Buried Ruins Outskirt Supply Camp is a robot. Kill it for this passcode.",
     },
     {
       id: 36,
       title: "Locked Supply Chest",
-      text: "North of the aforementioned Supply Camp. Shoot the target to the north to drop a rope. Then head northeast to the crates at the end. You then want to swing from rope to rope, until you get dropped onto the chest. The passcode is yBLLda.",
+      text: "North of the aforementioned Supply Camp. Shoot the target to the north to drop a rope. Then head northeast to the crates at the end. You then want to swing from rope to rope, until you get dropped onto the chest. The passcode is λβιιδα.",
     }
   ];
 

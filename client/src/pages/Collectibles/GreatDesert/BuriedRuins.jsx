@@ -127,7 +127,7 @@ const BuriedRuins = () => {
     },
     {
       id: 24,
-      title: "Robot - Passcode - nnauud",
+      title: "Robot - Passcode - ηηαμμδ",
       text: "Downstairs in the Opera House (the dome shaped building) is a robot with this passcode."
     },
     {

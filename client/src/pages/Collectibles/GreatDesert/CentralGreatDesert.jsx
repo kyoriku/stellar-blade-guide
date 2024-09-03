@@ -72,7 +72,7 @@ const CentralGreatDesert = () => {
     },
     {
       id: 13,
-      title: "Memorystick - Galaxy Alan's Lament / Passcode - yyyya0",
+      title: "Memorystick - Galaxy Alan's Lament / Passcode - λλλλαθ",
       text: "From the previous can, just forward and to the west. There's a door you can open there. The corpse is inside with the memorystick and passcode."
     },
     {

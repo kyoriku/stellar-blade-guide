@@ -47,7 +47,7 @@ const SolarTower = () => {
     },
     {
       id: 8,
-      title: "Robot - Passcode",
+      title: "Robot - Passcode - μηζεεγ",
       text: "East of the previous collectible, behind a fence that can be entered by breaking the boxes."
     },
     {
@@ -102,7 +102,7 @@ const SolarTower = () => {
     },
     {
       id: 19,
-      title: "Memorystick - Teddy's Memory / Passcode",
+      title: "Memorystick - Teddy's Memory / Passcode - ηαεδγγ",
       text: "To the south-southeast of the Solar Tower, in the corner of the fenced off area, by a floodlight. The passcode is: naEdrr, and it opens Teddy's Locker in Xion."
     },
     {
