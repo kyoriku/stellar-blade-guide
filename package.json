@@ -1,5 +1,5 @@
 {
-  "name": "counts-app",
+  "name": "stellar-blade-guide",
   "version": "1.0.0",
   "description": "",
   "main": "server/server.js",
@@ -12,7 +12,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.0"
   }
