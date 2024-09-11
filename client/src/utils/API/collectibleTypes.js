@@ -1,28 +1,28 @@
-export const getMemorysticks = async () => {
-  try {
-    const response = await fetch('/api/collectibles/memorysticks');
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to fetch memorysticks:', error);
-    throw error;
-  }
-}
+// export const getMemorysticks = async () => {
+//   try {
+//     const response = await fetch('/api/collectibles/memorysticks');
+//     if (!response.ok) {
+//       throw new Error(`Error: ${response.status} ${response.statusText}`);
+//     }
+//     return await response.json();
+//   } catch (error) {
+//     console.error('Failed to fetch memorysticks:', error);
+//     throw error;
+//   }
+// }
 
-export const getNanoSuits = async () => {
-  try {
-    const response = await fetch('/api/collectibles/nano-suits');
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status} ${response.statusText}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to fetch nano suits:', error);
-    throw error;
-  }
-}
+// export const getNanoSuits = async () => {
+//   try {
+//     const response = await fetch('/api/collectibles/nano-suits');
+//     if (!response.ok) {
+//       throw new Error(`Error: ${response.status} ${response.statusText}`);
+//     }
+//     return await response.json();
+//   } catch (error) {
+//     console.error('Failed to fetch nano suits:', error);
+//     throw error;
+//   }
+// }
 
 // const formatUrlToType = (type) => {
 //   return type
@@ -33,9 +33,8 @@ export const getNanoSuits = async () => {
 
 export const getCollectiblesByType = async (type) => {
   try {
-    // const formattedType = type.replace(/\s+/g, '-').toLowerCase();
     const response = await fetch(`/api/collectibles/${type}`);
-    
+
     if (!response.ok) {
       throw new Error(`Error: ${response.status} ${response.statusText}`);
     }
@@ -46,32 +45,71 @@ export const getCollectiblesByType = async (type) => {
   }
 }
 
-// export const getCollectiblesByLevelAndLocation = async (level, location) => {
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// export const getCollectibles = async (level, location) => {
 //   try {
-//     const formattedLevel = level.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
-//     const formattedLocation = location.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
-    
-//     const response = await fetch(`/api/collectibles/${formattedLevel}/${formattedLocation}`);
+//     const url = location ? `${BASE_URL}/${level}/${location}` : `${BASE_URL}/${level}`;
+//     const response = await fetch(url);
 //     if (!response.ok) {
 //       throw new Error(`Error: ${response.status} ${response.statusText}`);
 //     }
 //     return await response.json();
 //   } catch (error) {
-//     console.error(`Failed to fetch collectibles for level ${level} and location ${location}:`, error);
+//     console.error(`Failed to fetch collectibles for ${level}${location ? ` and ${location}` : ''}:`, error);
 //     throw error;
 //   }
 // }
 
-// export const getCollectiblesByLocation = async (location) => {
-//   try {
-//     const formattedLocation = location.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-//     const response = await fetch(`/api/collectibles/${formattedLocation}`);
-//     if (!response.ok) {
-//       throw new Error(`Error: ${response.status} ${response.statusText}`);
-//     }
-//     return await response.json();
-//   } catch (error) {
-//     console.error(`Failed to fetch collectibles for location ${location}:`, error);
-//     throw error;
-//   }
-// }
+export const getCollectibles = async (options = {}) => {
+  const { level, location, type } = options;
+  
+  try {
+    let url = BASE_URL;
+    
+    if (type) {
+      url += `/${type}`;
+    }
+    if (level) {
+      url += `/${level}`;
+      if (location) {
+        url += `/${location}`;
+      }
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to fetch collectibles:`, error);
+    throw error;
+  }
+}
+
+export const getCollectiblesByLevelAndLocation = async (level, location) => {
+  try {
+    const response = await fetch(`/api/collectibles/${level}/${location}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to fetch collectibles for level ${level} and location ${location}:`, error);
+    throw error;
+  }
+}
+
+export const getEidos7Collectibles = async (location) => {
+  try {
+    const response = await fetch(`/api/collectibles/eidos-7/${location}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to fetch collectibles for location ${location}:`, error);
+    throw error;
+  }
+}
