@@ -13,42 +13,7 @@ const collectiblesController = {
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  },
-
-  // async getCollectiblesByType(req, res) {
-  //   try {
-  //     const { type } = req.params;
-  //     const collectibles = await Collectible.find({ type });
-
-  //     if (!collectibles || collectibles.length === 0) {
-  //       return res.status(404).json({ message: `No collectibles found for type: ${type}` });
-  //     }
-
-  //     res.json(collectibles);
-  //   } catch (err) {
-  //     res.status(500).json({ message: err.message });
-  //   }
-  // },
-
-  // async getCollectiblesByType(req, res) {
-  //   try {
-  //     const { type } = req.params;
-  //     const formattedType = type
-  //       .replace(/-/g, ' ')
-  //       .replace(/s$/, '')
-  //       .replace(/\b\w/g, (char) => char.toUpperCase());
-  //     const collectibles = await Collectible.find({ type: formattedType });
-  //     // const collectibles = await Collectible.find({ type });
-
-  //     if (!collectibles || collectibles.length === 0) {
-  //       return res.status(404).json({ message: `No collectibles found for type: ${type}` });
-  //     }
-
-  //     res.json(collectibles);
-  //   } catch (err) {
-  //     res.status(500).json({ message: err.message });
-  //   }
-  // },  
+  }, 
 
   async getCollectiblesByType(req, res) {
     try {
@@ -125,7 +90,6 @@ const collectiblesController = {
   // },
 
   async getCollectiblesByLevelAndLocation(req, res) {
-    console.log('getCollectiblesByLevelAndLocation called');
     try {
       const { level, location } = req.params;
   
@@ -154,7 +118,5 @@ const collectiblesController = {
     }
   }
 };
-
-
 
 module.exports = collectiblesController;

@@ -3,11 +3,10 @@ import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
 import { getSilentStreet } from "../../../utils/API/eidos7";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibleTypes"
-import { getEidos7Collectibles } from "../../../utils/API/collectibleTypes";
-import { getCollectibles } from "../../../utils/API/collectibleTypes";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
+import { getCollectibles } from "../../../utils/API/collectibles";
 
-const SilentStreet = () => {
+const SilentStreet = ({ data }) => {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -108,34 +107,10 @@ const SilentStreet = () => {
   useEffect(() => {
     fetchSilentStreetCollectibles();
   }, []);
-
-  // const fetchSilentStreetCollectibles = async () => {
-  //   try {
-  //     const data = await getSilentStreet();
-  //     setContent(data);
-  //   } catch (err) {
-  //     console.error(err);
-  //     setError("Failed to fetch collectibles. Please try again later.");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
   
-  // const fetchSilentStreetCollectibles = async () => {
-  //   try {
-  //     const data = await getCollectiblesByLevelAndLocation('eidos-7', 'silent-street');
-  //     setContent(data);
-  //   } catch (err) {
-  //     console.error(err);
-  //     setError("Failed to fetch collectibles. Please try again later.");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const fetchSilentStreetCollectibles = async () => {
     try {
-      const data = await getCollectibles('Eidos 7', 'Silent Street');
+      const data = await getCollectiblesByLevelAndLocation('eidos-7', 'silent-street');
       setContent(data);
     } catch (err) {
       console.error(err);
@@ -144,18 +119,6 @@ const SilentStreet = () => {
       setIsLoading(false);
     }
   };
-
-  // const fetchSilentStreetCollectibles = async () => {
-  //   try {
-  //     const data = await getEidos7Collectibles('silent-street');
-  //     setContent(data);
-  //   } catch (err) {
-  //     console.error(err);
-  //     setError("Failed to fetch collectibles. Please try again later.");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
 
   return (
     <section>

@@ -33,7 +33,7 @@ const Eidos7Collectibles = () => {
         { href: "#construction-zone", title: "Construction Zone" },
         { href: "#city-underground", title: "City Underground" },
         { href: "#crater", title: "Crater" },
-        { href: "#eidos-7-continued", title: "Eidos 7 Continued" },
+        { href: "#eidos-7-continued", title: "Eidos 7 (Continued)" },
       ]
     },
     { mainLink: "/collectibles/xion", title: "Xion" },
@@ -59,13 +59,13 @@ const Eidos7Collectibles = () => {
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <SilentStreet />
           <ParkingTower />
-          {/* <AbandonedStation />
+          <AbandonedStation />
           <FloodedCommercialSector />
           <MemoryTower />
           <ConstructionZone />
           <CityUnderground />
           <Crater />
-          <Eidos7Continued /> */}
+          <Eidos7Continued />
           <div className='text-end pb-5 pe-2'>
             <p className='m-0 fw-bold'>Next guide »</p>
             <h5>
