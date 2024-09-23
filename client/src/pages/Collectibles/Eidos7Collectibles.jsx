@@ -59,13 +59,13 @@ const Eidos7Collectibles = () => {
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <SilentStreet />
           <ParkingTower />
-          {/* <AbandonedStation />
+          <AbandonedStation />
           <FloodedCommercialSector />
           <MemoryTower />
           <ConstructionZone />
           <CityUnderground />
           <Crater />
-          <Eidos7Continued /> */}
+          <Eidos7Continued />
           <div className='text-end pb-5 pe-2'>
             <p className='m-0 fw-bold'>Next guide »</p>
             <h5>

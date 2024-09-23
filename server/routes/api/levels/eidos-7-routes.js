@@ -28,13 +28,4 @@ router.route('/city-underground').get(getCityUnderground);
 router.route('/crater').get(getCrater);
 router.route('/eidos-7-continued').get(getEidos7Continued);
 
-// Routes to get Xion collectibles
-// Routes to get Wasteland collectibles
-// Routes to get Altess Levoire collectibles
-// Routes to get Matrix 11 collectibles
-// Routes to get Great Desert collectibles
-// Routes to get Abyss Levoire collectibles
-// Routes to get Eidos 9 collectibles
-// Routes to get Spire 4 collectibles
-
 module.exports = router;

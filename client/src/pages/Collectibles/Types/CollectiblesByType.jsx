@@ -5,9 +5,9 @@ import ErrorMessage from "../../../components/ErrorMessage";
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
-import { getCollectiblesByType } from '../../../utils/API/collectibleTypes';
+import { getBetaCores } from '../../../utils/API/collectibleTypes';
 
-const CollectiblesByType = () => {
+const BetaCores = () => {
   const { type } = useParams();
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,7 +16,7 @@ const CollectiblesByType = () => {
   useEffect(() => {
     const fetchCollectibles = async () => {
       try {
-        const data = await getCollectiblesByType(type);
+        const data = await getBetaCores(type);
         setContent(data);
       } catch (err) {
         console.error('Failed to fetch collectibles of type', type, err);
@@ -75,4 +75,4 @@ const CollectiblesByType = () => {
   );
 };
 
-export default CollectiblesByType;
+export default BetaCores;
