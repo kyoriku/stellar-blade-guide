@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getConstructionZone } from '../../../utils/API/eidos7';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
 
 const ConstructionZone = () => {
   const [content, setContent] = useState([]);
@@ -103,7 +103,7 @@ const ConstructionZone = () => {
 
   const fetchConstructionZoneCollectibles = async () => {
     try {
-      const data = await getConstructionZone();
+      const data = await getCollectiblesByLevelAndLocation('Eidos-7', 'Construction-Zone');
       setContent(data);
     } catch (err) {
       console.error(err);

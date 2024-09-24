@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-// import { getParkingTower } from '../../../utils/API/eidos7';
 import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
 
 const ParkingTower = ({ data }) => {

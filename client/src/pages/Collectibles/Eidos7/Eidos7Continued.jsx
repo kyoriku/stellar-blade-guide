@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getEidos7Continued } from '../../../utils/API/eidos7';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
 
 const Eidos7Continued = () => {
   const [content, setContent] = useState([]);
@@ -114,7 +114,7 @@ const Eidos7Continued = () => {
 
   const fetchEidos7ContinuedCollectibles = async () => {
     try {
-      const data = await getEidos7Continued();
+      const data = await getCollectiblesByLevelAndLocation('Eidos-7', 'Eidos-7-(Continued)');
       setContent(data);
     } catch (err) {
       console.error(err);

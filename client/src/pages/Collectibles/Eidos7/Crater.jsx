@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getCrater } from '../../../utils/API/eidos7';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
 
 const Crater = () => {
   const [content, setContent] = useState([]);
@@ -28,7 +28,7 @@ const Crater = () => {
 
   const fetchCraterCollectibles = async () => {
     try {
-      const data = await getCrater();
+      const data = await getCollectiblesByLevelAndLocation('Eidos-7', 'Crater');
       setContent(data);
     } catch (err) {
       console.error(err);

@@ -1,8 +1,8 @@
 const router = require('express').Router();
 const userRoutes = require('./user-routes');
-const collectiblesRoutes = require('./collectibles-routes');
+const collectibleRoutes = require('./collectible-routes');
 
 router.use('/users', userRoutes);
-router.use('/collectibles', collectiblesRoutes);
+router.use('/collectibles', collectibleRoutes);
 
 module.exports = router;

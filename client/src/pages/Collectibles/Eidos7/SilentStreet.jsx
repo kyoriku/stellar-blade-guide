@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getSilentStreet } from "../../../utils/API/eidos7";
 import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
-import { getCollectibles } from "../../../utils/API/collectibles";
 
 const SilentStreet = ({ data }) => {
   const [content, setContent] = useState([]);
@@ -107,10 +105,10 @@ const SilentStreet = ({ data }) => {
   useEffect(() => {
     fetchSilentStreetCollectibles();
   }, []);
-  
+
   const fetchSilentStreetCollectibles = async () => {
     try {
-      const data = await getCollectiblesByLevelAndLocation('eidos-7', 'silent-street');
+      const data = await getCollectiblesByLevelAndLocation('Eidos-7', 'Silent-Street');
       setContent(data);
     } catch (err) {
       console.error(err);

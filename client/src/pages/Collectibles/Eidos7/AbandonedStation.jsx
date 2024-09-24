@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getAbandonedStation } from '../../../utils/API/eidos7';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
 
 const AbandonedStation = () => {
   const [content, setContent] = useState([]);
@@ -38,7 +38,7 @@ const AbandonedStation = () => {
 
   const fetchAbandonedStationCollectibles = async () => {
     try {
-      const data = await getAbandonedStation();
+      const data = await getCollectiblesByLevelAndLocation('Eidos-7', 'Abandoned-Station');
       setContent(data);
     } catch (err) {
       console.error(err);

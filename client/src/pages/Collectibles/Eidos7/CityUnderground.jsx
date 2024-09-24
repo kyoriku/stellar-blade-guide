@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getCityUnderground } from '../../../utils/API/eidos7';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
 
 const CityUnderground = () => {
   const [content, setContent] = useState([]);
@@ -88,7 +88,7 @@ const CityUnderground = () => {
 
   const fetchCityUndergroundCollectibles = async () => {
     try {
-      const data = await getCityUnderground();
+      const data = await getCollectiblesByLevelAndLocation('Eidos-7', 'City-Underground');
       setContent(data);
     } catch (err) {
       console.error(err);
