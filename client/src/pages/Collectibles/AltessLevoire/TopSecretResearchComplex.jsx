@@ -3,12 +3,11 @@ import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
 import { getTopSecretResearchComplex } from '../../../utils/API/altessLevoire';
+import useCachedFetch from "../../../hooks/useCachedFetch";
+
+const CACHE_KEY = 'topSecretResearchComplexData';
 
 const TopSecretResearchComplex = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -17,21 +16,7 @@ const TopSecretResearchComplex = () => {
     },
   ];
 
-  useEffect(() => {
-    fetchTopSecretResearchComplexCollectibles();
-  }, []);
-
-  const fetchTopSecretResearchComplexCollectibles = async () => {
-    try {
-      const data = await getTopSecretResearchComplex();
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { content, isLoading, error } = useCachedFetch(CACHE_KEY, getTopSecretResearchComplex);
 
   return (
     <section>

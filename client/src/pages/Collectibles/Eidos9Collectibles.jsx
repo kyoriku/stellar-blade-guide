@@ -1,17 +1,26 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents'
-import useWindowSize from "../../hooks/WindowSize";
-import FallenOverpass from './Eidos9/FallenOverpass';
-import SubmergedCity from './Eidos9/SubmergedCity';
-import Atelier from './Eidos9/Atelier';
+import LoadingFallback from "../../components/LoadingFallback";
+import useWindowSize from "../../hooks/useWindowSize";
+
+const FallenOverpass = lazy(() => import('./Eidos9/FallenOverpass'));
+const SubmergedCity = lazy(() => import('./Eidos9/SubmergedCity'));
+const Atelier = lazy(() => import('./Eidos9/Atelier'));
 
 const Eidos9Collectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const timeout = setTimeout(() => {
+      setIsSlowLoading(true);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const tocLinks = [
@@ -45,9 +54,11 @@ const Eidos9Collectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Eidos 9 Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
-          <FallenOverpass />
-          <SubmergedCity />
-          <Atelier />
+          <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
+            <FallenOverpass />
+            <SubmergedCity />
+            <Atelier />
+          </Suspense>
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>

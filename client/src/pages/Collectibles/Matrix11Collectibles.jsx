@@ -1,21 +1,30 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from 'react-router-dom';
-import TableOfContents from '../../components/TableOfContents';
-import useWindowSize from "../../hooks/WindowSize";
-import ClosedOffPlatform from "./Matrix11/ClosedOffPlatform";
-import Landfill from "./Matrix11/Landfill";
-import CollapsedRailBridge from "./Matrix11/CollapsedRailBridge";
-import UndergroundSewer from "./Matrix11/UndergroundSewer";
-import RottenLabyrinth from "./Matrix11/RottenLabyrinth";
-import TemporaryArmoury from "./Matrix11/TemporaryArmoury";
-import TrainGraveyard from "./Matrix11/TrainGraveyard";
+import TableOfContents from '../../components/TableOfContents'
+import LoadingFallback from "../../components/LoadingFallback";
+import useWindowSize from "../../hooks/useWindowSize";
+
+const ClosedOffPlatform = lazy(() => import("./Matrix11/ClosedOffPlatform"));
+const Landfill = lazy(() => import("./Matrix11/Landfill"));
+const CollapsedRailBridge = lazy(() => import("./Matrix11/CollapsedRailBridge"));
+const UndergroundSewer = lazy(() => import("./Matrix11/UndergroundSewer"));
+const RottenLabyrinth = lazy(() => import("./Matrix11/RottenLabyrinth"));
+const TemporaryArmoury = lazy(() => import("./Matrix11/TemporaryArmoury"));
+const TrainGraveyard = lazy(() => import("./Matrix11/TrainGraveyard"));
 
 const Matrix11Collectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const timeout = setTimeout(() => {
+      setIsSlowLoading(true);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const tocLinks = [
@@ -53,13 +62,15 @@ const Matrix11Collectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Matrix 11 Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
-          <ClosedOffPlatform />
-          <Landfill />
-          <CollapsedRailBridge />
-          <UndergroundSewer />
-          <RottenLabyrinth />
-          <TemporaryArmoury />
-          <TrainGraveyard />
+          <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
+            <ClosedOffPlatform />
+            <Landfill />
+            <CollapsedRailBridge />
+            <UndergroundSewer />
+            <RottenLabyrinth />
+            <TemporaryArmoury />
+            <TrainGraveyard />
+          </Suspense>
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>

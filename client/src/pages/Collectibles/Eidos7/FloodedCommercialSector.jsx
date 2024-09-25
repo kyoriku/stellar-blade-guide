@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getFloodedCommercialSector } from '../../../utils/API/eidos7';
+import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+
+const CACHE_KEY = 'floodedCommercialSectorData';
 
 const FloodedCommercialSector = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -87,21 +86,12 @@ const FloodedCommercialSector = () => {
     }
   ];
 
-  useEffect(() => {
-    fetchFloodedCommercialSectorCollectibles();
-  }, []);
-
-  const fetchFloodedCommercialSectorCollectibles = async () => {
-    try {
-      const data = await getFloodedCommercialSector();
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { content, error, isLoading } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Eidos-7",
+    "Flooded-Commercial-Sector"
+  );
 
   return (
     <section>

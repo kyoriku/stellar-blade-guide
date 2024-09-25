@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getWastelandContinued } from "../../../utils/API/wasteland";
+// import { useCollectiblesQuery } from '../../../hooks/useCollectiblesQuery';
+import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+
+const CACHE_KEY = 'wastelandContinuedData';
 
 const WastelandContinued = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -82,21 +82,14 @@ const WastelandContinued = () => {
     }
   ];
 
-  useEffect(() => {
-    fetchWastelandContinuedCollectibles();
-  }, []);
+  // const { data: content, error, isLoading } = useCollectiblesQuery("Wasteland", "Wasteland-(Continued)");
 
-  const fetchWastelandContinuedCollectibles = async () => {
-    try {
-      const data = await getWastelandContinued();
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { content, error, isLoading } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Wasteland",
+    "Wasteland-(Continued)"
+  );
 
   return (
     <section>

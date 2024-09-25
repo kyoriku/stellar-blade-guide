@@ -1,20 +1,29 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents'
-import useWindowSize from "../../hooks/WindowSize";
-import SolarTower from "./GreatDesert/SolarTower";
-import CollapsedOverpass from "./GreatDesert/CollapsedOverpass";
-import BuriedRuins from "./GreatDesert/BuriedRuins";
-import CentralGreatDesert from "./GreatDesert/CentralGreatDesert";
-import NorthernGreatDesert from "./GreatDesert/NorthernGreatDesert";
-import Oasis from "./GreatDesert/Oasis";
+import LoadingFallback from "../../components/LoadingFallback";
+import useWindowSize from "../../hooks/useWindowSize";
+
+const SolarTower = lazy(() => import("./GreatDesert/SolarTower"));
+const CollapsedOverpass = lazy(() => import("./GreatDesert/CollapsedOverpass"));
+const BuriedRuins = lazy(() => import("./GreatDesert/BuriedRuins"));
+const CentralGreatDesert = lazy(() => import("./GreatDesert/CentralGreatDesert"));
+const NorthernGreatDesert = lazy(() => import("./GreatDesert/NorthernGreatDesert"));
+const Oasis = lazy(() => import("./GreatDesert/Oasis"));
 
 const GreatDesertCollectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const timeout = setTimeout(() => {
+      setIsSlowLoading(true);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const tocLinks = [
@@ -51,12 +60,14 @@ const GreatDesertCollectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Great Desert Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
-          <SolarTower />
-          <CollapsedOverpass />
-          <BuriedRuins />
-          <CentralGreatDesert />
-          <NorthernGreatDesert />
-          <Oasis />
+          <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
+            <SolarTower />
+            <CollapsedOverpass />
+            <BuriedRuins />
+            <CentralGreatDesert />
+            <NorthernGreatDesert />
+            <Oasis />
+          </Suspense>
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>

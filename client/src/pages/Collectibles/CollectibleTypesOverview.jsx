@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents'
-import useWindowSize from "../../hooks/WindowSize";
+import useWindowSize from "../../hooks/useWindowSize";
 import CollectiblesByType from "./Types/CollectiblesByType";
 
 const Collectibles = () => {

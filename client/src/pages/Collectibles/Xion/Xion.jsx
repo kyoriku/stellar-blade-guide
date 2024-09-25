@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getXion } from '../../../utils/API/xion';
+import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+
+const CACHE_KEY = 'xionData';
 
 const Xion = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -251,35 +250,25 @@ const Xion = () => {
     }
   ]
 
-  useEffect(() => {
-    fetchXionCollectibles();
-  }, []);
-
-  const fetchXionCollectibles = async () => {
-    try {
-      const data = await getXion();
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const { content, error, isLoading } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Xion",
+    "Xion"
+  );
 
   return (
-<section>
-  <Header id="xion" title="▽ Xion Collectibles" />
-  <ErrorMessage message={error} />
-  <ContentSection
-    staticContent={staticContent}
-    content={content}
-    isLoading={isLoading}
-    bottomMarginCondition={24}
-    additionalBottomMargin={true}
-  />
-</section>
-
+    <section>
+      <Header id="xion" title="▽ Xion Collectibles" />
+      <ErrorMessage message={error} />
+      <ContentSection
+        staticContent={staticContent}
+        content={content}
+        isLoading={isLoading}
+        bottomMarginCondition={24}
+        additionalBottomMargin={true}
+      />
+    </section>
   );
 };
 
