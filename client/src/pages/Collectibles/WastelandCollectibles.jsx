@@ -1,25 +1,34 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents'
-import useWindowSize from "../../hooks/WindowSize";
-import BarrenLands from "./Wasteland/BarrenLands";
-import GreatCanyon from "./Wasteland/GreatCanyon";
-import ScrapPlains from "./Wasteland/ScrapPlains";
-import OilStorageFacility from "./Wasteland/OilStorageFacility";
-import ScrapYard from "./Wasteland/ScrapYard";
-import WastelandBasin from "./Wasteland/WastelandBasin";
-import ScrapPlainsContinued from "./Wasteland/ScrapPlainsContinued";
-import Plant from "./Wasteland/Plant";
-import GreatCanyonContinued from "./Wasteland/GreatCanyonContinued";
-import ForbiddenArea from "./Wasteland/ForbiddenArea";
-import WastelandContinued from "./Wasteland/WastelandContinued";
+import LoadingFallback from "../../components/LoadingFallback";
+import useWindowSize from "../../hooks/useWindowSize";
+
+const BarrenLands = lazy(() => import("./Wasteland/BarrenLands"));
+const GreatCanyon = lazy(() => import("./Wasteland/GreatCanyon"));
+const ScrapPlains = lazy(() => import("./Wasteland/ScrapPlains"));
+const OilStorageFacility = lazy(() => import("./Wasteland/OilStorageFacility"));
+const ScrapYard = lazy(() => import("./Wasteland/ScrapYard"));
+const WastelandBasin = lazy(() => import("./Wasteland/WastelandBasin"));
+const ScrapPlainsContinued = lazy(() => import("./Wasteland/ScrapPlainsContinued"));
+const Plant = lazy(() => import("./Wasteland/Plant"));
+const GreatCanyonContinued = lazy(() => import("./Wasteland/GreatCanyonContinued"));
+const ForbiddenArea = lazy(() => import("./Wasteland/ForbiddenArea"));
+const WastelandContinued = lazy(() => import("./Wasteland/WastelandContinued"));
 
 const WastelandCollectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const timeout = setTimeout(() => {
+      setIsSlowLoading(true);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const tocLinks = [
@@ -61,17 +70,19 @@ const WastelandCollectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Wasteland Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
-          <BarrenLands />
-          <GreatCanyon />
-          <ScrapPlains />
-          <OilStorageFacility />
-          <ScrapYard />
-          <WastelandBasin />
-          <ScrapPlainsContinued />
-          <Plant />
-          <GreatCanyonContinued />
-          <ForbiddenArea />
-          <WastelandContinued />
+          <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
+            <BarrenLands />
+            <GreatCanyon />
+            <ScrapPlains />
+            <OilStorageFacility />
+            <ScrapYard />
+            <WastelandBasin />
+            <ScrapPlainsContinued />
+            <Plant />
+            <GreatCanyonContinued />
+            <ForbiddenArea />
+            <WastelandContinued />
+          </Suspense>
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>

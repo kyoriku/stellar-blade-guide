@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getForbiddenArea } from "../../../utils/API/wasteland";
+import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+
+const CACHE_KEY = 'forbiddenAreaData';
 
 const ForbiddenArea = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -27,21 +26,12 @@ const ForbiddenArea = () => {
     }
   ];
 
-  useEffect(() => {
-    fetchForbiddenAreaCollectibles();
-  }, []);
-
-  const fetchForbiddenAreaCollectibles = async () => {
-    try {
-      const data = await getForbiddenArea();
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { content, error, isLoading } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Wasteland",
+    "Forbidden Area"
+  );
 
   return (
     <section>

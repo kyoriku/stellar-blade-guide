@@ -1,19 +1,28 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents'
-import useWindowSize from "../../hooks/WindowSize";
-import EmergencyExit from "./AbyssLevoire/EmergencyExit";
-import ClosedLobby from "./AbyssLevoire/ClosedLobby";
-import CapsuleClusterRoom from "./AbyssLevoire/CapsuleClusterRoom";
-import UndergroundPassage from "./AbyssLevoire/UndergroundPassage";
-import LaboratoryRuins from "./AbyssLevoire/LaboratoryRuins";
+import LoadingFallback from "../../components/LoadingFallback";
+import useWindowSize from "../../hooks/useWindowSize";
+
+const EmergencyExit = lazy(() => import("./AbyssLevoire/EmergencyExit"));
+const ClosedLobby = lazy(() => import("./AbyssLevoire/ClosedLobby"));
+const CapsuleClusterRoom = lazy(() => import("./AbyssLevoire/CapsuleClusterRoom"));
+const UndergroundPassage = lazy(() => import("./AbyssLevoire/UndergroundPassage"));
+const LaboratoryRuins = lazy(() => import("./AbyssLevoire/LaboratoryRuins"));
 
 const AbyssLevoireCollectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const timeout = setTimeout(() => {
+      setIsSlowLoading(true);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const tocLinks = [
@@ -49,11 +58,13 @@ const AbyssLevoireCollectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Abyss Levoire Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
-          <EmergencyExit />
-          <ClosedLobby />
-          <CapsuleClusterRoom />
-          <UndergroundPassage />
-          <LaboratoryRuins />
+          <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
+            <EmergencyExit />
+            <ClosedLobby />
+            <CapsuleClusterRoom />
+            <UndergroundPassage />
+            <LaboratoryRuins />
+          </Suspense>
           <div className='d-flex justify-content-between pb-5'>
             <div className='text-start ps-2'>
               <p className='m-0 fw-bold'>« Previous guide</p>

@@ -1,26 +1,35 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents'
-import useWindowSize from "../../hooks/WindowSize";
-import OrcaSpaceComplex from "./Spire4/OrcaSpaceComplex";
-import Hypertube from "./Spire4/Hypertube";
-import SpaceLogisticsComplex from "./Spire4/SpaceLogisticsComplex";
-import RaphaelSpaceCentre from "./Spire4/RaphaelSpaceCentre";
-import CargoLift121 from "./Spire4/CargoLift121";
-import MaintenanceSector from "./Spire4/MaintenanceSector";
-import TowerOuterWall from "./Spire4/TowerOuterWall";
-import PassengerLift161 from "./Spire4/PassengerLift161";
-import PrestigeLounge from "./Spire4/PrestigeLounge";
-import VermillionGarden from "./Spire4/VermillionGarden";
-import HighOrbitStation from "./Spire4/HighOrbitStation";
-import Nest from "./Spire4/Nest";
+import LoadingFallback from "../../components/LoadingFallback";
+import useWindowSize from "../../hooks/useWindowSize";
+
+const OrcaSpaceComplex = lazy(() => import("./Spire4/OrcaSpaceComplex"));
+const Hypertube = lazy(() => import("./Spire4/Hypertube"));
+const SpaceLogisticsComplex = lazy(() => import("./Spire4/SpaceLogisticsComplex"));
+const RaphaelSpaceCentre = lazy(() => import("./Spire4/RaphaelSpaceCentre"));
+const CargoLift121 = lazy(() => import("./Spire4/CargoLift121"));
+const MaintenanceSector = lazy(() => import("./Spire4/MaintenanceSector"));
+const TowerOuterWall = lazy(() => import("./Spire4/TowerOuterWall"));
+const PassengerLift161 = lazy(() => import("./Spire4/PassengerLift161"));
+const PrestigeLounge = lazy(() => import("./Spire4/PrestigeLounge"));
+const VermillionGarden = lazy(() => import("./Spire4/VermillionGarden"));
+const HighOrbitStation = lazy(() => import("./Spire4/HighOrbitStation"));
+const Nest = lazy(() => import("./Spire4/Nest"));
 
 const Spire4Collectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const timeout = setTimeout(() => {
+      setIsSlowLoading(true);
+    }, 5000);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   const tocLinks = [
@@ -63,18 +72,20 @@ const Spire4Collectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Spire 4 Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
-          <OrcaSpaceComplex />
-          <Hypertube />
-          <SpaceLogisticsComplex />
-          <RaphaelSpaceCentre />
-          <CargoLift121 />
-          <MaintenanceSector />
-          <TowerOuterWall />
-          <PassengerLift161 />
-          <PrestigeLounge />
-          <VermillionGarden />
-          <HighOrbitStation />
-          <Nest />
+          <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
+            <OrcaSpaceComplex />
+            <Hypertube />
+            <SpaceLogisticsComplex />
+            <RaphaelSpaceCentre />
+            <CargoLift121 />
+            <MaintenanceSector />
+            <TowerOuterWall />
+            <PassengerLift161 />
+            <PrestigeLounge />
+            <VermillionGarden />
+            <HighOrbitStation />
+            <Nest />
+          </Suspense>
           <div className='text-start pb-5 ps-2'>
             <p className='m-0 fw-bold'>« Previous guide</p>
             <h5><Link to="/collectibles/eidos-9" className='text-decoration-none'>Eidos 9 Collectibles</Link></h5>

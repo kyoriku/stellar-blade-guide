@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getResearchLabEntrance } from '../../../utils/API/altessLevoire';
+import { getResearchLabEntrance } from "../../../utils/API/altessLevoire";
+import useCachedFetch from "../../../hooks/useCachedFetch";
+
+const CACHE_KEY = 'researchLabEntranceData';
 
 const ResearchLabEntrance = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -17,21 +16,7 @@ const ResearchLabEntrance = () => {
     },
   ];
 
-  useEffect(() => {
-    fetchResearchLabEntranceCollectibles();
-  }, []);
-
-  const fetchResearchLabEntranceCollectibles = async () => {
-    try {
-      const data = await getResearchLabEntrance();
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { content: cachedImages, isLoading, error } = useCachedFetch(CACHE_KEY, getResearchLabEntrance);
 
   return (
     <section>
@@ -39,7 +24,7 @@ const ResearchLabEntrance = () => {
       <ErrorMessage message={error} />
       <ContentSection
         staticContent={staticContent}
-        content={content}
+        content={cachedImages}
         isLoading={isLoading}
         skeletonVariant="large"
       />
@@ -47,4 +32,4 @@ const ResearchLabEntrance = () => {
   );
 };
 
-export default ResearchLabEntrance
+export default ResearchLabEntrance;

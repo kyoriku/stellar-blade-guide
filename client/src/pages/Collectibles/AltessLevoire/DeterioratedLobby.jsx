@@ -3,12 +3,11 @@ import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
 import { getDeterioratedLobby } from '../../../utils/API/altessLevoire';
+import useCachedFetch from "../../../hooks/useCachedFetch";
+
+const CACHE_KEY = 'airVentData';
 
 const DeterioratedLobby = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -32,21 +31,7 @@ const DeterioratedLobby = () => {
     },
   ];
 
-  useEffect(() => {
-    fetchDeterioratedLobbyCollectibles();
-  }, []);
-
-  const fetchDeterioratedLobbyCollectibles = async () => {
-    try {
-      const data = await getDeterioratedLobby();
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { content, isLoading, error } = useCachedFetch(CACHE_KEY, getDeterioratedLobby);
 
   return (
     <section>

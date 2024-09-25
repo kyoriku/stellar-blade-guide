@@ -1,8 +1,8 @@
-import React, { useEffect, lazy, Suspense, useState } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents';
 import LoadingFallback from "../../components/LoadingFallback";
-import useWindowSize from "../../hooks/WindowSize";
+import useWindowSize from "../../hooks/useWindowSize";
 
 const SilentStreet = lazy(() => import('./Eidos7/SilentStreet'));
 const ParkingTower = lazy(() => import('./Eidos7/ParkingTower'));

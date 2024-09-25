@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles"
+import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+
+const CACHE_KEY = 'cityUndergroundData';
 
 const CityUnderground = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -82,21 +81,12 @@ const CityUnderground = () => {
     }
   ];
 
-  useEffect(() => {
-    fetchCityUndergroundCollectibles();
-  }, []);
-
-  const fetchCityUndergroundCollectibles = async () => {
-    try {
-      const data = await getCollectiblesByLevelAndLocation('Eidos-7', 'City-Underground');
-      setContent(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { content, error, isLoading } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Eidos-7",
+    "City-Underground"
+  );
 
   return (
     <section>
