@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getSecurityCenter } from '../../../utils/API/altessLevoire';
 import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
 
 const CACHE_KEY = 'securityCenterData';
 
@@ -21,7 +21,12 @@ const SecurityCenter = () => {
     }
   ];
 
-  const { content, isLoading, error } = useCachedFetch(CACHE_KEY, getSecurityCenter);
+  const { content, isLoading, error } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Altess-Levoire",
+    "Security-Center"
+  );
 
   return (
     <section>

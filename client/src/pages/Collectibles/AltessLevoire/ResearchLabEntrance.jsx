@@ -2,8 +2,8 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getResearchLabEntrance } from "../../../utils/API/altessLevoire";
 import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
 
 const CACHE_KEY = 'researchLabEntranceData';
 
@@ -16,7 +16,12 @@ const ResearchLabEntrance = () => {
     },
   ];
 
-  const { content: cachedImages, isLoading, error } = useCachedFetch(CACHE_KEY, getResearchLabEntrance);
+  const { content, error, isLoading } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Altess-Levoire",
+    "Research-Lab-Entrance"
+  );
 
   return (
     <section>
@@ -24,7 +29,7 @@ const ResearchLabEntrance = () => {
       <ErrorMessage message={error} />
       <ContentSection
         staticContent={staticContent}
-        content={cachedImages}
+        content={content}
         isLoading={isLoading}
         skeletonVariant="large"
       />

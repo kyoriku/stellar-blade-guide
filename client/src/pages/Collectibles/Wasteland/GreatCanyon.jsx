@@ -155,7 +155,7 @@ const GreatCanyon = () => {
     CACHE_KEY,
     getCollectiblesByLevelAndLocation,
     "Wasteland",
-    "Great Canyon"
+    "Great-Canyon"
   );
 
   return (

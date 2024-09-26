@@ -35,7 +35,7 @@ const AbandonedStation = () => {
     CACHE_KEY,
     getCollectiblesByLevelAndLocation,
     "Eidos-7", 
-    "Abandoned Station"
+    "Abandoned-Station"
   );
 
   return (

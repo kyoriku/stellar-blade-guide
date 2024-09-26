@@ -12,7 +12,7 @@ const Eidos7Continued = () => {
     {
       id: 1,
       title: "Locked Legion Supply Chest",
-      text: "In Bar 99 on Silent Street, you can now open this cache if you picked up the “Legion's Secret Stash”Request. Code is 1228.",
+      text: "In Bar 99 on Silent Street, you can now open this cache if you picked up the “Legion's Secret Stash” Request. Code is 1228.",
     },
     {
       id: 2,

@@ -30,7 +30,7 @@ const ForbiddenArea = () => {
     CACHE_KEY,
     getCollectiblesByLevelAndLocation,
     "Wasteland",
-    "Forbidden Area"
+    "Forbidden-Area"
   );
 
   return (
