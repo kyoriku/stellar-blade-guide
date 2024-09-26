@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getTopSecretResearchComplex } from '../../../utils/API/altessLevoire';
 import useCachedFetch from "../../../hooks/useCachedFetch";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
 
 const CACHE_KEY = 'topSecretResearchComplexData';
 
@@ -16,7 +16,12 @@ const TopSecretResearchComplex = () => {
     },
   ];
 
-  const { content, isLoading, error } = useCachedFetch(CACHE_KEY, getTopSecretResearchComplex);
+  const { content, isLoading, error } = useCachedFetch(
+    CACHE_KEY,
+    getCollectiblesByLevelAndLocation,
+    "Altess-Levoire",
+    "Top-Secret-Research-Complex"
+  );
 
   return (
     <section>
