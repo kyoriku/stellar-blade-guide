@@ -1,57 +1,52 @@
-const dbName = 'CollectiblesDB';
-const dbVersion = 1;
+const DB_NAME = 'CollectiblesDB';
+const DB_VERSION = 1;
 
-let db;
-
-const initDB = () => {
+const openDB = () => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(dbName, dbVersion);
-    
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => reject("IndexedDB error");
+
+    request.onsuccess = (event) => resolve(event.target.result);
+
     request.onupgradeneeded = (event) => {
-      db = event.target.result;
-      if (!db.objectStoreNames.contains('collectibles')) {
-        db.createObjectStore('collectibles', { keyPath: 'key' });
-      }
-    };
-
-    request.onsuccess = (event) => {
-      db = event.target.result;
-      resolve(db);
-    };
-
-    request.onerror = (event) => {
-      console.error('Database error:', event.target.error);
-      reject(event.target.error);
+      const db = event.target.result;
+      db.createObjectStore('collectibles', { keyPath: "id" });
     };
   });
 };
 
-const saveData = async (key, data) => {
-  const transaction = db.transaction(['collectibles'], 'readwrite');
-  const store = transaction.objectStore('collectibles');
-  const timestamp = Date.now();
-  await store.put({ key, data, timestamp });
-};
-
-const getData = async (key) => {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['collectibles'], 'readonly');
+export const getCachedData = async (storeKey) => {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction('collectibles', "readonly");
     const store = transaction.objectStore('collectibles');
-    const request = store.get(key);
-    
-    request.onsuccess = (event) => {
-      resolve(event.target.result);
-    };
-    
-    request.onerror = (event) => {
-      console.error('Error getting data:', event.target.error);
-      reject(event.target.error);
-    };
-  });
+    return await new Promise((resolve, reject) => {
+      const request = store.get(storeKey);
+      request.onerror = () => reject("Error fetching cached data");
+      request.onsuccess = () => resolve(request.result);
+    });
+  } catch (error) {
+    console.error("Error in getCachedData:", error);
+    return null;
+  }
 };
 
-const isDataStale = (timestamp, expirationTime) => {
-  return (Date.now() - timestamp) > expirationTime;
+export const cacheData = async (storeKey, data) => {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction('collectibles', "readwrite");
+    const store = transaction.objectStore('collectibles');
+    await new Promise((resolve, reject) => {
+      const request = store.put({ 
+        id: storeKey, 
+        data: data, 
+        timestamp: Date.now() 
+      });
+      request.onerror = () => reject("Error caching data");
+      request.onsuccess = () => resolve();
+    });
+  } catch (error) {
+    console.error("Error in cacheData:", error);
+  }
 };
-
-export { initDB, saveData, getData, isDataStale };

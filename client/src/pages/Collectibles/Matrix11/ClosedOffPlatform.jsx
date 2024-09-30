@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getClosedOffPlatform } from "../../../utils/API/matrix11";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
 
-const closedOffPlatform = () => {
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+const ClosedOffPlatform = () => {
   const [content, setContent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -107,9 +110,24 @@ const closedOffPlatform = () => {
   }, []);
 
   const fetchClosedOffPlatformCollectibles = async () => {
+    const cacheKey = "Matrix-11_Closed-Off-Platform";
     try {
-      const data = await getClosedOffPlatform();
+      // Try to get data from cache
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      // If no cached data or data is stale, fetch from API
+      const data = await getCollectiblesByLevelAndLocation("Matrix-11", "Closed-Off-Platform");
       setContent(data);
+
+      // Cache the new data
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");
@@ -132,4 +150,4 @@ const closedOffPlatform = () => {
   );
 };
 
-export default closedOffPlatform;
+export default ClosedOffPlatform;
