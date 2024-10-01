@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getSolarTower } from "../../../utils/API/greatDesert";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 const SolarTower = () => {
   const [content, setContent] = useState([]);
@@ -162,9 +165,21 @@ const SolarTower = () => {
   }, []);
 
   const fetchSolarTowerCollectibles = async () => {
+    const cacheKey = "Great-Desert_Solar-Tower";
     try {
-      const data = await getSolarTower();
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await getCollectiblesByLevelAndLocation("Great-Desert", "Solar-Tower");
       setContent(data);
+
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");

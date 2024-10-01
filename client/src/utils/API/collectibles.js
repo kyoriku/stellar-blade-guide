@@ -25,30 +25,3 @@ export const getCollectiblesByType = async (type) => {
     throw error;
   }
 }
-
-// export const getCollectibles = async (options = {}) => {
-//   const { level, location, type } = options;
-
-//   try {
-//     let url = BASE_URL;
-
-//     if (type) {
-//       url += `/${type}`;
-//     }
-//     if (level) {
-//       url += `/${level}`;
-//       if (location) {
-//         url += `/${location}`;
-//       }
-//     }
-
-//     const response = await fetch(url);
-//     if (!response.ok) {
-//       throw new Error(`Error: ${response.status} ${response.statusText}`);
-//     }
-//     return await response.json();
-//   } catch (error) {
-//     console.error(`Failed to fetch collectibles:`, error);
-//     throw error;
-//   }
-// }
