@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getEmergencyExit } from '../../../utils/API/abyssLevoire';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 const EmergencyExit = () => {
   const [content, setContent] = useState([]);
@@ -32,9 +35,21 @@ const EmergencyExit = () => {
   }, []);
 
   const fetchEmergencyExitCollectibles = async () => {
+    const cacheKey = "Abyss-Levoire_Emergency-Exit";
     try {
-      const data = await getEmergencyExit();
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await getCollectiblesByLevelAndLocation("Abyss-Levoire", "Emergency-Exit");
       setContent(data);
+
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");

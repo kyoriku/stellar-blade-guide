@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getUndergroundPassage } from '../../../utils/API/abyssLevoire';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 const UndergroundPassage = () => {
   const [content, setContent] = useState([]);
@@ -42,9 +45,21 @@ const UndergroundPassage = () => {
   }, []);
 
   const fetchUndergroundPassageCollectibles = async () => {
+    const cacheKey = "Abyss-Levoire_Underground-Passage";
     try {
-      const data = await getUndergroundPassage();
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await getCollectiblesByLevelAndLocation("Abyss-Levoire", "Underground-Passage");
       setContent(data);
+
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");
