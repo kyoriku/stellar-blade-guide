@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getAtelier } from '../../../utils/API/eidos9';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 const Atelier = () => {
   const [content, setContent] = useState([]);
@@ -33,9 +36,21 @@ const Atelier = () => {
   }, []);
 
   const fetchAtelierCollectibles = async () => {
+    const cacheKey = "Eidos-9_Atelier";
     try {
-      const data = await getAtelier();
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await getCollectiblesByLevelAndLocation("Eidos-9", "Atelier");
       setContent(data);
+
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");
