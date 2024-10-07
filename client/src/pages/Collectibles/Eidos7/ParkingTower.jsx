@@ -2,10 +2,16 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
+import usePersistentCache from "../../../hooks/usePersistentCache";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
 
 const ParkingTower = () => {
-  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Parking-Tower");
+  const { data: content, loading: isLoading, error } = usePersistentCache(
+    "Eidos-7_Parking-Tower",
+    getCollectiblesByLevelAndLocation,
+    "Eidos-7",
+    "Parking-Tower"
+  );
 
   const staticContent = [
     {

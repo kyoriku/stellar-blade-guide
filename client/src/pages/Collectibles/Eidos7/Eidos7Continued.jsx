@@ -2,10 +2,16 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
+import usePersistentCache from "../../../hooks/usePersistentCache";
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
 
 const Eidos7Continued = () => {
-  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Eidos-7-(Continued)");
+  const { data: content, loading: isLoading, error } = usePersistentCache(
+    "Eidos-7_Continued",
+    getCollectiblesByLevelAndLocation,
+    "Eidos-7",
+    "Eidos-7-(Continued)"
+  ); 
 
   const staticContent = [
     {

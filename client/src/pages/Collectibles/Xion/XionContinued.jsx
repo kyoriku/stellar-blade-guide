@@ -2,12 +2,14 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'xionContinuedData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const XionContinued = () => {
+  const { content, error, isLoading } = useCachedCollectibles(
+    "Xion",
+    "Xion-(Continued)"
+  );
+
   const staticContent = [
     {
       id: 1,
@@ -104,13 +106,6 @@ const XionContinued = () => {
       text: "Check the large monitor inside the same room, it's just up the steps from the pile of bodies.",
     },
   ];
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Xion",
-    "Xion-(Continued)"
-  );
 
   return (
     <section>
