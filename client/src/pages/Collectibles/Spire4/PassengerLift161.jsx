@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getPassengerLift161 } from '../../../utils/API/spire4';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 const PassengerLift161 = () => {
   const [content, setContent] = useState([]);
@@ -37,9 +40,21 @@ const PassengerLift161 = () => {
   }, []);
 
   const fetchPassengerLift161Collectibles = async () => {
+    const cacheKey = "Spire-4_Passenger-Lift-161";
     try {
-      const data = await getPassengerLift161();
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await getCollectiblesByLevelAndLocation("Spire-4", "Passenger-Lift-161");
       setContent(data);
+
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");
