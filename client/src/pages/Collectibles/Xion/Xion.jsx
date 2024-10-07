@@ -2,12 +2,14 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'xionData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const Xion = () => {
+  const { content, error, isLoading } = useCachedCollectibles(
+    "Xion", 
+    "Xion"
+  );
+
   const staticContent = [
     {
       id: 1,
@@ -249,13 +251,6 @@ const Xion = () => {
       text: "In the Gwen Hair Salon (which opens up after you agree to go to the Wasteland on foot), which is in the centre of Xion, near the stairs that leads to Sisters' Junk.",
     }
   ]
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Xion",
-    "Xion"
-  );
 
   return (
     <section>
