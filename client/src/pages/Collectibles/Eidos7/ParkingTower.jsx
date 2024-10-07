@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'parkiningTowerData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const ParkingTower = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Parking-Tower");
+
   const staticContent = [
     {
       id: 1,
@@ -105,13 +104,6 @@ const ParkingTower = () => {
       text: "Head slightly north of the corpse and turn around and climb the side of the building. There's a supply crate up top.",
     }
   ]
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Parking-Tower"
-  );
 
   return (
     <section>

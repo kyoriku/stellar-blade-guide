@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'silentStreetData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const SilentStreet = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Silent-Street");
+
   const staticContent = [
     {
       id: 1,
@@ -100,13 +99,6 @@ const SilentStreet = () => {
       text: "After heading through the door (using the Fusion Cell), head left, defeat the Barnacle, and this document is a book on the shelf in the southeast corner.",
     },
   ];
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Silent-Street"
-  );
 
   return (
     <section>

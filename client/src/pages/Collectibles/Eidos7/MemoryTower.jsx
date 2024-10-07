@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'memoryTowerData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const MemoryTower = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Memory-Tower");
+
   const staticContent = [
     {
       id: 1,
@@ -55,13 +54,6 @@ const MemoryTower = () => {
       text: "Just to the north of the camp is a corpse with this memorystick.",
     }
   ]
-
-  const { content, isLoading, error } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Memory-Tower"
-  );
 
   return (
     <section>

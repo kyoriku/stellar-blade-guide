@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'craterData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const Crater = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Crater");
+
   const staticContent = [
     {
       id: 1,
@@ -20,13 +19,6 @@ const Crater = () => {
       text: "Just to the right, up the rocks, when you enter the Crater area. Hard to miss.",
     }
   ];
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7", 
-    "Crater"
-  );
 
   return (
     <section>
