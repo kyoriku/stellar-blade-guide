@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getRaphaelSpaceCentre } from '../../../utils/API/spire4';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 const RaphaelSpaceCentre = () => {
   const [content, setContent] = useState([]);
@@ -118,9 +121,21 @@ const RaphaelSpaceCentre = () => {
   }, []);
 
   const fetchRaphaelSpaceCentreCollectibles = async () => {
+    const cacheKey = "Spire-4_Raphael-Space-Centre";
     try {
-      const data = await getRaphaelSpaceCentre();
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await getCollectiblesByLevelAndLocation("Spire-4", "Raphael-Space-Centre");
       setContent(data);
+
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");

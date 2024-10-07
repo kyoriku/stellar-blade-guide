@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import { getSpaceLogisticsComplex } from '../../../utils/API/spire4';
+import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import { getCachedData, cacheData } from "../../../utils/indexedDB";
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 const SpaceLogisticsComplex = () => {
   const [content, setContent] = useState([]);
@@ -123,9 +126,21 @@ const SpaceLogisticsComplex = () => {
   }, []);
 
   const fetchSpaceLogisticsComplexCollectibles = async () => {
+    const cacheKey = "Spire-4_Space-Logistics-Complex";
     try {
-      const data = await getSpaceLogisticsComplex();
+      const cachedEntry = await getCachedData(cacheKey);
+      const now = Date.now();
+
+      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
+        setContent(cachedEntry.data);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await getCollectiblesByLevelAndLocation("Spire-4", "Space-Logistics-Complex");
       setContent(data);
+
+      await cacheData(cacheKey, data);
     } catch (err) {
       console.error(err);
       setError("Failed to fetch collectibles. Please try again later.");
