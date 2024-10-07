@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'eidos7ContinuedData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const Eidos7Continued = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Eidos-7-(Continued)");
+
   const staticContent = [
     {
       id: 1,
@@ -106,13 +105,6 @@ const Eidos7Continued = () => {
       text: "Part of the “End of the Nightmare” side quest in the previously flooded Commercial District (have to lift the floodgates, fast-travel to a different place, and then return to Eidos 7 for this one to appear).  North side of the river, at the lowest level you can go",
     }
   ];
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Eidos-7-(Continued)"
-  );
 
   return (
     <section>

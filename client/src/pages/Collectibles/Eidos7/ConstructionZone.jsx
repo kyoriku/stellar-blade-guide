@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'constructionZoneData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const ConstructionZone = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Construction-Zone");
+
   const staticContent = [
     {
       id: 1,
@@ -95,13 +94,6 @@ const ConstructionZone = () => {
       text: "Use the crane to destroy the right wall this time, and use the beam to get across into that room. This Nano Suit is inside.",
     }
   ]
-
-  const {content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Construction-Zone"
-  );
 
   return (
     <section>

@@ -1,13 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'abandonedStationData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const AbandonedStation = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Abandoned-Station");
+  
   const staticContent = [
     {
       id: 1,
@@ -30,13 +29,6 @@ const AbandonedStation = () => {
       text: "In the southwest corner, in a small room, in the tram station at the beginning of the level (before heading outside towards the objective).",
     },
   ];
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7", 
-    "Abandoned-Station"
-  );
 
   return (
     <section>

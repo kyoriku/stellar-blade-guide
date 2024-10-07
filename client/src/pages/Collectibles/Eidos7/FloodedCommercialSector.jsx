@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'floodedCommercialSectorData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const FloodedCommercialSector = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "Flooded-Commercial-Sector");
+
   const staticContent = [
     {
       id: 1,
@@ -85,13 +84,6 @@ const FloodedCommercialSector = () => {
       text: "In the same area as the drone skin, on the northside, is a corpse with this beta core.",
     }
   ];
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Flooded-Commercial-Sector"
-  );
 
   return (
     <section>

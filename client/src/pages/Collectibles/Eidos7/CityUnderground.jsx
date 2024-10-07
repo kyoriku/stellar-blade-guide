@@ -2,12 +2,11 @@ import React from "react";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'cityUndergroundData';
+import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
 
 const CityUnderground = () => {
+  const { content, isLoading, error } = useCachedCollectibles("Eidos-7", "City-Underground");
+
   const staticContent = [
     {
       id: 1,
@@ -80,13 +79,6 @@ const CityUnderground = () => {
       text: "When Adam says the exit is to the right (after opening the second floodgate), down that corridor to the right is this bot and this relic.",
     }
   ];
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "City-Underground"
-  );
 
   return (
     <section>
