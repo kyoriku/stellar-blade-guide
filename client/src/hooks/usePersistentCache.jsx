@@ -108,57 +108,89 @@
 
 /////////////////////////////////////////
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
-const LOCAL_STORAGE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for localStorage
+// Define the duration for which the cached data is considered valid (24 hours)
+const LOCAL_STORAGE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const usePersistentCache = (cacheKey, fetchFunc, ...args) => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchAndCacheData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const fetchedData = await fetchFunc(...args);
-      const cacheEntry = { data: fetchedData, timestamp: Date.now() };
-
-      // Update localStorage
-      localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
-
-      setData(fetchedData);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch data. Please try again later.');
-    } finally {
-      setLoading(false);
+// Function to retrieve and validate cached data from localStorage
+const getCachedData = (cacheKey) => {
+  const storedData = localStorage.getItem(cacheKey);
+  if (storedData) {
+    const { data: cachedData, timestamp } = JSON.parse(storedData);
+    // Check if the cached data is still valid
+    if (Date.now() - timestamp < LOCAL_STORAGE_DURATION) {
+      return cachedData;
     }
-  }, [cacheKey, fetchFunc, ...args]);
+    // Remove expired cache entry
+    localStorage.removeItem(cacheKey);
+  }
+  return null;
+};
 
-  useEffect(() => {
-    const getCachedData = async () => {
-      // Check localStorage
-      const storedData = localStorage.getItem(cacheKey);
-      if (storedData) {
-        const { data: cachedData, timestamp } = JSON.parse(storedData);
-        if (Date.now() - timestamp < LOCAL_STORAGE_DURATION) {
-          console.log('Data retrieved from localStorage');
-          setData(cachedData);
-          setLoading(false);
-          return;
-        } else {
-          localStorage.removeItem(cacheKey); // Remove expired cache entry
-        }
-      }
+// Function to store data in localStorage with a timestamp
+const setCachedData = (cacheKey, data) => {
+  const cacheEntry = { data, timestamp: Date.now() };
+  localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
+};
 
-      // If no valid cache found, fetch new data
+// Custom hook for persistent caching
+const usePersistentCache = (cacheKey, fetchFunc, ...args) => {
+  // State to hold data, loading status, and error
+  const [state, setState] = useState({
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  // Ref to store args to prevent unnecessary re-renders
+  const argsRef = useRef(args);
+
+  // Function to fetch and cache data
+  const fetchAndCacheData = useCallback(async () => {
+    // Set loading to true and clear any previous errors
+    setState(prevState => ({ ...prevState, loading: true, error: null }));
+    try {
+      // Fetch new data
+      const fetchedData = await fetchFunc(...argsRef.current);
+      // Cache the fetched data
+      setCachedData(cacheKey, fetchedData);
+      // Update state with new data
+      setState({ data: fetchedData, loading: false, error: null });
+    } catch (err) {
+      // Handle error
+      setState(prevState => ({
+        ...prevState,
+        loading: false,
+        error: 'Failed to fetch data. Please try again later.',
+      }));
+    }
+  }, [cacheKey, fetchFunc]);
+
+  // Function to initialize cache or fetch new data
+  const initializeCache = useCallback(() => {
+    const cachedData = getCachedData(cacheKey);
+    if (cachedData) {
+      // Use cached data if available
+      setState({ data: cachedData, loading: false, error: null });
+    } else {
+      // Fetch new data if cache is empty or expired
       fetchAndCacheData();
-    };
-
-    getCachedData();
+    }
   }, [cacheKey, fetchAndCacheData]);
 
-  return { data, loading, error, refetch: fetchAndCacheData };
+  // Effect to initialize cache on mount or when dependencies change
+  useEffect(() => {
+    initializeCache();
+  }, [initializeCache]);
+
+  // Function to manually refetch data
+  const refetch = useCallback(() => {
+    fetchAndCacheData();
+  }, [fetchAndCacheData]);
+
+  // Return current state and refetch function
+  return { ...state, refetch };
 };
 
 export default usePersistentCache;

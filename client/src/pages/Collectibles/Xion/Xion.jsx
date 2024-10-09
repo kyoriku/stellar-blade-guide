@@ -1,15 +1,7 @@
 import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const Xion = () => {
-  const { content, error, isLoading } = useCachedCollectibles(
-    "Xion", 
-    "Xion"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -253,17 +245,13 @@ const Xion = () => {
   ]
 
   return (
-    <section>
-      <Header id="xion" title="▽ Xion Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        bottomMarginCondition={24}
-        additionalBottomMargin={true}
-      />
-    </section>
+    <CollectiblesSection
+      id="xion"
+      title="Xion"
+      level="Xion"
+      location="Xion"
+      staticContent={staticContent}
+    />
   );
 };
 
