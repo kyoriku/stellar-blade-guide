@@ -1,18 +1,7 @@
 import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const SilentStreet = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_Silent-Street",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Silent-Street"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -107,15 +96,13 @@ const SilentStreet = () => {
   ];
 
   return (
-    <section>
-      <Header id="silent-street" title="▽ Silent Street Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="silent-street"
+      title="Silent Street"
+      level="Eidos-7"
+      location="Silent-Street"
+      staticContent={staticContent}
+    />
   );
 };
 
