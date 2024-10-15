@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'securityCenterData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const SecurityCenter = () => {
   const staticContent = [
@@ -21,24 +14,15 @@ const SecurityCenter = () => {
     }
   ];
 
-  const { content, isLoading, error } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Altess-Levoire",
-    "Security-Center"
-  );
-
   return (
-    <section>
-      <Header id="security-center" title="▽ Security Center Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        skeletonVariant="large"
-      />
-    </section>
+    <CollectiblesSection
+      id="security-center"
+      title="Security Center"
+      level="Altess-Levoire"
+      location="Security-Center"
+      staticContent={staticContent}
+      skeletonVariant="large"
+    />
   );
 };
 

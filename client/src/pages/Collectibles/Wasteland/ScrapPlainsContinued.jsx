@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'scrapPlainsContinuedData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const ScrapPlainsContinued = () => {
   const staticContent = [
@@ -41,23 +34,14 @@ const ScrapPlainsContinued = () => {
     }
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Scrap-Plains-(Continued)"
-  );
-
   return (
-    <section>
-      <Header id="scrap-plains-continued" title="▽ Scrap Plains Collectibles (Continued)" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="scrap-plains-continued"
+      title="Scrap Plains (Continued)"
+      level="Wasteland"
+      location="Scrap-Plains"
+      staticContent={staticContent}
+    />
   );
 };
 

@@ -1,18 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const ConstructionZone = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_Construction-Zone",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Construction-Zone"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -102,15 +90,13 @@ const ConstructionZone = () => {
   ]
 
   return (
-    <section>
-      <Header id="construction-zone" title="▽ Construction Zone Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="construction-zone"
+      title="Construction Zone"
+      level="Eidos 7"
+      location="Construction-Zone"
+      staticContent={staticContent}
+    />
   );
 };
 

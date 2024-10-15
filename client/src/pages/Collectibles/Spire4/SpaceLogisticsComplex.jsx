@@ -1,17 +1,6 @@
-import React, { useEffect, useState } from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-import { getCachedData, cacheData } from "../../../utils/indexedDB";
-
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const SpaceLogisticsComplex = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -120,45 +109,14 @@ const SpaceLogisticsComplex = () => {
     },
   ];
 
-
-  useEffect(() => {
-    fetchSpaceLogisticsComplexCollectibles();
-  }, []);
-
-  const fetchSpaceLogisticsComplexCollectibles = async () => {
-    const cacheKey = "Spire-4_Space-Logistics-Complex";
-    try {
-      const cachedEntry = await getCachedData(cacheKey);
-      const now = Date.now();
-
-      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
-        setContent(cachedEntry.data);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await getCollectiblesByLevelAndLocation("Spire-4", "Space-Logistics-Complex");
-      setContent(data);
-
-      await cacheData(cacheKey, data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <section>
-      <Header id="space-logistics-complex" title="▽ Space Logistics Complex Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="space-logistics-complex"
+      title="Space Logistics Complex"
+      level="Spire-4"
+      location="Space-Logistics-Complex"
+      staticContent={staticContent}
+    />
   );
 };
 

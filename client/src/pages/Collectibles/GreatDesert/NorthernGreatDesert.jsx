@@ -1,17 +1,7 @@
-import React, { useEffect, useState } from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-import { getCachedData, cacheData } from "../../../utils/indexedDB";
-
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+import React from "react";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const NorthernGreatDesert = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -195,44 +185,14 @@ const NorthernGreatDesert = () => {
     }
   ];
 
-  useEffect(() => {
-    fetchNorthernGreatDesertCollectibles();
-  }, []);
-
-  const fetchNorthernGreatDesertCollectibles = async () => {
-    const cacheKey = "Great-Desert_Northern-Great-Desert";
-    try {
-      const cachedEntry = await getCachedData(cacheKey);
-      const now = Date.now();
-
-      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
-        setContent(cachedEntry.data);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await getCollectiblesByLevelAndLocation("Great-Desert", "Northern-Great-Desert");
-      setContent(data);
-
-      await cacheData(cacheKey, data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <section>
-      <Header id="northern-great-desert" title="▽ Northern Great Desert Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="northern-great-desert"
+      title="Northern Great Desert"
+      level="Great-Desert"
+      location="Northern-Great-Desert"
+      staticContent={staticContent}
+    />
   );
 };
 

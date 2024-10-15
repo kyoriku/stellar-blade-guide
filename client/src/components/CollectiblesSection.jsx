@@ -5,7 +5,16 @@ import ContentSection from "./ContentSection";
 import usePersistentCache from "../hooks/usePersistentCache";
 import { getCollectiblesByLevelAndLocation } from "../utils/API/collectibles";
 
-const CollectiblesSection = ({ id, title, level, location, staticContent, skeletonVariant }) => {
+const CollectiblesSection = ({
+  id,
+  title,
+  subtitle,
+  level,
+  location,
+  staticContent,
+  skeletonVariant,
+  alwaysShowFinalHr,
+}) => {
   const { data: content, loading: isLoading, error } = usePersistentCache(
     `${level}_${location}`,
     getCollectiblesByLevelAndLocation,
@@ -15,13 +24,14 @@ const CollectiblesSection = ({ id, title, level, location, staticContent, skelet
 
   return (
     <section>
-      <Header id={id} title={`▽ ${title} Collectibles`} />
+      <Header id={id} title={`▽ ${title} Collectibles`} subtitle={subtitle}/>
       <ErrorMessage message={error} />
       <ContentSection
         staticContent={staticContent}
         content={content}
         isLoading={isLoading}
         skeletonVariant={skeletonVariant}
+        alwaysShowFinalHr={alwaysShowFinalHr}
       />
     </section>
   );

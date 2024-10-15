@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'scrapYardData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const ScrapYard = () => {
   const staticContent = [
@@ -70,23 +63,14 @@ const ScrapYard = () => {
     },
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Scrap-Yard"
-  );
-
   return (
-    <section>
-      <Header id="scrap-yard" title="▽ Scrap Yard Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="scrap-yard"
+      title="Scrap Yard"
+      level="Wasteland"
+      location="Scrap-Yard"
+      staticContent={staticContent}
+    />
   );
 };
 

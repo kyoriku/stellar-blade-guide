@@ -1,18 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const FloodedCommercialSector = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_Flooded-Commercial-Sector",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Flooded-Commercial-Sector"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -92,15 +80,13 @@ const FloodedCommercialSector = () => {
   ];
 
   return (
-    <section>
-      <Header id="flooded-commercial-sector" title="▽ Flooded Commercial Sector Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="flooded-commercial-sector"
+      title="Flooded Commercial Sector"
+      level="Eidos-7"
+      location="Flooded-Commercial-Sector"
+      staticContent={staticContent}
+    />
   );
 };
 

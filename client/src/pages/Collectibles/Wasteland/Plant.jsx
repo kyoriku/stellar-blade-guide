@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'plantData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const Plant = () => {
   const staticContent = [
@@ -31,23 +24,14 @@ const Plant = () => {
     }
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Plant"
-  );
-
   return (
-    <section>
-      <Header id="plant" title="▽ Plant Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="plant"
+      title="Plant"
+      level="Wasteland"
+      location="Plant"
+      staticContent={staticContent}
+    />
   );
 };
 

@@ -1,18 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const Crater = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_Crater",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Crater"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -27,16 +15,14 @@ const Crater = () => {
   ];
 
   return (
-    <section>
-      <Header id="crater" title="▽ Crater Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        skeletonVariant="large"
-      />
-    </section>
+    <CollectiblesSection
+      id="crater"
+      title="Crater"
+      level="Eidos-7"
+      location="Crater"
+      staticContent={staticContent}
+      skeletonVariant="large"
+    />
   );
 };
 

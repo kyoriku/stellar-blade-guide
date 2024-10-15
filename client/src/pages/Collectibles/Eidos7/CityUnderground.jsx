@@ -1,18 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const CityUnderground = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_City-Underground",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "City-Underground"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -87,15 +75,13 @@ const CityUnderground = () => {
   ];
 
   return (
-    <section>
-      <Header id="city-underground" title="▽ City Underground Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="city-underground"
+      title="City Underground"
+      level="Eidos-7"
+      location="City-Underground"
+      staticContent={staticContent}
+    />
   );
 };
 

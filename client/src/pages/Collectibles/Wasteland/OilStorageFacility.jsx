@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'oilStorageFacilityData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const OilStorageFacility = () => {
   const staticContent = [
@@ -31,23 +24,14 @@ const OilStorageFacility = () => {
     },
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Oil-Storage-Facility"
-  );
-
   return (
-    <section>
-      <Header id="oil-storage-facility" title="▽ Oil Storage Facility Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="oil-storage-facility"
+      title="Oil Storage Facility"
+      level="Wasteland"
+      location="Oil-Storage-Facility"
+      staticContent={staticContent}
+    />
   );
 };
 

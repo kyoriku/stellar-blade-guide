@@ -1,17 +1,7 @@
-import React, { useEffect, useState } from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-import { getCachedData, cacheData } from "../../../utils/indexedDB";
-
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+import React from "react";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const Oasis = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -80,45 +70,15 @@ const Oasis = () => {
     },
   ];
 
-  useEffect(() => {
-    fetchOasisCollectibles();
-  }, []);
-
-  const fetchOasisCollectibles = async () => {
-    const cacheKey = "Great-Desert_Oasis";
-    try {
-      const cachedEntry = await getCachedData(cacheKey);
-      const now = Date.now();
-
-      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
-        setContent(cachedEntry.data);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await getCollectiblesByLevelAndLocation("Great-Desert", "Oasis");
-      setContent(data);
-
-      await cacheData(cacheKey, data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <section>
-      <Header id="oasis" title="▽ Oasis Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        alwaysShowFinalHr={true}
-      />
-    </section>
+    <CollectiblesSection
+      id="oasis"
+      title="Oasis"
+      level="Great-Desert"
+      location="Oasis"
+      staticContent={staticContent}
+      alwaysShowFinalHr={true}
+    />
   );
 };
 

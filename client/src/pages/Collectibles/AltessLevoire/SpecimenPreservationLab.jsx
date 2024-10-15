@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'specimenPreservationLabData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const SpecimenPreservationLab = () => {
   const staticContent = [
@@ -31,24 +24,15 @@ const SpecimenPreservationLab = () => {
     }
   ];
 
-  const { content, isLoading, error } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Altess-Levoire",
-    "Specimen-Preservation-Lab"
-  );
-
   return (
-    <section>
-      <Header id="specimen-preservation-lab" title="▽ Specimen Preservation Lab Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        skeletonVariant="large"
-      />
-    </section>
+    <CollectiblesSection
+      id="specimen-preservation-lab"
+      title="Specimen Preservation Lab"
+      level="Altess-Levoire"
+      location="Specimen-Preservation-Lab"
+      staticContent={staticContent}
+      skeletonVariant="large"
+    />
   );
 };
 

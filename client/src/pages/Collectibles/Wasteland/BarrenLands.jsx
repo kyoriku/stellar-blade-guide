@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'barronLandsData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const BarrenLands = () => {
   const staticContent = [
@@ -156,23 +149,14 @@ const BarrenLands = () => {
     },
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Barren-Lands"
-  );
-
   return (
-    <section>
-      <Header id="barren-lands" title="▽ Barren Lands Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="barren-lands"
+      title="Barren Lands"
+      level="Wasteland"
+      location="Barren-Lands"
+      staticContent={staticContent}
+    />
   );
 };
 

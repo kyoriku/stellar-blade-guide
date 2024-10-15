@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'deterioratedLobbyData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const AirVent = () => {
   const staticContent = [
@@ -31,25 +24,16 @@ const AirVent = () => {
     }
   ];
 
-  const { content, isLoading, error } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Altess-Levoire",
-    "Deteriorated-Lobby"
-  );
-
   return (
-    <section>
-      <Header id="air-vent" title="▽ Air Vent Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        skeletonVariant="large"
-        alwaysShowFinalHr={true}
-      />
-    </section>
+    <CollectiblesSection
+      id="air-vent"
+      title="Air Vent"
+      level="Altess-Levoire"
+      location="Air-Vent"
+      staticContent={staticContent}
+      skeletonVariant="large"
+      alwaysShowFinalHr={true}
+    />
   );
 };
 
