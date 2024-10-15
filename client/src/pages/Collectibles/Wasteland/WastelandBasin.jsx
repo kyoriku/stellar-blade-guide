@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'wastelandBasinData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const WastelandBasin = () => {
   const staticContent = [
@@ -51,23 +44,14 @@ const WastelandBasin = () => {
     }
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Wasteland-Basin"
-  );
-
   return (
-    <section>
-      <Header id="wasteland-basin" title="▽ Wasteland Basin Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="wasteland-basin"
+      title="Wasteland Basin"
+      level="Wasteland"
+      location="Wasteland-Basin"
+      staticContent={staticContent}
+    />
   );
 };
 

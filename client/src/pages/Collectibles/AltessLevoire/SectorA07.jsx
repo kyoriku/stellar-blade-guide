@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'sectorA07Data';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const SectorA07 = () => {
   const staticContent = [
@@ -21,24 +14,15 @@ const SectorA07 = () => {
     }
   ];
 
-  const { content, isLoading, error } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Altess-Levoire",
-    "Sector-A07"
-  );
-
   return (
-    <section>
-      <Header id="sector-a07" title="▽ Sector A07 Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        skeletonVariant="large"
-      />
-    </section>
+    <CollectiblesSection
+      id="sector-a07"
+      title="Sector A07"
+      level="Altess-Levoire"
+      location="Sector-A07"
+      staticContent={staticContent}
+      skeletonVariant="large"
+    />
   );
 };
 

@@ -43,7 +43,7 @@ const Eidos7Collectibles = () => {
         { href: "#construction-zone", title: "Construction Zone" },
         { href: "#city-underground", title: "City Underground" },
         { href: "#crater", title: "Crater" },
-        { href: "#eidos-7-continued", title: "Eidos 7 Continued" },
+        { href: "#eidos-7-continued", title: "Eidos 7 (Continued)" },
       ]
     },
     { mainLink: "/collectibles/xion", title: "Xion" },

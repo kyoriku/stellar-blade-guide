@@ -1,18 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const Eidos7Continued = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_Continued",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Eidos-7-(Continued)"
-  ); 
-
   const staticContent = [
     {
       id: 1,
@@ -113,20 +101,15 @@ const Eidos7Continued = () => {
   ];
 
   return (
-    <section>
-      <Header
-        id="eidos-7-continued"
-        title="▽ Eidos 7 Collectibles (Continued)"
-        subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
-      />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        alwaysShowFinalHr={true}
-      />
-    </section>
+    <CollectiblesSection
+      id="eidos-7-continued"
+      title="Eidos 7 (Continued)"
+      subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
+      level="Eidos-7"
+      location="Eidos-7-(Continued)"
+      staticContent={staticContent}
+      alwaysShowFinalHr={true}
+    />
   );
 };
 

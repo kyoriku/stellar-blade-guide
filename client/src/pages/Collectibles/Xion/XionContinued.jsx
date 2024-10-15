@@ -1,15 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import { useCachedCollectibles } from "../../../hooks/useCachedCollectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const XionContinued = () => {
-  const { content, error, isLoading } = useCachedCollectibles(
-    "Xion",
-    "Xion-(Continued)"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -108,20 +99,15 @@ const XionContinued = () => {
   ];
 
   return (
-    <section>
-      <Header
-        id="xion-continued"
-        title="▽ Xion Collectibles (Continued)"
-        subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
-      />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        alwaysShowFinalHr={true}
-      />
-    </section>
+    <CollectiblesSection
+      id="xion-continued"
+      title="Xion"
+      subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
+      level="Xion"
+      location="Xion-(Continued)"
+      staticContent={staticContent}
+      alwaysShowFinalHr={true}
+    />
   );
 };
 

@@ -1,12 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-// import { useCollectiblesQuery } from '../../../hooks/useCollectiblesQuery';
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'wastelandContinuedData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const WastelandContinued = () => {
   const staticContent = [
@@ -82,30 +74,16 @@ const WastelandContinued = () => {
     }
   ];
 
-  // const { data: content, error, isLoading } = useCollectiblesQuery("Wasteland", "Wasteland-(Continued)");
-
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Wasteland-(Continued)"
-  );
-
   return (
-    <section>
-      <Header
-        id="wasteland-continued"
-        title="▽ Wasteland Collectibles (Continued)"
-        subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
-      />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        alwaysShowFinalHr={true}
-      />
-    </section>
+    <CollectiblesSection
+      id="wasteland-continued"
+      title="Wasteland (Continued)"
+      subtitle="The next set of collectibles won't be available on your first time through the area, and require a side quest/Request/Double Jump to access them."
+      level="Wasteland"
+      location="Wasteland-(Continued)"
+      staticContent={staticContent}
+      alwaysShowFinalHr={true}
+    />
   );
 };
 

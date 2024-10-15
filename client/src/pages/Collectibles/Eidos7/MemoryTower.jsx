@@ -1,18 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const MemoryTower = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_Memory-Tower",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Memory-Tower"
-  );
-
   const staticContent = [
     {
       id: 1,
@@ -62,15 +50,13 @@ const MemoryTower = () => {
   ]
 
   return (
-    <section>
-      <Header id="memory-tower" title="▽ Memory Tower Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="memory-tower"
+      title="Memory Tower"
+      level="Eidos-7"
+      location="Memory-Tower"
+      staticContent={staticContent}
+    />
   );
 };
 

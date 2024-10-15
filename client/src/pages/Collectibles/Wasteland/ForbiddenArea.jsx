@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'forbiddenAreaData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const ForbiddenArea = () => {
   const staticContent = [
@@ -26,23 +19,14 @@ const ForbiddenArea = () => {
     }
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Forbidden-Area"
-  );
-
   return (
-    <section>
-      <Header id="forbidden-area" title="▽ Forbidden Area Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="forbidden-area"
+      title="Forbidden Area"
+      level="Wasteland"
+      location="Forbidden-Area"
+      staticContent={staticContent}
+    />
   );
 };
 

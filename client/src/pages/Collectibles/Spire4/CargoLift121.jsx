@@ -1,17 +1,6 @@
-import React, { useEffect, useState } from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-import { getCachedData, cacheData } from "../../../utils/indexedDB";
-
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const CargoLift121 = () => {
-  const [content, setContent] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const staticContent = [
     {
       id: 1,
@@ -82,48 +71,17 @@ const CargoLift121 = () => {
       id: 14,
       title: "Legion Supply Box",
       text: "Head up the stairs in the previous room and jump onto the containers. Then, go through the gaps in the southwest wall and head to the far south for this chest. Contains Omnibolt and Burst Enhancement Gear.",
-    },    
+    },
   ];
 
-
-  useEffect(() => {
-    fetchCargoLift121Collectibles();
-  }, []);
-
-  const fetchCargoLift121Collectibles = async () => {
-    const cacheKey = "Spire-4_Cargo-Lift-121";
-    try {
-      const cachedEntry = await getCachedData(cacheKey);
-      const now = Date.now();
-
-      if (cachedEntry && (now - cachedEntry.timestamp) < CACHE_DURATION) {
-        setContent(cachedEntry.data);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await getCollectiblesByLevelAndLocation("Spire-4", "Cargo-Lift-121");
-      setContent(data);
-
-      await cacheData(cacheKey, data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch collectibles. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <section>
-      <Header id="cargo-lift-121" title="▽ Cargo Lift 121 Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="cargo-lift-121"
+      title="Cargo Lift 121"
+      level="Spire-4"
+      location="Cargo-Lift-121"
+      staticContent={staticContent}
+    />
   );
 };
 

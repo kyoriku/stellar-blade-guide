@@ -1,18 +1,6 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import usePersistentCache from "../../../hooks/usePersistentCache";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const AbandonedStation = () => {
-  const { data: content, loading: isLoading, error } = usePersistentCache(
-    "Eidos-7_Abandoned-Station",
-    getCollectiblesByLevelAndLocation,
-    "Eidos-7",
-    "Abandoned-Station"
-  );
-  
   const staticContent = [
     {
       id: 1,
@@ -37,16 +25,14 @@ const AbandonedStation = () => {
   ];
 
   return (
-    <section>
-      <Header id="abandoned-station" title="▽ Abandoned Station Collectibles" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-        skeletonVariant="large"
-      />
-    </section>
+    <CollectiblesSection
+      id="abandoned-station"
+      title="Abandoned Station"
+      level="Eidos-7"
+      location="Abandoned-Station"
+      staticContent={staticContent}
+      skeletonVariant="large"
+    />
   );
 };
 

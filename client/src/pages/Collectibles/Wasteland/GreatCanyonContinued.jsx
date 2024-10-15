@@ -1,11 +1,4 @@
-import React from "react";
-import Header from "../../../components/Header";
-import ErrorMessage from "../../../components/ErrorMessage";
-import ContentSection from "../../../components/ContentSection";
-import useCachedFetch from "../../../hooks/useCachedFetch";
-import { getCollectiblesByLevelAndLocation } from "../../../utils/API/collectibles";
-
-const CACHE_KEY = 'greatCanyonContinuedData';
+import CollectiblesSection from "../../../components/CollectiblesSection";
 
 const GreatCanyonContinued = () => {
   const staticContent = [
@@ -71,23 +64,14 @@ const GreatCanyonContinued = () => {
     },
   ];
 
-  const { content, error, isLoading } = useCachedFetch(
-    CACHE_KEY,
-    getCollectiblesByLevelAndLocation,
-    "Wasteland",
-    "Great-Canyon-(Continued)"
-  );
-
   return (
-    <section>
-      <Header id="great-canyon-continued" title="▽ Great Canyon Collectibles (Continued)" />
-      <ErrorMessage message={error} />
-      <ContentSection
-        staticContent={staticContent}
-        content={content}
-        isLoading={isLoading}
-      />
-    </section>
+    <CollectiblesSection
+      id="great-canyon-continued"
+      title="Great Canyon Continued"
+      level="Wasteland"
+      location="Great-Canyon-(Continued)"
+      staticContent={staticContent}
+    />
   );
 };
 
