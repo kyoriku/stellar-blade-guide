@@ -18,13 +18,14 @@ This project is currently in the early stages of development, with the Collectib
 The project utilizes the following libraries and features:
 - **MUI:** The `@mui/material` library is used to implement skeleton loaders, which provide a smooth loading experience and a consistent visual design while the actual content is being fetched.
 - **GLightbox:** The `glightbox` library is used for the image gallery and lightbox functionality, enhancing the presentation of the game's collectibles.
-- **Session Storage:** Utilizing `session storage` for caching data, improving performance and efficiency by storing game-related information locally.
+- **LocalStorage:** Utilizing `Local storage` for caching data, improving performance and efficiency by storing game-related information locally.
 - **Lazy Loading and Suspense:** React's built-in `lazy` and `Suspense` features are leveraged to implement code splitting and lazy loading, optimizing the initial load time and reducing the bundle size.
 
 ## Completed Features
-- **Image Gallery with GLightbox:** Implemented GLightbox for an enhanced image gallery experience, allowing users to view collectibles in a lightbox format with smooth transitions.
 - **Collectibles Guide:** Detailed sections on all in-game collectibles with descriptions and screenshots.
+- **Image Gallery with GLightbox:** Implemented GLightbox for an enhanced image gallery experience, allowing users to view collectibles in a lightbox format with smooth transitions.
 - **Mobile Optimization:** The design is primarily built with Bootstrap, ensuring that the application is responsive and optimized for mobile devices.
+- **LocalStorage API Caching:** Implemented local storage caching for API calls, reducing load times and improving performance by minimizing redundant data requests.
 
 ## Planned Features
 - **Main Story Walkthrough:** Step-by-step guide through the main story.
@@ -36,6 +37,7 @@ The project utilizes the following libraries and features:
 - [x] Complete the Collectibles Guide.
 - [x] Implement GLightbox for image gallery.
 - [x] Optimize the site for mobile use.
+- [x] Added local storage caching to improve performance and reduce API calls.
 - [ ] Complete the Main Story Walkthrough.
 - [ ] Complete the Side Quests Guide.
 - [ ] Enhance the UI/UX design for better user experience.
