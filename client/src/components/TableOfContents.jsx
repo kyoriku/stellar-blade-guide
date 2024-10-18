@@ -13,7 +13,7 @@ const TableOfContents = ({ links, isMobile }) => {
       <ul className="nav flex-column sidebar">
         {links.map((linkGroup, index) => (
           <li className="nav-item" key={index}>
-            <Link to={linkGroup.mainLink} onClick={scrollToTop}>{linkGroup.title}</Link>
+            <Link to={linkGroup.mainLink} className='text-decoration-none' onClick={scrollToTop}>{linkGroup.title}</Link>
             {linkGroup.subLinks && (
               <ul>
                 {linkGroup.subLinks.map((subLink, subIndex) => (
