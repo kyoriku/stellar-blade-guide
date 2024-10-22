@@ -250,6 +250,7 @@ const Xion = () => {
       level="Xion"
       location="Xion"
       staticContent={staticContent}
+      bottomMarginCondition={24}
     />
   );
 };

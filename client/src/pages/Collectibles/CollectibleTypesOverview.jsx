@@ -13,7 +13,17 @@ const Collectibles = () => {
   }, []);
 
   const tocLinks = [
-    {},
+    { mainLink: "/collectibles/beta-cores", title: "Beta Cores" },
+    { mainLink: "/collectibles/body-cores", title: "Body Cores" },
+    { mainLink: "/collectibles/camps", title: "Camps" },
+    { mainLink: "/collectibles/cans", title: "Cans" },
+    { mainLink: "/collectibles/documents", title: "Documents" },
+    { mainLink: "/collectibles/drone-packs", title: "Drone Packs" },
+    { mainLink: "/collectibles/earrings", title: "Earrings" },
+    { mainLink: "/collectibles/exospines", title: "Exospines" },
+    { mainLink: "/collectibles/nano-suits", title: "Nano Suits" },
+    { mainLink: "/collectibles/memorysticks", title: "Memorysticks" },
+    { mainLink: "/collectibles/passcodes", title: "Passcodes" }
   ];
 
   return (
@@ -25,7 +35,7 @@ const Collectibles = () => {
           </div>
         )}
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
-          <h1 className="mt-3 mb-0">Eidos 7 Collectibles</h1>
+          <h1 className="mt-3 mb-0">Collectibles by Type</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <CollectiblesByType />
           {/* <div className='text-end pb-5 pe-2'>

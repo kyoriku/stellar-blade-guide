@@ -9,7 +9,6 @@ const ContentSection = ({
   isLoading,
   skeletonVariant,
   bottomMarginCondition = null,
-  additionalBottomMargin = false,
   alwaysShowFinalHr = false
 }) => {
   return (
@@ -34,7 +33,7 @@ const ContentSection = ({
             {showHr && !isLastItem ? (
               <hr />
             ) : null}
-            {additionalBottomMargin && addBottomMargin && <div className="bottom-margin" />}
+            {addBottomMargin && <div className="bottom-margin" />}
           </article>
         );
       })}
