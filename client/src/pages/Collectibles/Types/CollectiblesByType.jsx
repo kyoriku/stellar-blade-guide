@@ -44,7 +44,7 @@ const CollectiblesByType = () => {
 
   return (
     <section>
-      <Header id={type} title={`▽ All ${formattedTypeTitle}`} />
+      <Header id={type} title={`▽ ${formattedTypeTitle}`} />
       <ErrorMessage message={error} />
       <div>
         {isLoading ? (
@@ -69,7 +69,6 @@ const CollectiblesByType = () => {
             <p>{`No collectibles found for this ${formattedTypeTitle}.`}</p>
           )
         )}
-        <ErrorMessage message={error} />
       </div>
     </section>
   );
