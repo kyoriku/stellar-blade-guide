@@ -65,7 +65,7 @@ import { Book, Map, Compass } from 'lucide-react';
 const Home = () => {
   return (
     <div className="min-vh-100 d-flex flex-column">
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+      {/* <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
         <div className="container mx-3">
           <Link className="navbar-brand" to="/">Stellar Blade Guide</Link>
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,7 @@ const Home = () => {
             </ul>
           </div>
         </div>
-      </nav>
+      </nav> */}
 
       <main className="flex-grow-1">
         <div className=" m-4">
@@ -95,6 +95,7 @@ const Home = () => {
                 src="/assets/images/stellar_blade_banner.jpg"
                 alt="Stellar Blade Banner"
                 className="img-fluid rounded shadow"
+                height="314"
               />
             </div>
           </div>
