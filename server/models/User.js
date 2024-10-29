@@ -7,6 +7,14 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+      // Custom error message for duplicate usernames
+      validate: {
+        validator: async function (value) {
+          const count = await this.model('User').countDocuments({ username: value });
+          return count === 0; // Ensure the username is unique
+        },
+        message: 'Username is already taken.', // Custom error message
+      },
     },
     email: {
       type: String,
@@ -17,9 +25,9 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: true,
+      minlength: [8, 'Password must be at least 8 characters long'],
     },
   },
-  // set this to use virtual below
   {
     toJSON: {
       virtuals: true,
@@ -27,17 +35,16 @@ const userSchema = new Schema(
   }
 );
 
-// hash user password
+// Hash user password
 userSchema.pre('save', async function (next) {
   if (this.isNew || this.isModified('password')) {
     const saltRounds = 12;
     this.password = await bcrypt.hash(this.password, saltRounds);
   }
-
   next();
 });
 
-// custom method to compare and validate password for logging in
+// Custom method to compare and validate password for logging in
 userSchema.methods.isCorrectPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
