@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_COLLECTIBLE_URL;
 
 export const getCollectiblesByLevelAndLocation = async (level, location) => {
   try {

@@ -13,6 +13,7 @@ const ConstructionZone = lazy(() => import('./Eidos7/ConstructionZone'));
 const CityUnderground = lazy(() => import('./Eidos7/CityUnderground'));
 const Crater = lazy(() => import('./Eidos7/Crater'));
 const Eidos7Continued = lazy(() => import('./Eidos7/Eidos7Continued'));
+const CommentSection = lazy(() => import('../../components/CommentSection'));
 
 const Eidos7Collectibles = () => {
   const size = useWindowSize();
@@ -77,13 +78,16 @@ const Eidos7Collectibles = () => {
             <CityUnderground />
             <Crater />
             <Eidos7Continued />
-          </Suspense>
+          {/* </Suspense> */}
           <div className='text-end pb-5 pe-2'>
             <p className='m-0 fw-bold'>Next guide »</p>
             <h5>
               <Link to="/collectibles/xion" className='text-decoration-none'>Xion Collectibles</Link>
             </h5>
           </div>
+          {/* <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}> */}
+            <CommentSection pageId="eidos-7" />
+          </Suspense>
         </div>
       </div>
     </div>

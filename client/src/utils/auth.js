@@ -32,17 +32,35 @@ class AuthService {
     return localStorage.getItem('id_token');
   }
 
-  login(idToken) {
-    // Saves user token to localStorage
+  // login(idToken) {
+  //   // Saves user token to localStorage
+  //   localStorage.setItem('id_token', idToken);
+  //   window.location.assign('/');
+  // }
+  login(idToken, redirectUrl) {
     localStorage.setItem('id_token', idToken);
-    window.location.assign('/');
+    if (redirectUrl) {
+      window.location.assign(redirectUrl);
+    } else {
+      window.location.reload();
+    }
   }
 
+  // logout() {
+  //   // Clear user token and profile data from localStorage
+  //   localStorage.removeItem('id_token');
+  //   // this will reload the page and reset the state of the application
+  //   window.location.assign('/');
+  // }
   logout() {
+    // Get current path before clearing anything
+    const currentPath = window.location.pathname;
+    
     // Clear user token and profile data from localStorage
     localStorage.removeItem('id_token');
-    // this will reload the page and reset the state of the application
-    window.location.assign('/');
+    
+    // Redirect to the same page they were on
+    window.location.assign(currentPath);
   }
 }
 

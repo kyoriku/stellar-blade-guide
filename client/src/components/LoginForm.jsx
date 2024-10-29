@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
+import { useLocation } from 'react-router-dom';
 import { loginUser } from '../utils/API/user';
 import Auth from '../utils/auth';
 
-const LoginForm = () => {
+const LoginForm = ({ handleModalClose }) => {
   const [userFormData, setUserFormData] = useState({ email: '', password: '' });
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const location = useLocation();
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -16,7 +18,6 @@ const LoginForm = () => {
   const handleFormSubmit = async (event) => {
     event.preventDefault();
 
-    // check if form has everything (as per react-bootstrap docs)
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
       event.preventDefault();
@@ -33,7 +34,8 @@ const LoginForm = () => {
 
       const { token, user } = await response.json();
       console.log("User:", user);
-      Auth.login(token);
+      Auth.login(token, location.pathname); // Pass current path
+      handleModalClose(); // Close the modal after successful login
     } catch (err) {
       console.error(err);
       setShowAlert(true);

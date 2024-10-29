@@ -3,9 +3,7 @@ import "../styles/LoadingSpinner.css";
 
 const LoadingSpinner = () => {
   return (
-    <div className="spinner">
-      <div className="lds-dual-ring"></div>
-    </div>
+    <div className="loading-spinner"></div>
   );
 };
 
