@@ -21,7 +21,8 @@ const commentSchema = new Schema(
     content: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
+      maxLength: 1000
     },
     pageId: {
       type: String,
@@ -39,7 +40,21 @@ const commentSchema = new Schema(
     updatedAt: {
       type: Date,
       default: Date.now
+    },
+    moderated: {
+      type: Boolean,
+      default: false
+    },
+    moderatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    moderatedAt: {
+      type: Date
     }
+  }, 
+  {
+    timestamps: true
   },
   {
     toJSON: {

@@ -42,16 +42,33 @@ module.exports = {
       if (!user) {
         return res.status(400).json({ message: "Can't find this user" });
       }
-
+  
       const correctPw = await user.isCorrectPassword(body.password);
-
+  
       if (!correctPw) {
         return res.status(400).json({ message: 'Wrong password!' });
       }
-
-      const token = signToken(user);
-      res.json({ token, user });
+  
+      // Create token with specific user data
+      const token = signToken({
+        username: user.username,
+        email: user.email,
+        _id: user._id,
+        isModerator: user.isModerator
+      });
+  
+      // Send back structured user data
+      res.json({ 
+        token, 
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          isModerator: user.isModerator
+        }
+      });
     } catch (error) {
+      console.error('Login error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   },

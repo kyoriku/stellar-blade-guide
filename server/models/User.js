@@ -7,13 +7,16 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      // Custom error message for duplicate usernames
+      // Modified validation to only run on new documents
       validate: {
-        validator: async function (value) {
-          const count = await this.model('User').countDocuments({ username: value });
-          return count === 0; // Ensure the username is unique
+        validator: async function(value) {
+          if (this.isNew) {
+            const count = await this.model('User').countDocuments({ username: value });
+            return count === 0;
+          }
+          return true;
         },
-        message: 'Username is already taken.', // Custom error message
+        message: 'Username is already taken.',
       },
     },
     email: {
@@ -26,6 +29,10 @@ const userSchema = new Schema(
       type: String,
       required: true,
       minlength: [8, 'Password must be at least 8 characters long'],
+    },
+    isModerator: {
+      type: Boolean,
+      default: false
     },
   },
   {
@@ -44,7 +51,6 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Custom method to compare and validate password for logging in
 userSchema.methods.isCorrectPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
