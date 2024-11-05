@@ -4,6 +4,9 @@ import Auth from '../utils/auth';
 import { commentApi } from '../utils/API/comments';
 import { formatDateDisplay } from '../utils/formatDate';
 import AuthModal from './AuthModal';
+import DeleteModal from './DeleteModal';
+import { PersonFill, ShieldFill, ShieldSlashFill } from 'react-bootstrap-icons';
+
 
 const CommentSection = ({ pageId }) => {
   const [comments, setComments] = useState([]);
@@ -16,8 +19,26 @@ const CommentSection = ({ pageId }) => {
   const isAuthenticated = Auth.loggedIn();
   const user = isAuthenticated ? Auth.getProfile() : null;
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
-  const [lastCommentTime, setLastCommentTime] = useState(0); 
+  const [lastCommentTime, setLastCommentTime] = useState(0);
   const COMMENT_COOLDOWN = 60000; // 1 minute
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+
+  // console.log('User data:', user); // console.log to debug
+
+  // Update the isModerator function to handle potential nested data structures
+  const isModerator = () => {
+    // console.log('Checking moderator status:', user?.data); // console.log to debug
+    return user?.data?.isModerator === true;
+  };
+
+  // Add this function to check if user can edit/delete a comment
+  const canModerateComment = (comment) => {
+    return (
+      user?.data?.username === comment.author.username || // Comment owner
+      isModerator() // Moderator/admin can moderate any comment
+    );
+  };
 
   useEffect(() => {
     fetchComments();
@@ -115,11 +136,25 @@ const CommentSection = ({ pageId }) => {
   const handleDelete = async (commentId) => {
     try {
       await commentApi.deleteComment(commentId);
-      setComments(prev => prev.filter(comment => comment._id !== commentId));
+      setComments(prevComments => prevComments.filter(comment => comment._id !== commentId));
       showToast('Comment deleted successfully');
-    } catch (err) {
+    } catch (error) {
       showToast('Failed to delete comment', 'danger');
     }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (commentToDelete) {
+      await handleDelete(commentToDelete);
+      setCommentToDelete(null);
+      setShowDeleteModal(false);
+    }
+  };
+
+  // For showing the modal
+  const handleDeleteClick = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteModal(true);
   };
 
   return (
@@ -185,19 +220,24 @@ const CommentSection = ({ pageId }) => {
                         className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
                         style={{ width: '40px', height: '40px' }}
                       >
-                        {comment.author.username[0]}
+                        {comment.author.username[0].toUpperCase()}
                       </div>
                       <div className="ms-2">
-                        <h6 className="mb-0">{comment.author.username}</h6>
-                        <small className="text-muted">
-                          {formatDateDisplay(comment.createdAt)}
-                        </small>
+                        <h6 className="mb-0 d-inline-flex align-items-center">
+                          {comment.author.username}
+                          {comment.author.isModerator && (
+                            <span className="badge bg-success ms-2"><><ShieldFill className="me-1" />MOD</></span>
+                          )}
+                        </h6>
+                        <div>
+                          <small className="text-muted">
+                            {formatDateDisplay(comment.createdAt)}
+                          </small>
+                        </div>
                       </div>
                     </div>
-
                     <div className="ms-auto">
-                      {/* {user?.data?._id === comment.author._id && !isEditing && ( */}
-                      {user?.data?.username === comment.author.username && !isEditing && (
+                      {canModerateComment(comment) && !isEditing && (
                         <>
                           <button
                             className="btn btn-primary btn-sm"
@@ -207,7 +247,7 @@ const CommentSection = ({ pageId }) => {
                           </button>
                           <button
                             className="btn btn-danger btn-sm ms-2"
-                            onClick={() => handleDelete(comment._id)}
+                            onClick={() => handleDeleteClick(comment._id)}
                           >
                             Delete
                           </button>
@@ -216,25 +256,30 @@ const CommentSection = ({ pageId }) => {
                     </div>
                   </div>
                   {isEditing === comment._id ? (
-                    <div>
+                    <div className="mt-2">
                       <textarea
                         className="form-control mb-2"
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
                       />
-                      <div className="d-flex justify-content-end">
-                        <button
-                          className="btn btn-success btn-sm"
-                          onClick={() => handleEditSubmit(comment._id)}
-                        >
-                          Save
-                        </button>
-                        <button
-                          className="btn btn-secondary btn-sm ms-2"
-                          onClick={() => setIsEditing(null)}
-                        >
-                          Cancel
-                        </button>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <small className="text-muted">
+                          {editContent.length}/1000
+                        </small>
+                        <div>
+                          <button
+                            className="btn btn-success btn-sm me-2"
+                            onClick={() => handleEditSubmit(comment._id)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setIsEditing(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -250,6 +295,12 @@ const CommentSection = ({ pageId }) => {
         show={showAuthModal}
         handleClose={() => setShowAuthModal(false)}
       />
+      <DeleteModal
+        show={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+      />
+
     </div>
   );
 };

@@ -60,9 +60,9 @@ const commentController = {
   async getPageComments(req, res) {
     try {
       const comments = await Comment.find({ pageId: req.params.pageId })
-        .populate('author', 'username') // Only include the username, not email or ID
+        .populate('author', 'username isModerator') // Include both username and isModerator fields
         .sort('-createdAt');
-
+  
       // Sanitize the response
       const sanitizedComments = comments.map(comment => ({
         _id: comment._id,
@@ -71,16 +71,17 @@ const commentController = {
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
         author: {
-          username: comment.author.username // Only return username
+          username: comment.author.username,
+          isModerator: comment.author.isModerator // Include moderator status
         }
       }));
-
+  
       res.json(sanitizedComments);
     } catch (error) {
       console.error('Error fetching comments:', error);
       res.status(500).json({ message: 'Error fetching comments' });
     }
-  },
+  },  
 
   // GET comments by user
   async getUserComments(req, res) {
@@ -139,36 +140,37 @@ const commentController = {
       if (!req.user) {
         throw new AuthenticationError('Must be logged in to comment');
       }
-
+  
       const { pageId, content } = req.body;
-
+  
       // Validate required fields
       if (!pageId || !content) {
         return res.status(400).json({ message: 'PageId and content are required' });
       }
-
+  
       const newComment = await Comment.create({
         pageId,
         content,
         author: req.user._id
       });
-
-      // Populate author details (only return username)
+  
+      // Populate author details with both username and isModerator
       const populatedComment = await Comment.findById(newComment._id)
-        .populate('author', 'username');
-
+        .populate('author', 'username isModerator');
+  
       // Sanitize response
       const sanitizedComment = {
         _id: populatedComment._id,
         content: populatedComment.content,
         pageId: populatedComment.pageId,
         author: {
-          username: populatedComment.author.username, // Only username returned
+          username: populatedComment.author.username,
+          isModerator: populatedComment.author.isModerator // Include isModerator status
         },
         createdAt: populatedComment.createdAt,
         updatedAt: populatedComment.updatedAt,
       };
-
+  
       res.status(201).json(sanitizedComment);
     } catch (error) {
       console.error('Error creating comment:', error);
@@ -177,7 +179,7 @@ const commentController = {
       }
       res.status(400).json({ message: 'Error posting comment' });
     }
-  },
+  },  
 
   // // UPDATE a comment
   // async updateComment(req, res) {
@@ -228,23 +230,30 @@ const commentController = {
       const { commentId } = req.params;
       const { content } = req.body;
 
-      // Find comment and check ownership
+      // Find comment
       const comment = await Comment.findById(commentId);
       if (!comment) {
         return res.status(404).json({ message: 'Comment not found' });
       }
 
-      if (comment.author.toString() !== req.user._id.toString()) {
+      // Check if user is either the comment author or a moderator
+      if (comment.author.toString() !== req.user._id.toString() && !req.user.isModerator) {
         return res.status(403).json({ message: 'Not authorized to update this comment' });
       }
 
       // Update the comment
       comment.content = content;
       comment.updatedAt = Date.now();
+      if (req.user.isModerator && req.user._id.toString() !== comment.author.toString()) {
+        comment.moderated = true;
+        comment.moderatedBy = req.user._id;
+        comment.moderatedAt = Date.now();
+      }
       await comment.save();
 
       const updatedComment = await Comment.findById(commentId)
-        .populate('author', 'username');
+        .populate('author', 'username')
+        .populate('moderatedBy', 'username');
 
       // Sanitize response
       const sanitizedUpdatedComment = {
@@ -252,10 +261,15 @@ const commentController = {
         content: updatedComment.content,
         pageId: updatedComment.pageId,
         author: {
-          username: updatedComment.author.username, // Only username returned
+          username: updatedComment.author.username,
         },
         createdAt: updatedComment.createdAt,
         updatedAt: updatedComment.updatedAt,
+        moderated: updatedComment.moderated,
+        moderatedBy: updatedComment.moderatedBy ? {
+          username: updatedComment.moderatedBy.username
+        } : null,
+        moderatedAt: updatedComment.moderatedAt
       };
 
       res.json(sanitizedUpdatedComment);
@@ -277,13 +291,14 @@ const commentController = {
 
       const { commentId } = req.params;
 
-      // Find comment and check ownership
+      // Find comment
       const comment = await Comment.findById(commentId);
       if (!comment) {
         return res.status(404).json({ message: 'Comment not found' });
       }
 
-      if (comment.author.toString() !== req.user._id.toString()) {
+      // Check if user is either the comment author or a moderator
+      if (comment.author.toString() !== req.user._id.toString() && !req.user.isModerator) {
         return res.status(403).json({ message: 'Not authorized to delete this comment' });
       }
 
@@ -295,6 +310,44 @@ const commentController = {
         return res.status(401).json({ message: error.message });
       }
       res.status(400).json({ message: 'Error deleting comment' });
+    }
+  },
+
+  // GET moderated comments
+  async getModeratedComments(req, res) {
+    try {
+      if (!req.user.isModerator) {
+        throw new AuthenticationError('Must be a moderator to view moderated comments');
+      }
+
+      const comments = await Comment.find({ moderated: true })
+        .populate('author', 'username')
+        .populate('moderatedBy', 'username')
+        .sort('-moderatedAt');
+
+      const sanitizedComments = comments.map(comment => ({
+        _id: comment._id,
+        content: comment.content,
+        pageId: comment.pageId,
+        author: {
+          username: comment.author.username
+        },
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt,
+        moderated: comment.moderated,
+        moderatedBy: comment.moderatedBy ? {
+          username: comment.moderatedBy.username
+        } : null,
+        moderatedAt: comment.moderatedAt
+      }));
+
+      res.json(sanitizedComments);
+    } catch (error) {
+      console.error('Error fetching moderated comments:', error);
+      if (error instanceof AuthenticationError) {
+        return res.status(401).json({ message: error.message });
+      }
+      res.status(500).json({ message: 'Error fetching moderated comments' });
     }
   }
 };

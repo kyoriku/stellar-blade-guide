@@ -18,6 +18,10 @@ const AppNavbar = () => {
     }
   };
 
+  // Get current user data
+  const user = Auth.loggedIn() ? Auth.getProfile()?.data : null;
+  const isAdmin = user?.username === 'kyoriku';
+
   return (
     <>
       <Navbar bg="dark" variant="dark" expand="lg" className="navbar-dark">
@@ -37,12 +41,25 @@ const AppNavbar = () => {
               <Nav.Link as={Link} to="/collectibles/eidos-7" className="ms-4" onClick={handleNavLinkClick}>
                 Collectibles
               </Nav.Link>
+              {isAdmin && (
+                <Nav.Link as={Link} to="/admin" className="ms-4" onClick={handleNavLinkClick}>
+                  Admin Dashboard
+                </Nav.Link>
+              )}
             </Nav>
             <Nav className="ms-auto">
               {Auth.loggedIn() ? (
-                <Button variant="outline-light" onClick={Auth.logout} className="ms-4">
-                  Logout
-                </Button>
+                <div className="d-flex align-items-center">
+                  {user && (
+                    <span className="text-light me-3">
+                      Welcome, {user.username}
+                      {user.isModerator && ' (Mod)'}
+                    </span>
+                  )}
+                  <Button variant="outline-light" onClick={Auth.logout} className="ms-4">
+                    Logout
+                  </Button>
+                </div>
               ) : (
                 <Button variant="outline-light" onClick={() => setShowModal(true)} className="ms-4">
                   Login
