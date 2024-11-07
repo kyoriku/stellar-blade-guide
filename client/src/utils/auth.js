@@ -1,18 +1,21 @@
-// use this to decode a token and get the user's information out of it
 import decode from 'jwt-decode';
 
-// create a new class to instantiate for a user
 class AuthService {
-  // get user data
+  // get user data from the token and profile data in localStorage
   getProfile() {
-    return decode(this.getToken());
+    const token = this.getToken();
+    if (token) {
+      const decodedToken = decode(token); // Decode the token
+      const profileData = JSON.parse(localStorage.getItem('userProfile')) || {}; // Retrieve profile from localStorage
+      return { ...decodedToken, ...profileData }; // Combine the token and profile data
+    }
+    return null; // Return null if no token is found
   }
 
   // check if user's logged in
   loggedIn() {
-    // Checks if there is a saved token and it's still valid
     const token = this.getToken();
-    return !!token && !this.isTokenExpired(token); // handwaiving here
+    return !!token && !this.isTokenExpired(token); // Check if token exists and is valid
   }
 
   // check if token is expired
@@ -27,16 +30,12 @@ class AuthService {
     }
   }
 
+  // get token from localStorage
   getToken() {
-    // Retrieves the user token from localStorage
     return localStorage.getItem('id_token');
   }
 
-  // login(idToken) {
-  //   // Saves user token to localStorage
-  //   localStorage.setItem('id_token', idToken);
-  //   window.location.assign('/');
-  // }
+  // login and store the token in localStorage
   login(idToken, redirectUrl) {
     localStorage.setItem('id_token', idToken);
     if (redirectUrl) {
@@ -46,21 +45,34 @@ class AuthService {
     }
   }
 
-  // logout() {
-  //   // Clear user token and profile data from localStorage
-  //   localStorage.removeItem('id_token');
-  //   // this will reload the page and reset the state of the application
-  //   window.location.assign('/');
-  // }
+  // logout and remove token and profile data from localStorage
   logout() {
-    // Get current path before clearing anything
-    const currentPath = window.location.pathname;
-    
-    // Clear user token and profile data from localStorage
     localStorage.removeItem('id_token');
-    
-    // Redirect to the same page they were on
-    window.location.assign(currentPath);
+    localStorage.removeItem('userProfile');
+    window.location.assign('/');
+  }
+
+  // update user profile and store it in localStorage
+  // updateProfile(profileData) {
+  //   const token = this.getToken();
+  //   if (token) {
+  //     // Save the updated profile data in localStorage
+  //     localStorage.setItem('userProfile', JSON.stringify(profileData));
+  //   }
+  // }
+  updateProfile(profileData) {
+    const token = this.getToken();
+    if (token) {
+      // Save the updated profile data in localStorage
+      localStorage.setItem('userProfile', JSON.stringify(profileData));
+      
+      // If the current user's moderator status changed, refresh the page
+      const currentProfile = this.getProfile();
+      // if (currentProfile?.data?._id === profileData._id && 
+      //     currentProfile?.data?.isModerator !== profileData.isModerator) {
+      //   window.location.reload();
+      // }
+    }
   }
 }
 

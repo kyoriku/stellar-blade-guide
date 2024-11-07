@@ -69,7 +69,7 @@ const Eidos7Collectibles = () => {
           <h1 className="mt-3 mb-0">Eidos 7 Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
           <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
-            <SilentStreet />
+            {/* <SilentStreet />
             <ParkingTower />
             <AbandonedStation />
             <FloodedCommercialSector />
@@ -77,7 +77,7 @@ const Eidos7Collectibles = () => {
             <ConstructionZone />
             <CityUnderground />
             <Crater />
-            <Eidos7Continued />
+            <Eidos7Continued /> */}
           {/* </Suspense> */}
           <div className='text-end pb-5 pe-2'>
             <p className='m-0 fw-bold'>Next guide »</p>

@@ -53,7 +53,7 @@ const AppNavbar = () => {
                   {user && (
                     <span className="text-light me-3">
                       Welcome, {user.username}
-                      {user.isModerator && ' (Mod)'}
+                      {user.isModerator && ' (MOD)'}
                     </span>
                   )}
                   <Button variant="outline-light" onClick={Auth.logout} className="ms-4">
