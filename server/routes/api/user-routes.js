@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const {
+  getCurrentUser,
   createUser,
   getSingleUser,
   login,
@@ -14,5 +15,5 @@ router.route('/').post(createUser)
 router.route('/login').post(login);
 
 router.route('/me').get(authMiddleware, getSingleUser);
-
+router.route('/me').get(authMiddleware, getCurrentUser);
 module.exports = router;
