@@ -1,24 +1,21 @@
 import decode from 'jwt-decode';
 
 class AuthService {
-  // get user data from the token and profile data in localStorage
   getProfile() {
     const token = this.getToken();
     if (token) {
-      const decodedToken = decode(token); // Decode the token
-      const profileData = JSON.parse(localStorage.getItem('userProfile')) || {}; // Retrieve profile from localStorage
-      return { ...decodedToken, ...profileData }; // Combine the token and profile data
+      const decodedToken = decode(token);
+      const profileData = JSON.parse(localStorage.getItem('userProfile')) || {};
+      return { ...decodedToken, ...profileData };
     }
-    return null; // Return null if no token is found
+    return null;
   }
 
-  // check if user's logged in
   loggedIn() {
     const token = this.getToken();
-    return !!token && !this.isTokenExpired(token); // Check if token exists and is valid
+    return !!token && !this.isTokenExpired(token);
   }
 
-  // check if token is expired
   isTokenExpired(token) {
     try {
       const decoded = decode(token);
@@ -30,12 +27,10 @@ class AuthService {
     }
   }
 
-  // get token from localStorage
   getToken() {
     return localStorage.getItem('id_token');
   }
 
-  // login and store the token in localStorage
   login(idToken, redirectUrl) {
     localStorage.setItem('id_token', idToken);
     if (redirectUrl) {
@@ -45,33 +40,80 @@ class AuthService {
     }
   }
 
-  // logout and remove token and profile data from localStorage
   logout() {
     localStorage.removeItem('id_token');
     localStorage.removeItem('userProfile');
     window.location.assign('/');
   }
 
-  // update user profile and store it in localStorage
-  // updateProfile(profileData) {
-  //   const token = this.getToken();
-  //   if (token) {
-  //     // Save the updated profile data in localStorage
-  //     localStorage.setItem('userProfile', JSON.stringify(profileData));
-  //   }
-  // }
-  updateProfile(profileData) {
+  async updateProfile(profileData) {
     const token = this.getToken();
     if (token) {
       // Save the updated profile data in localStorage
       localStorage.setItem('userProfile', JSON.stringify(profileData));
       
-      // If the current user's moderator status changed, refresh the page
+      // Get current profile to check if this update affects the current user
       const currentProfile = this.getProfile();
-      // if (currentProfile?.data?._id === profileData._id && 
-      //     currentProfile?.data?.isModerator !== profileData.isModerator) {
-      //   window.location.reload();
-      // }
+      
+      // If this update is for the current user and their moderator status changed,
+      // refresh their token
+      if (currentProfile?.data?._id === profileData._id) {
+        try {
+          const response = await fetch('/api/users/refresh-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.getToken()}`
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to refresh token');
+          }
+
+          const data = await response.json();
+          if (data.token) {
+            // Update the token in localStorage
+            localStorage.setItem('id_token', data.token);
+            
+            // Optional: If you want to ensure all permissions are properly updated,
+            // you can refresh the page, but this might not be necessary if your
+            // token refresh works correctly
+            // window.location.reload();
+          }
+        } catch (error) {
+          console.error('Error refreshing token:', error);
+          // Handle error appropriately - you might want to notify the user
+          // or implement a retry mechanism
+        }
+      }
+    }
+  }
+
+  // New method to explicitly refresh the token
+  async refreshToken() {
+    try {
+      const response = await fetch('/api/users/refresh-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
+      }
+
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('id_token', data.token);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return false;
     }
   }
 }

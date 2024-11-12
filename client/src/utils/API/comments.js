@@ -1,49 +1,94 @@
+// client/src/utils/API/comments.js
 import auth from '../auth';
 
 const BASE_URL = import.meta.env.VITE_API_COMMENT_URL;
 
-const headers = () => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${auth.getToken()}`
-});
+const headers = () => {
+  const token = auth.getToken();
+  console.log('Current token:', token); // Debug log
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`
+  };
+};
+
+const handleResponse = async (response) => {
+  const data = await response.json();
+  console.log('API Response:', { 
+    status: response.status,
+    data 
+  }); // Debug log
+  
+  if (!response.ok) {
+    // Log detailed error information
+    if (response.status === 403) {
+      console.log('Permission denied. User data:', auth.getProfile()?.data);
+    }
+    throw new Error(data.message || 'API request failed');
+  }
+  
+  return data;
+};
 
 export const commentApi = {
   // Get all comments for a page
   getComments: async (pageId) => {
-    const response = await fetch(`${BASE_URL}/${pageId}`);
-    if (!response.ok) throw new Error('Failed to fetch comments');
-    return response.json();
+    try {
+      const response = await fetch(`${BASE_URL}/${pageId}`);
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Get comments error:', error);
+      throw error;
+    }
   },
 
   // Create a new comment
   createComment: async (pageId, content) => {
-    const response = await fetch(BASE_URL, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ pageId, content })
-    });
-    if (!response.ok) throw new Error('Failed to create comment');
-    return response.json();
+    try {
+      const response = await fetch(BASE_URL, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ pageId, content })
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Create comment error:', error);
+      throw error;
+    }
   },
 
   // Update a comment
   updateComment: async (commentId, content) => {
-    const response = await fetch(`${BASE_URL}/${commentId}`, {
-      method: 'PUT',
-      headers: headers(),
-      body: JSON.stringify({ content })
-    });
-    if (!response.ok) throw new Error('Failed to update comment');
-    return response.json();
+    try {
+      console.log('Updating comment:', { commentId, content }); // Debug log
+      console.log('Current user:', auth.getProfile()?.data); // Debug log
+      
+      const response = await fetch(`${BASE_URL}/${commentId}`, {
+        method: 'PUT',
+        headers: headers(),
+        body: JSON.stringify({ content })
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Update comment error:', error);
+      throw error;
+    }
   },
 
   // Delete a comment
   deleteComment: async (commentId) => {
-    const response = await fetch(`${BASE_URL}/${commentId}`, {
-      method: 'DELETE',
-      headers: headers()
-    });
-    if (!response.ok) throw new Error('Failed to delete comment');
-    return response.json();
+    try {
+      console.log('Deleting comment:', commentId); // Debug log
+      console.log('Current user:', auth.getProfile()?.data); // Debug log
+      
+      const response = await fetch(`${BASE_URL}/${commentId}`, {
+        method: 'DELETE',
+        headers: headers()
+      });
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Delete comment error:', error);
+      throw error;
+    }
   }
 };

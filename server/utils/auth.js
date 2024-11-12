@@ -1,40 +1,50 @@
+// server/utils/auth.js
 const jwt = require('jsonwebtoken');
+const { User } = require('../models');  // Add this
 require('dotenv').config();
 
-// set token secret and expiration date
 const secret = process.env.TOKEN_SECRET;
 const expiration = '2h';
 
 module.exports = {
-  // function for our authenticated routes
-  authMiddleware: function (req, res, next) {
-    // allows token to be sent via  req.query or headers
+  authMiddleware: async function (req, res, next) {
     let token = req.query.token || req.headers.authorization;
 
-    // ["Bearer", "<tokenvalue>"]
     if (req.headers.authorization) {
       token = token.split(' ').pop().trim();
     }
 
     if (!token) {
-      return res.status(400).json({ message: 'You have no token!' });
+      return res.status(401).json({ message: 'You have no token!' });
     }
 
-    // verify token and get user data out of it
     try {
+      // Verify token
       const { data } = jwt.verify(token, secret, { maxAge: expiration });
-      req.user = data;
-    } catch {
-      console.log('Invalid token');
-      return res.status(400).json({ message: 'invalid token!' });
-    }
+      
+      // Get fresh user data from database
+      const freshUser = await User.findById(data._id).select('-password');
+      if (!freshUser) {
+        return res.status(401).json({ message: 'Invalid user!' });
+      }
 
-    // send to next endpoint
-    next();
+      // Update user data with fresh moderator status
+      req.user = {
+        _id: freshUser._id,
+        username: freshUser.username,
+        email: freshUser.email,
+        isModerator: freshUser.isModerator
+      };
+
+      next();
+    } catch (err) {
+      console.log('Invalid token:', err);
+      return res.status(401).json({ message: 'Invalid token!' });
+    }
   },
+
   signToken: function ({ username, email, _id, isModerator }) {
     const payload = { username, email, _id, isModerator };
-
     return jwt.sign({ data: payload }, secret, { expiresIn: expiration });
   },
 };
