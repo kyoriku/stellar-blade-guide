@@ -44,81 +44,6 @@ const AdminPage = () => {
     }
   };
 
-  // const toggleModeratorStatus = async (userId) => {
-  //   try {
-  //     setProcessingUsers(prev => new Set([...prev, userId]));
-  //     const response = await fetch(`/api/admin/users/${userId}/toggle-moderator`, {
-  //       method: 'PATCH',
-  //       headers: {
-  //         'Authorization': `Bearer ${Auth.getToken()}`,
-  //         'Content-Type': 'application/json'
-  //       },
-  //     });
-      
-  //     if (!response.ok) {
-  //       const error = await response.json();
-  //       throw new Error(error.message || 'Failed to update moderator status');
-  //     }
-      
-  //     const data = await response.json();
-      
-  //     setUsers(users.map(user => 
-  //       user._id === userId 
-  //         ? { ...user, isModerator: data.isModerator }
-  //         : user
-  //     ));
-  //   } catch (err) {
-  //     console.error('Error toggling moderator status:', err);
-  //     setError(err.message || 'Failed to update moderator status');
-  //   } finally {
-  //     setProcessingUsers(prev => {
-  //       const newSet = new Set(prev);
-  //       newSet.delete(userId);
-  //       return newSet;
-  //     });
-  //   }
-  // };
-  // const toggleModeratorStatus = async (userId) => {
-  //   try {
-  //     setProcessingUsers(prev => new Set([...prev, userId]));
-  //     const response = await fetch(`/api/admin/users/${userId}/toggle-moderator`, {
-  //       method: 'PATCH',
-  //       headers: {
-  //         'Authorization': `Bearer ${Auth.getToken()}`,
-  //         'Content-Type': 'application/json'
-  //       },
-  //     });
-  
-  //     if (!response.ok) {
-  //       const error = await response.json();
-  //       throw new Error(error.message || 'Failed to update moderator status');
-  //     }
-  
-  //     const data = await response.json();
-  
-  //     // Update users state with the new moderator status immediately
-  //     setUsers(users.map(user => 
-  //       user._id === userId 
-  //         ? { ...user, isModerator: data.isModerator }
-  //         : user
-  //     ));
-  
-  //     // Update the logged-in user’s profile if their status is changed
-  //     if (userId === Auth.getProfile().data._id) {
-  //       Auth.updateProfile({ ...Auth.getProfile().data, isModerator: data.isModerator });
-  //     }
-  
-  //   } catch (err) {
-  //     console.error('Error toggling moderator status:', err);
-  //     setError(err.message || 'Failed to update moderator status');
-  //   } finally {
-  //     setProcessingUsers(prev => {
-  //       const newSet = new Set(prev);
-  //       newSet.delete(userId);
-  //       return newSet;
-  //     });
-  //   }
-  // };
   const toggleModeratorStatus = async (userId) => {
     try {
       setProcessingUsers(prev => new Set([...prev, userId]));
@@ -144,13 +69,16 @@ const AdminPage = () => {
           : user
       ));
   
-      // Update the affected user's profile
-      const updatedUserProfile = {
-        _id: data.userId,
-        username: data.username,
-        isModerator: data.isModerator
-      };
-      Auth.updateProfile(updatedUserProfile);
+      // If the affected user is the current user, update their token
+      const currentUser = Auth.getProfile()?.data;
+      if (currentUser && currentUser._id === userId) {
+        const updatedUserProfile = {
+          _id: data.userId,
+          username: data.username,
+          isModerator: data.isModerator
+        };
+        Auth.updateProfile(updatedUserProfile);
+      }
   
     } catch (err) {
       console.error('Error toggling moderator status:', err);

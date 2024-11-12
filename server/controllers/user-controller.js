@@ -37,7 +37,6 @@ module.exports = {
       res.json({ token, user });
     } catch (error) {
       if (error.name === 'ValidationError') {
-        // Create an object with error messages keyed by field
         const errors = {};
         Object.keys(error.errors).forEach((field) => {
           errors[field] = error.errors[field].message;
@@ -61,7 +60,6 @@ module.exports = {
         return res.status(400).json({ message: 'Wrong password!' });
       }
   
-      // Create token with specific user data
       const token = signToken({
         username: user.username,
         email: user.email,
@@ -69,7 +67,6 @@ module.exports = {
         isModerator: user.isModerator
       });
   
-      // Send back structured user data
       res.json({ 
         token, 
         user: {
@@ -84,4 +81,32 @@ module.exports = {
       res.status(500).json({ message: 'Internal server error' });
     }
   },
+
+  async toggleModeratorStatus(req, res) {
+    try {
+      const { userId } = req.params;
+      const user = await User.findById(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Verify that the requesting user is an admin (kyoriku)
+      if (req.user.username !== 'kyoriku') {
+        return res.status(403).json({ message: 'Not authorized to modify moderator status' });
+      }
+
+      user.isModerator = !user.isModerator;
+      await user.save();
+
+      res.json({
+        userId: user._id,
+        username: user.username,
+        isModerator: user.isModerator
+      });
+    } catch (err) {
+      console.error('Error toggling moderator status:', err);
+      res.status(500).json({ message: 'Error updating moderator status' });
+    }
+  }
 };
