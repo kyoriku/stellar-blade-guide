@@ -7,7 +7,7 @@ const {
   createComment,
   updateComment,
   deleteComment,
-  getModeratedComments
+  getModeratedComments,
 } = require('../../controllers/comment-controller');
 const { authMiddleware } = require('../../utils/auth');
 const { commentLimiter } = require('../../utils/rateLimiter');
@@ -33,5 +33,8 @@ router.route('/:commentId')
 
 router.route('/moderated')
   .get(authMiddleware, getModeratedComments);
+
+  router.route('/:commentId/replies')
+  .post(authMiddleware, commentLimiter, sanitizeComment, createComment);
 
 module.exports = router;

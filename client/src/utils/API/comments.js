@@ -90,5 +90,42 @@ export const commentApi = {
       console.error('Delete comment error:', error);
       throw error;
     }
+  },
+
+  getCommentReplies: async (commentId) => {
+    const response = await fetch(`/api/comments/${commentId}/replies`);
+    if (!response.ok) throw new Error('Failed to fetch replies');
+    return response.json();
+  },
+
+  createReply: async (commentId, content, pageId) => {
+    const response = await fetch(`/api/comments/${commentId}/replies`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.getToken()}`
+      },
+      body: JSON.stringify({ 
+        content,
+        pageId,
+        parentId: commentId
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create reply');
+    }
+    
+    return response.json();
+  },
+
+  // If you need to get replies separately
+  getReplies: async (commentId) => {
+    const response = await fetch(`/api/comments/${commentId}/replies`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch replies');
+    }
+    return response.json();
   }
 };
