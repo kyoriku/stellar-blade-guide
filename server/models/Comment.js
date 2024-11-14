@@ -1,19 +1,3 @@
-// const { Schema, model } = require('mongoose');
-
-// const CommentSchema = new Schema ({
-//   pageId: { type: String, required: true },
-//   content: { type: String, required: true },
-//   author: {
-//     name: { type: String, required: true },
-//     avatar: { type: String }
-//   },
-//   createdAt: { type: Date, default: Date.now }
-// });
-
-// const Comment = model('Comment', CommentSchema);
-
-// module.exports = Comment;
-
 const { Schema, model } = require('mongoose');
 
 const commentSchema = new Schema(
@@ -33,6 +17,16 @@ const commentSchema = new Schema(
       ref: 'User',
       required: true
     },
+    // Fields for handling replies
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Comment',
+      default: null
+    },
+    replies: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Comment'
+    }],
     createdAt: {
       type: Date,
       default: Date.now
@@ -52,14 +46,11 @@ const commentSchema = new Schema(
     moderatedAt: {
       type: Date
     }
-  }, 
-  {
-    timestamps: true
   },
   {
+    timestamps: true,
     toJSON: {
       virtuals: true,
-      // Include virtual properties when document is converted to JSON
       transform: function(doc, ret) {
         delete ret.__v;
         return ret;
@@ -68,13 +59,9 @@ const commentSchema = new Schema(
   }
 );
 
-// Virtual for getting author details
-commentSchema.virtual('authorDetails', {
-  ref: 'User',
-  localField: 'author',
-  foreignField: '_id',
-  justOne: true
-});
+// Add index for better query performance
+commentSchema.index({ pageId: 1, parentId: 1 });
+commentSchema.index({ parentId: 1, createdAt: 1 });
 
 const Comment = model('Comment', commentSchema);
 

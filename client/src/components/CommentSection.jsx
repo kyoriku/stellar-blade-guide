@@ -5,7 +5,106 @@ import { commentApi } from '../utils/API/comments';
 import { formatDateDisplay } from '../utils/formatDate';
 import AuthModal from './AuthModal';
 import DeleteModal from './DeleteModal';
-import { PersonFill, ShieldFill } from 'react-bootstrap-icons';
+// import { PersonFill, ShieldFill, Reply, ChatDots } from 'react-bootstrap-icons';
+import { Shield, MessageCircle, Reply, Edit2, Trash2 } from 'lucide-react';
+import '../styles/CommentSection.css';
+
+// Update the CommentReply component
+const CommentReply = ({ comment, onReply, canModerate, onEdit, onDelete }) => {
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitReply = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await onReply(comment._id, replyContent);
+      setReplyContent('');
+      setShowReplyForm(false);
+    } catch (error) {
+      console.error('Error submitting reply:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const replyCount = comment.replies?.length || 0;
+
+  return (
+    <div className="">
+      {showReplyForm ? (
+        <form onSubmit={handleSubmitReply} className=" mt-2">
+          <textarea
+            className="form-control mb-2"
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            placeholder="Write a reply..."
+            rows="2"
+          />
+          <div className="d-flex justify-content-between align-items-center">
+            <small className="text-muted">{replyContent.length}/1000</small>
+            <div>
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm me-2"
+                disabled={isSubmitting || replyContent.trim().length === 0}
+              >
+                {isSubmitting ? 'Posting...' : 'Post Reply'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowReplyForm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </form>
+      ) : (
+        <div className="d-flex justify-content-end align-items-center gap-3">
+          {replyCount > 0 && (
+            <span className="d-inline-flex align-items-center" style={{ color: '#64748b' }}>
+              <MessageCircle size={14} className="me-1" fill="#64748b" strokeWidth={1.5} />
+              {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
+            </span>
+          )}
+          <button
+            className="btn btn-subtle d-inline-flex align-items-center gap-1 px-2 py-1"
+            onClick={() => setShowReplyForm(true)}
+            style={{
+              background: '#f8fafc',
+              border: '1px solid #3b82f6',
+              borderRadius: '6px',
+              color: '#3b82f6',
+              transition: 'all 0.2s ease',
+              transform: 'scale(1)',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#dbeafe'; // Slightly darker blue background
+              e.currentTarget.style.borderColor = '#2563eb';
+              e.currentTarget.style.color = '#2563eb';
+              e.currentTarget.style.transform = 'scale(1.02)'; // Slight scale effect
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.15)'; // Blue-tinted shadow
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.borderColor = '#3b82f6';
+              e.currentTarget.style.color = '#3b82f6';
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+            }}
+          >
+            <Reply size={14} className="me-1" />
+            Reply
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CommentSection = ({ pageId }) => {
   const [comments, setComments] = useState([]);
@@ -64,7 +163,7 @@ const CommentSection = ({ pageId }) => {
 
   // Check if user can moderate a specific comment
   const canModerateComment = (comment) => {
-    if (!currentUser) return false;
+    if (!currentUser || !comment || !comment.author) return false;
     return currentUser.username === comment.author.username || isModerator();
   };
 
@@ -160,8 +259,14 @@ const CommentSection = ({ pageId }) => {
     // Refresh user data before submitting edit
     await fetchCurrentUser();
 
-    const comment = comments.find(c => c._id === commentId);
-    if (!canModerateComment(comment)) {
+    // Find the comment or reply being edited
+    const targetComment = comments.find(c => c._id === commentId);
+    const parentComment = comments.find(c => c.replies?.some(r => r._id === commentId));
+    const targetReply = parentComment?.replies?.find(r => r._id === commentId);
+
+    const commentToEdit = targetComment || targetReply;
+
+    if (!commentToEdit || !canModerateComment(commentToEdit)) {
       showToast('You no longer have permission to edit this comment', 'danger');
       setIsEditing(null);
       return;
@@ -175,17 +280,33 @@ const CommentSection = ({ pageId }) => {
       }
 
       await commentApi.updateComment(commentId, sanitizedContent);
-      setComments(prevComments =>
-        prevComments.map(comment =>
-          comment._id === commentId ? { ...comment, content: sanitizedContent } : comment
-        )
-      );
-      await fetchCurrentUser();
 
+      // Update state handling both comments and replies
+      setComments(prevComments =>
+        prevComments.map(c => {
+          // If this is the main comment being edited
+          if (c._id === commentId) {
+            return { ...c, content: sanitizedContent };
+          }
+          // If this comment contains the reply being edited
+          if (c.replies?.some(r => r._id === commentId)) {
+            return {
+              ...c,
+              replies: c.replies.map(reply =>
+                reply._id === commentId
+                  ? { ...reply, content: sanitizedContent }
+                  : reply
+              )
+            };
+          }
+          return c;
+        })
+      );
 
       setIsEditing(null);
       showToast('Comment updated successfully');
     } catch (error) {
+      console.error('Error updating comment:', error);
       showToast('Failed to update comment', 'danger');
     }
   };
@@ -194,8 +315,11 @@ const CommentSection = ({ pageId }) => {
     // Refresh user data before deleting
     await fetchCurrentUser();
 
-    const comment = comments.find(c => c._id === commentId);
-    if (!canModerateComment(comment)) {
+    // Find the comment or reply being deleted
+    const comment = comments.find(c => c._id === commentId) ||
+      comments.flatMap(c => c.replies || []).find(r => r._id === commentId);
+
+    if (!comment || !canModerateComment(comment)) {
       showToast('You no longer have permission to delete this comment', 'danger');
       setShowDeleteModal(false);
       return;
@@ -203,9 +327,26 @@ const CommentSection = ({ pageId }) => {
 
     try {
       await commentApi.deleteComment(commentId);
-      setComments(prevComments => prevComments.filter(comment => comment._id !== commentId));
-      await fetchCurrentUser();
 
+      // Update state for both comments and replies
+      setComments(prevComments =>
+        prevComments.map(c => {
+          // If this is the main comment being deleted
+          if (c._id === commentId) {
+            return null;
+          }
+          // If this is a reply being deleted
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.filter(reply => reply._id !== commentId)
+            };
+          }
+          return c;
+        }).filter(Boolean) // Remove null entries (deleted main comments)
+      );
+
+      await fetchCurrentUser();
       showToast('Comment deleted successfully');
     } catch (error) {
       showToast('Failed to delete comment', 'danger');
@@ -215,10 +356,13 @@ const CommentSection = ({ pageId }) => {
   const handleDeleteClick = async (commentId) => {
     // Refresh user data to ensure permissions are up-to-date
     await fetchCurrentUser();
-    const comment = comments.find(c => c._id === commentId);
+
+    // Find the comment or reply being deleted
+    const comment = comments.find(c => c._id === commentId) ||
+      comments.flatMap(c => c.replies || []).find(r => r._id === commentId);
 
     // Check if the user still has permission before opening the modal
-    if (!canModerateComment(comment)) {
+    if (!comment || !canModerateComment(comment)) {
       showToast('You no longer have permission to delete this comment', 'danger');
       return;
     }
@@ -228,13 +372,39 @@ const CommentSection = ({ pageId }) => {
     setShowDeleteModal(true);
   };
 
-
   const handleConfirmDelete = async () => {
     if (commentToDelete) {
       await handleDelete(commentToDelete);
     }
     setCommentToDelete(null);
     setShowDeleteModal(false);
+  };
+
+  const handleReply = async (commentId, content) => {
+    try {
+      const sanitizedContent = DOMPurify.sanitize(content.trim());
+      if (sanitizedContent.length < 1 || sanitizedContent.length > 1000) {
+        showToast('Reply must be between 1 and 1000 characters', 'danger');
+        return;
+      }
+
+      // Pass pageId to createReply
+      const reply = await commentApi.createReply(commentId, sanitizedContent, pageId);
+
+      // Update the comments state to include the new reply
+      setComments(prevComments =>
+        prevComments.map(comment =>
+          comment._id === commentId
+            ? { ...comment, replies: [...(comment.replies || []), reply] }
+            : comment
+        )
+      );
+
+      showToast('Reply posted successfully');
+    } catch (error) {
+      console.error('Error posting reply:', error);
+      showToast('Failed to post reply', 'danger');
+    }
   };
 
   return (
@@ -293,102 +463,217 @@ const CommentSection = ({ pageId }) => {
 
           <div className="comment-list">
             {comments.map((comment) => (
-              <div key={comment._id} className="card bg-light mb-2">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <div className="d-flex align-items-center">
-                      <div
-                        className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
-                        style={{ width: '40px', height: '40px' }}
-                      >
-                        {comment.author.username[0].toUpperCase()}
-                      </div>
-                      <div className="ms-2">
-                        <h6 className="mb-0 d-inline-flex align-items-center">
-                          {comment.author.username}
-                          {comment.author.isModerator && (
-                            <span className="badge bg-success ms-2 d-flex align-items-center p-1">
-                              <ShieldFill className="me-1" style={{ marginBottom: '-1px' }} />
-                              <span style={{ marginBottom: '-1px' }}>MOD</span>
+              <div key={comment._id}>
+                <div className="card bg-light mb-2">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div className="d-flex align-items-center">
+                        <div
+                          className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                          style={{ width: '40px', height: '40px' }}
+                        >
+                          {comment.author.username[0].toUpperCase()}
+                        </div>
+                        <div className="ms-2">
+                          <h6 className="mb-0 d-inline-flex align-items-center">
+                            {comment.author.username}
+                            {comment.author.isModerator && (
+                              <span className="badge bg-success ms-2 d-flex align-items-center p-1">
+                                <Shield size={14} className="me-1" />
+                                <span>MOD</span>
+                              </span>
+                            )}
+                            <span className="text-muted ms-2" style={{ fontSize: '0.875rem', fontWeight: 'normal' }}>
+                              • {formatDateDisplay(comment.createdAt)}
                             </span>
-                          )}
-                        </h6>
-                        {/* <h6 className="mb-0 d-inline-flex align-items-center">
-                          {comment.author.username}
-                          {comment.author.isModerator && (
-                            <span className="badge bg-success ms-2 ">
-                              <ShieldFill className="me-1 " />MOD
-                            </span>
-                          )}
-                        </h6> */}
-                        {/* <h6 className="mb-0 d-inline-flex align-items-center">
-                          {comment.author.username}
-                          {comment.author.isModerator && (
-                            <span className="badge bg-light text-success ">
-                              <ShieldFill className="me-1 " />MOD
-                            </span>
-                          )}
-                        </h6> */}
-                        {/* <h6 className="mb-0 d-inline-flex align-items-center">
-                          {comment.author.username}
-                          {comment.author.isModerator && (
-                            <ShieldFill className="text-success ms-2" />
-                          )}
-                        </h6> */}
-                        <div>
-                          <small className="text-muted">
-                            {formatDateDisplay(comment.createdAt)}
-                          </small>
+                          </h6>
                         </div>
                       </div>
+                      {canModerateComment(comment) && !isEditing && (
+                        <div className="ms-auto">
+                          <button
+                            className="btn btn-link btn-sm p-1 text-primary me-1 icon-button"
+                            onClick={() => handleEditClick(comment)}
+                            title="Edit"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.querySelector('svg').style.fill = 'currentColor';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.querySelector('svg').style.fill = 'none';
+                            }}
+                          >
+                            <Edit2
+                              size={16}
+                              style={{ transition: 'fill 0.2s ease' }}
+                            />
+                          </button>
+                          <button
+                            className="btn btn-link btn-sm p-1 text-danger icon-button"
+                            onClick={() => handleDeleteClick(comment._id)}
+                            title="Delete"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.querySelector('svg').style.fill = 'currentColor';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.querySelector('svg').style.fill = 'none';
+                            }}
+                          >
+                            <Trash2
+                              size={16}
+                              style={{ transition: 'fill 0.2s ease' }}
+                            />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {canModerateComment(comment) && !isEditing && (
-                      <div className="ms-auto">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handleEditClick(comment)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm ms-2"
-                          onClick={() => handleDeleteClick(comment._id)}
-                        >
-                          Delete
-                        </button>
+
+                    {isEditing === comment._id ? (
+                      <div className="mt-2">
+                        <textarea
+                          className="form-control mb-2"
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                        />
+                        <div className="d-flex justify-content-between align-items-center">
+                          <small className="text-muted">
+                            {editContent.length}/1000
+                          </small>
+                          <div>
+                            <button
+                              className="btn btn-success btn-sm me-2"
+                              onClick={() => handleEditSubmit(comment._id)}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => setIsEditing(null)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
                       </div>
+                    ) : (
+                      <>
+                        <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{comment.content}</p>
+
+                        {Auth.loggedIn() && !isEditing && (
+                          <CommentReply
+                            comment={comment}
+                            onReply={handleReply}
+                            canModerate={canModerateComment}
+                          />
+                        )}
+
+                        {comment.replies && comment.replies.length > 0 && (
+                          <div className="mt-2" style={{ marginLeft: '-0.5rem', marginRight: '-0.5rem', marginBottom: '-1rem' }}>
+                            {comment.replies.map(reply => (
+                              <div key={reply._id} className="card " style={{ marginBottom: '0.5rem', backgroundColor: 'rgb(233, 236, 239)' }}>
+                                <div className="card-body py-2 px-3">
+                                  <div className="d-flex justify-content-between align-items-start">
+                                    <div className="d-flex align-items-center">
+                                      <div
+                                        className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
+                                        style={{ width: '32px', height: '32px' }}
+                                      >
+                                        {reply.author.username[0].toUpperCase()}
+                                      </div>
+                                      <div className="ms-2">
+                                        <div className="d-flex align-items-center">
+                                          <h6 className="mb-0 d-inline-flex align-items-center">
+                                            {reply.author.username}
+                                            {reply.author.isModerator && (
+                                              <span className="badge bg-success ms-2 d-flex align-items-center p-1">
+                                                <Shield size={14} className="me-1" />
+                                                <span>MOD</span>
+                                              </span>
+                                            )}
+                                            <span className="text-muted ms-1" style={{ fontSize: '0.875rem', fontWeight: 'normal' }}>
+                                              • {formatDateDisplay(reply.createdAt)}
+                                            </span>
+                                          </h6>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {canModerateComment(reply) && !isEditing && (
+                                      <div className="ms-auto">
+                                        <button
+                                          className="btn btn-link btn-sm p-1 text-primary me-1 icon-button"
+                                          onClick={() => handleEditClick(reply)}
+                                          title="Edit"
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.querySelector('svg').style.fill = 'currentColor';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.querySelector('svg').style.fill = 'none';
+                                          }}
+                                        >
+                                          <Edit2
+                                            size={16}
+                                            style={{ transition: 'fill 0.2s ease' }}
+                                          />
+                                        </button>
+                                        <button
+                                          className="btn btn-link btn-sm p-1 text-danger icon-button"
+                                          onClick={() => handleDeleteClick(reply._id)}
+                                          title="Delete"
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.querySelector('svg').style.fill = 'currentColor';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.querySelector('svg').style.fill = 'none';
+                                          }}
+                                        >
+                                          <Trash2
+                                            size={16}
+                                            style={{ transition: 'fill 0.2s ease' }}
+                                          />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {isEditing === reply._id ? (
+                                    <div className="mt-2">
+                                      <textarea
+                                        className="form-control mb-2"
+                                        value={editContent}
+                                        onChange={(e) => setEditContent(e.target.value)}
+                                        maxLength={1000}
+                                      />
+                                      <div className="d-flex justify-content-between align-items-center">
+                                        <small className="text-muted">
+                                          {editContent.length}/1000
+                                        </small>
+                                        <div>
+                                          <button
+                                            className="btn btn-success btn-sm me-2"
+                                            onClick={() => handleEditSubmit(reply._id)}
+                                          >
+                                            Save
+                                          </button>
+                                          <button
+                                            className="btn btn-secondary btn-sm"
+                                            onClick={() => setIsEditing(null)}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="mb-0 mt-2" style={{ whiteSpace: 'pre-wrap' }}>
+                                      {reply.content}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-                  {isEditing === comment._id ? (
-                    <div className="mt-2">
-                      <textarea
-                        className="form-control mb-2"
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                      />
-                      <div className="d-flex justify-content-between align-items-center">
-                        <small className="text-muted">
-                          {editContent.length}/1000
-                        </small>
-                        <div>
-                          <button
-                            className="btn btn-success btn-sm me-2"
-                            onClick={() => handleEditSubmit(comment._id)}
-                          >
-                            Save
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => setIsEditing(null)}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{comment.content}</p>
-                  )}
                 </div>
               </div>
             ))}

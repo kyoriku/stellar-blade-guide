@@ -1,0 +1,22 @@
+.icon-button {
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.icon-button:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}
+
+.icon-button.text-danger:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Optional: add a focus state for accessibility */
+.icon-button:focus {
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+  outline: none;
+}
+
+.icon-button.text-danger:focus {
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
