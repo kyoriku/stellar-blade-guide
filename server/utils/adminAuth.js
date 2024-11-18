@@ -1,11 +1,10 @@
 const adminAuth = async (req, res, next) => {
   try {
-    // Check if user is authenticated and is the admin (kyoriku)
     if (!req.user) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
-    if (req.user.username !== 'kyoriku') {
+    if (!req.user.isAdmin) {
       return res.status(403).json({ message: 'Not authorized' });
     }
     

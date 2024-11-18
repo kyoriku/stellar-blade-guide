@@ -33,7 +33,8 @@ module.exports = {
         _id: freshUser._id,
         username: freshUser.username,
         email: freshUser.email,
-        isModerator: freshUser.isModerator
+        isModerator: freshUser.isModerator,
+        isAdmin: freshUser.isAdmin
       };
 
       next();
@@ -43,8 +44,8 @@ module.exports = {
     }
   },
 
-  signToken: function ({ username, email, _id, isModerator }) {
-    const payload = { username, email, _id, isModerator };
+  signToken: function ({ username, email, _id, isModerator, isAdmin }) {
+    const payload = { username, email, _id, isModerator, isAdmin };
     return jwt.sign({ data: payload }, secret, { expiresIn: expiration });
   },
 };

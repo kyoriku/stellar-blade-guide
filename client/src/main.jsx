@@ -24,7 +24,7 @@ const router = createBrowserRouter([
     errorElement: <Error />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'admin', element: <PrivateRoute><AdminPage /></PrivateRoute> },
+      { path: 'admin', element: <PrivateRoute adminOnly><AdminPage /></PrivateRoute> },
       { path: 'collectibles/eidos-7', element: <Eidos7Collectibles /> },
       { path: 'collectibles/xion', element: <XionCollectibles /> },
       { path: 'collectibles/wasteland', element: <WastelandCollectibles /> },
