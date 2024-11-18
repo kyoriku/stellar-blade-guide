@@ -64,7 +64,8 @@ module.exports = {
         username: user.username,
         email: user.email,
         _id: user._id,
-        isModerator: user.isModerator
+        isModerator: user.isModerator,
+        isAdmin: user.isAdmin
       });
   
       res.json({ 
@@ -73,7 +74,8 @@ module.exports = {
           _id: user._id,
           username: user.username,
           email: user.email,
-          isModerator: user.isModerator
+          isModerator: user.isModerator,
+          isAdmin: user.isAdmin
         }
       });
     } catch (error) {

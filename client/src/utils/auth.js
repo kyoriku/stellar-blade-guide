@@ -1,15 +1,20 @@
+// client/src/utils/auth.js
 import decode from 'jwt-decode';
 
 class AuthService {
-  getProfile() {
-    const token = this.getToken();
-    if (token) {
-      const decodedToken = decode(token);
-      const profileData = JSON.parse(localStorage.getItem('userProfile')) || {};
-      return { ...decodedToken, ...profileData };
+getProfile() {
+  const token = this.getToken();
+  if (token) {
+    try {
+      const decoded = decode(token);
+      return { data: decoded.data };
+    } catch (err) {
+      console.error('Error decoding token:', err);
+      return null;
     }
-    return null;
   }
+  return null;
+}
 
   loggedIn() {
     const token = this.getToken();

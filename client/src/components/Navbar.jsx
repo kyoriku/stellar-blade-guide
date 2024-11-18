@@ -18,9 +18,11 @@ const AppNavbar = () => {
     }
   };
 
-  // Get current user data
   const user = Auth.loggedIn() ? Auth.getProfile()?.data : null;
-  const isAdmin = user?.username === 'kyoriku';
+  const isAdmin = user?.isAdmin;
+  
+  console.log('Current user:', user);
+  console.log('Is admin:', isAdmin);
 
   return (
     <>
