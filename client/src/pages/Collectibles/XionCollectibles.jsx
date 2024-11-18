@@ -6,6 +6,7 @@ import useWindowSize from "../../hooks/useWindowSize";
 
 const Xion = lazy(() => import("./Xion/Xion"));
 const XionContinued = lazy(() => import("./Xion/XionContinued"));
+const CommentSection = lazy(() => import('../../components/CommentSection'));
 
 const XionCollectibles = () => {
   const size = useWindowSize();
@@ -55,25 +56,26 @@ const XionCollectibles = () => {
           <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
             <Xion />
             <XionContinued />
+            <div className='d-flex justify-content-between pb-5'>
+              <div className='text-start ps-2'>
+                <p className='m-0 fw-bold'>« Previous guide</p>
+                <h5>
+                  <Link to="/collectibles/eidos-7" className='text-decoration-none'>
+                    Eidos 7 Collectibles
+                  </Link>
+                </h5>
+              </div>
+              <div className='text-end pe-2'>
+                <p className='m-0 fw-bold'>Next guide »</p>
+                <h5>
+                  <Link to="/collectibles/wasteland" className='text-decoration-none'>
+                    Wasteland Collectibles
+                  </Link>
+                </h5>
+              </div>
+            </div>
+            <CommentSection pageId="xion" />
           </Suspense>
-          <div className='d-flex justify-content-between pb-5'>
-            <div className='text-start ps-2'>
-              <p className='m-0 fw-bold'>« Previous guide</p>
-              <h5>
-                <Link to="/collectibles/eidos-7" className='text-decoration-none'>
-                  Eidos 7 Collectibles
-                </Link>
-              </h5>
-            </div>
-            <div className='text-end pe-2'>
-              <p className='m-0 fw-bold'>Next guide »</p>
-              <h5>
-                <Link to="/collectibles/wasteland" className='text-decoration-none'>
-                  Wasteland Collectibles
-                </Link>
-              </h5>
-            </div>
-          </div>
         </div>
       </div>
     </div>
