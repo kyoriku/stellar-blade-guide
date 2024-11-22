@@ -35,13 +35,13 @@ const commentController = {
         pageId: req.params.pageId,
         parentId: null  // Only get top-level comments
       })
-      .populate('author', 'username isModerator')
+      .populate('author', 'username isModerator isAdmin')
       .populate({
         path: 'replies',
         options: { sort: { createdAt: 1 } }, // Sort replies chronologically
         populate: [{
           path: 'author',
-          select: 'username isModerator'
+          select: 'username isModerator isAdmin'
         }]
       })
       .sort('-createdAt');
@@ -54,7 +54,8 @@ const commentController = {
           pageId: comment.pageId,
           author: {
             username: comment.author.username,
-            isModerator: comment.author.isModerator
+            isModerator: comment.author.isModerator,
+            isAdmin: comment.author.isAdmin
           },
           createdAt: comment.createdAt,
           updatedAt: comment.updatedAt,
@@ -71,7 +72,8 @@ const commentController = {
             parentId: reply.parentId,
             author: {
               username: reply.author.username,
-              isModerator: reply.author.isModerator
+              isModerator: reply.author.isModerator,
+              isAdmin: reply.author.isAdmin
             },
             createdAt: reply.createdAt,
             updatedAt: reply.updatedAt,
@@ -150,7 +152,7 @@ const commentController = {
   
       // Populate author details
       const populatedComment = await Comment.findById(newComment._id)
-        .populate('author', 'username isModerator');
+        .populate('author', 'username isModerator isAdmin');
   
       // Sanitize response
       const sanitizedComment = {
@@ -160,7 +162,8 @@ const commentController = {
         parentId: populatedComment.parentId,
         author: {
           username: populatedComment.author.username,
-          isModerator: populatedComment.author.isModerator
+          isModerator: populatedComment.author.isModerator,
+          isAdmin: populatedComment.author.isAdmin
         },
         createdAt: populatedComment.createdAt,
         updatedAt: populatedComment.updatedAt,
@@ -227,7 +230,7 @@ const commentController = {
 
       // Populate the updated comment
       const updatedComment = await Comment.findById(commentId)
-        .populate('author', 'username isModerator')
+        .populate('author', 'username isModerator isAdmin')
         .populate('moderatedBy', 'username');
 
       const response = {
@@ -236,7 +239,8 @@ const commentController = {
         pageId: updatedComment.pageId,
         author: {
           username: updatedComment.author.username,
-          isModerator: updatedComment.author.isModerator
+          isModerator: updatedComment.author.isModerator,
+          isAdmin: updatedComment.author.isAdmin
         },
         createdAt: updatedComment.createdAt,
         updatedAt: updatedComment.updatedAt,
@@ -335,7 +339,7 @@ const commentController = {
         const replies = await Comment.find({ 
           parentId: commentId 
         })
-        .populate('author', 'username isModerator')
+        .populate('author', 'username isModerator isAdmin')
         .sort('createdAt');
     
         const sanitizedReplies = replies.map(reply => ({
@@ -345,7 +349,8 @@ const commentController = {
           parentId: reply.parentId,
           author: {
             username: reply.author.username,
-            isModerator: reply.author.isModerator
+            isModerator: reply.author.isModerator,
+            isAdmin: reply.author.isAdmin
           },
           createdAt: reply.createdAt,
           updatedAt: reply.updatedAt,
@@ -389,7 +394,7 @@ const commentController = {
 
       // Populate reply author details
       const populatedReply = await Comment.findById(reply._id)
-        .populate('author', 'username isModerator');
+        .populate('author', 'username isModerator isAdmin');
 
       const sanitizedReply = {
         _id: populatedReply._id,
@@ -398,7 +403,8 @@ const commentController = {
         parentId: populatedReply.parentId,
         author: {
           username: populatedReply.author.username,
-          isModerator: populatedReply.author.isModerator
+          isModerator: populatedReply.author.isModerator,
+          isAdmin: populatedReply.author.isAdmin
         },
         createdAt: populatedReply.createdAt,
         updatedAt: populatedReply.updatedAt
