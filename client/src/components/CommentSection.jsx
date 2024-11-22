@@ -5,11 +5,9 @@ import { commentApi } from '../utils/API/comments';
 import { formatDateDisplay } from '../utils/formatDate';
 import AuthModal from './AuthModal';
 import DeleteModal from './DeleteModal';
-// import { PersonFill, ShieldFill, Reply, ChatDots } from 'react-bootstrap-icons';
-import { Shield, MessageCircle, Reply, Edit2, Trash2 } from 'lucide-react';
+import { Shield, MessageCircle, Reply, Edit2, Trash2, Crown } from 'lucide-react';
 import '../styles/CommentSection.css';
 
-// Update the CommentReply component
 const CommentReply = ({ comment, onReply, canModerate, onEdit, onDelete }) => {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState('');
@@ -475,52 +473,76 @@ const CommentSection = ({ pageId }) => {
                           {comment.author.username[0].toUpperCase()}
                         </div>
                         <div className="ms-2">
-                          <h6 className="mb-0 d-inline-flex align-items-center">
-                            {comment.author.username}
-                            {comment.author.isModerator && (
-                              <span className="badge bg-success ms-2 d-flex align-items-center p-1">
-                                <Shield size={14} className="me-1" />
-                                <span>MOD</span>
-                              </span>
-                            )}
-                            <span className="text-muted ms-2" style={{ fontSize: '0.875rem', fontWeight: 'normal' }}>
-                              • {formatDateDisplay(comment.createdAt)}
+                          <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center">
+                            <h6 className="mb-0 d-inline-flex align-items-center">
+                              {comment.author.username}
+                              {comment.author.isAdmin && (
+                                <span className="badge ms-2 d-flex align-items-center p-1" style={{ backgroundColor: '#553C9A' }}>
+                                  <Crown size={14} className="me-1" fill="white" />
+                                  <span>ADMIN</span>
+                                </span>
+                              )}
+                              {comment.author.isModerator && (
+                                <span className="badge bg-success ms-2 d-flex align-items-center p-1">
+                                  <Shield size={14} className="me-1" fill="white" />
+                                  <span>MOD</span>
+                                </span>
+                              )}
+                            </h6>
+                            <span
+                              className="text-muted mt-1 mt-sm-0 ms-md-2"
+                              style={{ fontSize: '0.875rem', fontWeight: 'normal' }}
+                            >
+                              <span className="d-none d-md-inline">•</span>{' '}
+                              {formatDateDisplay(comment.createdAt)}
                             </span>
-                          </h6>
+                          </div>
                         </div>
                       </div>
                       {canModerateComment(comment) && !isEditing && (
                         <div className="ms-auto">
                           <button
-                            className="btn btn-link btn-sm p-1 text-primary me-1 icon-button"
+                            className="btn btn-link btn-sm p-1 icon-button"
                             onClick={() => handleEditClick(comment)}
                             title="Edit"
-                            onMouseEnter={(e) => {
-                              e.currentTarget.querySelector('svg').style.fill = 'currentColor';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.querySelector('svg').style.fill = 'none';
-                            }}
+                            style={{ backgroundColor: 'transparent' }}
                           >
                             <Edit2
                               size={16}
-                              style={{ transition: 'fill 0.2s ease' }}
+                              className="edit-icon"
+                              stroke="#3B82F6" // Outline color stays constant
+                              style={{
+                                transition: 'fill 0.2s ease',
+                                fill: '#93C5FD' // Default fill color
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.fill = '#3B82F6'; // Hover fill color
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.fill = '#93C5FD'; // Back to default fill color
+                              }}
                             />
                           </button>
                           <button
-                            className="btn btn-link btn-sm p-1 text-danger icon-button"
+                            className="btn btn-link btn-sm p-1 icon-button"
                             onClick={() => handleDeleteClick(comment._id)}
                             title="Delete"
-                            onMouseEnter={(e) => {
-                              e.currentTarget.querySelector('svg').style.fill = 'currentColor';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.querySelector('svg').style.fill = 'none';
-                            }}
+                            style={{ backgroundColor: 'transparent' }}
                           >
                             <Trash2
                               size={16}
-                              style={{ transition: 'fill 0.2s ease' }}
+                              className="delete-icon"
+                              stroke="#DC2626" // Outline color stays constant
+                              style={{
+                                transition: 'fill 0.2s ease',
+                                fill: '#FCA5A5' // Default fill color
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.fill = '#EF4444'; // Hover fill color
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.fill = '#FCA5A5'; // Back to default fill color
+                              }}
                             />
                           </button>
                         </div>
@@ -580,54 +602,77 @@ const CommentSection = ({ pageId }) => {
                                         {reply.author.username[0].toUpperCase()}
                                       </div>
                                       <div className="ms-2">
-                                        <div className="d-flex align-items-center">
+                                        <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center">
                                           <h6 className="mb-0 d-inline-flex align-items-center">
                                             {reply.author.username}
+                                            {reply.author.isAdmin && (
+                                              <span className="badge ms-2 d-flex align-items-center p-1" style={{ backgroundColor: '#553C9A' }}>
+                                                <Crown size={14} className="me-1" fill="white" />
+                                                <span>ADMIN</span>
+                                              </span>
+                                            )}
                                             {reply.author.isModerator && (
                                               <span className="badge bg-success ms-2 d-flex align-items-center p-1">
-                                                <Shield size={14} className="me-1" />
+                                                <Shield size={14} className="me-1" fill="white" />
                                                 <span>MOD</span>
                                               </span>
                                             )}
-                                            <span className="text-muted ms-1" style={{ fontSize: '0.875rem', fontWeight: 'normal' }}>
-                                              • {formatDateDisplay(reply.createdAt)}
-                                            </span>
                                           </h6>
+                                          <span
+                                            className="text-muted mt-1 mt-sm-0 ms-md-2"
+                                            style={{ fontSize: '0.875rem', fontWeight: 'normal' }}
+                                          >
+                                            <span className="d-none d-md-inline">•</span>{' '}
+                                            {formatDateDisplay(reply.createdAt)}
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
                                     {canModerateComment(reply) && !isEditing && (
                                       <div className="ms-auto">
                                         <button
-                                          className="btn btn-link btn-sm p-1 text-primary me-1 icon-button"
+                                          className="btn btn-link btn-sm p-1 icon-button"
                                           onClick={() => handleEditClick(reply)}
                                           title="Edit"
-                                          onMouseEnter={(e) => {
-                                            e.currentTarget.querySelector('svg').style.fill = 'currentColor';
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.currentTarget.querySelector('svg').style.fill = 'none';
-                                          }}
+                                          style={{ backgroundColor: 'transparent' }} // Ensure button background stays transparent
                                         >
                                           <Edit2
                                             size={16}
-                                            style={{ transition: 'fill 0.2s ease' }}
+                                            className="edit-icon"
+                                            stroke="#3B82F6" // Outline color stays constant
+                                            style={{
+                                              transition: 'fill 0.2s ease',
+                                              fill: '#93C5FD' // Default fill color
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.fill = '#3B82F6'; // Hover fill color
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.fill = '#93C5FD'; // Back to default fill color
+                                            }}
                                           />
                                         </button>
+
                                         <button
-                                          className="btn btn-link btn-sm p-1 text-danger icon-button"
+                                          className="btn btn-link btn-sm p-1 icon-button"
                                           onClick={() => handleDeleteClick(reply._id)}
                                           title="Delete"
-                                          onMouseEnter={(e) => {
-                                            e.currentTarget.querySelector('svg').style.fill = 'currentColor';
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.currentTarget.querySelector('svg').style.fill = 'none';
-                                          }}
+                                          style={{ backgroundColor: 'transparent' }}
                                         >
                                           <Trash2
                                             size={16}
-                                            style={{ transition: 'fill 0.2s ease' }}
+                                            className="delete-icon"
+                                            stroke="#DC2626" // Outline color stays constant
+                                            style={{
+                                              transition: 'fill 0.2s ease',
+                                              fill: '#FCA5A5' // Default fill color
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.fill = '#EF4444'; // Hover fill color
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.fill = '#FCA5A5'; // Back to default fill color
+                                            }}
                                           />
                                         </button>
                                       </div>
