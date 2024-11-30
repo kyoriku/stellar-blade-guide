@@ -15,6 +15,7 @@ const Plant = lazy(() => import("./Wasteland/Plant"));
 const GreatCanyonContinued = lazy(() => import("./Wasteland/GreatCanyonContinued"));
 const ForbiddenArea = lazy(() => import("./Wasteland/ForbiddenArea"));
 const WastelandContinued = lazy(() => import("./Wasteland/WastelandContinued"));
+const CommentSection = lazy(() => import('../../components/CommentSection'));
 
 const WastelandCollectibles = () => {
   const size = useWindowSize();
@@ -82,17 +83,19 @@ const WastelandCollectibles = () => {
             <GreatCanyonContinued />
             <ForbiddenArea />
             <WastelandContinued />
+            {/* </Suspense> */}
+            <div className='d-flex justify-content-between pb-5'>
+              <div className='text-start ps-2'>
+                <p className='m-0 fw-bold'>« Previous guide</p>
+                <h5><Link to="/collectibles/xion" className='text-decoration-none'>Xion Collectibles</Link></h5>
+              </div>
+              <div className='text-end pe-2'>
+                <p className='m-0 fw-bold'>Next guide »</p>
+                <h5><Link to="/collectibles/altess-levoire" className='text-decoration-none'>Altess Levoire Collectibles</Link></h5>
+              </div>
+            </div>
+            <CommentSection pageId="wasteland" />
           </Suspense>
-          <div className='d-flex justify-content-between pb-5'>
-            <div className='text-start ps-2'>
-              <p className='m-0 fw-bold'>« Previous guide</p>
-              <h5><Link to="/collectibles/xion" className='text-decoration-none'>Xion Collectibles</Link></h5>
-            </div>
-            <div className='text-end pe-2'>
-              <p className='m-0 fw-bold'>Next guide »</p>
-              <h5><Link to="/collectibles/altess-levoire" className='text-decoration-none'>Altess Levoire Collectibles</Link></h5>
-            </div>
-          </div>
         </div>
       </div>
     </div>
