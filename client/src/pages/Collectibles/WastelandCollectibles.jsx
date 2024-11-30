@@ -83,7 +83,6 @@ const WastelandCollectibles = () => {
             <GreatCanyonContinued />
             <ForbiddenArea />
             <WastelandContinued />
-            {/* </Suspense> */}
             <div className='d-flex justify-content-between pb-5'>
               <div className='text-start ps-2'>
                 <p className='m-0 fw-bold'>« Previous guide</p>
