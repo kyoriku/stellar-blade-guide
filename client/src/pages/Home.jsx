@@ -152,7 +152,7 @@ const Home = () => {
                   { to: "/collectibles/camps", text: "Camps" },
                   { to: "/collectibles/cans", text: "Cans" },
                   { to: "/collectibles/documents", text: "Documents" },
-                  { to: "/collectibles/drone-packs", text: "Drone Packs" },
+                  { to: "/collectibles/drone-appearances", text: "Drone Appearances" },
                   { to: "/collectibles/earrings", text: "Earrings" },
                   { to: "/collectibles/exospines", text: "Exospines" },
                   { to: "/collectibles/nano-suits", text: "Nano Suits" },
