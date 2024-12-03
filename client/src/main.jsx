@@ -12,7 +12,7 @@ import GreatDesertCollectibles from './pages/Collectibles/GreatDesertCollectible
 import AbyssLevoireCollectibles from './pages/Collectibles/AbyssLevoireCollectibles.jsx';
 import Eidos9Collectibles from './pages/Collectibles/Eidos9Collectibles.jsx';
 import Spire4Collectibles from './pages/Collectibles/Spire4Collectibles.jsx';
-import Collectibles from './pages/Collectibles/CollectibleTypesOverview.jsx';
+import CollectibleTypes from './pages/Collectibles/CollectibleTypesOverview.jsx';
 import Error from './components/Error';
 import AdminPage from './pages/AdminPage.jsx';
 import PrivateRoute from './components/PrivateRoute.jsx';
@@ -34,7 +34,7 @@ const router = createBrowserRouter([
       { path: 'collectibles/abyss-levoire', element: <AbyssLevoireCollectibles /> },
       { path: 'collectibles/eidos-9', element: <Eidos9Collectibles /> },
       { path: 'collectibles/spire-4', element: <Spire4Collectibles /> },
-      { path: 'collectibles/:type', element: <Collectibles /> },
+      { path: 'collectibles/:type', element: <CollectibleTypes /> },
     ],
   },
 ]);
