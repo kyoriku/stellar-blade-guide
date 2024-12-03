@@ -6,6 +6,7 @@ import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
 import { getCollectiblesByType } from '../../../utils/API/collectibles';
+import { Gem } from 'lucide-react';
 
 const CollectiblesByType = () => {
   const { type } = useParams();
@@ -145,7 +146,12 @@ const CollectiblesByType = () => {
 
   return (
     <section>
-      <Header id={type} title={`▽ ${formattedTypeTitle}`} />
+      <Header id={type} title={
+        <>
+          <Gem className="inline-block align-text-bottom mr-1 me-1 text-info" size={32} />
+          {formattedTypeTitle}
+        </>
+      } />
       <ErrorMessage message={error} />
       <div>
         {staticContent.map((contentItem, index) => (
@@ -170,7 +176,6 @@ const CollectiblesByType = () => {
             <hr />
           </article>
         ))}
-        <ErrorMessage message={error} />
       </div>
     </section>
   );

@@ -422,8 +422,8 @@ const CommentSection = ({ pageId }) => {
         </div>
         <div className="card-body pt-2 px-2 pb-0">
           {Auth.loggedIn() ? (
-            <form onSubmit={handleSubmit} className="mb-4">
-              <div className="mb-3">
+            <form onSubmit={handleSubmit} className="">
+              <div className="mb-2">
                 <textarea
                   className="form-control"
                   value={newComment}
@@ -454,7 +454,7 @@ const CommentSection = ({ pageId }) => {
               </div>
             </form>
           ) : (
-            <div className="alert alert-info text-center mb-4">
+            <div className="alert alert-info text-center mb-2">
               Please <button onClick={() => setShowAuthModal(true)} className="btn btn-link p-0 pb-1">login</button> to post comments
             </div>
           )}
