@@ -38,7 +38,8 @@ router.route('/refresh-token')
         username: user.username,
         email: user.email,
         _id: user._id,
-        isModerator: user.isModerator
+        isModerator: user.isModerator,
+        isAdmin: user.isAdmin
       });
 
       res.json({ token });
