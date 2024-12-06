@@ -78,14 +78,12 @@ const Eidos7Collectibles = () => {
             <CityUnderground />
             <Crater />
             <Eidos7Continued /> */}
-          {/* </Suspense> */}
-          <div className='text-end pb-5 pe-2'>
-            <p className='m-0 fw-bold'>Next guide »</p>
-            <h5>
-              <Link to="/collectibles/xion" className='text-decoration-none'>Xion Collectibles</Link>
-            </h5>
-          </div>
-          {/* <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}> */}
+            <div className='text-end pb-5 pe-2'>
+              <p className='m-0 fw-bold'>Next guide »</p>
+              <h5>
+                <Link to="/collectibles/xion" className='text-decoration-none'>Xion Collectibles</Link>
+              </h5>
+            </div>
             <CommentSection pageId="eidos-7" />
           </Suspense>
         </div>
