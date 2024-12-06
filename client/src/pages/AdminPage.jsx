@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Container, Table, Button, Badge, Card, Alert, Spinner } from 'react-bootstrap';
-import { PersonFill, ShieldFill, ShieldSlashFill } from 'react-bootstrap-icons';
+import { User, Shield, ShieldOff } from 'lucide-react';
 import Auth from '../utils/auth';
 
 const AdminPage = () => {
@@ -10,9 +10,9 @@ const AdminPage = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [processingUsers, setProcessingUsers] = useState(new Set());
 
-  // Check if current user is kyoriku
-  const currentUser = Auth.loggedIn() ? Auth.getProfile()?.data?.username : null;
-  if (currentUser !== 'kyoriku') {
+  // Check if current user is admin
+  const user = Auth.loggedIn() ? Auth.getProfile()?.data : null;
+  if (!user?.isAdmin) {
     return <Navigate to="/" replace />;
   }
 
@@ -28,12 +28,12 @@ const AdminPage = () => {
           'Content-Type': 'application/json'
         },
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to fetch users');
       }
-      
+
       const data = await response.json();
       setUsers(data);
     } catch (err) {
@@ -54,22 +54,20 @@ const AdminPage = () => {
           'Content-Type': 'application/json'
         },
       });
-  
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to update moderator status');
       }
-  
+
       const data = await response.json();
-  
-      // Update users state with the new moderator status
-      setUsers(users.map(user => 
-        user._id === userId 
+
+      setUsers(users.map(user =>
+        user._id === userId
           ? { ...user, isModerator: data.isModerator }
           : user
       ));
-  
-      // If the affected user is the current user, update their token
+
       const currentUser = Auth.getProfile()?.data;
       if (currentUser && currentUser._id === userId) {
         const updatedUserProfile = {
@@ -79,7 +77,7 @@ const AdminPage = () => {
         };
         Auth.updateProfile(updatedUserProfile);
       }
-  
+
     } catch (err) {
       console.error('Error toggling moderator status:', err);
       setError(err.message || 'Failed to update moderator status');
@@ -107,21 +105,21 @@ const AdminPage = () => {
       <Card className="shadow-sm">
         <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center">
-            <ShieldFill className="me-2" size={24} />
+            <Shield className="me-2" size={24} fill="white" />
             <h4 className="mb-0">User Management Dashboard</h4>
           </div>
           <Badge bg="light" text="dark">
-            Admin: {currentUser}
+            Admin: {user.username}
           </Badge>
         </Card.Header>
-        
+
         <Card.Body>
           {error && (
             <Alert variant="danger" className="mb-4">
               {error}
-              <Button 
-                variant="outline-danger" 
-                size="sm" 
+              <Button
+                variant="outline-danger"
+                size="sm"
                 className="float-end"
                 onClick={() => setError('')}
               >
@@ -144,7 +142,7 @@ const AdminPage = () => {
                 <tr key={user._id}>
                   <td>
                     <div className="d-flex align-items-center">
-                      <PersonFill className="me-2" size={20} />
+                      <User className="me-2" size={20} />
                       {user.username}
                     </div>
                   </td>
@@ -152,9 +150,9 @@ const AdminPage = () => {
                   <td className="text-center">
                     <Badge bg={user.isModerator ? 'success' : 'secondary'}>
                       {user.isModerator ? (
-                        <><ShieldFill className="me-1" />Moderator</>
+                        <><Shield className="me-1" size={20} />Moderator</>
                       ) : (
-                        <><ShieldSlashFill className="me-1" />Regular User</>
+                        <><ShieldOff className="me-1" size={20} />Regular User</>
                       )}
                     </Badge>
                   </td>
@@ -166,9 +164,9 @@ const AdminPage = () => {
                       disabled={processingUsers.has(user._id)}
                     >
                       {user.isModerator ? (
-                        <><ShieldSlashFill className="me-1" />Remove Moderator</>
+                        <><ShieldOff className="me-1" size={20} />Remove Moderator</>
                       ) : (
-                        <><ShieldFill className="me-1" />Make Moderator</>
+                        <><Shield className="me-1" size={20} />Make Moderator</>
                       )}
                     </Button>
                   </td>
@@ -176,7 +174,7 @@ const AdminPage = () => {
               ))}
             </tbody>
           </Table>
-          
+
           {users.length === 0 && (
             <Alert variant="info" className="text-center mb-0">
               No users found in the database.
