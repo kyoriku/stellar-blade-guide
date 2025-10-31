@@ -1,39 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useParams } from "react-router-dom";
 import Header from "../../../components/Header";
 import ErrorMessage from "../../../components/ErrorMessage";
 import ContentText from "../../../components/ContentText";
 import SkeletonLoader from "../../../components/SkeletonLoader";
 import MediaDisplay from "../../../components/MediaDisplay";
-import { getCollectiblesByType } from '../../../utils/API/collectibles';
+import { useCollectiblesByType } from '../../../hooks/useCollectibleType';
 import { Gem } from 'lucide-react';
 
 const CollectiblesByType = () => {
   const { type } = useParams();
-  const [collectibles, setCollectibles] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchCollectibles = async () => {
-      try {
-        const data = await getCollectiblesByType(type);
-        setCollectibles(data);
-      } catch (err) {
-        console.error('Failed to fetch collectibles of type', type, err);
-        setError('Failed to fetch collectibles. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (type) {
-      fetchCollectibles();
-    } else {
-      setError('No type provided');
-      setIsLoading(false);
-    }
-  }, [type]);
+  
+  // Use our custom hook to fetch collectibles by type
+  const {
+    data: collectibles = [],
+    isLoading,
+    error,
+    refetch
+  } = useCollectiblesByType(type)
 
   const staticContent = [
     {
@@ -138,11 +122,12 @@ const CollectiblesByType = () => {
 
   const formatTypeForTitle = (type) => {
     return type
-      .replace(/-/g, ' ')  // Replace hyphens with spaces
-      .replace(/\b\w/g, (char) => char.toUpperCase());  // Capitalize the first letter of each word
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
   const formattedTypeTitle = formatTypeForTitle(type || '');
+  const errorMessage = error ? 'Failed to fetch collectibles. Please try again later.' : (!type ? 'No type provided' : null);
 
   return (
     <section>
@@ -152,7 +137,21 @@ const CollectiblesByType = () => {
           {formattedTypeTitle}
         </>
       } />
-      <ErrorMessage message={error} />
+      
+      {errorMessage && (
+        <div>
+          <ErrorMessage message={errorMessage} />
+          {error && (
+            <button 
+              onClick={() => refetch()}
+              className="mt-3 px-3 py-1 btn btn-primary"
+            >
+              Try Again
+            </button>
+          )}
+        </div>
+      )}
+      
       <div>
         {staticContent.map((contentItem, index) => (
           <article key={contentItem.id}>

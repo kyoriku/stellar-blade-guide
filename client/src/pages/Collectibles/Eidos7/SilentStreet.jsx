@@ -1,4 +1,11 @@
-import CollectiblesSection from "../../../components/CollectiblesSection";
+import Header from "../../../components/Header";
+import ContentText from "../../../components/ContentText";
+import HrComponent from "../../../components/HrComponent";
+import ErrorMessage from "../../../components/ErrorMessage";
+import SkeletonLoader from "../../../components/SkeletonLoader";
+import MediaDisplay from "../../../components/MediaDisplay";
+import { useCollectibles } from "../../../hooks/useCollectibles";
+import { MapPin } from "lucide-react";
 
 const SilentStreet = () => {
   const staticContent = [
@@ -94,14 +101,92 @@ const SilentStreet = () => {
     },
   ];
 
+  // Using custom hook to fetch collectibles
+  const {
+    data: collectibles = [],
+    isLoading,
+    error,
+    refetch,
+  } = useCollectibles("Eidos-7", "Silent-Street");
+
   return (
-    <CollectiblesSection
-      id="silent-street"
-      title="Silent Street"
-      level="Eidos-7"
-      location="Silent-Street"
-      staticContent={staticContent}
-    />
+    <section>
+
+      {/* <Header
+        id="silent-street"
+        title="Silent Street"
+        icon={<MapPin className='text-secondary' size={32} />}
+      /> */}
+
+      <hr id="silent-street"></hr>
+      <div className="d-flex align-items-center">
+        <MapPin className='text-secondary' size={32} />
+        <h3 className="mb-0 ms-2">Silent Street</h3>
+      </div>
+      <hr className="w-75"></hr>
+
+      {/* Error handling with retry button */}
+      {error && (
+        <div>
+          <ErrorMessage message="Failed to fetch collectibles. Please try again later." />
+          <button
+            onClick={() => refetch()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Collectibles list */}
+      <div>
+        {staticContent.map((item, index) => (
+          <article key={item.id} className="mb-6">
+
+            {/* <ContentText title={item.title} text={item.text} /> */}
+
+            {/* {Array.isArray(item.text) ? (
+              <div>
+                <strong>{item.title}</strong>
+                <ul>
+                  {item.text.map((textItem, idx) => (
+                    <li key={idx}>{textItem}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p>
+                <strong>{item.title}</strong>
+                <span> &#8211; </span>
+                {item.text}
+              </p>
+            )} */}
+
+            <p>
+              <strong>{item.title}</strong>
+              <span> &#8211; </span>
+              {item.text}
+            </p>
+
+            {isLoading ? (
+              <SkeletonLoader />
+            ) : (
+              <MediaDisplay
+                images={collectibles.find((data) => data.id === item.id)?.images || []}
+              />
+            )}
+
+            {/* <HrComponent
+                          index={index}
+                          isLoading={isLoading}
+                          length={staticContent.length}
+                        /> */}
+
+            {index < staticContent.length - 1 && <hr />}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 };
 

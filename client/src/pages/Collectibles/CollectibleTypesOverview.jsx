@@ -10,6 +10,7 @@ import Camps from "./Types/Camps";
 import Cans from "./Types/Cans";
 import Documents from "./Types/Documents";
 import DroneAppearance from "./Types/DroneAppearances";
+import Earrings from "./Types/Earrings";
 import CommentSection from "../../components/CommentSection";
 
 const CollectibleTypes = () => {
@@ -22,8 +23,8 @@ const CollectibleTypes = () => {
   }, [type]);
 
   const tocLinks = [
-    { mainLink: "/collectibles/beta-cores", title: "Beta Cores" },
-    { mainLink: "/collectibles/body-cores", title: "Body Cores" },
+    { mainLink: "/collectibles/type/beta-cores", title: "Beta Cores" },
+    { mainLink: "/collectibles/type/body-cores", title: "Body Cores" },
     { mainLink: "/collectibles/camps", title: "Camps" },
     { mainLink: "/collectibles/cans", title: "Cans" },
     { mainLink: "/collectibles/documents", title: "Documents" },
@@ -49,6 +50,8 @@ const CollectibleTypes = () => {
         return <Documents />;
       case 'drone-appearances':
         return <DroneAppearance />;
+      case 'earrings':
+        return <Earrings />;
       default:
         return <CollectiblesByType />;
     }

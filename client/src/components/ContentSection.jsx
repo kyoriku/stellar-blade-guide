@@ -31,7 +31,7 @@ const ContentSection = ({
               />
             )}
             {showHr && !isLastItem ? (
-              <hr />
+              <hr className="hr-margin" />
             ) : null}
             {addBottomMargin && <div className="bottom-margin" />}
           </article>

@@ -61,6 +61,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Book, Map, Compass } from 'lucide-react';
+import PrefetchLink from '../hooks/PrefetchLink';
+import prefetchImports from '../hooks/prefetchConfig';
+// import '../styles/Home.css'; // Assuming you have a CSS file for styling
 
 const Home = () => {
   return (
@@ -88,7 +91,7 @@ const Home = () => {
       </nav> */}
 
       <main className="flex-grow-1">
-        <div className=" m-4">
+        <div className="m-4">
           <div className="row mb-4">
             <div className="col">
               <img
@@ -126,12 +129,12 @@ const Home = () => {
               />
             </div>
             <div className="col-md-4 mb-4">
-              <Section
+              <LocationSection
                 title="Locations"
                 icon={<Map className="text-success" size={32} />}
                 links={[
-                  { to: "/collectibles/eidos-7", text: "Eidos 7" },
-                  { to: "/collectibles/xion", text: "Xion" },
+                  { to: "/collectibles/level/eidos-7", text: "Eidos 7", prefetch: prefetchImports['eidos-7'] },
+                  { to: "/collectibles/xion", text: "Xion", prefetch: prefetchImports['xion'] },
                   { to: "/collectibles/wasteland", text: "Wasteland" },
                   { to: "/collectibles/altess-levoire", text: "Altess Levoire" },
                   { to: "/collectibles/matrix-11", text: "Matrix 11" },
@@ -147,7 +150,7 @@ const Home = () => {
                 title="Collectibles"
                 icon={<Compass className="text-info" size={32} />}
                 links={[
-                  { to: "/collectibles/beta-cores", text: "Beta Cores" },
+                  { to: "/collectibles/type/beta-cores", text: "Beta Cores" },
                   { to: "/collectibles/body-cores", text: "Body Cores" },
                   { to: "/collectibles/camps", text: "Camps" },
                   { to: "/collectibles/cans", text: "Cans" },
@@ -167,7 +170,7 @@ const Home = () => {
 
       <footer className="bg-dark text-white py-3 mt-auto">
         <div className="container text-center">
-          <p className="mb-0">&copy; 2024 Stellar Blade Guide. All rights reserved.</p>
+          <p className="mb-0">&copy; 2024 Stellar Blade Guide.</p>
         </div>
       </footer>
     </div>
@@ -187,6 +190,37 @@ const Section = ({ title, icon, links }) => (
             <Link to={link.to} className="text-decoration-none">
               {link.text}
             </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+);
+
+// Special section for location links that supports prefetching
+const LocationSection = ({ title, icon, links }) => (
+  <div className="card h-100">
+    <div className="card-body">
+      <div className="d-flex align-items-center mb-3">
+        {icon}
+        <h3 className="card-title mb-0 ms-2">{title}</h3>
+      </div>
+      <ul className="list-unstyled">
+        {links.map((link, index) => (
+          <li key={index}>
+            {link.prefetch ? (
+              <PrefetchLink 
+                to={link.to} 
+                prefetch={link.prefetch} 
+                className="text-decoration-none"
+              >
+                {link.text}
+              </PrefetchLink>
+            ) : (
+              <Link to={link.to} className="text-decoration-none">
+                {link.text}
+              </Link>
+            )}
           </li>
         ))}
       </ul>

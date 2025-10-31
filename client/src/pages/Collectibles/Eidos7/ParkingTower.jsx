@@ -1,4 +1,13 @@
-import CollectiblesSection from "../../../components/CollectiblesSection";
+import React, { useEffect, useState } from "react";
+import Header from "../../../components/Header";
+import ErrorMessage from "../../../components/ErrorMessage";
+import ContentText from "../../../components/ContentText";
+import SkeletonLoader from "../../../components/SkeletonLoader";
+import MediaDisplay from "../../../components/MediaDisplay";
+import HrComponent from "../../../components/HrComponent";
+// import CollectiblesSection from "../../../components/CollectiblesSection";
+import { useCollectibles } from "../../../hooks/useCollectibles";
+import { MapPin } from "lucide-react";
 
 const ParkingTower = () => {
   const staticContent = [
@@ -99,14 +108,58 @@ const ParkingTower = () => {
     }
   ]
 
+  const {
+    data: collectibles = [],
+    isLoading,
+    error,
+    refetch,
+  } = useCollectibles("Eidos-7", "Parking-Tower");
+
   return (
-    <CollectiblesSection
-      id='parking-tower'
-      title="Parking Tower"
-      level="Eidos-7"
-      location="Parking-Tower"
-      staticContent={staticContent}
-    />
+    <section>
+      <hr id="parking-tower"></hr>
+      <div className="d-flex align-items-center">
+        <MapPin className='text-secondary' size={32} />
+        <h3 className="mb-0 ms-2">Parking Tower</h3>
+      </div>
+      <hr className="w-75"></hr>
+
+      {/* Error handling with retry button */}
+      {error && (
+        <div>
+          <ErrorMessage message="Failed to fetch collectibles. Please try again later." />
+          <button
+            onClick={() => refetch()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Collectibles list */}
+      <div>
+        {staticContent.map((item, index) => (
+          <article key={item.id} className="mb-6">
+            <p>
+              <strong>{item.title}</strong>
+              <span> &#8211; </span>
+              {item.text}
+            </p>
+
+            {isLoading ? (
+              <SkeletonLoader />
+            ) : (
+              <MediaDisplay
+                images={collectibles.find((data) => data.id === item.id)?.images || []}
+              />
+            )}
+
+            {index < staticContent.length - 1 && <hr />}
+          </article>
+        ))}
+      </div>
+    </section>
   );
 };
 

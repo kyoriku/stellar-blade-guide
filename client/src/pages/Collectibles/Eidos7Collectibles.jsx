@@ -3,22 +3,35 @@ import { Link } from 'react-router-dom';
 import TableOfContents from '../../components/TableOfContents';
 import LoadingFallback from "../../components/LoadingFallback";
 import useWindowSize from "../../hooks/useWindowSize";
+import { getCollectiblesByLevelOrType } from "../../utils/API/collectibles";
 
-const SilentStreet = lazy(() => import('./Eidos7/SilentStreet'));
-const ParkingTower = lazy(() => import('./Eidos7/ParkingTower'));
-const AbandonedStation = lazy(() => import('./Eidos7/AbandonedStation'));
-const FloodedCommercialSector = lazy(() => import('./Eidos7/FloodedCommercialSector'));
-const MemoryTower = lazy(() => import('./Eidos7/MemoryTower'));
-const ConstructionZone = lazy(() => import('./Eidos7/ConstructionZone'));
-const CityUnderground = lazy(() => import('./Eidos7/CityUnderground'));
-const Crater = lazy(() => import('./Eidos7/Crater'));
-const Eidos7Continued = lazy(() => import('./Eidos7/Eidos7Continued'));
-const CommentSection = lazy(() => import('../../components/CommentSection'));
+import SilentStreet from "./Eidos7/SilentStreet";
+import ParkingTower from "./Eidos7/ParkingTower";
+import AbandonedStation from "./Eidos7/AbandonedStation";
+import FloodedCommercialSector from "./Eidos7/FloodedCommercialSector";
+import MemoryTower from "./Eidos7/MemoryTower";
+import ConstructionZone from "./Eidos7/ConstructionZone";
+import CityUnderground from "./Eidos7/CityUnderground";
+import Crater from "./Eidos7/Crater";
+import Eidos7Continued from "./Eidos7/Eidos7Continued";
+// const SilentStreet = lazy(() => import('./Eidos7/SilentStreet'));
+// const ParkingTower = lazy(() => import('./Eidos7/ParkingTower'));
+// const AbandonedStation = lazy(() => import('./Eidos7/AbandonedStation'));
+// const FloodedCommercialSector = lazy(() => import('./Eidos7/FloodedCommercialSector'));
+// const MemoryTower = lazy(() => import('./Eidos7/MemoryTower'));
+// const ConstructionZone = lazy(() => import('./Eidos7/ConstructionZone'));
+// const CityUnderground = lazy(() => import('./Eidos7/CityUnderground'));
+// const Crater = lazy(() => import('./Eidos7/Crater'));
+// const Eidos7Continued = lazy(() => import('./Eidos7/Eidos7Continued'));
+// const CommentSection = lazy(() => import('../../components/CommentSection'));
 
 const Eidos7Collectibles = () => {
   const size = useWindowSize();
   const isMobile = size.width <= 768;
   const [isSlowLoading, setIsSlowLoading] = useState(false);
+    const [content, setContent] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -26,7 +39,7 @@ const Eidos7Collectibles = () => {
     // Set a timer to show a "still loading" message if it takes longer
     const timeout = setTimeout(() => {
       setIsSlowLoading(true);
-    }, 5000); // 5 seconds to trigger slow loading feedback
+    }, 1000); // 5 seconds to trigger slow loading feedback
 
     return () => clearTimeout(timeout);
   }, []);
@@ -68,8 +81,8 @@ const Eidos7Collectibles = () => {
         <div className={`col-lg-9 px-4 border-start border-end ${!isMobile ? '' : ''}`}>
           <h1 className="mt-3 mb-0">Eidos 7 Collectibles</h1>
           {isMobile && <TableOfContents links={tocLinks} isMobile={isMobile} />}
-          <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}>
-            {/* <SilentStreet />
+          {/* <Suspense fallback={<LoadingFallback isSlowLoading={isSlowLoading} />}> */}
+            <SilentStreet />
             <ParkingTower />
             <AbandonedStation />
             <FloodedCommercialSector />
@@ -77,15 +90,15 @@ const Eidos7Collectibles = () => {
             <ConstructionZone />
             <CityUnderground />
             <Crater />
-            <Eidos7Continued /> */}
+            <Eidos7Continued />
             <div className='text-end pb-5 pe-2'>
               <p className='m-0 fw-bold'>Next guide »</p>
               <h5>
                 <Link to="/collectibles/xion" className='text-decoration-none'>Xion Collectibles</Link>
               </h5>
             </div>
-            <CommentSection pageId="eidos-7" />
-          </Suspense>
+            {/* <CommentSection pageId="eidos-7" /> */}
+          {/* </Suspense> */}
         </div>
       </div>
     </div>

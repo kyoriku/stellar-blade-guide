@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "watch": "nodemon server.js",
-    "seed": "node seeds/seed.js"
+    "seed": "node seeds/seed.js",
+    "seed:admin": "node seeds/seedAdmin.js",
+    "seed:collectibles": "node seeds/seedCollectibles.js",
+    "seed:fresh": "DROP_DB=true node seeds/seed.js"
   },
   "keywords": [],
   "author": "",

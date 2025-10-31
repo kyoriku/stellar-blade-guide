@@ -3,7 +3,9 @@ import "../styles/LoadingSpinner.css";
 
 const LoadingSpinner = () => {
   return (
-    <div className="loading-spinner"></div>
+    <div className="spinner-border" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
   );
 };
 

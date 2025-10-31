@@ -8,3 +8,15 @@ const HrComponent = ({ index, isLoading, length }) => {
 };
 
 export default HrComponent;
+
+// import React from "react";
+// import "../styles/Home.css";
+
+// const HrComponent = ({ index, isLoading, length }) => {
+//   if (isLoading) {
+//     return index < length - 1 ? <hr className="my-4" /> : null;
+//   }
+//   return index < length - 1 ? <hr className="hr-margin"/> : null;
+// };
+
+// export default HrComponent;
