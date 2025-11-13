@@ -23,7 +23,7 @@ async def seed_walkthroughs():
             result = await db.execute(select(Walkthrough).where(Walkthrough.id == 1))
             existing = result.scalar_one_or_none()
             if existing:
-                print("\033[93m⚠️  Deleting existing walkthrough...\033[0m")
+                print("\033[93mDeleting existing walkthrough...\033[0m")
                 await db.delete(existing)
                 await db.commit()
 
@@ -56,12 +56,12 @@ async def seed_walkthroughs():
                 "boss_info": None,
                 "images": [
                      {
-                        "url": "/assets/images/Matrix_11/4_Underground_Sewer/8_Robot_Document_Log_To_the_Little_Drone_1.jpg",
+                        "url": "/assets/images/Eidos_7/Silent_Street/1_Passcode_r0ar0a_1.jpg",
                         "alt": "Brute boss fight",
                         "order": 1
                     },
                     {
-                        "url": "/assets/images/Matrix_11/4_Underground_Sewer/8_Robot_Document_Log_To_the_Little_Drone_2.jpg",
+                        "url": "/assets/images/Eidos_7/Silent_Street/1_Passcode_r0ar0a_1.jpg",
                         "alt": "Brute attack pattern",
                         "order": 2
                     }
@@ -212,7 +212,7 @@ async def seed_walkthroughs():
             await db.commit()
         
         except Exception as e:
-            print(f"\033[31m✗ Error seeding walkthrough: {e}\033[0m")
+            print(f"\033[31mError seeding walkthrough: {e}\033[0m")
             import traceback
             traceback.print_exc()
             await db.rollback()
@@ -221,11 +221,11 @@ async def seed_walkthroughs():
     print("\nClearing Redis cache...")
     try:
         await invalidate_cache_pattern("walkthrough:*")
-        print("\033[32m✓ Redis cache cleared\033[0m")
+        print("\033[32mRedis cache cleared\033[0m")
     except Exception as e:
-        print(f"\033[31m✗ Failed to clear Redis cache: {e}\033[0m")
+        print(f"\033[31mFailed to clear Redis cache: {e}\033[0m")
 
-    print("\n\033[32m✓ Walkthrough seeded successfully\033[0m")
+    print("\n\033[32mWalkthrough seeded successfully\033[0m")
 
 
 if __name__ == "__main__":

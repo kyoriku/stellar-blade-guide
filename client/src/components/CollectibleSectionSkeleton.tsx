@@ -5,8 +5,8 @@ interface CollectibleSectionSkeletonProps {
   animate?: boolean;
 }
 
-function CollectibleSectionSkeleton({ 
-  id, 
+function CollectibleSectionSkeleton({
+  id,
   locationName,
   cardCount = 2,
 }: CollectibleSectionSkeletonProps) {
@@ -32,9 +32,9 @@ function CollectibleSectionSkeleton({
           <article
             key={index}
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800"
-            // style={{
-            //   animation: animate ? `fadeInUp 0.25s ease-out ${index * 0.05}s both` : 'none'
-            // }}
+          // style={{
+          //   animation: animate ? `fadeInUp 0.25s ease-out ${index * 0.05}s both` : 'none'
+          // }}
           >
             {/* Decorative corner gradient - matches original */}
             {/* <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div> */}
