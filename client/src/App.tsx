@@ -5,7 +5,7 @@ import WalkthroughPage from './pages/WalkthroughsPage'
 import LevelPage from './pages/LevelsPage'
 import CollectibleTypePage from './pages/CollectiblesPage'
 import ErrorPage from './pages/ErrorPage'
-import WalkthroughsListPage from './components/WalkhroughsListPage'
+import WalkthroughsListPage from './pages/WalkhroughsListPage'
 import WalkthroughDetailPage from './pages/WalkthroughDetailPage'
 
 function App() {

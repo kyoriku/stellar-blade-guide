@@ -173,8 +173,8 @@ function Navbar() {
       `}</style>
 
       <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
-        ? 'bg-[rgba(21,27,35,0.9)] backdrop-blur-xl shadow-lg shadow-black/20 border-b border-gray-800'
-        : 'bg-secondary-bg backdrop-blur-md border-b border-gray-800/50'
+        ? 'bg-[rgba(1,4,9,0.9)] backdrop-blur-xl shadow-lg shadow-black/20 border-b border-gray-800'
+        : 'bg-nav backdrop-blur-md border-b border-gray-800/50'
         }`}>
 
         <div className="container mx-auto">
@@ -218,7 +218,7 @@ function Navbar() {
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
                 <div
-                  className={`absolute left-0 mt-2 w-56 bg-secondary backdrop-blur-xl rounded-xl shadow-2xl border border-blue-500/30 z-50 overflow-hidden transition-all duration-200
+                  className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-blue-500/30 z-50 overflow-hidden transition-all duration-200
       ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}
                 >
                   <div className="py-2">
@@ -261,7 +261,7 @@ function Navbar() {
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
                 <div
-                  className={`absolute left-0 mt-2 w-56 bg-secondary backdrop-blur-xl rounded-xl shadow-2xl border border-green-500/30 z-50 overflow-hidden transition-all duration-200
+                  className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-green-500/30 z-50 overflow-hidden transition-all duration-200
       ${openDropdown === 'levels' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}
                 >
                   <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
@@ -274,8 +274,8 @@ function Navbar() {
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchLevel(level.slug)}
                           className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                              ? 'text-white bg-gradient-to-r from-green-500/20 to-transparent border-l-2 border-green-400 font-medium'
-                              : 'text-gray-300 hover:bg-gradient-to-r hover:from-green-500/10 hover:to-transparent hover:text-white hover:border-l-2 hover:border-green-400'
+                            ? 'text-white bg-gradient-to-r from-green-500/20 to-transparent border-l-2 border-green-400 font-medium'
+                            : 'text-gray-300 hover:bg-gradient-to-r hover:from-green-500/10 hover:to-transparent hover:text-white hover:border-l-2 hover:border-green-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -310,7 +310,7 @@ function Navbar() {
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
                 <div
-                  className={`absolute left-0 mt-2 w-56 bg-secondary backdrop-blur-xl rounded-xl shadow-2xl border border-purple-500/30 z-50 overflow-hidden transition-all duration-200
+                  className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-purple-500/30 z-50 overflow-hidden transition-all duration-200
       ${openDropdown === 'collectibles' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}
                 >
                   <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
@@ -323,8 +323,8 @@ function Navbar() {
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug)}
                           className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                              ? 'text-white bg-gradient-to-r from-purple-500/20 to-transparent border-l-2 border-purple-400 font-medium'
-                              : 'text-gray-300 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-transparent hover:text-white hover:border-l-2 hover:border-purple-400'
+                            ? 'text-white bg-gradient-to-r from-purple-500/20 to-transparent border-l-2 border-purple-400 font-medium'
+                            : 'text-gray-300 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-transparent hover:text-white hover:border-l-2 hover:border-purple-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
