@@ -16,7 +16,7 @@ from schemas.collectibles import (
 from core.cache import get_cache, set_cache
 from core.security import limiter
 from config.settings import settings
-from services.collectibles_service import get_collectibles_by_type
+# from services.collectibles_service import get_collectibles_by_type
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/collectibles", tags=["collectibles"])
