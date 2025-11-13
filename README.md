@@ -1,4 +1,4 @@
-# Stellar Blade Guide v2
+# Stellar Blade Guide
 
 - **Frontend**: TypeScript, React, Tailwind CSS, TanStack Query
 - **Backend**: Python, FastAPI, SQLAlchemy, Pydantic
@@ -181,11 +181,6 @@ Designed PostgreSQL schemas and validated data with Pydantic, improving backend 
 * Preloading/prefetching with TanStack Query + Redis will make the frontend feel **near-instant**, even for heavier queries.
 
 ---
-
-If you want, I can **also tweak the bullets slightly to make them even punchier and fit a one-line-per-bullet resume style**, so it’s optimized for recruiters who skim quickly.
-
-Do you want me to do that?
-
 
 Built a full-stack web app with React, TypeScript, Tailwind, FastAPI, PostgreSQL, and Redis, deployed on Railway.
 
