@@ -1,0 +1,42 @@
+[
+  {
+    "level": "Spire 4",
+    "location": "High Orbit Station",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "As soon as you reach the top of the elevator shaft, instantly turn to the left to find a corpse with the Beta Core."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/11_High_Orbit_Station/1_Beta_Core.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Spire 4",
+    "location": "High Orbit Station",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "There's a supply camp on the right side of the same room as the Beta Core."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/11_High_Orbit_Station/2_Supply_Camp.jpg",
+        "alt": "Supply Camp",
+        "order": 1
+      }
+    ]
+  }
+]

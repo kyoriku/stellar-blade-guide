@@ -1,0 +1,49 @@
+[
+  {
+    "id": 502,
+    "level": "Spire 4",
+    "location": "Maintenance Sector",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Once you reach the Maintenance Sector, you can reach the camp by going across the beams on the right end of the room."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/6_Maintenance_Sector/1_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 503,
+    "level": "Spire 4",
+    "location": "Maintenance Sector",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "From the camp, go across the wall running section and follow the swing bars to the next floor. The crate will be to your right once you're on the next floor."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/6_Maintenance_Sector/2_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/6_Maintenance_Sector/2_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  }
+]

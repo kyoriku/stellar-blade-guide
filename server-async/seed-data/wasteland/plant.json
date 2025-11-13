@@ -1,0 +1,126 @@
+[
+  {
+    "id": 648,
+    "level": "Wasteland",
+    "location": "Plant",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Luke's Memory",
+    "description": {
+      "type": "text",
+      "content": "At the bottom of the water in the middle of the Plant."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/8-Plant/1-Memorystick-Luke's Memory.1.jpg",
+        "alt": "Memorystick (Luke's Memory)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/1-Memorystick-Luke's Memory.2.jpg",
+        "alt": "Memorystick (Luke's Memory)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 649,
+    "level": "Wasteland",
+    "location": "Plant",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Go's Memory",
+    "description": {
+      "type": "text",
+      "content": "Once you pick up the “Incarceration” side quest from the guy in the shipping container, you'll find another corpse in the water. This one with this memorystick."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/8-Plant/2-Memorystick-Go's Memory.1.jpg",
+        "alt": "Memorystick (Go's Memory)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/2-Memorystick-Go's Memory.2.jpg",
+        "alt": "Memorystick (Go's Memory)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 650,
+    "level": "Wasteland",
+    "location": "Plant",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Above the red lights in the middle of the water, on that platform."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/8-Plant/3-Legion Supply Box.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/3-Legion Supply Box.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 651,
+    "level": "Wasteland",
+    "location": "Plant",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - The Machinetta Cafe Latte",
+    "description": {
+      "type": "text",
+      "content": "Push all three storage trolleys on the pressure plates and this will drop from the crane."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/8-Plant/4-Can-The Machinetta Cafe Latte.1.jpg",
+        "alt": "Can - The Machinetta Cafe Latte",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/4-Can-The Machinetta Cafe Latte.2.jpg",
+        "alt": "Can - The Machinetta Cafe Latte",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/4-Can-The Machinetta Cafe Latte.3.jpg",
+        "alt": "Can - The Machinetta Cafe Latte",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/4-Can-The Machinetta Cafe Latte.4.jpg",
+        "alt": "Can - The Machinetta Cafe Latte",
+        "order": 4
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/4-Can-The Machinetta Cafe Latte.5.jpg",
+        "alt": "Can - The Machinetta Cafe Latte",
+        "order": 5
+      },
+      {
+        "url": "/assets/images/Wasteland/8-Plant/4-Can-The Machinetta Cafe Latte.6.jpg",
+        "alt": "Can - The Machinetta Cafe Latte",
+        "order": 6
+      }
+    ]
+  }
+]

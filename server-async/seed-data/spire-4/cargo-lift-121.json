@@ -1,0 +1,356 @@
+[
+  {
+    "id": 473,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": " On the left as you enter the lift."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/1_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 474,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Robot"
+    ],
+    "title": "Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "Push the yellow crate up to the blue crate near it and climb to the top. Follow it northwest to this robot"
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/2_Robot_Tumbler_Expansion_Module_1.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/2_Robot_Tumbler_Expansion_Module_2.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/2_Robot_Tumbler_Expansion_Module_3.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/2_Robot_Tumbler_Expansion_Module_4.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "id": 475,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "In the southwest corner, on the ground level."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/3_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 476,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 759's Resignation",
+    "description": {
+      "type": "text",
+      "content": "From the supply box turn around and go in that hole in the side of the storage. Move one of the yellow crates on the right so you can get through the hole in the wall, where the Legion is."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/4_Memorystick_Legionnaire_759's_Resignation_1.jpg",
+        "alt": "Memorystick - Legionnaire 759's Resignation",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/4_Memorystick_Legionnaire_759's_Resignation_2.jpg",
+        "alt": "Memorystick - Legionnaire 759's Resignation",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/4_Memorystick_Legionnaire_759's_Resignation_3.jpg",
+        "alt": "Memorystick - Legionnaire 759's Resignation",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 477,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "In the northwest corner, under the stairs, push the yellow box forward so you can climb over."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/5_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/5_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/5_Locked_Supply_Chest_3.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 478,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "Go out through the door at the top, take a left, and go to the top of the stairs. Instead of going left, go down the lift. The body is under the stairs."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/6_Body_Core_1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/6_Body_Core_2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/6_Body_Core_3.jpg",
+        "alt": "Body Core",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 479,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Glasses"
+    ],
+    "title": "Glasses - Large Round",
+    "description": {
+      "type": "text",
+      "content": "Climb the elevator shaft to the top and go all the way to the northeast and drop down. The glasses are inside that box."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/7_Glasses_Large_Round_1.jpg",
+        "alt": "Glasses - Large Round",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/7_Glasses_Large_Round_2.jpg",
+        "alt": "Glasses - Large Round",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/7_Glasses_Large_Round_3.jpg",
+        "alt": "Glasses - Large Round",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 480,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 761's Request",
+    "description": {
+      "type": "text",
+      "content": "Go back up the lift and carry on to the objective. This one is right in the next room off the previous corridor."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/8_Memorystick_Legionnaire_761's_Request.jpg",
+        "alt": "Memorystick - Legionnaire 761's Request",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 481,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 760's Memory",
+    "description": {
+      "type": "text",
+      "content": "Head through the first Machine Hive and then head northeast through the next one. The body is behind the second one."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/9_Memorystick_Legionnaire_760's_Memory.jpg",
+        "alt": "Memorystick - Legionnaire 760's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 482,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 743's Shock",
+    "description": {
+      "type": "text",
+      "content": "Head further in and you'll come across the body with this memorystick."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/10_Memorystick_Legionnaire_743's_Shock.jpg",
+        "alt": "Memorystick - Legionnaire 743's Shock",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 483,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - John's Retrospection",
+    "description": {
+      "type": "text",
+      "content": "Go round the corner, start a fight on the 2 Lumps, and another will join in behind you., there's another body under the staircase."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/11_Memorystick_John's_Retrospection.jpg",
+        "alt": "Memorystick - John's Retrospection",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 484,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 719's Memory",
+    "description": {
+      "type": "text",
+      "content": "Return to where that third Lump came from and you'll find this memorystick."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/12_Memorystick_Legionnaire_719's_Memory.jpg",
+        "alt": "Memorystick - Legionnaire 719's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 485,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Head southeast and round the corner to the right. The chest is there."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/13_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 486,
+    "level": "Spire 4",
+    "location": "Cargo Lift 121",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Head up the stairs in the previous room and jump onto the containers. Then, go through the gaps in the southwest wall and head to the far south for this chest. Contains Omnibolt and Burst Enhancement Gear."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/14_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/5_Cargo_Lift_121/14_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  }
+]

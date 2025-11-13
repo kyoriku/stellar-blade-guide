@@ -1,0 +1,320 @@
+[
+  {
+    "id": 489,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "Straight ahead when you enter the room, if you jump out and to the right, around the wall, you can grab this now."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/1_Beta_Core_1.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/1_Beta_Core_2.jpg",
+        "alt": "Beta Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 490,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Head back, and in the northeast corner, near a droid, is a suppl box. Contains Omnibolt and Melee Protection Gear (3 star)."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/2_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/2_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 491,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Go down the ladder near to where the Beta Core is, and there's a cache opposite it."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/3_Locked_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 492,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 798's Advice",
+    "description": {
+      "type": "text",
+      "content": "Down below, to the left of the second power machine."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/4_Memorystick_Legionnaire_798's_Advice.jpg",
+        "alt": "Memorystick - Legionnaire 798's Advice",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 493,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "South-southeast from the generator. Behind the fence. In the main downstairs area."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/5_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 494,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Robot"
+    ],
+    "title": "Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "Directly south is a robot, hiding super close by."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/6_Robot_Tumbler_Expansion_Module_1.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/6_Robot_Tumbler_Expansion_Module_2.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 495,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Up the stairs, on the way to the final generator."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/7_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/7_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 496,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After the brief boss fight and hypertube section, head into the southeast corner and there's a supply box there."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/8_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/8_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 497,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 708's Shout",
+    "description": {
+      "type": "text",
+      "content": "Next to the staircase that leads up to the way out."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/9_Memorystick_Legionnaire_708's_Shout_1.jpg",
+        "alt": "Memorystick - Legionnaire 708's Shout",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/9_Memorystick_Legionnaire_708's_Shout_2.jpg",
+        "alt": "Memorystick - Legionnaire 708's Shout",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 498,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Space Logistics Complex Entrance",
+    "description": {
+      "type": "text",
+      "content": "Next to the door on the way out of the area."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/10_Supply_Camp_Space_Logistics_Complex_Entrance.jpg",
+        "alt": "Supply Camp - Space Logistics Complex Entrance",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 499,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Orca Engineer",
+    "description": {
+      "type": "text",
+      "content": "Behind the Supply Camp (east side)."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/11_Nano_Suit_Orca_Engineer_1.jpg",
+        "alt": "Nano Suit - Orca Engineer",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/11_Nano_Suit_Orca_Engineer_2.jpg",
+        "alt": "Nano Suit - Orca Engineer",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 500,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Milky Pop",
+    "description": {
+      "type": "text",
+      "content": "Upstairs in the southeast corner of the large warehouse (before leaving through the door out of the area), after the brief boss figh with Belial."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/12_Can_Milky_Pop_1.jpg",
+        "alt": "Can - Milky Pop",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/12_Can_Milky_Pop_2.jpg",
+        "alt": "Can - Milky Pop",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/12_Can_Milky_Pop_3.jpg",
+        "alt": "Can - Milky Pop",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 501,
+    "level": "Spire 4",
+    "location": "Hypertube",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 721's Plea",
+    "description": {
+      "type": "text",
+      "content": "When you finally leave the area, this corpse is in the airlock of sorts."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/2_Hypertube/13_Memorystick_Legionnaire_721's_Plea.jpg",
+        "alt": "Memorystick - Legionnaire 721's Plea",
+        "order": 1
+      }
+    ]
+  }
+]

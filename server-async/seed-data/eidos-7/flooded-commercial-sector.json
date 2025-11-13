@@ -1,0 +1,384 @@
+[
+  {
+    "id": 98,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Legionnaire 244's Memory",
+    "description": {
+      "type": "text",
+      "content": "Power up and travel on the monorail. You’ll find a body holding the Memorystick on the platform at the station when you stop."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/3-AbandonedStation/3-Memorystick (Legionnaire 244's Memory).jpg",
+        "alt": "Memorystick - Legionnaire 244's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 99,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Planet Diving Suit (7th) V2",
+    "description": {
+      "type": "text",
+      "content": "When you arrive in the Flooded Commercial Sector, exit the monorail and look to the left. Loot the corpse here for Memorystick – Legionnaire 244’s Memory. Continue down the stairs here and proceed into the half-open door to find a black chest containing Nano Suit – Planet Diving Suit (7th) V2."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/3-AbandonedStation/4-Planet Diving Suit (7th) V2 Nano Suit.jpg",
+        "alt": "Nano Suit - Planet Diving Suit (7th) V2",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 100,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Camp"
+    ],
+    "title": "Flooded Commercial Sector Camp",
+    "description": {
+      "type": "text",
+      "content": "At the base of the stairs leading out of the monorail station."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/1-Legion Camp 5.jpg",
+        "alt": "Flooded Commercial Sector Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 101,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 272's Eyewitness Account",
+    "description": {
+      "type": "text",
+      "content": "Head north from the bottom of the monorail stairs (away from the objective), and there's a corpse there on the left with this memory stick."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/2-Memorystick (Legionnaire 272's Eyewitness Account).jpg",
+        "alt": "Memorystick - Legionnaire 272's Eyewitness Account",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 102,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "Further north, near the northernmost chainlink fence is a corpse with this Beta Core."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/3-Beta Core 2.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 103,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Northeast of the monorail station, over the river, head into the far northeast corner. Drop down onto the ledges and shimmy to the east. You'll reach a plaza with a Mutated Hydra. In the east corner is Caliente, a store with this supply box."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/4-Crate 12.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 104,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Grenadier-Type Exospine",
+    "description": {
+      "type": "text",
+      "content": "On the northern side of the plaza is a walkway. At the end is a crate with this Exospine in it."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/5-Grenadier-Type Exospine.jpg",
+        "alt": "Grenadier-Type Exospine",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 105,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Passcode"
+    ],
+    "title": "ααμθβθ",
+    "description": {
+      "type": "text",
+      "content": "From the Flooded Commercial Sector camp, head left and cross the bridge to the hotel with the red tarp. Go right an climb up the ledges. A corpse found behind the petrified Naytibas holds the Passcode.."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/6-Passcode - aau0B0.1.jpg",
+        "alt": "Passcode - aau0B0",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/6-Passcode - aau0B0.2.jpg",
+        "alt": "Passcode - aau0B0",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 106,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Camp"
+    ],
+    "title": "Plaza Entryway Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "After using the passcode to unlock the 317 gate, head through and the supply camp is straight ahead."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/7-Supply Camp (Plaza Entryway).jpg",
+        "alt": "Plaza Entryway Supply Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 107,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "East of the plaza entryway camp, by an enemy ambush of sorts. Hard to miss this one."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/8-Crate 13.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 108,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Memory of a Believer",
+    "description": {
+      "type": "text",
+      "content": "Further east from the supply box, to the right of the ladder."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/9-Memorystick (Memory of a Believer).1.jpg",
+        "alt": "Memorystick - Memory of a Believer",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/9-Memorystick (Memory of a Believer).2.jpg",
+        "alt": "Memorystick - Memory of a Believer",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 109,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 249's Memory",
+    "description": {
+      "type": "text",
+      "content": "In the next area, having dropped down after climbing up, in the north corner there's a pool with lily pads. The corpse is in the water."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/10-Memorystick (Legionnaire 249's Memory).1.jpg",
+        "alt": "Memorystick - Legionnaire 249's Memory",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/10-Memorystick (Legionnaire 249's Memory).2.jpg",
+        "alt": "Memorystick - Legionnaire 249's Memory",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 110,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Bitter Suicide Note",
+    "description": {
+      "type": "text",
+      "content": "After using the clock to open the Club Bpemr door (1225), there's a corpse straight ahead, near a teapot and a small camp."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/11-Memorystick (Bitter Suicide Note).jpg",
+        "alt": "Memorystick - Bitter Suicide Note",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 111,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Camp"
+    ],
+    "title": "Path to the Victory Monument Camp",
+    "description": {
+      "type": "text",
+      "content": "After climbing the ladder and dropping down, there's a camp to the west."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/12-Legion Camp 6.jpg",
+        "alt": "Path to the Victory Monument Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 112,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Max's Memory",
+    "description": {
+      "type": "text",
+      "content": "To the northeast of the camp, up the stairs, there's a corpse there near a statue."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/13-Memorystick (Max's Memory).jpg",
+        "alt": "Memorystick - Max's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 113,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Outfit"
+    ],
+    "title": "Drone Appearance - Armoured Pack",
+    "description": {
+      "type": "text",
+      "content": "Before heading up and over the bridge to the otherside of the abyss, from the camp head west and down. Use the poles to cross the gap and you'll come to an area with a Barnacle. Defeat it, and in a small enclosure to the southwest is this skin)."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/14-Armoured Pack (Drone Skin-Appearance Pack).1.jpg",
+        "alt": "Drone Appearance - Armoured Pack",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/14-Armoured Pack (Drone Skin-Appearance Pack).2.jpg",
+        "alt": "Drone Appearance - Armoured Pack",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/14-Armoured Pack (Drone Skin-Appearance Pack).3.jpg",
+        "alt": "Drone Appearance - Armoured Pack",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 114,
+    "level": "Eidos 7",
+    "location": "Flooded Commercial Sector",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "In the same area as the drone skin, on the northside, is a corpse with this beta core."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/4-FloodedCommercialSector/15-Beta Core 3.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      }
+    ]
+  }
+]

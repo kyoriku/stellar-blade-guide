@@ -1,0 +1,82 @@
+[
+  {
+    "level": "Altess Levoire",
+    "location": "Specimen Preservation Lab",
+    "types": [
+      "Supply Chest"
+    ],
+    "title": "Legion Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Up the ladder as you enter, and then head to the right and open the door on your right. Watch out for the 2 Infectors inside."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/5_Specimen_Preservation_Lab/1_Legion_Supply_Chest.jpg",
+        "alt": "Legion Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Altess Levoire",
+    "location": "Specimen Preservation Lab",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Announcements - Visitor Information",
+    "description": {
+      "type": "text",
+      "content": "Follow the walkway to the right until you see a door with a broken red panel. The document is inside, on the left. Careful of ambushes!"
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/5_Specimen_Preservation_Lab/2_Document_Announcements_Visitor_Information.jpg",
+        "alt": "Document - Announcements - Visitor Information",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Altess Levoire",
+    "location": "Specimen Preservation Lab",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "When you head back towards the ladder (clockwise), a door that was previously closed is now open. There's a box inside."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/5_Specimen_Preservation_Lab/3_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Altess Levoire",
+    "location": "Specimen Preservation Lab",
+    "types": [
+      "Robot"
+    ],
+    "title": "Robot - Document - Promotions - Eidos Company Promotion",
+    "description": {
+      "type": "text",
+      "content": "In the far left room (as if you were facing the way you came in), there's a robot in there now."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/5_Specimen_Preservation_Lab/4_Robot_Document_Promotions_Eidos_Company_Promotion.jpg",
+        "alt": "Robot - Document - Promotions - Eidos Company Promotion",
+        "order": 1
+      }
+    ]
+  }
+]

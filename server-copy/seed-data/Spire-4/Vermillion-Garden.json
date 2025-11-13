@@ -1,0 +1,97 @@
+[
+  {
+    "level": "Spire 4",
+    "location": "Vermillion Garden",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Photogenic",
+    "description": {
+      "type": "text",
+      "content": "After leaving the boss fight arena, this crate is in the next room, straight ahead of you."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/10_Vermillion_Garden/1_Nano_Suit_Photogenic.jpg",
+        "alt": "Nano Suit - Photogenic",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Spire 4",
+    "location": "Vermillion Garden",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "There's a supply box beside the crate with the Nano Suit."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/10_Vermillion_Garden/2_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Spire 4",
+    "location": "Vermillion Garden",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Inside the elevator shaft, take the first moving yellow ledge and jump off to the right to find the crate. Contains 2 Omnibolts and Risk Taking Gear (3 star)"
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/10_Vermillion_Garden/3_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/10_Vermillion_Garden/3_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/10_Vermillion_Garden/3_Legion_Supply_Box_3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Spire 4",
+    "location": "Vermillion Garden",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After taking the third moving yellow ledge, the next crate will be on the left side."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/10_Vermillion_Garden/4_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/10_Vermillion_Garden/4_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  }
+]

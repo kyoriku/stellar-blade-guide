@@ -1,0 +1,44 @@
+[
+  {
+    "id": 522,
+    "level": "Spire 4",
+    "location": "Prestige Lounge",
+    "types": [
+      "Earrings"
+    ],
+    "title": "Earrings - Silver Tooth",
+    "description": {
+      "type": "text",
+      "content": "After reaching the lounge-like area, there will be a crate by the couches."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/9_Prestige_Lounge/1_Earrings_Silver_Tooth.jpg",
+        "alt": "Earrings - Silver Tooth",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 523,
+    "level": "Spire 4",
+    "location": "Prestige Lounge",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "Automatically activated during a cutscene after going through the door in the lounge."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/9_Prestige_Lounge/2_Supply_Camp.jpg",
+        "alt": "Supply Camp",
+        "order": 1
+      }
+    ]
+  }
+]

@@ -1,0 +1,375 @@
+[
+  {
+    "id": 324,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Oasis",
+    "description": {
+      "type": "text",
+      "content": "On the northern shore of the Oasis pond."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/1_Supply_Camp_Oasis_1.jpg",
+        "alt": "Supply Camp - Oasis",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/1_Supply_Camp_Oasis_2.jpg",
+        "alt": "Supply Camp - Oasis",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 325,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Cybernetic Bondage",
+    "description": {
+      "type": "text",
+      "content": "Just west of the Oasis Supply Camp, underwater, is a locked supply crate Contains the Cybernetic Bondage Nano Suit Design Pattern. Passcode to get in is: yyyya0"
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/2_Nano_Suit_Cybernetic_Bondage_1.jpg",
+        "alt": "Nano Suit - Cybernetic Bondage",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/2_Nano_Suit_Cybernetic_Bondage_2.jpg",
+        "alt": "Nano Suit - Cybernetic Bondage",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 326,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sentinel 55's Decision",
+    "description": {
+      "type": "text",
+      "content": "Northwest of the Oasis Supply Camp, next to some boxes on the ridge of a hill."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/3_Memorystick_Sentinel_55's_Decision_1.jpg",
+        "alt": "Memorystick - Sentinel 55's Decision",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/3_Memorystick_Sentinel_55's_Decision_2.jpg",
+        "alt": "Memorystick - Sentinel 55's Decision",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 327,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Harry's Recollection",
+    "description": {
+      "type": "text",
+      "content": "In the southwest corner of the Oasis."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/4_Memorystick_Harry's_Recollection_1.jpg",
+        "alt": "Memorystick - Harry's Recollection",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/4_Memorystick_Harry's_Recollection_2.jpg",
+        "alt": "Memorystick - Harry's Recollection",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 328,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Nectar Grape",
+    "description": {
+      "type": "text",
+      "content": "South of the Oasis, near a platform with a cable running to it, is a Fiz machine with this can in."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/5_Can_Nectar_Grape_1.jpg",
+        "alt": "Can - Nectar Grape",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/5_Can_Nectar_Grape_2.jpg",
+        "alt": "Can - Nectar Grape",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/5_Can_Nectar_Grape_3.jpg",
+        "alt": "Can - Nectar Grape",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 329,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Just slightly south of the aforementioned can."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/6_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/6_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 330,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Southwest corner of the Oasis (on the southwest side of the outer wall)."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/7_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/7_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 331,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - I Felt It",
+    "description": {
+      "type": "text",
+      "content": "Northeast of the Oasis, on top of the Hypertube. Part of the “Let There Be Light Again” side quest."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/8_Memorystick_I_Felt_It_1.jpg",
+        "alt": "Memorystick - I Felt It",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/8_Memorystick_I_Felt_It_2.jpg",
+        "alt": "Memorystick - I Felt It",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 332,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Journal - Damaged Legacy",
+    "description": {
+      "type": "text",
+      "content": "This is dropped by the same person you got the previous memorystick off."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/9_Document_Journals_Damaged_Legacy_1.jpg",
+        "alt": "Document - Journal - Damaged Legacy",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/9_Document_Journals_Damaged_Legacy_2.jpg",
+        "alt": "Document - Journal - Damaged Legacy",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 333,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - The Haven Early Grey",
+    "description": {
+      "type": "text",
+      "content": "Follow the Hypertube all the way east and you'll find the cooler at the end."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/10_Can_The_Haven_Early_Grey_1.jpg",
+        "alt": "Can - The Haven Early Grey",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/10_Can_The_Haven_Early_Grey_2.jpg",
+        "alt": "Can - The Haven Early Grey",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/10_Can_The_Haven_Early_Grey_3.jpg",
+        "alt": "Can - The Haven Early Grey",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 334,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sentinel 46's Memory",
+    "description": {
+      "type": "text",
+      "content": "East of the Oasis, before the Buried Ruins, next to a sign sticking out of the sand."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/11_Memorystick_Sentinel_46's_Memory_1.jpg",
+        "alt": "Memorystick - Sentinel 46's Memory",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/11_Memorystick_Sentinel_46's_Memory_2.jpg",
+        "alt": "Memorystick - Sentinel 46's Memory",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 335,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Cryo the Malt",
+    "description": {
+      "type": "text",
+      "content": "Just northeast of West of Buried Ruins Legion Camp is a mini-game of sorts. Firstly, you need to shoot a floating target to drop a rope. Second, you need to climb up and power the generator. Thirdly, you need to race to the second and third before the time expires. Do that, and you'll open the garage door below where you end up, which has a can inside."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/12_Can_Cryo_the_Malt_1.jpg",
+        "alt": "Can - Cryo the Malt",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/12_Can_Cryo_the_Malt_2.jpg",
+        "alt": "Can - Cryo the Malt",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/12_Can_Cryo_the_Malt_3.jpg",
+        "alt": "Can - Cryo the Malt",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/12_Can_Cryo_the_Malt_4.jpg",
+        "alt": "Can - Cryo the Malt",
+        "order": 4
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/12_Can_Cryo_the_Malt_5.jpg",
+        "alt": "Can - Cryo the Malt",
+        "order": 5
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/12_Can_Cryo_the_Malt_6.jpg",
+        "alt": "Can - Cryo the Malt",
+        "order": 6
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/12_Can_Cryo_the_Malt_7.jpg",
+        "alt": "Can - Cryo the Malt",
+        "order": 7
+      }
+    ]
+  },
+  {
+    "id": 336,
+    "level": "Great Desert",
+    "location": "Oasis",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Luthor's Revelation",
+    "description": {
+      "type": "text",
+      "content": "On the rooftop where you hit the final switch for the previous can mini-game."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/13_Memorystick_Luthor's_Revelation_1.jpg",
+        "alt": "Memorystick - Luthor's Revelation",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/6_Oasis/13_Memorystick_Luthor's_Revelation_2.jpg",
+        "alt": "Memorystick - Luthor's Revelation",
+        "order": 2
+      }
+    ]
+  }
+]

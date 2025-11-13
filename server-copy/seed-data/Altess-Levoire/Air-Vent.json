@@ -1,0 +1,82 @@
+[
+  {
+    "level": "Altess Levoire",
+    "location": "Air Vent",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Locked Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "On the walkway between fans, after doing the fan set-piece. It needs the Hacking Tool, but don't worry if you don't have it, as it's just a lot of Nano Elements."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/8_Air_Vent/1_Locked_Legion_Supply_Box.jpg",
+        "alt": "Locked Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Altess Levoire",
+    "location": "Air Vent",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "By the next set of ladders up (d-pad mini-game inbound!)."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/8_Air_Vent/2_Locked_Legion_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Altess Levoire",
+    "location": "Air Vent",
+    "types": [
+      "Robot"
+    ],
+    "title": "Robot - Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "Up the next ladder, and then do a 180 and hop over the barrier. There you'll find a robot."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/8_Air_Vent/3_Robot_Tumbler_Expansion_Module.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Altess Levoire",
+    "location": "Air Vent",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "Next to both sets of ladders."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/8_Air_Vent/4_Supply_Camp.jpg",
+        "alt": "Supply Camp",
+        "order": 1
+      }
+    ]
+  }
+]

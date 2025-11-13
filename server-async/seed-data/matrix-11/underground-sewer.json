@@ -1,0 +1,279 @@
+[
+  {
+    "id": 459,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Jamie's Plea",
+    "description": {
+      "type": "text",
+      "content": "After EVE says “This area…”, head down, and there are a load of dead bodies down there. In the northeast corner there are two together. One will have this memorystick on it."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/1_Memorystick_Jamie's_Plea.jpg",
+        "alt": "Memorystick - Jamie's Plea",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 460,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Passcode"
+    ],
+    "title": "εκακδζ",
+    "description": {
+      "type": "text",
+      "content": "Found on a corpse kneeling in the shallow water on the lower level of the Underground Sewer."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/2_Passcode.jpg",
+        "alt": "Passcode - εκακδζ",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 461,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Daily Mascot",
+    "description": {
+      "type": "text",
+      "content": "If you head back up and head south-southwest a Skull will crash through the wall. Defeat the enemies and go into the room where the Skull crashed through from."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/3_Nano_Suit_Daily_Mascot.jpg",
+        "alt": "Nano Suit - Daily Mascot",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 462,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "At the end of the corridor (south) where the previously mentioned Skull came from. Needs the EKaKds passcode. Contains the Fusion Cell."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/4_Locked_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 463,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Paul's Memory",
+    "description": {
+      "type": "text",
+      "content": "Behind the aforementioned chest."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/5_Memorystick_Paul's_Memory.jpg",
+        "alt": "Memorystick - Paul's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 464,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Norman's Advice",
+    "description": {
+      "type": "text",
+      "content": "After going up the lift and crossing the walkway, this body is straight ahead, next to the floodgate."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/6_Memorystick_Norman's_Advice_1.jpg",
+        "alt": "Memorystick - Norman's Advice",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/6_Memorystick_Norman's_Advice_2.jpg",
+        "alt": "Memorystick - Norman's Advice",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 465,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Burst Trance-Type Exospine",
+    "description": {
+      "type": "text",
+      "content": "Head north and then west into a small room. The chest with this item is inside."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/7_Exospine_Burst_Trance_Type_1.jpg",
+        "alt": "Burst Trance-Type Exospine",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/7_Exospine_Burst_Trance_Type_2.jpg",
+        "alt": "Burst Trance-Type Exospine",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 466,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Log Data - To the Little Drone",
+    "description": {
+      "type": "text",
+      "content": "Head southwest and into the floodgate control room. Firstly, however, head upstairs and there is a robot above it."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/8_Robot_Document_Log_To_the_Little_Drone_1.jpg",
+        "alt": "Document - Log Data - To the Little Drone",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/8_Robot_Document_Log_To_the_Little_Drone_2.jpg",
+        "alt": "Document - Log Data - To the Little Drone",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 467,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "After opening the floodgates, head towards the objective, but instead of going the correct way, swim down to the south. There's a hole in the roof in that passage where you found the Fusion Cell."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/9_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/9_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 468,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "Again, before heading the correct way, while in the central chamber, dive down and head into the northeast corner. When you're in the corner, swim to the surface and there you'll find a Beta Core."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/10_Beta_Core_1.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/10_Beta_Core_2.jpg",
+        "alt": "Beta Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 469,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "In the right corner of the corridor, after you open the main quest objective door."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/11_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 470,
+    "level": "Matrix 11",
+    "location": "Underground Sewer",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Down the bottom of the stairs."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/4_Underground_Sewer/12_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  }
+]

@@ -1,0 +1,422 @@
+[
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "In the parking tower, underneath the stairs."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/1_Body_Core_1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/1_Body_Core_2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Parking Tower 2nd Floor",
+    "description": {
+      "type": "text",
+      "content": "On the second floor of the parking tower."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/2_Camp_Parking_Tower_2nd_Floor_1.jpg",
+        "alt": "Camp - Parking Tower 2nd Floor",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "In the corner on the roof of the parking tower."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/3_Camp_Legion_Camp_1.jpg",
+        "alt": "Camp - Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Legionnaire 204's Memory",
+    "description": {
+      "type": "text",
+      "content": "On a corpse at the bottom of the ramp heading down from the Parking Tower Rooftop Camp."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/4_Memorystick_Legionnaire_204's_Memory_1.jpg",
+        "alt": "Memorystick - Legionnaire 204's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Found in a corner on the 3rd floor of the parking tower, next to a pillar with \"3F\"."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/5_Supply_Box_Legion_Supply_Box_1.jpg",
+        "alt": "Supply Box - Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Chain-Type",
+    "description": {
+      "type": "text",
+      "content": "Found in a case on the 2nd floor of the parking tower, in the corner next to the stacked wooden crates."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/6_Exospine_Chain_Type_1.jpg",
+        "alt": "Exospine - Chain-Type",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/6_Exospine_Chain_Type_2.jpg",
+        "alt": "Exospine - Chain-Type",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "After leaving the parking tower by using two fusion coils to open a shutter, you’ll find a camp beneath the statue opposite you."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/7_Camp_Legion_Camp_1.jpg",
+        "alt": "Camp - Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "From the Parking Tower Exit Camp, turn left and head west. Climb the yellow crate at the building corner and jump to the ledges above. Follow them around the edge, climb to the platform, then use the next set of ledges to reach a hole in the wall leading inside. In there is a Legion Supply Box."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/8_Supply_Box_Legion_Supply_Box_1.jpg",
+        "alt": "Supply Box - Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/8_Supply_Box_Legion_Supply_Box_2.jpg",
+        "alt": "Supply Box - Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/8_Supply_Box_Legion_Supply_Box_3.jpg",
+        "alt": "Supply Box - Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Document"
+    ],
+    "title": "Messages: Memo",
+    "description": {
+      "type": "text",
+      "content": "From the Parking Tower Exit Camp, turn left and head west. Climb the yellow crate at the building corner and jump to the ledges above. Follow them around the edge, climb to the platform, then use the next set of ledges to reach a hole in the wall leading inside. Interact with the pinboard on the wall to receive the document."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/9_Document_Messages_Memo_1.jpg",
+        "alt": "Document - Messages: Memo",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Document"
+    ],
+    "title": "Series: The Truth, Article 3",
+    "description": {
+      "type": "text",
+      "content": "From the Parking Tower Exit Camp, go west past the Legion 15 pods, and around the corner past the collapsed road. You’ll find the document at a news stand under the covered walkway on the right side of the street, opposite the cafe."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/10_Document_Series_The_Truth_Article_3_1.jpg",
+        "alt": "Document - Series: The Truth, Article 3",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Outcry to the Sky",
+    "description": {
+      "type": "text",
+      "content": "Facing the Parking Tower Exit Camp, take a left and head west down the street. Look left past the cafe and you’ll see a lamplit statue of a lion. The Memorystick can be found on a corpse resting against against it."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/11_Memorystick_Outcry_to_the_Sky_1.jpg",
+        "alt": "Memorystick - Outcry to the Sky",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "Not long after the Parking Tower, take the left path past the giant crater, and you'll eventually reach an underpass. On the other side you'll see a building named Connia Kolzen. In front of it is a glowing corpse with a Body Core."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/12_Body_Core_1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/12_Body_Core_2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "Head right out of the Parking Tower and follow the alley around, on the corner is a small pub with lights on inside. The Body Core is on a body inside the shop."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/13_Body_Core_1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/13_Body_Core_2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "South of the parking lot, near the previous body core is a locked chest. Contains Omnibolt & Fixed Damage Gear."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/14_Locked_Chest_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Chest - Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Robot"
+    ],
+    "title": "Drone Upgrade Module x2",
+    "description": {
+      "type": "text",
+      "content": "In the same area as the previous collectibles. To the north by the fence/gate is a treasure/relic lootbot."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/15_Robot_Drone_Upgrade_Module_x2_1.jpg",
+        "alt": "Robot - Drone Upgrade Module x2",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Legionnaire 302's Sorrow",
+    "description": {
+      "type": "text",
+      "content": "From the camp, head left and head east this time. Next to the two enemies who ambush you past the bus, use the yellow box on the left to climb the wall and drop into the alley nearby. The human corpse and memorystick is at the west side of the alley."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/16_Memorystick_Legionnaire_302's_Sorrow_1.jpg",
+        "alt": "Memorystick - Legionnaire 302's Sorrow",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/16_Memorystick_Legionnaire_302's_Sorrow_2.jpg",
+        "alt": "Memorystick - Legionnaire 302's Sorrow",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "North of gate 12, which is east and then north from the camp, is a Dozer and a car with a fusion core, this box is right next to the car."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/17_Supply_Box_Legion_Supply_Box_1.jpg",
+        "alt": "Supply Box - Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Request to Mother Sphere",
+    "description": {
+      "type": "text",
+      "content": "East and then north from the camp (also north of gate 1), on the eastern wall, under cover, is a body with this memorystick."
+    },
+    "display_order": 18,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/18_Memorystick_Request_to_Mother_Sphere_1.jpg",
+        "alt": "Memorystick - Request to Mother Sphere",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Eidos 7",
+    "location": "Parking Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Head slightly north of the corpse and turn around and climb the side of the building. There's a supply crate up top."
+    },
+    "display_order": 19,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/19_Supply_Box_Legion_Supply_Box_1.jpg",
+        "alt": "Supply Box - Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/Parking_Tower/19_Supply_Box_Legion_Supply_Box_2.jpg",
+        "alt": "Supply Box - Legion Supply Box",
+        "order": 2
+      }
+    ]
+  }
+]

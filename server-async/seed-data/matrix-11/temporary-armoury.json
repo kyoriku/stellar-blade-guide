@@ -1,0 +1,190 @@
+[
+  {
+    "id": 440,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Temporary Armoury Entrance",
+    "description": {
+      "type": "text",
+      "content": "At the bottom of the lift."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/1_Supply_Camp_Temporary_Armoury_Entrance.jpg",
+        "alt": "Supply Camp - Temporary Armoury Entrance",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 441,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Northwest corner of the boss fight arena (on the shipping crates, inside a shipping crate)."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/2_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/2_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 442,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "In the eastern corner, behind a shipping crate. Contains 2 Omnibolts and Burst Enhancement Gear."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/3_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/3_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 443,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Newfoundland Dry",
+    "description": {
+      "type": "text",
+      "content": "In the southwest corner of the boss fight arena."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/4_Can_Newfoundland_Dry_1.jpg",
+        "alt": "Can - Newfoundland Dry",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/4_Can_Newfoundland_Dry_2.jpg",
+        "alt": "Can - Newfoundland Dry",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/4_Can_Newfoundland_Dry_3.jpg",
+        "alt": "Can - Newfoundland Dry",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 444,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Next to the aforementioned can."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/5_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 445,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "On the way out of the arena (up on the southern walkway)."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/6_Locked_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 446,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "As you leave the arena in the southeast corner."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/7_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 447,
+    "level": "Matrix 11",
+    "location": "Temporary Armoury",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Slide down the lift shaft and there's a crate on a platform at the bottom. It contains an Omnibolt and Shield Destruction Gear (2 star)."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/6_Temporary_Armoury/8_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  }
+]

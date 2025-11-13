@@ -1,0 +1,772 @@
+[
+  {
+    "id": 337,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Great Desert",
+    "description": {
+      "type": "text",
+      "content": "As soon as you land in the Great Desert, this camp is right next to the Tetrapod."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/1_Supply_Camp_Great_Desert_1.jpg",
+        "alt": "Supply Camp - Great Desert",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/1_Supply_Camp_Great_Desert_2.jpg",
+        "alt": "Supply Camp - Great Desert",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 338,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Central Great Desert",
+    "description": {
+      "type": "text",
+      "content": "South from the small rocky hill where you begin the “Reboot!!!” side quest. Move the yellow box around until you can jump up to the ledge. The supply camp is there."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/2_Supply_Camp_Central_Great_Desert_1.jpg",
+        "alt": "Supply Camp - Central Great Desert",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/2_Supply_Camp_Central_Great_Desert_2.jpg",
+        "alt": "Supply Camp - Central Great Desert",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 339,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Look up to the East while standing up on the supply camp ledge. You will see a small target hovering in the air, shoot it and a rope will drop out of it. Jump and swing across to the other side to find the chest."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/3_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/3_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/3_Locked_Supply_Chest_3.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 340,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "Back on the supply camp ledge, look to the South and you will see some ledges you can jump to. Jump across to the ledge and continue around to find the Body Core."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/4_Body_Core_1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/4_Body_Core_2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/4_Body_Core_3.jpg",
+        "alt": "Body Core",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 341,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "On the ground level directly beneath the previous Body Core."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/5_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/5_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 342,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Southwest of the previous supply box, in the middle of the desert."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/6_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/6_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 343,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "South of the previous supply box, on the scaffolding behind a sign."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/7_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/7_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 344,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Passcode"
+    ],
+    "title": "μηζεεγ",
+    "description": {
+      "type": "text",
+      "content": "Located on the ground floor of the dilapidated building. In the corner is a chain-link fence with crates obscuring a hole. Here, you’ll find a robot with the passcode upon being destroyed."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/8_Robot_Passcode_unSEE3r_1.jpg",
+        "alt": "Passcode - μηζεεγ",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/8_Robot_Passcode_unSEE3r_2.jpg",
+        "alt": "Passcode - μηζεεγ",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 345,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Lament of the Isolated",
+    "description": {
+      "type": "text",
+      "content": "Next to the aforementioned robot."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/9_Memorystick_Lament_of_the_Isolated_1.jpg",
+        "alt": "Memorystick - Lament of the Isolated",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/9_Memorystick_Lament_of_the_Isolated_2.jpg",
+        "alt": "Memorystick - Lament of the Isolated",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 346,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "On the roof of the building. Use the ledges to climb up."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/10_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/10_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/10_Legion_Supply_Box_3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 347,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Failed Sentinel's Lament",
+    "description": {
+      "type": "text",
+      "content": "Also on the same roof, near the previous bupply Box."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/11_Memorystick_Failed_Sentinel's_Lament_1.jpg",
+        "alt": "Memorystick - Failed Sentinel's Lament",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/11_Memorystick_Failed_Sentinel's_Lament_2.jpg",
+        "alt": "Memorystick - Failed Sentinel's Lament",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 348,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Citizen 218's Memory",
+    "description": {
+      "type": "text",
+      "content": "Southeast from the ruined building, underneath the overpass, between a car and a bus."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/12_Memorystick_Citizen_218's_Memory_1.jpg",
+        "alt": "Memorystick - Citizen 218's Memory",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/12_Memorystick_Citizen_218's_Memory_2.jpg",
+        "alt": "Memorystick - Citizen 218's Memory",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 349,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Abandoned Overpass",
+    "description": {
+      "type": "text",
+      "content": "North-northwest of the Solar Tower, up on the overpass, above the previous collectible."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/13_Supply_Camp_Abandoned_Overpass_1.jpg",
+        "alt": "Supply Camp - Abandoned Overpass",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/13_Supply_Camp_Abandoned_Overpass_2.jpg",
+        "alt": "Supply Camp - Abandoned Overpass",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 350,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Series - Notes on EVE Protocol 4",
+    "description": {
+      "type": "text",
+      "content": "West of the supply camp, by some rubble."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/14_Document_Series_Notes_on_EVE_Protocol_4_1.jpg",
+        "alt": "Document - Series - Notes on EVE Protocol 4",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/14_Document_Series_Notes_on_EVE_Protocol_4_2.jpg",
+        "alt": "Document - Series - Notes on EVE Protocol 4",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 351,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sentinel 58's Advice",
+    "description": {
+      "type": "text",
+      "content": "To the left of the previous collectible, by the same pile of rubble."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/15_Memorystick_Sentinel_58's_Advice_1.jpg",
+        "alt": "Memorystick - Sentinel 58's Advice",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/15_Memorystick_Sentinel_58's_Advice_2.jpg",
+        "alt": "Memorystick - Sentinel 58's Advice",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 352,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Whiiir Whiiir",
+    "description": {
+      "type": "text",
+      "content": "Follow the overpass west until you see a red car by the edge. The sentinel is leaning against the western side of the car."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/16_Memorystick_Whiiir_Whiiir_1.jpg",
+        "alt": "Memorystick - Whiiir Whiiir",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/16_Memorystick_Whiiir_Whiiir_2.jpg",
+        "alt": "Memorystick - Whiiir Whiiir",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 353,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Recovery-Type Exospine",
+    "description": {
+      "type": "text",
+      "content": "Just slightly north of the previous memorystick. On the metal walkway of the overpass."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/17_Exospine_Recovery_Type_1.jpg",
+        "alt": "Recovery-Type Exospine",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/17_Exospine_Recovery_Type_2.jpg",
+        "alt": "Recovery-Type Exospine",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 354,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Way to the Solar Tower",
+    "description": {
+      "type": "text",
+      "content": "Directly to the east of the Abandoned Overpass supply camp."
+    },
+    "display_order": 18,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/18_Supply_Camp_Way_to_the_Solar_Tower_1.jpg",
+        "alt": "Supply Camp - Way to the Solar Tower",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/18_Supply_Camp_Way_to_the_Solar_Tower_2.jpg",
+        "alt": "Supply Camp - Way to the Solar Tower",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 355,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Passcode",
+      "Memorystick"
+    ],
+    "title": "Teddy's Memory / ηαεδγγ",
+    "description": {
+      "type": "text",
+      "content": "Located on Teddy’s corpse. Although this passcode is found in the Great Desert, it appears in the Xion databank and opens Teddy's Locker in Xion."
+    },
+    "display_order": 19,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/19_Memorystick_Teddy's_Memory_&_Passcode_1.jpg",
+        "alt": "Memorystick - Teddy's Memory / Passcode - ηαεδγγ",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/19_Memorystick_Teddy's_Memory_&_Passcode_2.jpg",
+        "alt": "Memorystick - Teddy's Memory / Passcode - ηαεδγγ",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 356,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "About halfway up the solar tower."
+    },
+    "display_order": 20,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/20_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/20_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 357,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Outfit"
+    ],
+    "title": "Lily Outfit - Off-Duty",
+    "description": {
+      "type": "text",
+      "content": "Around the other side of the solar tower."
+    },
+    "display_order": 21,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/21_Lily_Outfit_Off-Duty_1.jpg",
+        "alt": "Lily Outfit - Off-Duty",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/21_Lily_Outfit_Off-Duty_2.jpg",
+        "alt": "Lily Outfit - Off-Duty",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 358,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Northwest of the solar tower, up on the cliffs overlooking the area. Contains an Omnibolt and Training Gear."
+    },
+    "display_order": 22,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/22_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/22_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 359,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Follow the cliffs to the west until you come across a crate to open. Make sure you have some ammo with you."
+    },
+    "display_order": 23,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/23_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/23_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 360,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Log Data - S2RV1C2-875687's Data",
+    "description": {
+      "type": "text",
+      "content": "East from the previous supply chest in the ruined city area."
+    },
+    "display_order": 24,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/24_Document_Log_Data_S2RV1C2_875687's_Data_1.jpg",
+        "alt": "Document - Log Data - S2RV1C2-875687's Data",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/24_Document_Log_Data_S2RV1C2_875687's_Data_2.jpg",
+        "alt": "Document - Log Data - S2RV1C2-875687's Data",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 361,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp - South of Buried Ruins",
+    "description": {
+      "type": "text",
+      "content": "Northeast of the Solar Tower, in an enclosed area in the ruins (if you're coming from the above document, then destroy the barrel in the southern wall to get access to this area)."
+    },
+    "display_order": 25,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/25_Legion_Camp_South_of_Buried_Ruins_1.jpg",
+        "alt": "Legion Camp - South of Buried Ruins",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/25_Legion_Camp_South_of_Buried_Ruins_2.jpg",
+        "alt": "Legion Camp - South of Buried Ruins",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 362,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Series - The Truth, Article 4",
+    "description": {
+      "type": "text",
+      "content": "Just slightly north of the South of Buried Ruins Legion Camp."
+    },
+    "display_order": 26,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/26_Document_Series_The_Truth_Article_4_1.jpg",
+        "alt": "Document - Series - The Truth, Article 4",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/26_Document_Series_The_Truth_Article_4_2.jpg",
+        "alt": "Document - Series - The Truth, Article 4",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 363,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Prayer - Chapter of Trial 3 - a",
+    "description": {
+      "type": "text",
+      "content": "Head east out the gate and then head into the building to the north. This collectible is there, in a box on the shrine."
+    },
+    "display_order": 27,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/27_Document_Prayer_Chapter_of_Trial_3_a_1.jpg",
+        "alt": "Document - Prayer - Chapter of Trial 3 - a",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/27_Document_Prayer_Chapter_of_Trial_3_a_2.jpg",
+        "alt": "Document - Prayer - Chapter of Trial 3 - a",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 364,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "South of the previous collectible, in a building, up a floor."
+    },
+    "display_order": 28,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/28_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/28_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 365,
+    "level": "Great Desert",
+    "location": "Solar Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "South of the ruins (on the other side of them). Near a downed telegraph pole."
+    },
+    "display_order": 29,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/29_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/1_Solar_Tower/29_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  }
+]

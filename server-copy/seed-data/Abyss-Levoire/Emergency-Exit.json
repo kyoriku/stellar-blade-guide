@@ -1,0 +1,67 @@
+[
+  {
+    "level": "Abyss Levoire",
+    "location": "Emergency Exit",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "As you enter through the first door, you'll come across the first supply camp."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/1_Emergency_Exit/1_Supply_Camp.jpg",
+        "alt": "Supply Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Emergency Exit",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "At the end of the saw blade section."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/1_Emergency_Exit/2_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Emergency Exit",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Journal - Kill Mother Sphere",
+    "description": {
+      "type": "text",
+      "content": "Once the saw blades have stopped and the fans are off, there is a document near the yellow cube on the left hand side of the room, opposite the legion camp"
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/1_Emergency_Exit/3_Document_Journal_Kill_Mother_Sphere_1.jpg",
+        "alt": "Document - Journal - Kill Mother Sphere",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Abyss_Levoire/1_Emergency_Exit/3_Document_Journal_Kill_Mother_Sphere_2.jpg",
+        "alt": "Document - Journal - Kill Mother Sphere",
+        "order": 2
+      }
+    ]
+  }
+]

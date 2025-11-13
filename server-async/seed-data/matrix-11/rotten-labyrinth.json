@@ -1,0 +1,615 @@
+[
+  {
+    "id": 412,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Locked Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "In the first room of the Rotten Labyrinth, up on a walkway to the left (same room as the Hive)."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/1_Locked_Supply_Box_1.jpg",
+        "alt": "Locked Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/1_Locked_Supply_Box_2.jpg",
+        "alt": "Locked Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 413,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Pascal's Warning",
+    "description": {
+      "type": "text",
+      "content": "Head down the north tunnel before leaving that first room and there'll be a body in the short tunnel at the end."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/2_Memorystick_Pascal's_Warning_1.jpg",
+        "alt": "Memorystick - Pascal's Warning",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/2_Memorystick_Pascal's_Warning_2.jpg",
+        "alt": "Memorystick - Pascal's Warning",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 414,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Daisy's Memory",
+    "description": {
+      "type": "text",
+      "content": "In the next curved corridor, that leads into the next room."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/3_Memorystick_Daisy's_Memory.jpg",
+        "alt": "Memorystick - Daisy's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 415,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Passcode"
+    ],
+    "title": "λβκβδβ",
+    "description": {
+      "type": "text",
+      "content": "Destroy the robot on the small walkway in the tunnel that has two ladders and a Fusion Drive. There’s a swing bar suspended from a pipe on the ceiling to allow you to reach the other side."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/4_Robot_Passcode.jpg",
+        "alt": "Passcode - λβκβδβ",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 416,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "In the north-northeast corner of the same room. Climb the ladder (where you will eventually put in the Fusion Cell) and then turn around. In that room straight ahead, down the bottom, is a Beta Core."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/5_Beta_Core.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 417,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Harry's Memory",
+    "description": {
+      "type": "text",
+      "content": "Opposite the place where you put in the Fusion Cell. Up top. Jump and swing across."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/6_Memorystick_Harry's_Memory.jpg",
+        "alt": "Memorystick - Harry's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 418,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Jesse's Memory",
+    "description": {
+      "type": "text",
+      "content": "After climbing the elevator shaft and going down the stairs. Look to the north and there's a body in that dead end."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/7_Memorystick_Jesse's_Memory.jpg",
+        "alt": "Memorystick - Jesse's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 419,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Robot"
+    ],
+    "title": "Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "Head down the ladder and take a left at the junction. The robot is up the stairs there."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/8_Robot_Tumbler_Expansion_Module.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 420,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Follow the corridor west and then on the right will be an offshoot of a corridor (next to a corpse). The chest (with the Fusion Cell) is at the end."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/9_Locked_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 421,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Leona's Advice",
+    "description": {
+      "type": "text",
+      "content": "After using the Fusion Cell to open the door, the memorystick is on the body straight ahead, on a mattress."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/10_Memorystick_Leona's_Advice.jpg",
+        "alt": "Memorystick - Leona's Advice",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 422,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Beta Trance-Type Exospine",
+    "description": {
+      "type": "text",
+      "content": "Head east from the main junction and destroy the two planks (and 3 enemies). The box with this Exospine is straight ahead."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/11_Exospine_Beta_Trance_Type_1.jpg",
+        "alt": "Beta Trance-Type Exospine",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/11_Exospine_Beta_Trance_Type_2.jpg",
+        "alt": "Beta Trance-Type Exospine",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 423,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Journal - Crevice",
+    "description": {
+      "type": "text",
+      "content": "Head back to the main corridor and then head west. Opposite the Fusion Cell locked door, there's a machine there with this journal."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/12_Document_Journal_Crevice.jpg",
+        "alt": "Document - Journal - Crevice",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 424,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Journal - Z's Diary",
+    "description": {
+      "type": "text",
+      "content": "In the room where the survivors were, head left and interact with the bookcase."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/13_Document_Journal_Z's_Diary_1.jpg",
+        "alt": "Document - Journal - Z's Diary",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/13_Document_Journal_Z's_Diary_2.jpg",
+        "alt": "Document - Journal - Z's Diary",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 425,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Next to the guitar is a locked chest (needs Passcode yBKBdB)."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/14_Locked_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 426,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "In the southwest corner near the beds."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/15_Legion_Supply_Box.jpg",
+        "alt": "Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 427,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Susan's Warning",
+    "description": {
+      "type": "text",
+      "content": "In the back corner, near the bunk beds, on top of a mattress."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/16_Memorystick_Susan's_Warning.jpg",
+        "alt": "Memorystick",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 428,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Messages - J's Memo",
+    "description": {
+      "type": "text",
+      "content": "Interact with the notice board near the neon Liquor sign downstairs in the same area."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/17_Document_Messages_J's_Memo.jpg",
+        "alt": "Document - Messages - J's Memo",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 429,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Same room, head up the ladder and it's smack bang in front of you."
+    },
+    "display_order": 18,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/18_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 430,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Next to the Legion Camp."
+    },
+    "display_order": 19,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/19_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 431,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Prayers - Chapter of Trial 1- B",
+    "description": {
+      "type": "text",
+      "content": "On the actual memorial."
+    },
+    "display_order": 20,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/20_Document_Prayers_Chapter_of_Trial_1_B.jpg",
+        "alt": "Document - Prayers - Chapter of Trial 1- B",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 432,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Jake's Speech",
+    "description": {
+      "type": "text",
+      "content": "In the memorial room, on the right-hand side. Next to the Fusion Cell."
+    },
+    "display_order": 21,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/21_Memorystick_Jake's_Speech.jpg",
+        "alt": "Memorystick - Jake's Speech",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 433,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Daily Force",
+    "description": {
+      "type": "text",
+      "content": "As you leave, look up to the right of the entrance, there's a chest there with this nano suit design inside."
+    },
+    "display_order": 22,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/22_Nano_Suit_Daily_Force_1.jpg",
+        "alt": "Nano Suit - Daily Force",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/22_Nano_Suit_Daily_Force_2.jpg",
+        "alt": "Nano Suit - Daily Force",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 434,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Robot"
+    ],
+    "title": "Drone Upgrade Module",
+    "description": {
+      "type": "text",
+      "content": "Head back downstairs and head up the tunnel to the northeast. There's a robot there."
+    },
+    "display_order": 23,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/23_Robot_Drone_Upgrade_Modules.jpg",
+        "alt": "Robot - Drone Upgrade Module",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 435,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Just up to the left of the first Hive monster."
+    },
+    "display_order": 24,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/24_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 436,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Katherine's Testament",
+    "description": {
+      "type": "text",
+      "content": "Destroy the second Hive monster, and take the tunnel that it was covering."
+    },
+    "display_order": 25,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/25_Memorystick_Katherine's_Testament.jpg",
+        "alt": "Memorystick - Katherine's Testament",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 437,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "In the same area, just in a different offshoot of a tunnel (southern one)."
+    },
+    "display_order": 26,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/26_Beta_Core.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 438,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sam's Resignation",
+    "description": {
+      "type": "text",
+      "content": "After sliding down the ramp and ending up in front of the old generator, there's a corpse next to it."
+    },
+    "display_order": 27,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/27_Memorystick_Sam's_Resignation.jpg",
+        "alt": "Memorystick - Sam's Resignation",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 439,
+    "level": "Matrix 11",
+    "location": "Rotten Labyrinth",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "The other side of the lift (use the controls to jump on and jump over the fence). Need the Hacking Tool installed."
+    },
+    "display_order": 28,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/5_Rotten_Labyrinth/28_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  }
+]

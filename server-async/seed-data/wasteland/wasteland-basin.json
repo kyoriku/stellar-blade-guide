@@ -1,0 +1,225 @@
+[
+  {
+    "id": 687,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sentinel 47's Decision",
+    "description": {
+      "type": "text",
+      "content": "Carry on south up the hill from the Corrupter Boss Fight."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/1-Memorystick - Sentinel 47's Decision.1.jpg",
+        "alt": "Memorystick (Sentinel 47's Decision)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/1-Memorystick - Sentinel 47's Decision.2.jpg",
+        "alt": "Memorystick (Sentinel 47's Decision)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 688,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Holiday Bunny",
+    "description": {
+      "type": "text",
+      "content": "Next to the human body where the memorystick came from is a small box where this Nano Suit can be found."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/2-Nano Suit - Holiday Bunny.1.jpg",
+        "alt": "Nano Suit - Holiday Bunny",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/2-Nano Suit - Holiday Bunny.2.jpg",
+        "alt": "Nano Suit - Holiday Bunny",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 689,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Southwest of the waypoint is a decently sized encampment. Clear the enemies, and then use the batteries on the pressure plates to open the gates. First, the one on the left to free the orange box. Second on the right to free the second battery. Then, put both of the batteries on the plates to open the door. Push the orange box southwest, and use it to get on top of the place where you freed the trapped battery. Has an Omnibolt and Gold Gear inside of it."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/3-Legion Supply Box.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/3-Legion Supply Box.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 690,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Cyber Magician",
+    "description": {
+      "type": "text",
+      "content": "Drop down, push the orange box through the main gate and onto the big platform. Then jump up and climb the rope, interact with the chest, and shoot all the targets except the red ones before they disappear. Do that and this nano suit is all yours."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/4-Nano Suit - Cyber Magician.1.jpg",
+        "alt": "Nano Suit - Cyber Magician",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/4-Nano Suit - Cyber Magician.2.jpg",
+        "alt": "Nano Suit - Cyber Magician",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/4-Nano Suit - Cyber Magician.3.jpg",
+        "alt": "Nano Suit - Cyber Magician",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/4-Nano Suit - Cyber Magician.4.jpg",
+        "alt": "Nano Suit - Cyber Magician",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "id": 691,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Citizen 290's Prayer",
+    "description": {
+      "type": "text",
+      "content": "Follow the path west from the waypoint, the memorystick is between the ruined building and the rocky hill."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/5-Memorystick - Citizen 290's Prayer.1.jpg",
+        "alt": "Memorystick (Citizen 290's Prayer)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/5-Memorystick - Citizen 290's Prayer.2.jpg",
+        "alt": "Memorystick (Citizen 290's Prayer)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 692,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Bayern Hefe WeissBier",
+    "description": {
+      "type": "text",
+      "content": "Pull a 180 from the memorystick, and the Fiz machine is straight ahead."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/6-Can - Bayern Hefe WeissBier.1.jpg",
+        "alt": "Can - Bayern Hefe WeissBier",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/6-Can - Bayern Hefe WeissBier.2.jpg",
+        "alt": "Can - Bayern Hefe WeissBier",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/6-Can - Bayern Hefe WeissBier.3.jpg",
+        "alt": "Can - Bayern Hefe WeissBier",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 693,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Series - The Truth, Article 5",
+    "description": {
+      "type": "text",
+      "content": "Continue on the path west from the Fiz machine until you come to a small open-area, on the north side, next to a vending machine, is a blue newspaper dispensary. Interact to get this document."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/7-Documents - Series - The Truth Article 5.1.jpg",
+        "alt": "Document - Series (The Truth, Article 5)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/7-Documents - Series - The Truth Article 5.2.jpg",
+        "alt": "Document - Series (The Truth, Article 5)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 694,
+    "level": "Wasteland",
+    "location": "Wasteland Basin",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Opposite the previous collectible, behind the ruins to the south."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/8-Legion Supply Box.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/6-WastelandBasin/8-Legion Supply Box.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  }
+]

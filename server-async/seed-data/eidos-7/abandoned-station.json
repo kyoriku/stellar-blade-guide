@@ -1,0 +1,45 @@
+[
+  {
+    "id": 44,
+    "level": "Eidos 7",
+    "location": "Abandoned Station",
+    "types": [
+      "Memorystick",
+      "Passcode"
+    ],
+    "title": "Respite of the Hopeful / δβμκδβ",
+    "description": {
+      "type": "text",
+      "content": "Found on corpse floating in the water near the Passcode-Locked door. There is a hole in the fence you can swim through to reach it."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/3-AbandonedStation/1-Memorystick (Respite of the Hopeful) & Passcode - oBukoB.jpg",
+        "alt": "Respite of the Hopeful / δβμκδβ",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 45,
+    "level": "Eidos 7",
+    "location": "Abandoned Station",
+    "types": [
+      "Camp"
+    ],
+    "title": "Abandoned Station Camp",
+    "description": {
+      "type": "text",
+      "content": "While exploring the Abandoned Station, you’ll zipline up a rope in an elevator shaft. When you leap out of this elevator shaft, directly in front of you will be the Abandoned Station Supply Camp."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/3-AbandonedStation/2-Supply Camp (Abandoned Station).jpg",
+        "alt": "Abandoned Station Camp",
+        "order": 1
+      }
+    ]
+  }
+]

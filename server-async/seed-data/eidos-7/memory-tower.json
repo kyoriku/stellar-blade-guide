@@ -1,0 +1,202 @@
+[
+  {
+    "id": 115,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Northwest of where you enter the plaza, down a metal walkway, and into an alleyway. The box is there."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/1-Crate 14.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/1-Crate 14.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 116,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Artemis 132's Credentials",
+    "description": {
+      "type": "text",
+      "content": "South of the pillar (that leads to the Hall of Records) you see when you get into the area is a corpse."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/2-Memorystick (Artemis 132's Credentials).jpg",
+        "alt": "Memorystick - Artemis 132's Credentials",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 117,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Memorystick",
+      "Passcode"
+    ],
+    "title": "Artemis 8's Orders / λμακθκ",
+    "description": {
+      "type": "text",
+      "content": "To the east of the pillar in the plaza is another corpse."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/3-Memorystick (Artemis 8's Orders) & Passcode - yuak0k.jpg",
+        "alt": "Artemis 8's Orders / Passcode - λμακθκ",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 118,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Artemis 49's Reply",
+    "description": {
+      "type": "text",
+      "content": "On the south side of the area where you fought the Corrupter is a corpse with this memorystick."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/4-Memorystick (Artemis 49's Reply).jpg",
+        "alt": "Memorystick - Artemis 49's Reply",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 119,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "In Northeast corner of the Corrupter battle area there's an alleyway. Head down it slightly (just down the stairs), and to the right is a corpse with this Beta Core on it. Inside The Red Grill (with flashing neon 'closed' sign)."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/5-Beta Core 4.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 120,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "In the northeast corner of the upstairs area is a Legion Supply Box."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/6-Crate 15.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/6-Crate 15.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 121,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Robot"
+    ],
+    "title": "Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "At the end of the road (don't go up the ladder yet) is a relic robot. Destroy it to get the Tumbler Expansion Module."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/7-Robot 3.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 122,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Camp"
+    ],
+    "title": "Highway Bridge Camp",
+    "description": {
+      "type": "text",
+      "content": "Up the ladder and to the north is the next camp."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/8-Legion Camp 7.jpg",
+        "alt": "Highway Bridge Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 123,
+    "level": "Eidos 7",
+    "location": "Memory Tower",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 214's Testament",
+    "description": {
+      "type": "text",
+      "content": "Just to the north of the camp is a corpse with this memorystick."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/5-MemoryTower/9-Memorystick (Legionnaire 214's Testament).jpg",
+        "alt": "Memorystick - Legionnaire 214's Testament",
+        "order": 1
+      }
+    ]
+  }
+]

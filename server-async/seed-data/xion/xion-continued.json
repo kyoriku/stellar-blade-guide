@@ -1,0 +1,425 @@
+[
+  {
+    "id": 709,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Messages - Request Letter",
+    "description": {
+      "type": "text",
+      "content": "Speak to the young girl to the south of the entrance to Xion (down the ladder). She'll give you this document, which will start the “Oblivion” side quest."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/1-Documents - Messages (Request Letter).jpg",
+        "alt": "Document - Messages - Request Letter",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 710,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Available to purchase from Lyle:",
+    "description": {
+      "type": "list",
+      "items": [
+        "Document - Book - Light of the Colony",
+        "Document - Book - Angel Accepting Shed Tears",
+        "Document - Book - For a Better World",
+        "Document - Book - Book of Quotes 1",
+        "Document - Book - Eidos Company Promotion",
+        "Document - Book - Tattered Report 1",
+        "Document - Series - Notes on EVE Protocol 2"
+      ]
+    },
+    "display_order": 2,
+    "images": []
+  },
+  {
+    "id": 711,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Lyle Level 2 Affinity:",
+    "description": {
+      "type": "list",
+      "items": [
+        "Nano Suit Design Pattern: Daily Biker",
+        "Nano Suit Design Pattern: Black Full Dress"
+      ]
+    },
+    "display_order": 3,
+    "images": []
+  },
+  {
+    "id": 712,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Lyle Level 3 Affinity:",
+    "description": {
+      "type": "list",
+      "items": [
+        "Nano Suit Design Pattern: Junk Mechanic",
+        "Nano Suit Design Pattern: Daily Denim"
+      ]
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/2-Lyle's Shop.1.jpg",
+        "alt": "Document - Book - Light of the Colony",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/2-Lyle's Shop.2.jpg",
+        "alt": "Document - Book - Book of Quotes 1",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/2-Lyle's Shop.3.jpg",
+        "alt": "Document - Series - Notes on EVE Protocol 2",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 713,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Next to Sisters' Junk is a chest that can be opened once you've found Tommy in the “Life of the Scavengers” side quest."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/3-Locked Legion Supply Chest.1.jpg",
+        "alt": "Locked Legion Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/3-Locked Legion Supply Chest.2.jpg",
+        "alt": "Locked Legion Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 714,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box / Document - Journal - Aaron's Journal",
+    "description": {
+      "type": "text",
+      "content": "Return to the area where the “Angel of Death” side quest ambush took place and you can enter the garage now with the aSaSaS code (which can be found in the Junkyard in the Wasteland)."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/4-Documents - Journal (Aaron's Journal) - (& Legion Supply Crate).1.jpg",
+        "alt": "Legion Supply Box / Document - Journal - Aaron's Journal",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/4-Documents - Journal (Aaron's Journal) - (& Legion Supply Crate).2.jpg",
+        "alt": "Legion Supply Box / Document - Journal - Aaron's Journal",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/4-Documents - Journal (Aaron's Journal) - (& Legion Supply Crate).3.jpg",
+        "alt": "Legion Supply Box / Document - Journal - Aaron's Journal",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/4-Documents - Journal (Aaron's Journal) - (& Legion Supply Crate).4.jpg",
+        "alt": "Legion Supply Box / Document - Journal - Aaron's Journal",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "id": 715,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "West of Gwen Hair Salon is a locked door. Use the passcode naEdrr to open it, which you get from the Great Desert, to the south-southeast of the Solar Tower in the south."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/5-Legion Supply Box.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/5-Legion Supply Box.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/5-Legion Supply Box.3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 716,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Promotions - To My Allies",
+    "description": {
+      "type": "text",
+      "content": "Just south of the Gwen Hair Salon, at some point, you'll find a document, which will start the side quest “A United People Cannot be Defended.” Didn't show up until we returned from a prolonged stint in the Great Desert."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/6-Documents - Promotions (To My Allies).1.jpg",
+        "alt": "Document - Promotions - To My Allies",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/6-Documents - Promotions (To My Allies).2.jpg",
+        "alt": "Document - Promotions - To My Allies",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 717,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Series - The Lost 72 Years 4",
+    "description": {
+      "type": "text",
+      "content": "Opposite the southernmost Waypoint in Xion (triggered by some completion of a side quest, we imagine)."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/7-Document - Series (The Last 72 Years 4).1.jpg",
+        "alt": "Document - Series - The Lost 72 Years 4",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/7-Document - Series (The Last 72 Years 4).2.jpg",
+        "alt": "Document - Series - The Lost 72 Years 4",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 718,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Promotions - Introducing the Ark-Tech's Ark!",
+    "description": {
+      "type": "text",
+      "content": "Speak to Mann after returning from Altess Levoire to start the “Lost Ark side” mission. Follow the waypoint to the northeast of Xion, and you will come across the body of the radical."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/8-Document - Promotions (Introducing the Ark-Tech's Ark!).1.jpg",
+        "alt": "Document - Promotions - Introducing the Ark-Tech's Ark!",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/8-Document - Promotions (Introducing the Ark-Tech's Ark!).2.jpg",
+        "alt": "Document - Promotions - Introducing the Ark-Tech's Ark!",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 719,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Promotions - Experience Ark-Tech's Ark!",
+    "description": {
+      "type": "text",
+      "content": "After investigating the body, head over to the second location that has just been marked on your map. Check at the device next to the entrance of the Ark for this document."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/9-Document - Promotions (Experience Ark-Tech's Ark!).2.jpg",
+        "alt": "Document - Promotions - Experience Ark-Tech's Ark!",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/9-Document - Promotions (Experience Ark-Tech's Ark!).3.jpg",
+        "alt": "Document - Promotions - Experience Ark-Tech's Ark!",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 720,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Lament of the Trapped",
+    "description": {
+      "type": "text",
+      "content": "Once inside, you have to investigate four bodies in order to determine what happened inside of the Ark. The first one is right at the door."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/10-Memorystick - Lament of the Trapped.1.jpg",
+        "alt": "Memorystick - Lament of the Trapped",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/10-Memorystick - Lament of the Trapped.2.jpg",
+        "alt": "Memorystick - Lament of the Trapped",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 721,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Monolog of a Trapped Man",
+    "description": {
+      "type": "text",
+      "content": "The second body is in a small room on the left side, kneeling by a chair."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/11-Memorystick - Monolog of a Trapped Man.1.jpg",
+        "alt": "Memorystick - Monolog of a Trapped Man",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/11-Memorystick - Monolog of a Trapped Man.2.jpg",
+        "alt": "Memorystick - Monolog of a Trapped Man",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 722,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Let Me Out",
+    "description": {
+      "type": "text",
+      "content": "The next body is in the big room on the right side, by a large pile of bodies."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/12-Memorystick - Let Me Out.1.jpg",
+        "alt": "Memorystick - Let Me Out",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/12-Memorystick - Let Me Out.2.jpg",
+        "alt": "Memorystick - Let Me Out",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 723,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Who Are You Guys",
+    "description": {
+      "type": "text",
+      "content": "The last body is in the same room as the previous one, turn around and you'll see it against the wall by one of the doors."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/13-Memorystick - Who Are You Guys.1.jpg",
+        "alt": "Memorystick - Who Are You Guys",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/13-Memorystick - Who Are You Guys.2.jpg",
+        "alt": "Memorystick - Who Are You Guys",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 724,
+    "level": "Xion",
+    "location": "Xion (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Promotions - Ark-Tech Delivers Its Best Service By Protecting Its Customers!",
+    "description": {
+      "type": "text",
+      "content": "Check the large monitor inside the same room, it's just up the steps from the pile of bodies."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Xion/2-XionContinued/14-Document - Promotions (Ark-Tech Delivers Its Best Service By Protecting Its Customers!).1.jpg",
+        "alt": "Document - Promotions - Ark-Tech Delivers Its Best Service By Protecting Its Customers!",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Xion/2-XionContinued/14-Document - Promotions (Ark-Tech Delivers Its Best Service By Protecting Its Customers!).2.jpg",
+        "alt": "Document - Promotions - Ark-Tech Delivers Its Best Service By Protecting Its Customers!",
+        "order": 2
+      }
+    ]
+  }
+]

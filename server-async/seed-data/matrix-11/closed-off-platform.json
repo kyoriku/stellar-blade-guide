@@ -1,0 +1,416 @@
+[
+  {
+    "id": 366,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "As soon as you land on Matrix 11, it's on your left."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/1_Supply_Camp.jpg",
+        "alt": "Supply Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 367,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Announcements - Great Desert Crossing Exploration Team Advertisement",
+    "description": {
+      "type": "text",
+      "content": "You'll find this one on the floor by the fast-travel phone booth in the Supply Camp."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/2_Document_Announcements_Great_Desert_Crossing_Exploration_Team_Advertisement.jpg",
+        "alt": "Document - Announcements - Great Desert Crossing Exploration Team Advertisement",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 368,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Great Desert Memorystick - The Last Theorum of an Unknown",
+    "description": {
+      "type": "text",
+      "content": "Before taking the lift down from the landing pad, head right into the toilets and the human corpse is there."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/3_Memorystick_The_Last _Theorum_of_an_Unknown_1.jpg",
+        "alt": "Great Desert Memorystick - The Last Theorum of an Unknown",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/3_Memorystick_The_Last _Theorum_of_an_Unknown_2.jpg",
+        "alt": "Great Desert Memorystick - The Last Theorum of an Unknown",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 369,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Earrings"
+    ],
+    "title": "Earrings - Blue Point",
+    "description": {
+      "type": "text",
+      "content": "Before going up the ladder over the train carriage (which you can actually wander through the doors of too), go into the train carriage. There's a crate down the east end."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/4_Earrings_Blue_Point_1.jpg",
+        "alt": "Earrings - Blue Point",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/4_Earrings_Blue_Point_2.jpg",
+        "alt": "Earrings - Blue Point",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 370,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "When you fight your first two Skullings, there's a box in that corridor (south side)."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/5_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 371,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Announcements - Transport Delay Notice",
+    "description": {
+      "type": "text",
+      "content": "Crash through the wooden struts down the stairs and the robot is right ahead."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/6_Robot_Document_Announcements_Transport_Delay_Notice.jpg",
+        "alt": "Document - Announcements - Transport Delay Notice",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 372,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "West of the next carriage, outside, is another chest."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/7_Locked_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 373,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Employee 38's Memory",
+    "description": {
+      "type": "text",
+      "content": "In the next train track section, on the right. Hard to miss."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/8_Memorystick_Employee_38's_Memory.jpg",
+        "alt": "Memorystick - Employee 38's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 374,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After defeating your first Skull Trooper, head to the right and double back to where you come from (opening the shortcut). The chest is there."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/9_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 375,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnarie 547's Testimony",
+    "description": {
+      "type": "text",
+      "content": "After Adam tells you to take the high road. On the left is a blocked door with a yellow sign above it. Approach it and an enemy will crash through. In the room it came out of is a memorystick and a supply box."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/10_Memorystick_Legionnarie_547's_Testimony_1.jpg",
+        "alt": "Memorystick - Legionnarie 547's Testimony",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/10_Memorystick_Legionnarie_547's_Testimony_2.jpg",
+        "alt": "Memorystick - Legionnarie 547's Testimony",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 376,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Same area, has a Melee Protection Gear (2 star) and an Omnibolt inside of it."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/11_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 377,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Daily Knitted Dress",
+    "description": {
+      "type": "text",
+      "content": "In the next open-ish area, there's a train carriage (after a fight with a handful of enemies) on the south wall. Down the end is a crate with this Nano Suit inside."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/12_Nano_Suit_Daily_Knitted_Dress_1.jpg",
+        "alt": "Nano Suit - Daily Knitted Dress",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/12_Nano_Suit_Daily_Knitted_Dress_2.jpg",
+        "alt": "Nano Suit - Daily Knitted Dress",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 378,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnarie 569's Recollection",
+    "description": {
+      "type": "text",
+      "content": "When you see the Hive blocking the way, take a left out the door, there's a body with a memory stick just to the right."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/13_Memorystick_Legionnarie_569's_Recollection_1.jpg",
+        "alt": "Memorystick - Legionnarie 569's Recollection",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/13_Memorystick_Legionnarie_569's_Recollection_2.jpg",
+        "alt": "Memorystick - Legionnarie 569's Recollection",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 379,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Robot"
+    ],
+    "title": "Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "Head southwest of the previous memorystick and there's a robot there with a Tumbler Expansion Module inside."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/14_Robot_Tumbler_Expansion_Module.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 380,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "At the end of the train tracks and down the ladder is safety."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/15_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 381,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Robot"
+    ],
+    "title": "Drone Upgrade Modules",
+    "description": {
+      "type": "text",
+      "content": "Above the Legion Camp (just one level up, above the workbench) - Contains 2 x Drone Upgrade Modules."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/16_Robot_Drone_Upgrade_Modules.jpg",
+        "alt": "Robot - Drone Upgrade Modules",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 382,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Reflex-Type Exospine",
+    "description": {
+      "type": "text",
+      "content": "In the front of the train carriage that just flew down the tracks and crashed."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/17_Exospine_Reflex_Type_1.jpg",
+        "alt": "Reflex-Type Exospine",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/17_Exospine_Reflex_Type_2.jpg",
+        "alt": "Reflex-Type Exospine",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 383,
+    "level": "Matrix 11",
+    "location": "Closed Off Platform",
+    "types": [
+      "Passcode",
+      "Memorystick"
+    ],
+    "title": "Legionnaire 552's Advice / αγδμθδ",
+    "description": {
+      "type": "text",
+      "content": "In the hallway beyond the crashed train carriage, go all the way to the end and look right to find a corpse holding a memorystick and passcode."
+    },
+    "display_order": 18,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/18_Memorystick_Legionnaire_552's_Advice_&_Passcode_1.jpg",
+        "alt": "Memorystick - Legionnaire 552's Advice / Passcode - αγδμθδ",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/1_Closed_Off_Platform/18_Memorystick_Legionnaire_552's_Advice_&_Passcode_2.jpg",
+        "alt": "Memorystick - Legionnaire 552's Advice / Passcode - αγδμθδ",
+        "order": 2
+      }
+    ]
+  }
+]

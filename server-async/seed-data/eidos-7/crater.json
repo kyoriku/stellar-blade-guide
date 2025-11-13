@@ -1,0 +1,44 @@
+[
+  {
+    "id": 77,
+    "level": "Eidos 7",
+    "location": "Crater",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 274's Memory",
+    "description": {
+      "type": "text",
+      "content": "By a rock as soon as you enter the Crater area (near the small bit of water)."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/8-Crater/1-Memorystick (Legionnaire 274's Memory).jpg",
+        "alt": "Memorystick (Legionnaire 274's Memory)",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 78,
+    "level": "Eidos 7",
+    "location": "Crater",
+    "types": [
+      "Camp"
+    ],
+    "title": "Crater Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "Just to the right, up the rocks, when you enter the Crater area. Hard to miss."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_7/8-Crater/2-Supply Camp (Crater).jpg",
+        "alt": "Crater Supply Camp",
+        "order": 1
+      }
+    ]
+  }
+]

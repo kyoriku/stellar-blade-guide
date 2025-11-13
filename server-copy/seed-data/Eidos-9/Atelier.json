@@ -1,0 +1,72 @@
+[
+  {
+    "level": "Eidos 9",
+    "location": "Atelier",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After going down the red slide and reaching the floating cargo containers, right before jumping onto the main island, you can jump to the half-submerged cargo container. You'll land in the water and have to swim a little bit to the cargo container, but you shouldn't die depending on how far you managed to jump. From here, jump towards the smaller island, where there will be a crate behind the rubble."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_9/3_Atelier/1_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_9/3_Atelier/1_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Eidos 9",
+    "location": "Atelier",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Once you reach the Atelier, the camp will be on the pathway around to the entrance."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_9/3_Atelier/2_Legion_Camp_1.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Eidos_9/3_Atelier/2_Legion_Camp_2.jpg",
+        "alt": "Legion Camp",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Eidos 9",
+    "location": "Atelier",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Messages - What Will You Choose",
+    "description": {
+      "type": "text",
+      "content": "On the ground inside the Atelier."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Eidos_9/3_Atelier/3_Document_Messages_What_Will_You_Choose.jpg",
+        "alt": "Document",
+        "order": 1
+      }
+    ]
+  }
+]

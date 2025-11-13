@@ -1,0 +1,112 @@
+[
+  {
+    "level": "Abyss Levoire",
+    "location": "Underground Passage",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Log Data - Attack Detected",
+    "description": {
+      "type": "text",
+      "content": "From the previous camp, go into the next room and jump into the control room through the window. The document is on the floor near the blocked stairs."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/4_Underground_Passage/1_Document_Log_Data_Attack_Detected.jpg",
+        "alt": "Document - Log Data - Attack Detected",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Underground Passage",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "In the room directly after the long hallway where you have to fight waves of enemies"
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/4_Underground_Passage/2_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Underground Passage",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "After turning off the lasers, go across to the other side of the room and before going through the door, climb up the elevator shaft on the right. There will be a crate at the top where you'll need to do another arrow direction puzzle to open it."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/4_Underground_Passage/3_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Abyss_Levoire/4_Underground_Passage/3_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Abyss_Levoire/4_Underground_Passage/3_Locked_Supply_Chest_3.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Underground Passage",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Once you enter the overgrown hallway, keep going forward and then there will be a crate on the left end of the hallway."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/4_Underground_Passage/4_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Underground Passage",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "On the opposite side from the supply box, through the door."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/4_Underground_Passage/5_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  }
+]

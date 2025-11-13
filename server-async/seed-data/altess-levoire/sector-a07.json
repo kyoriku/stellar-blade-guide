@@ -1,0 +1,44 @@
+[
+  {
+    "id": 35,
+    "level": "Altess Levoire",
+    "location": "Sector A07",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Log Data (Security Procedure Guide)",
+    "description": {
+      "type": "text",
+      "content": "After the symbol floor puzzle, on the right before you go through the next door."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/4_Sector_A07/1_Document_Log Data_Security_Procedure_Guide.jpg",
+        "alt": "Document - Log Data (Security Procedure Guide)",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 36,
+    "level": "Altess Levoire",
+    "location": "Sector A07",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Through the door, on your left"
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/4_Sector_A07/2_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  }
+]

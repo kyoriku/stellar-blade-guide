@@ -1,0 +1,607 @@
+[
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Next to the rock formation beside the waypoint."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/1_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/1_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Citizen 206's Memory",
+    "description": {
+      "type": "text",
+      "content": "Slightly west is a rock formation. On the eastern side is a body with this memorystick."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/2_Memorystick_Citizen_206's_Memory_1.jpg",
+        "alt": "Memorystick - Citizen 206's Memory",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/2_Memorystick_Citizen_206's_Memory_2.jpg",
+        "alt": "Memorystick - Citizen 206's Memory",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Inside the same rock formation is a supply box. Use an Explosive Round to destroy the wood blocking the way in."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/3_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/3_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/3_Legion_Supply_Box_3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Emil's Lament",
+    "description": {
+      "type": "text",
+      "content": "South of the previous supply box, in the rocks, near the cliff face."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/4_Memorystick_Emil's_Lament_1.jpg",
+        "alt": "Memorystick - Emil's Lament",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/4_Memorystick_Emil's_Lament_2.jpg",
+        "alt": "Memorystick - Emil's Lament",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Newfoundland Dry Zero",
+    "description": {
+      "type": "text",
+      "content": "A little further northwest from the memorystick, in a ditch, is a crate sticking out of the sand. Shoot it for this can."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/5_Can_Newfoundland_Dry_Zero_1.jpg",
+        "alt": "Can - Newfoundland Dry Zero",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/5_Can_Newfoundland_Dry_Zero_2.jpg",
+        "alt": "Can - Newfoundland Dry Zero",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/5_Can_Newfoundland_Dry_Zero_3.jpg",
+        "alt": "Can - Newfoundland Dry Zero",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/5_Can_Newfoundland_Dry_Zero_4.jpg",
+        "alt": "Can - Newfoundland Dry Zero",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Robot"
+    ],
+    "title": "Robot - Document - Series - The Xion #4",
+    "description": {
+      "type": "text",
+      "content": "West of the previous can, in some rocks."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/6_Robot_Document_Series_The_Xion_4_1.jpg",
+        "alt": "Robot - Document - Series - The Xion #4",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/6_Robot_Document_Series_The_Xion_4_2.jpg",
+        "alt": "Robot - Document - Series - The Xion #4",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Exile's Passage",
+    "description": {
+      "type": "text",
+      "content": "On the road to Xion, in the far southwest of the Great Desert."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/7_Supply_Camp_Exile's_Passage_1.jpg",
+        "alt": "Supply Camp - Exile's Passage",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/7_Supply_Camp_Exile's_Passage_2.jpg",
+        "alt": "Supply Camp - Exile's Passage",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Directly north of the path to Xion (west-northwest from the Central Great Desert Supply Camp)."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/8_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/8_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sentinel 82's Memory",
+    "description": {
+      "type": "text",
+      "content": "Slightly east from the previous supply box, outside a rock formation."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/9_Memorystick_Sentinel_82's_Memory_1.jpg",
+        "alt": "Memorystick - Sentinel 82's Memory",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/9_Memorystick_Sentinel_82's_Memory_2.jpg",
+        "alt": "Memorystick - Sentinel 82's Memory",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Citizen 109's Resolution",
+    "description": {
+      "type": "text",
+      "content": "Inside the aforementioned rock structure."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/10_Memorystick_Citizen_109's_Resolution_1.jpg",
+        "alt": "Memorystick - Citizen 109's Resolution",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/10_Memorystick_Citizen_109's_Resolution_2.jpg",
+        "alt": "Memorystick - Citizen 109's Resolution",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Next to the previous memorystick."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/11_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/11_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Nectar Cranberry",
+    "description": {
+      "type": "text",
+      "content": "Northwest of the rock formation with the previous collectibles, climb the wall and platform on the drones until you can reach the platform with the ice camp cooler."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/12_Can_Nectar_Cranberry_1.jpg",
+        "alt": "Can - Nectar Cranberry",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/12_Can_Nectar_Cranberry_2.jpg",
+        "alt": "Can - Nectar Cranberry",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/12_Can_Nectar_Cranberry_3.jpg",
+        "alt": "Can - Nectar Cranberry",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/12_Can_Nectar_Cranberry_4.jpg",
+        "alt": "Can - Nectar Cranberry",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Galaxy Alan's Lament / Passcode - yyyya0",
+    "description": {
+      "type": "text",
+      "content": "From the previous can, just forward and to the west. There's a door you can open there. The corpse is inside with the memorystick and passcode."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/13_Memorystick_Galaxy_Alan's_Lament_and_Passcode_yyyya0_1.jpg",
+        "alt": "Memorystick - Galaxy Alan's Lament",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/13_Memorystick_Galaxy_Alan's_Lament_and_Passcode_yyyya0_2.jpg",
+        "alt": "Memorystick - Galaxy Alan's Lament",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/13_Memorystick_Galaxy_Alan's_Lament_and_Passcode_yyyya0_3.jpg",
+        "alt": "Memorystick - Galaxy Alan's Lament",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/13_Memorystick_Galaxy_Alan's_Lament_and_Passcode_yyyya0_4.jpg",
+        "alt": "Memorystick - Galaxy Alan's Lament",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "On the other side of the same room where you just got the previous memorystick and passcode from."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/14_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/14_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp - Northern Great Desert",
+    "description": {
+      "type": "text",
+      "content": "Northeast of the previous collectibles. Slightly south-southeast from the Tetrapod."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/15_Legion_Camp_Northern_Great_Desert_1.jpg",
+        "alt": "Legion Camp - Northern Great Desert",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/15_Legion_Camp_Northern_Great_Desert_2.jpg",
+        "alt": "Legion Camp - Northern Great Desert",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Citizen 246's Recollection",
+    "description": {
+      "type": "text",
+      "content": "At the top of the building next to the Legion Camp."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/16_Memorystick_Citizen_246's_Recollection_1.jpg",
+        "alt": "Memorystick - Citizen 246's Recollection",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/16_Memorystick_Citizen_246's_Recollection_2.jpg",
+        "alt": "Memorystick - Citizen 246's Recollection",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/16_Memorystick_Citizen_246's_Recollection_3.jpg",
+        "alt": "Memorystick - Citizen 246's Recollection",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Books - I Heard It",
+    "description": {
+      "type": "text",
+      "content": "Next to the aforementioned corpse is a bookcase with this book, as part of the “Let There Be Light Again” side quest."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/17_Document_Books_I_Heard_It_1.jpg",
+        "alt": "Document - Books - I Heard It",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/17_Document_Books_I_Heard_It_2.jpg",
+        "alt": "Document - Books - I Heard It",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "West-northwest of the previous Legion Camp, near a bridge protruding out of the sand."
+    },
+    "display_order": 18,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/18_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/18_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Milky Pop Zero",
+    "description": {
+      "type": "text",
+      "content": "Head north from the previous supply box and go around the back of the rock feature. Climb up on the north-facing wall, look up and shoot a target to the northeast, and then use the swinging poles and rope to get up to the top where the ice camp cooler is."
+    },
+    "display_order": 19,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/19_Can_Milky_Pop_Zero_1.jpg",
+        "alt": "Can - Milky Pop Zero",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/19_Can_Milky_Pop_Zero_2.jpg",
+        "alt": "Can - Milky Pop Zero",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/19_Can_Milky_Pop_Zero_3.jpg",
+        "alt": "Can - Milky Pop Zero",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/19_Can_Milky_Pop_Zero_4.jpg",
+        "alt": "Can - Milky Pop Zero",
+        "order": 4
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/19_Can_Milky_Pop_Zero_5.jpg",
+        "alt": "Can - Milky Pop Zero",
+        "order": 5
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "Head south from the can, and drop down to the southeast. There's a body with a Beta Core there."
+    },
+    "display_order": 20,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/20_Beta_Core_1.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/20_Beta_Core_2.jpg",
+        "alt": "Beta Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "North of the Tetrapod are two rock features. On the westside of the most northerly one is this crate."
+    },
+    "display_order": 21,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/21_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/21_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Central Great Desert",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Scavenger 390's Memory",
+    "description": {
+      "type": "text",
+      "content": "West-northwest of the previous supply box are old ruins of a building. At the top is this memorystick. You can climb up using the interior of the building, and double jump and dash from the opposite corner to get there."
+    },
+    "display_order": 22,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/22_Memorystick_Scavenger_390's_Memory_1.jpg",
+        "alt": "Memorystick - Scavenger 390's Memory",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/4_Central_Great_Desert/22_Memorystick_Scavenger_390's_Memory_2.jpg",
+        "alt": "Memorystick - Scavenger 390's Memory",
+        "order": 2
+      }
+    ]
+  }
+]

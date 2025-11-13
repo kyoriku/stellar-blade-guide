@@ -1,0 +1,42 @@
+[
+  {
+    "level": "Altess Levoire",
+    "location": "Security Center",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Messages - Humanity Liberation Front",
+    "description": {
+      "type": "text",
+      "content": "In the control room where you have to open a door (after getting through the timed door), just interact with the computer on the right."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/3_Security_Center/1_Document_Messages_Humanity_Liberation_Front.jpg",
+        "alt": "Document - Messages - Humanity Liberation Front",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Altess Levoire",
+    "location": "Security Center",
+    "types": [
+      "Supply Chest"
+    ],
+    "title": "Legion Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "By the door you just opened. Can't miss it."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/3_Security_Center/2_Legion_Supply_Chest.jpg",
+        "alt": "Legion Supply Chest",
+        "order": 1
+      }
+    ]
+  }
+]

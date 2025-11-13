@@ -1,0 +1,87 @@
+[
+  {
+    "level": "Spire 4",
+    "location": "Passenger Lift 161",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Once you enter the Passenger Elevator, the camp will be directly to your left."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/8_Passenger_Lift_161/1_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Spire 4",
+    "location": "Passenger Lift 161",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Straight ahead, behind Arisa."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/8_Passenger_Lift_161/2_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Spire 4",
+    "location": "Passenger Lift 161",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After lifting the Code Red and going up to the second floor of the Passenger Elevator, there will be a crate on the right side."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/8_Passenger_Lift_161/3_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Spire 4",
+    "location": "Passenger Lift 161",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "After going up the rope leading to the 4th floor, it'll be on a corpse near the bed."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/8_Passenger_Lift_161/4_Beta_Core_1.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/8_Passenger_Lift_161/4_Beta_Core_2.jpg",
+        "alt": "Beta Core",
+        "order": 2
+      }
+    ]
+  }
+]

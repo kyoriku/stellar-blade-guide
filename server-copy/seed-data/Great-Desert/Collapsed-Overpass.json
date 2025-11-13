@@ -1,0 +1,552 @@
+[
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Follow the Collapsed Overpass to the southern tunnel. There's a supply box inside. Need the Hacking Tool to open."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/1_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/1_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Words Spoken: Embracing Death with a Smile",
+    "description": {
+      "type": "text",
+      "content": "Head west into the other overpass. Jump over the two swinging poles, and at the bottom is a corpse with this memorystick."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/2_Memorystick_Words_Spoken_Embracing_Death_with_a_Smile_1.jpg",
+        "alt": "Memorystick - Words Spoken: Embracing Death with a Smile",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/2_Memorystick_Words_Spoken_Embracing_Death_with_a_Smile_2.jpg",
+        "alt": "Memorystick - Words Spoken: Embracing Death with a Smile",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Words Spoken: Finding Peace Before Death",
+    "description": {
+      "type": "text",
+      "content": "Head south of the other collectible and you'll find this one, by a locked door."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/3_Memorystick_Words_Spoken_Finding_Peace_Before_Death_1.jpg",
+        "alt": "Memorystick - Words Spoken: Finding Peace Before Death",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/3_Memorystick_Words_Spoken_Finding_Peace_Before_Death_2.jpg",
+        "alt": "Memorystick - Words Spoken: Finding Peace Before Death",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Jerome's Faith",
+    "description": {
+      "type": "text",
+      "content": "Continue on up the western overpass to the north, and just as you come back outside, there's a body by a car."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/4_Memorystick_Jerome's_Faith_1.jpg",
+        "alt": "Memorystick - Jerome's Faith",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/4_Memorystick_Jerome's_Faith_2.jpg",
+        "alt": "Memorystick - Jerome's Faith",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Continue north along the road. Slide down and use the pole to make it over the gap. The crate is there on the left, on the other side."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/5_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/5_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Continue north, and next to two Old Droids, on the right is this crate."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/6_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/6_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "Use the yellow box in that area to climb the wall. On the other side, to the north, near a car, is a body with a Beta Core."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/7_Beta_Core_1.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/7_Beta_Core_2.jpg",
+        "alt": "Beta Core",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/7_Beta_Core_3.jpg",
+        "alt": "Beta Core",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "East-northeast of the Way to the Solar Tower supply camp is a load of boxes and explosives, with a supply crate in the middle."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/8_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/8_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sentinel 41's Memory",
+    "description": {
+      "type": "text",
+      "content": "Head back towards the buried ruins. North of where the Legion Camp is, on the east side is a bus (east of the Waypoint). Stand on the bus and double jump up to the swinging poles, and then onto the rope to get to the roof. The body is up there."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/9_Memorystick_Sentinel_41's_Memory_1.jpg",
+        "alt": "Memorystick - Sentinel 41's Memory",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/9_Memorystick_Sentinel_41's_Memory_2.jpg",
+        "alt": "Memorystick - Sentinel 41's Memory",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/9_Memorystick_Sentinel_41's_Memory_3.jpg",
+        "alt": "Memorystick - Sentinel 41's Memory",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply box",
+    "description": {
+      "type": "text",
+      "content": "From there head east to the overpass and then head south until you see a bus up top. Shoot the barrels next to it and the bus will drop, allowing you to climb up. The crate is just as you get up."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/10_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/10_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/10_Legion_Supply_Box_3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Blue Monsoon",
+    "description": {
+      "type": "text",
+      "content": "There's one to the south of the previous collectible but it won't open. Need to have accepted the “Precious Treasure” request to open it."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/11_Nano_Suit_Blue_Monsoon_1.jpg",
+        "alt": "Nano Suit - Blue Monsoon",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/11_Nano_Suit_Blue_Monsoon_2.jpg",
+        "alt": "Nano Suit - Blue Monsoon",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Debris-Filled Entryway",
+    "description": {
+      "type": "text",
+      "content": "To the north of the previous collectibles is another Supply Camp."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/12_Supply_Camp_Debris_Filled_Entryway_1.jpg",
+        "alt": "Supply Camp - Debris-Filled Entryway",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/12_Supply_Camp_Debris_Filled_Entryway_2.jpg",
+        "alt": "Supply Camp - Debris-Filled Entryway",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Johnson's Highball Lemon",
+    "description": {
+      "type": "text",
+      "content": "Southeast of the Debris-Filled Entryway is some quick sand. On the southeast of that (east of the Waypoint north of the Solar Tower) is a cave. Head inside, kill the 2 Lurkers, and then push the yellow crate to the end and climb the wall. The can crate is at the top."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/13_Can_Johnson's_Highball_Lemon_1.jpg",
+        "alt": "Can - Johnson's Highball Lemon",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/13_Can_Johnson's_Highball_Lemon_2.jpg",
+        "alt": "Can - Johnson's Highball Lemon",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/13_Can_Johnson's_Highball_Lemon_3.jpg",
+        "alt": "Can - Johnson's Highball Lemon",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/13_Can_Johnson's_Highball_Lemon_4.jpg",
+        "alt": "Can - Johnson's Highball Lemon",
+        "order": 4
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/13_Can_Johnson's_Highball_Lemon_5.jpg",
+        "alt": "Can - Johnson's Highball Lemon",
+        "order": 5
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick Scavenger 404's Advice",
+    "description": {
+      "type": "text",
+      "content": "North of the Supply Camp is a human by a Daily Grind billboard."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/14_Memorystick_Scavenger_404's_Advice_1.jpg",
+        "alt": "Memorystick Scavenger 404's Advice",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/14_Memorystick_Scavenger_404's_Advice_2.jpg",
+        "alt": "Memorystick Scavenger 404's Advice",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Just north of the previous memorystick is a supply crate."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/15_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/15_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "From the supply camp, head east into the ruins and there's a body and a Body Core inside one of the western most buildings."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/16_Body_Core_1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/16_Body_Core_2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Head east to the far buildings and there's a supply crate down low, towards the east side of the ruins. Contains 2 Omnibolts and Ranged Protection Gear (2 star)."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/17_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/17_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Head southeast of the previous one, onto the roof with the yellow box. Push it south, and climb on it to be able to latch onto the wall opposite it. Climb to the top, and in the northeast corner of the rooftop with a ramp is this crate. Contains 2 Omnibolts and Ranged Enhancement Gear (2 star)."
+    },
+    "display_order": 18,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/18_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/18_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/18_Legion_Supply_Box_3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Robot"
+    ],
+    "title": "Robot - Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "Now take the ramp west and jump from pole to pole until you reach the robot on a roof."
+    },
+    "display_order": 19,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/19_Robot_1.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/19_Robot_2.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/19_Robot_3.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Great Desert",
+    "location": "Collapsed Overpass",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Black Wave",
+    "description": {
+      "type": "text",
+      "content": "From there, head west, before then jumping up to the roof to the south. The Nano Suit is up there."
+    },
+    "display_order": 20,
+    "images": [
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/20_Nano_Suit_Black_Wave_1.jpg",
+        "alt": "Nano Suit - Black Wave",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/20_Nano_Suit_Black_Wave_2.jpg",
+        "alt": "Nano Suit - Black Wave",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/20_Nano_Suit_Black_Wave_3.jpg",
+        "alt": "Nano Suit - Black Wave",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Great_Desert/2_Collapsed_Overpass/20_Nano_Suit_Black_Wave_4.jpg",
+        "alt": "Nano Suit - Black Wave",
+        "order": 4
+      }
+    ]
+  }
+]

@@ -1,0 +1,159 @@
+[
+  {
+    "id": 405,
+    "level": "Matrix 11",
+    "location": "Landfill",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "On the opposite side of the upper terrace as you reach the landfill area."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/1_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 406,
+    "level": "Matrix 11",
+    "location": "Landfill",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Employee 33's Determination",
+    "description": {
+      "type": "text",
+      "content": "Head down the lift and downstairs, where the Mites are, is a body with this memorystick."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/2_Memorystick_Employee_33's_Determination.jpg",
+        "alt": "Memorystick - Employee 33's Determination",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 407,
+    "level": "Matrix 11",
+    "location": "Landfill",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "On the left-hand side of the actual landfill, up a level from the garbage and the enemies."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/3_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/3_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 408,
+    "level": "Matrix 11",
+    "location": "Landfill",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "In the middle of the landfill area. Passcode is from the body before (ardu0d). Also contains the Fusion Cell."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/4_Locked_Supply_Chest.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 409,
+    "level": "Matrix 11",
+    "location": "Landfill",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 507's Regret",
+    "description": {
+      "type": "text",
+      "content": "As you come out of the landfill (after using the Fusion Cell), on the right, on the train tracks."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/5_Memorystick_Legionnaire_507's_Regret.jpg",
+        "alt": "Memorystick - Legionnaire 507's Regret",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 410,
+    "level": "Matrix 11",
+    "location": "Landfill",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "Head forward from the last memorystick, and then take a left. Destroy the Hive and this human body and the Body Core is behind it."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/6_Body_Core_1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/6_Body_Core_2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 411,
+    "level": "Matrix 11",
+    "location": "Landfill",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Head forward from the last memorystick, and then take a left. Destroy the Hive and this human body and the Body Core is behind it."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Matrix_11/2_Landfill/7_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  }
+]

@@ -1,0 +1,523 @@
+[
+  {
+    "id": 544,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "In the northwest corner of the next area. Contains an Omnibolt and Beta Recovery Gear (3 star)"
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/1_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 545,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "There's another one in the northeast corner."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/2_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 546,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Judgement-Type Exospine",
+    "description": {
+      "type": "text",
+      "content": "Put the 4 balls in their respective holes in the first open area and this will literally drop out of the sky. Well, the container it's in will."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/3_Exospine_Judgement_Type_1.jpg",
+        "alt": "Judgement-Type Exospine",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/3_Exospine_Judgement_Type_2.jpg",
+        "alt": "Judgement-Type Exospine",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/3_Exospine_Judgement_Type_3.jpg",
+        "alt": "Judgement-Type Exospine",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/3_Exospine_Judgement_Type_4.jpg",
+        "alt": "Judgement-Type Exospine",
+        "order": 4
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/3_Exospine_Judgement_Type_5.jpg",
+        "alt": "Judgement-Type Exospine",
+        "order": 5
+      }
+    ]
+  },
+  {
+    "id": 547,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 725's Question",
+    "description": {
+      "type": "text",
+      "content": "After the chase sequence, directly ahead of you."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/4_Memorystick_Legionnaire_725's_Question.jpg",
+        "alt": "Memorystick - Legionnaire 725's Question",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 548,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "South from the dead body, up a ladder on the west side"
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/5_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 549,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "After getting past the first set of lasers."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/6_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 550,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After the first main conveyor belt, where you have to go right and the boxes are coming down on a slope, head up that slope and follow it to the end. There's a supply box with an Omnibolt and Burst Charge Gear (3 star) inside."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/7_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/7_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/7_Legion_Supply_Box_3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 551,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "At the top of the fast moving conveyor belt that goes up, jump up and to the right for this chest. Only crafting supplies, so if you don't want to risk it, you're not missing much."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/8_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/8_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/8_Legion_Supply_Box_3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 552,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "After you drop down, before moving through the next set of lasers, do a 180, there's a Body Core there under the conveyor belt ramp."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/9_Body_Core.jpg",
+        "alt": "Body Core",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 553,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp - Space Logistics Centre",
+    "description": {
+      "type": "text",
+      "content": "After finishing the conveyor belt section, this camp is straight ahead."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/10_Supply_Camp_Space_Logistics_Centre.jpg",
+        "alt": "Supply Camp - Space Logistics Centre",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 554,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Liquid Lightning",
+    "description": {
+      "type": "text",
+      "content": "East of the Supply Camp, behind a crate. Perhaps the easiest to find out of all of them so far."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/11_Can_Liquid_Lightning_1.jpg",
+        "alt": "Can - Liquid Lightning",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/11_Can_Liquid_Lightning_2.jpg",
+        "alt": "Can - Liquid Lightning",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/11_Can_Liquid_Lightning_3.jpg",
+        "alt": "Can - Liquid Lightning",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 555,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 775's Plea",
+    "description": {
+      "type": "text",
+      "content": "Where the ropes are, drop down and deal with the enemies. This memorystick is on the body in the corner."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/12_Memorystick_Legionnaire_775's_Plea_1.jpg",
+        "alt": "Memorystick - Legionnaire 775's Plea",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/12_Memorystick_Legionnaire_775's_Plea_2.jpg",
+        "alt": "Memorystick - Legionnaire 775's Plea",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 556,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After swinging on the ropes, while the way out is up, look right and jump across for this crate. Needs the Hacking Tool."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/13_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/13_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 557,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Turn east from the supply box and climb onto the shipping crates. This cache is round the back."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/14_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/14_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 558,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Opposite the ladder you need to get out is a crate. Use the moving crates to get across to it."
+    },
+    "display_order": 15,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/15_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/15_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 559,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "Through the big door and down the rope. On your left."
+    },
+    "display_order": 16,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/16_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 560,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "As you come back around the cars (after doing a U-turn of sorts), there's a supply box in the corner, behind some security barricades. Just contains some crafting supplies."
+    },
+    "display_order": 17,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/17_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/17_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 561,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Robot"
+    ],
+    "title": "Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "This one is on the main route, just under the turrets, before the entrace to the Raphael Space Centre."
+    },
+    "display_order": 18,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/18_Robot_Tumbler_Expansion_Module_1.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/18_Robot_Tumbler_Expansion_Module_2.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 562,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 738's Memory",
+    "description": {
+      "type": "text",
+      "content": "As soon as you get out of the turret fire, while crossing the plaza, this one is in the door."
+    },
+    "display_order": 19,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/19_Memorystick_Legionnaire_738's_Memory.jpg",
+        "alt": "Memorystick - Legionnaire 738's Memory",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 563,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "At the end of the corridor in the building."
+    },
+    "display_order": 20,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/20_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 564,
+    "level": "Spire 4",
+    "location": "Space Logistics Complex",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Promotions - Orca Aerospace Company Promotion",
+    "description": {
+      "type": "text",
+      "content": "Just to the north of the Legion Camp, before you go through the door into the next area."
+    },
+    "display_order": 21,
+    "images": [
+      {
+        "url": "/assets/images/Spire_4/3_Space_Logistics_Complex/21_Robot_Document_Promotions_Orca_Aerospace_Company_Production.jpg",
+        "alt": "Document - Promotions - Orca Aerospace Company Promotion",
+        "order": 1
+      }
+    ]
+  }
+]

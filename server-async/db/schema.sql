@@ -1,0 +1,2 @@
+DROP DATABASE IF EXISTS stellarblade;
+CREATE DATABASE stellarblade;

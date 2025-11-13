@@ -1,0 +1,339 @@
+[
+  {
+    "id": 604,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Camp"
+    ],
+    "title": "Eastern Great Canyon Camp",
+    "description": {
+      "type": "text",
+      "content": "In the south east corner of the area just before you take the elevator down towards Altess Levoire."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/1-Legion Camp-Eastern Great Canyon.1.jpg",
+        "alt": "Eastern Great Canyon Camp",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/1-Legion Camp-Eastern Great Canyon.2.jpg",
+        "alt": "Eastern Great Canyon Camp",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 605,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Legionnaire 295's Orders",
+    "description": {
+      "type": "text",
+      "content": "To the left of the lift (slightly west of the Eastern Great Canyon Legion Camp)."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/2-Memorystick-Legionnaire 295's Orders.1.jpg",
+        "alt": "Memorystick (Legionnaire 295's Orders)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/2-Memorystick-Legionnaire 295's Orders.2.jpg",
+        "alt": "Memorystick (Legionnaire 295's Orders)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 606,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Exospine"
+    ],
+    "title": "Eagle Eye-Type Exospine",
+    "description": {
+      "type": "text",
+      "content": "To the right of the lift that leads down towards the main mission objective."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/3-Eagle Eye-Type Exospine.1.jpg",
+        "alt": "Eagle Eye-Type Exospine",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/3-Eagle Eye-Type Exospine.2.jpg",
+        "alt": "Eagle Eye-Type Exospine",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 607,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Scavenger 216's Advice",
+    "description": {
+      "type": "text",
+      "content": "Head southwest from the bottom of the lift to the gate. The human body with with memorystick is there."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/4-Memorystick-Scavenger 216's Advice.1.jpg",
+        "alt": "Memorystick (Scavenger 216's Advice)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/4-Memorystick-Scavenger 216's Advice.2.jpg",
+        "alt": "Memorystick (Scavenger 216's Advice)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 608,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Prayers - Chapter of Trial 6 - S",
+    "description": {
+      "type": "text",
+      "content": "From the elevator, heading northwest, before the path goes directly west, on the right (east) is a dead end. In that southern wall is a small cave with a shrine in it."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/5-Document-Prayers-Chapter of Trial 6-S.1.jpg",
+        "alt": "Document - Prayers (Chapter of Trial 6 - S)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/5-Document-Prayers-Chapter of Trial 6-S.2.jpg",
+        "alt": "Document - Prayers (Chapter of Trial 6 - S)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 609,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "As the path bends west, go east and destroy the crates. There's a corpse with a Body Core hidden by said crates."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/6-Body Core.1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/6-Body Core.2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 610,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Camp"
+    ],
+    "title": "Altess Levoire Entrance Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "Directly before the entrance to Altess Levoire."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/7-Supply Camp-Altess Levoire Entrance.1.jpg",
+        "alt": "Altess Levoire Entrance Supply Camp",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/7-Supply Camp-Altess Levoire Entrance.2.jpg",
+        "alt": "Altess Levoire Entrance Supply Camp",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 611,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "East of the entrance to Altess Levoire is a gate. Go through it towards the other gate, and then turn north and climb the cliffs to the top. Then, head south and jump over the gap to another set of rocks. There's a chest up there. Inside is an Omnibolt and Fixed Damage Gear (2 star)."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/8-Legion Supply Box.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/8-Legion Supply Box.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/8-Legion Supply Box.3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/8-Legion Supply Box.4.jpg",
+        "alt": "Legion Supply Box",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "id": 612,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Series - The Truth, Article 1",
+    "description": {
+      "type": "text",
+      "content": "Drop down a level and head east to the end where you will see a newspaper dispenser. Interact with it for this document. There's also a Drone Upgrade Module beside it."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/9-Document-Series-The Truth Article 1.1.jpg",
+        "alt": "Document - Series (The Truth, Article 1)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/9-Document-Series-The Truth Article 1.2.jpg",
+        "alt": "Document - Series (The Truth, Article 1)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 613,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - Crew Style (NG+ Only)",
+    "description": {
+      "type": "text",
+      "content": "From there, head back west and traverse the cliff on the southwest side. Before you cross the bridge there's a Nano Suit box there, on the right."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/10-Crew Style Nano Suit.1.jpg",
+        "alt": "Nano Suit - Crew Style",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/10-Crew Style Nano Suit.2.jpg",
+        "alt": "Nano Suit - Crew Style",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/10-Crew Style Nano Suit.3.jpg",
+        "alt": "Nano Suit - Crew Style",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "id": 614,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Sentinel 65's Testament",
+    "description": {
+      "type": "text",
+      "content": "Cross the bridge and drop into the courtyard down below."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/11-Memorystick-Sentinel 65's Testament.1.jpg",
+        "alt": "Memorystick (Sentinel 65's Testament)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/11-Memorystick-Sentinel 65's Testament.2.jpg",
+        "alt": "Memorystick (Sentinel 65's Testament)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "id": 615,
+    "level": "Wasteland",
+    "location": "Great Canyon (Continued)",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - GrainT Barley",
+    "description": {
+      "type": "text",
+      "content": "Solve the pressure plate puzzle in the same area, by putting all 3 carts on the left-hand pressure plate (so it reads 23 on the left and 3 on the right)."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/12-Can-GrainT Barley.1.jpg",
+        "alt": "Can - GrainT Barley",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/12-Can-GrainT Barley.2.jpg",
+        "alt": "Can - GrainT Barley",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/12-Can-GrainT Barley.3.jpg",
+        "alt": "Can - GrainT Barley",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Wasteland/9-GreatCanyonCont/12-Can-GrainT Barley.4.jpg",
+        "alt": "Can - GrainT Barley",
+        "order": 4
+      }
+    ]
+  }
+]

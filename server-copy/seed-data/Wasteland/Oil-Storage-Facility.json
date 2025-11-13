@@ -1,0 +1,102 @@
+[
+  {
+    "level": "Wasteland",
+    "location": "Oil Storage Facility",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Lee's Complaint",
+    "description": {
+      "type": "text",
+      "content": "This is part of the “Urgent Information” side quest."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/1-Memorystick-Lee's Complaint.1.jpg",
+        "alt": "Memorystick (Lee's Complaint)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/1-Memorystick-Lee's Complaint.2.jpg",
+        "alt": "Memorystick (Lee's Complaint)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Oil Storage Facility",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Woo's Record",
+    "description": {
+      "type": "text",
+      "content": "This is part of the “Urgent Information” side quest."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/2-Memorystick-Woo's Record.1.jpg",
+        "alt": "Memorystick (Young's Screams)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/2-Memorystick-Woo's Record.2.jpg",
+        "alt": "Memorystick (Young's Screams)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Oil Storage Facility",
+    "types": [
+      "Memorystick"
+    ],
+    "title": "Memorystick - Young's Screams",
+    "description": {
+      "type": "text",
+      "content": "This is part of the “Urgent Information” side quest."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/3-Memorystick-Young's Screams.1.jpg",
+        "alt": "Memorystick (Young's Screams)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/3-Memorystick-Young's Screams.2.jpg",
+        "alt": "Memorystick (Young's Screams)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Oil Storage Facility",
+    "types": [
+      "Body Core"
+    ],
+    "title": "Body Core",
+    "description": {
+      "type": "text",
+      "content": "Right at the northside of the oil storage facility, inside a shipping container."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/4-Body Core.1.jpg",
+        "alt": "Body Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/4-OilStorageFacility/4-Body Core.2.jpg",
+        "alt": "Body Core",
+        "order": 2
+      }
+    ]
+  }
+]

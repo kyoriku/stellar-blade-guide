@@ -1,0 +1,412 @@
+[
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Mountain Sparkle Haller",
+    "description": {
+      "type": "text",
+      "content": "Now that you have Double Jump, fast-travel to the Western Great Canyon Supply Camp and head north, and climb the cliffs to the north. Keep running, jumping and climbing until you reach the top. There’s an ice chest with this can in it."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/1-Can-Mountain Sparkle Haller.1.jpg",
+        "alt": "Can - Mountain Sparkle Haller",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/1-Can-Mountain Sparkle Haller.2.jpg",
+        "alt": "Can - Mountain Sparkle Haller",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/1-Can-Mountain Sparkle Haller.3.jpg",
+        "alt": "Can - Mountain Sparkle Haller",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/1-Can-Mountain Sparkle Haller.4.jpg",
+        "alt": "Can - Mountain Sparkle Haller",
+        "order": 4
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/1-Can-Mountain Sparkle Haller.5.jpg",
+        "alt": "Can - Mountain Sparkle Haller",
+        "order": 5
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "Just to the right of the can is a human body with this Beta Core in it."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/2-Beta Core.1.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/2-Beta Core.2.jpg",
+        "alt": "Beta Core",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Outfit"
+    ],
+    "title": "Adam Outfit - Junkman",
+    "description": {
+      "type": "text",
+      "content": "Head up further (to the north) and then head west and south across the bridge. There you'll find a lot of enemies and also a crate with this inside."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/3-Junkman-Adam Outfit.1.jpg",
+        "alt": "Adam Outfit (Junkman)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/3-Junkman-Adam Outfit.2.jpg",
+        "alt": "Adam Outfit (Junkman)",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/3-Junkman-Adam Outfit.3.jpg",
+        "alt": "Adam Outfit (Junkman)",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "Northeast of the Barren Land Legion Camp is a wall you can climb (near the waypoint, north facing cliff face)."
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/4-Legion Supply Box.1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/4-Legion Supply Box.2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/4-Legion Supply Box.3.jpg",
+        "alt": "Legion Supply Box",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Journal - Investigation Journal",
+    "description": {
+      "type": "text",
+      "content": "You'll find this as part of the side quest, “Keeping Secrets” - part of the Su and Enya storyline. North of the Solar Tower."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/5-Document-Journal Investigation Journal.1.jpg",
+        "alt": "Document - Journal (Investigation Journal)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/5-Document-Journal Investigation Journal.2.jpg",
+        "alt": "Document - Journal (Investigation Journal)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Journal - Search Record",
+    "description": {
+      "type": "text",
+      "content": "Also part of the side quest, “Keeping Secrets” - part of the Su and Enya storyline. Northeast of the Solar Tower."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/6-Document-Journal-Search Record.1.jpg",
+        "alt": "Document - Journal (Search Record)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/6-Document-Journal-Search Record.2.jpg",
+        "alt": "Document - Journal (Search Record)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Journal - Arin's Journal",
+    "description": {
+      "type": "text",
+      "content": "During “Stolen Treasure,” you'll have to head to the Villa in the Scrap Plains (east of the Central Scrap Plains Supply Camp). Upstairs near the bot. Part of the quest."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/7-Document-Journal-Arin's Journal.1.jpg",
+        "alt": "Document - Journal (Arin's Journal)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/7-Document-Journal-Arin's Journal.2.jpg",
+        "alt": "Document - Journal (Arin's Journal)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Beta Core"
+    ],
+    "title": "Beta Core",
+    "description": {
+      "type": "text",
+      "content": "Northwest of the Junkyard Supply Camp is a wallrunning section that you need to Double Jump for. Head back there and follow the path to the end for this Beta Core."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/8-Beta Core.1.jpg",
+        "alt": "Beta Core",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/8-Beta Core.2.jpg",
+        "alt": "Beta Core",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/8-Beta Core.3.jpg",
+        "alt": "Beta Core",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Elixir Green",
+    "description": {
+      "type": "text",
+      "content": "East-northeast of the Central Scrap Plains Supply Camp (just slightly west of the Waypoint) are some metal platforms. Climb to the top (needs Double Jump) and you'll find the can up there.Use the ramp on the west to get up top."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/9-Can-Elixir Green.1.jpg",
+        "alt": "Can - Elixir Green",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/9-Can-Elixir Green.2.jpg",
+        "alt": "Can - Elixir Green",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/9-Can-Elixir Green.3.jpg",
+        "alt": "Can - Elixir Green",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/9-Can-Elixir Green.4.jpg",
+        "alt": "Can - Elixir Green",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - The Haven Green Tea",
+    "description": {
+      "type": "text",
+      "content": "take the path up to the north from the Solar Tower and bend round to the east, when you drop down (while still heading east), where the Racer's High Nano Suit was, you're actually going to want to drop down to the south, and then platform the way along a few cliffs and up a lot of them too. There's only one way to go, so stick on the path and you'll be at the ladder and the can in no time."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/10-Can-The Haven Green Tea.1.jpg",
+        "alt": "Can - The Haven Green Tea",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/10-Can-The Haven Green Tea.2.jpg",
+        "alt": "Can - The Haven Green Tea",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/10-Can-The Haven Green Tea.3.jpg",
+        "alt": "Can - The Haven Green Tea",
+        "order": 3
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/10-Can-The Haven Green Tea.4.jpg",
+        "alt": "Can - The Haven Green Tea",
+        "order": 4
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Can"
+    ],
+    "title": "Can - Nectar Orange",
+    "description": {
+      "type": "text",
+      "content": "Next to the Central Great Canyon Legion Camp is a billboard. Pull over the yellow crate from the north to the steel girder. Double jump up and walk across the billboard for this can."
+    },
+    "display_order": 11,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/11-Can-Nectar Orange.1.jpg",
+        "alt": "Can - Nectar Orange",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/11-Can-Nectar Orange.2.jpg",
+        "alt": "Can - Nectar Orange",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/11-Can-Nectar Orange.3.jpg",
+        "alt": "Can - Nectar Orange",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Nano Suit"
+    ],
+    "title": "Nano Suit - La Vie En Rose",
+    "description": {
+      "type": "text",
+      "content": "Use the code B0aydS on the ship container to the west of the Western Grand Canyon Supply Camp (part of the “Recruit Passcode Specialists” Request)."
+    },
+    "display_order": 12,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/12-Nano Suit & Document-Prayers.jpg",
+        "alt": "Nano Suit - La Vie En Rose",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/12-Nano Suit-La Vie En Rose.1.jpg",
+        "alt": "Nano Suit - La Vie En Rose",
+        "order": 2
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/12-Nano Suit-La Vie En Rose.2.jpg",
+        "alt": "Nano Suit - La Vie En Rose",
+        "order": 3
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Prayers - Chapter of Salvation 0 - Omega",
+    "description": {
+      "type": "text",
+      "content": "In the same container as the previous Nano Suit."
+    },
+    "display_order": 13,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/13-Document-Prayers-Chapter of Salvation 0-Omega.1.jpg",
+        "alt": "Document - Prayers (Chapter of Salvation 0 - Omega)",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/13-Document-Prayers-Chapter of Salvation 0-Omega.2.jpg",
+        "alt": "Document - Prayers (Chapter of Salvation 0 - Omega)",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Wasteland",
+    "location": "Wasteland (Continued)",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Messages - I'm Leaving",
+    "description": {
+      "type": "text",
+      "content": "After finishing D1g-g2r's side quests he'll leave to go to Xion. When he does, return to the Wasteland and head to the Scrapyard. On a large computer screen to the east of the entrance (under a box and by a ladder), you'll be able to interact with the screen to grab this collectible."
+    },
+    "display_order": 14,
+    "images": [
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/14-Document - Messages - I'm Leaving.1.jpg",
+        "alt": "Document - Messages - I'm Leaving",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Wasteland/11-WastelandCont/14-Document - Messages - I'm Leaving.2.jpg",
+        "alt": "Document - Messages - I'm Leaving",
+        "order": 2
+      }
+    ]
+  }
+]

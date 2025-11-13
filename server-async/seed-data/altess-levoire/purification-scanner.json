@@ -1,0 +1,44 @@
+[
+  {
+    "id": 32,
+    "level": "Altess Levoire",
+    "location": "Purification Scanner",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Log Data - Booting Sequence",
+    "description": {
+      "type": "text",
+      "content": "After the wallrunning over the fallen floor section, it's on the floor in front of you."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/2_Purification_Scanner/1_Document_Log_Data_Booting_Sequence.jpg",
+        "alt": "Document - Log Data - Booting Sequence",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "id": 33,
+    "level": "Altess Levoire",
+    "location": "Purification Scanner",
+    "types": [
+      "Camp"
+    ],
+    "title": "Legion Camp",
+    "description": {
+      "type": "text",
+      "content": "After fighting your first infector, this will be in the main corridor."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Altess_Levoire/2_Purification_Scanner/2_Legion_Camp.jpg",
+        "alt": "Legion Camp",
+        "order": 1
+      }
+    ]
+  }
+]

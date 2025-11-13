@@ -1,0 +1,222 @@
+[
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "Go through the platforming section until you get to the spot where you have to jump to a ladder. There will be a small room to the left of the ladder you can jump into where the chest will be, being guarded by a Barnacle."
+    },
+    "display_order": 1,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/1_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/1_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Robot"
+    ],
+    "title": "Robot - Tumbler Expansion Module",
+    "description": {
+      "type": "text",
+      "content": "After climbing up the ladder and jumping over to the next platform, there will be a robot that will drop the Tumbler Expansion Module on the next platform directly across from you."
+    },
+    "display_order": 2,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/2_Robot_Tumbler_Expansion_Module_1.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/2_Robot_Tumbler_Expansion_Module_2.jpg",
+        "alt": "Robot - Tumbler Expansion Module",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After swinging over the gap with the rope and making your way up a sloped walkway, there's a supply box in there with a couple of enemies."
+    },
+    "display_order": 3,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/3_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Log Data - Mass Production",
+    "description": {
+      "type": "text",
+      "content": "On top of the tall box to the right of the previous supply box"
+    },
+    "display_order": 4,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/4_Document_Log_Data_Mass_Production.jpg",
+        "alt": "Document - Log Data - Mass Production",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "From the previous collectibles, go up the rope and then turn around. There will be a crate on a narrow platform you can drop down too."
+    },
+    "display_order": 5,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/5_Legion_Supply_Box_1.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/5_Legion_Supply_Box_2.jpg",
+        "alt": "Legion Supply Box",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Locked Chest"
+    ],
+    "title": "Locked Supply Chest",
+    "description": {
+      "type": "text",
+      "content": "From the previous supply box, go across the wall running section and jump across the swing bars to the rope. You'll be able to then swing to the left onto another platform with a crate that has a directional puzzle to open."
+    },
+    "display_order": 6,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/6_Locked_Supply_Chest_1.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 1
+      },
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/6_Locked_Supply_Chest_2.jpg",
+        "alt": "Locked Supply Chest",
+        "order": 2
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "After sliding down the ladder with the blue lights, there will be a crate right beside you once you reach the bottom."
+    },
+    "display_order": 7,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/7_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Supply Box"
+    ],
+    "title": "Legion Supply Box",
+    "description": {
+      "type": "text",
+      "content": "From the previous collectible, drop down to the walkway below you and instantly turn around. There will a crate at the end of the walkway."
+    },
+    "display_order": 8,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/8_Legion_Supply_Box.jpg",
+        "alt": "Legion Supply Box",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Document"
+    ],
+    "title": "Document - Log Data - Quarantine Failure",
+    "description": {
+      "type": "text",
+      "content": "After making your way through the Laboratory Ruins, there will be a document to the left of the door in the red hallway that leads to the room with the camp."
+    },
+    "display_order": 9,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/9_Document_Log_Data_Quarantine_Failure.jpg",
+        "alt": "Document - Log Data - Quarantine Failure",
+        "order": 1
+      }
+    ]
+  },
+  {
+    "level": "Abyss Levoire",
+    "location": "Laboratory Ruins",
+    "types": [
+      "Camp"
+    ],
+    "title": "Supply Camp",
+    "description": {
+      "type": "text",
+      "content": "After crossing the large room, on the right before the boss fight."
+    },
+    "display_order": 10,
+    "images": [
+      {
+        "url": "/assets/images/Abyss_Levoire/5_Laboratory_Ruins/10_Supply_Camp.jpg",
+        "alt": "Supply Camp",
+        "order": 1
+      }
+    ]
+  }
+]
