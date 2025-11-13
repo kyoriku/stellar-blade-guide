@@ -58,17 +58,6 @@ CREATE DATABASE stellarblade;
 
 ### Method 2: SQL File
 
-Create `sql/schema.sql`:
-```sql
-DROP DATABASE IF EXISTS stellarblade;
-CREATE DATABASE stellarblade;
-```
-
-Then run:
-```bash
-psql -d postgres -f sql/schema.sql
-```
-
 Create `db/schema.sql`:
 ```sql
 DROP DATABASE IF EXISTS stellarblade;
@@ -91,13 +80,13 @@ python3 scripts/db/seed_db.py
 
 Output:
 ```
-✓ Tables created/verified
-✓ Database seeded successfully
+Tables created/verified
+Database seeded successfully
 ```
 
 ### 2. Seed Collectibles (from JSON files)
 ```bash
-python3 scripts/db/seed.py
+python3 scripts/db/seed_collectibles.py
 ```
 
 Output:
@@ -109,83 +98,274 @@ Seeding complete!
 Added: 768
 ```
 
-### 3. Start Application
+### 3. Seed Walkthroughs
 ```bash
-uvicorn app.main:app --reload
+python3 scripts/db/seed_walkthroughs.py
+```
+
+Output:
+```
+Seeding walkthroughs...
+Clearing Redis cache...
+
+Redis cache cleared
+Walkthrough seeded successfully
+```
+
+## Start Server
+```bash
+uvicorn main:app --reload
 ```
 
 
 
 
 
-python3 scripts/db/seed_db.py && python3 scripts/db/seed.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 
 
 
 
-Stellar Blade Guide (Personal Project)
 
-Built a full-stack web application using React, TypeScript, Tailwind, FastAPI, PostgreSQL, and Redis, deployed on Railway.
+# server/ directory:
 
-Implemented async backend endpoints with FastAPI, improving API concurrency and performance.
+## Environment Setup
 
-Used TanStack Query with prefetching and caching to deliver near-instant page loads and optimized frontend performance.
+Make sure you’re inside the `server/` directory.
 
-Designed PostgreSQL schemas and Redis caching strategies to reduce database load and improve API response times.
+### 1. Create and Activate Virtual Environment
 
-Created Pydantic models for strict data validation, ensuring backend reliability and preventing runtime errors.
+```bash
+# Create virtual environment
+python3 -m venv venv
 
-Focused on user experience, leveraging caching and prefetching to eliminate unnecessary loading spinners and speed up navigation.
+# Activate it
+source venv/bin/activate
+```
 
-“Reduced average API response time by ~70% through Redis caching and async FastAPI endpoints.”
+### 2. Install Dependencies
 
-“Prefetching and caching reduced perceived page load time from ~3s to <1s.”
+```bash
+pip install -r requirements.txt
+```
 
-“Optimized PostgreSQL queries and caching to handle X concurrent requests without degradation.”
+## Environment Variables
 
-Built a full-stack web application using React, TypeScript, Tailwind, FastAPI, PostgreSQL, and Redis, deployed on Railway.
+Create a `.env` file in the `server/` directory and add the following:
 
-Implemented async backend endpoints with FastAPI, improving API concurrency and reducing average response time from X ms → Y ms.
+```bash
+# Database configuration
+DATABASE_URL=postgresql://<username>:<password>@localhost:5432/stellarblade
 
-Used TanStack Query with prefetching and caching to deliver near-instant page loads, reducing perceived page load time from X s → < Y s.
+# Redis configuration
+REDIS_URL=redis://localhost:6379
 
-Designed PostgreSQL schemas and implemented Redis caching, decreasing database queries by X% and improving API performance under load.
+# Cloudinary configuration
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-Created Pydantic models for strict data validation, preventing runtime errors and ensuring backend reliability.
+# Cache configuration (in seconds)
+CACHE_TTL_SHORT=600
+CACHE_TTL_MEDIUM=1800
+CACHE_TTL_LONG=7200
 
-Focused on user experience, eliminating loading spinners and optimizing navigation responsiveness, leading to a smoother UI.
+# Admin secret key
+ADMIN_SECRET=your_admin_secret
+```
 
-Built a full-stack web app with React, TypeScript, Tailwind, FastAPI, PostgreSQL, and Redis, deployed on Railway.
+## Local Database Setup
 
-Implemented async backend endpoints and Redis caching, reducing average API response time from X ms → Y ms.
+Choose either method:
 
-Used TanStack Query with prefetching & client caching, cutting perceived page load time from X s → < Y s.
+### Method 1: CLI
 
-Designed PostgreSQL schemas and validated data with Pydantic, improving backend reliability and reducing database queries by X%.
+```bash
+# Connect to PostgreSQL
+psql postgres
 
----
+# Create database
+CREATE DATABASE stellarblade;
 
-### **Cache Miss vs Cache Hit Averages**
+# Exit
+\q
+```
 
-| Endpoint        | Cache Miss (TOTAL) | DB Time | Cache Hit (TOTAL) | Improvement |
-| --------------- | ------------------ | ------- | ----------------- | ----------- |
-| `/beta-cores`   | 47ms               | 43ms    | 4ms               | ~91% faster |
-| `/wasteland`    | 95ms               | 11ms    | 5ms               | ~95% faster |
-| `/great-desert` | 47ms               | 26ms    | 6ms               | ~87% faster |
+### Method 2: SQL File
 
-**Observation:**
+Create `db/schema.sql`:
 
-* Cached requests are consistently **< 10 ms**, compared to **47–95 ms** for uncached requests.
-* That’s roughly **90–95% reduction in API response time** for cached queries.
-* Preloading/prefetching with TanStack Query + Redis will make the frontend feel **near-instant**, even for heavier queries.
+```sql
+DROP DATABASE IF EXISTS stellarblade;
+CREATE DATABASE stellarblade;
+```
 
----
+Then run:
 
-Built a full-stack web app with React, TypeScript, Tailwind, FastAPI, PostgreSQL, and Redis, deployed on Railway.
+```bash
+psql -d postgres -f db/schema.sql
+```
 
-Implemented async FastAPI endpoints and Redis caching, reducing average API response time from ~95ms → ~5ms (~95% faster).
+## Seed Database
 
-Used TanStack Query with prefetching & client caching, cutting perceived page load time from ~1.5s → near-instant.
+After creating the database, run these scripts in order:
 
-Designed PostgreSQL schemas and validated data with Pydantic, improving backend reliability and reducing database load by ~90% for cached queries.
+### 1. Seed Base Data (Levels, Locations, Types)
+
+```bash
+python3 scripts/db/seed_db.py
+```
+
+Output:
+
+```
+Tables created/verified
+Database seeded successfully
+```
+
+### 2. Seed Collectibles (from JSON files)
+
+```bash
+python3 scripts/db/seed_collectibles.py
+```
+
+Output:
+
+```
+Starting database seed...
+Found 63 JSON files
+...
+Seeding complete!
+Added: 768
+```
+
+### 3. Seed Walkthroughs
+
+```bash
+python3 scripts/db/seed_walkthroughs.py
+```
+
+Output:
+
+```
+Seeding walkthroughs...
+Clearing Redis cache...
+
+Redis cache cleared
+Walkthrough seeded successfully
+```
+
+
+Good catch — yeah, you never want to publish real `.env` values (especially Cloudinary keys or admin secrets). Here’s a **safe, public-ready version** you can use in your README:
+
+
+## Start Server
+
+```bash
+uvicorn main:app --reload
+```
+
+> **Note:**
+> Each time you open a new terminal session, make sure to reactivate your virtual environment before starting the server:
+>
+> ```bash
+> source venv/bin/activate
+> ```
+
+
+
+
+# server/ directory
+
+Make sure you’re in the `server/` directory.
+
+
+## 1. Virtual Environment & Dependencies
+
+```bash
+# Create and activate venv
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+
+## 2. Environment Variables
+
+Create a `.env` file in `server/`:
+
+```bash
+DATABASE_URL=DATABASE_URL=postgresql://localhost:5432/stellarblade
+REDIS_URL=redis://localhost:6379
+
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+CACHE_TTL_SHORT=600
+CACHE_TTL_MEDIUM=1800
+CACHE_TTL_LONG=7200
+
+ADMIN_SECRET=your_admin_secret
+```
+
+> Make sure the database name here matches what you’ll create next.
+
+
+## 3. Local Database
+
+### Option 1: CLI
+
+```bash
+# Connect to PostgreSQL
+psql postgres
+
+# Create database
+CREATE DATABASE stellarblade;
+
+# Exit
+\q
+```
+
+### Option 2: SQL File
+
+Create `db/schema.sql`:
+
+```sql
+DROP DATABASE IF EXISTS stellarblade;
+CREATE DATABASE stellarblade;
+```
+
+Then run:
+
+```bash
+psql -d postgres -f db/schema.sql
+```
+
+> Either method works; just pick one. Make sure the DB name matches with `DATABASE_URL`.
+
+## 4. Seed Database
+
+Run scripts in order:
+
+```bash
+python3 scripts/db/seed_db.py
+python3 scripts/db/seed_collectibles.py
+python3 scripts/db/seed_walkthroughs.py
+```
+
+## 5. Start Server
+
+```bash
+uvicorn main:app --reload
+```
+
+> Every new terminal session, reactivate the venv first:
+>
+> ```bash
+> source venv/bin/activate
+> ```
+
+
