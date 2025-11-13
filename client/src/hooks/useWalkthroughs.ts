@@ -1,33 +1,7 @@
-// import { useQuery } from '@tanstack/react-query'
-// import { api } from '../services/api'
-
-// export function useWalkthroughs() {
-//   return useQuery({
-//     queryKey: ['walkthroughs'],
-//     queryFn: () => api.getWalkthroughs(),
-//   })
-// }
-
-// export function useWalkthrough(id: number) {
-//   return useQuery({
-//     queryKey: ['walkthrough', id],
-//     queryFn: () => api.getWalkthroughById(id),
-//     enabled: !!id,
-//   })
-// }
-
-// export function useWalkthroughsByType(type: string) {
-//   return useQuery({
-//     queryKey: ['walkthroughs', type],
-//     queryFn: () => api.getWalkthroughsByType(type),
-//     enabled: !!type,
-//   })
-// }
-
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../services/api'
 
-// Get all walkthroughs (if you need this for an overview page)
+// Get all walkthroughs (for homepage or general listing)
 export function useWalkthroughs() {
   return useQuery({
     queryKey: ['walkthroughs'],
@@ -44,7 +18,7 @@ export function useWalkthroughsByType(type: string) {
   })
 }
 
-// Get single walkthrough by type + slug (for detail pages) - NEW PRIMARY METHOD
+// Get single walkthrough by type + slug (for detail pages)
 export function useWalkthrough(type: string, slug: string) {
   return useQuery({
     queryKey: ['walkthrough', type, slug],

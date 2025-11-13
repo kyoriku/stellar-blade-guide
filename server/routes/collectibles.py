@@ -121,7 +121,7 @@ async def get_collectibles_by_type(type_name: str, request: Request, db: AsyncSe
     db_start = time.time()
 
     result = await db.execute(select(CollectibleType).filter(CollectibleType.name == type_name))
-    collectible_type = result.scalars().first()  # ✅ Fixed for duplicates
+    collectible_type = result.scalars().first()
     
     if not collectible_type:
         formatted_type = type_name.replace('-', ' ').title()
@@ -130,7 +130,7 @@ async def get_collectibles_by_type(type_name: str, request: Request, db: AsyncSe
         elif formatted_type.endswith('s'):
             formatted_type = formatted_type[:-1]
         result = await db.execute(select(CollectibleType).filter(CollectibleType.name.ilike(f"%{formatted_type}%")))
-        collectible_type = result.scalars().first()  # ✅ Fixed for duplicates
+        collectible_type = result.scalars().first()
     
     if not collectible_type:
         raise HTTPException(status_code=404, detail="Type not found")
