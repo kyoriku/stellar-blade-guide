@@ -20,8 +20,8 @@ function TableOfContentsSkeleton() {
                 {/* ChevronRight placeholder */}
                 <div className="w-4 h-4 bg-gray-700 rounded animate-pulse"></div>
                 {/* Text placeholder - varies width for realism */}
-                <div 
-                  className="h-4 bg-gray-700 rounded animate-pulse flex-1" 
+                <div
+                  className="h-4 bg-gray-700 rounded animate-pulse flex-1"
                   style={{ maxWidth: `${60 + (i * 7) % 40}%` }}
                 ></div>
               </div>

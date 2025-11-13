@@ -19,7 +19,7 @@ from core.cache import invalidate_cache_pattern
 def load_all_seed_files():
     seed_dir = project_root / 'seed-data'
     if not seed_dir.exists():
-        print("\033[31m✗ seed-data directory not found!\033[0m")
+        print("\033[31mseed-data directory not found!\033[0m")
         return []
 
     all_data = []
@@ -38,7 +38,7 @@ def load_all_seed_files():
 async def seed_database():
     seed_data = load_all_seed_files()
     if not seed_data:
-        print("\033[31m✗ No seed data found!\033[0m")
+        print("\033[31mNo seed data found!\033[0m")
         return
 
     print(f"\nSeeding {len(seed_data)} collectibles...\n")
@@ -53,7 +53,7 @@ async def seed_database():
                 result = await db.execute(select(Level).where(Level.name == item['level']))
                 level = result.scalar_one_or_none()
                 if not level:
-                    print(f"\033[31m✗ Level not found: {item['level']}\033[0m")
+                    print(f"\033[31mLevel not found: {item['level']}\033[0m")
                     errors += 1
                     continue
 
@@ -77,7 +77,7 @@ async def seed_database():
                 # Handle types
                 type_names = item.get('types') or item.get('type')
                 if not type_names:
-                    print(f"\033[31m✗ No type(s) specified for: {item.get('title', 'Unknown')}\033[0m")
+                    print(f"\033[31mNo type(s) specified for: {item.get('title', 'Unknown')}\033[0m")
                     errors += 1
                     continue
                 if not isinstance(type_names, list):
@@ -197,7 +197,7 @@ async def seed_database():
 
 
             except Exception as e:
-                print(f"\033[31m✗ Error with '{item.get('title', 'Unknown')}': {e}\033[0m")
+                print(f"\033[31mError with '{item.get('title', 'Unknown')}': {e}\033[0m")
                 import traceback
                 traceback.print_exc()
                 await db.rollback()
@@ -207,14 +207,14 @@ async def seed_database():
     print("\nClearing Redis cache...")
     try:
         await invalidate_cache_pattern("*")
-        print("\033[32m✓ Redis cache cleared successfully\033[0m")
+        print("\033[32mRedis cache cleared successfully\033[0m")
     except Exception as e:
-        print(f"\033[31m✗ Failed to clear Redis cache: {e}\033[0m")
+        print(f"\033[31mFailed to clear Redis cache: {e}\033[0m")
 
-    print(f"\n\033[32m✓ Seeding complete\033[0m")
-    print(f"\033[32m✓ Added: {added}\033[0m")
-    print(f"\033[32m✓ Updated: {updated}\033[0m")
-    print(f"\033[31m✗ Errors: {errors}\033[0m" if errors else f"\033[32m✓ Errors: {errors}\033[0m")
+    print(f"\n\033[32mSeeding complete\033[0m")
+    print(f"\033[32mAdded: {added}\033[0m")
+    print(f"\033[32mUpdated: {updated}\033[0m")
+    print(f"\033[31mErrors: {errors}\033[0m" if errors else f"\033[32mErrors: {errors}\033[0m")
 
 
 if __name__ == "__main__":

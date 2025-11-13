@@ -59,9 +59,9 @@ function CollectibleSection({
           <article
             key={collectible.id}
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
-            // style={{
-            //   animation: isInitialLoad ? 'none' : `fadeInUp 0.25s ease-out ${index * 0.025}s both`
-            // }}
+          // style={{
+          //   animation: isInitialLoad ? 'none' : `fadeInUp 0.25s ease-out ${index * 0.025}s both`
+          // }}
           >
             {/* Decorative corner gradient */}
             {/* <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-colors duration-500"></div> */}
@@ -79,18 +79,18 @@ function CollectibleSection({
                 </h3>
               </div> */}
               <div className="flex flex-col mb-4">
-  {/* Left side: badges and title stacked nicely */}
-  <div className="flex flex-wrap items-center gap-2">
-    {[...collectible.types].sort().map((type, idx) => (
-      <TypeBadge key={idx} type={type} />
-    ))}
-    <h3 className="text-xl font-semibold text-gray-100 leading-tight ">
-      {collectible.title}
-    </h3>
-  </div>
+                {/* Left side: badges and title stacked nicely */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {[...collectible.types].sort().map((type, idx) => (
+                    <TypeBadge key={idx} type={type} />
+                  ))}
+                  <h3 className="text-xl font-semibold text-gray-100 leading-tight ">
+                    {collectible.title}
+                  </h3>
+                </div>
 
-  {/* Optional: collectible count or icon cluster */}
-</div>
+                {/* Optional: collectible count or icon cluster */}
+              </div>
 
 
               {/* Description */}

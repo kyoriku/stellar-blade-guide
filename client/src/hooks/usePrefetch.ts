@@ -1,4 +1,3 @@
-// hooks/usePrefetch.ts
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../services/api'
 
@@ -28,11 +27,11 @@ export function usePrefetch() {
   }
 
   const prefetchWalkthrough = (id: number) => {
-  queryClient.prefetchQuery({
-    queryKey: ['walkthrough', id],
-    queryFn: () => api.getWalkthroughById(id),
-  })
-}
+    queryClient.prefetchQuery({
+      queryKey: ['walkthrough', id],
+      queryFn: () => api.getWalkthroughById(id),
+    })
+  }
 
   return {
     prefetchLevel,
