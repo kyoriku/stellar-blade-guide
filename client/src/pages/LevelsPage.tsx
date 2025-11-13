@@ -13,6 +13,7 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { LEVELS } from '../constants/navigation'
 import { ArrowLeft, MapPin, Package } from 'lucide-react'
+import { usePrefetch } from '../hooks/usePrefetch'
 
 function LevelPage() {
   const { levelName } = useParams<{ levelName: string }>();
@@ -30,6 +31,7 @@ function LevelPage() {
   const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useState<string>('');
+  const { prefetchLevel } = usePrefetch()
 
   useEffect(() => {
     const observerOptions = {
@@ -93,6 +95,7 @@ function LevelPage() {
   const nextLevel = currentIndex >= 0 && currentIndex < allLevels.length - 1
     ? allLevels[currentIndex + 1]
     : null;
+  const previousLevel = currentIndex > 0 ? allLevels[currentIndex - 1] : null;
 
   // const tocLinks = allLevels.map(level => ({
   //   mainLink: `/levels/${level.toLowerCase().replace(/\s+/g, '-')}`,
@@ -105,13 +108,13 @@ function LevelPage() {
   //     : undefined
   // }));
   const tocLinks = [{
-  mainLink: '#', // or `#${levelName}`
-  title: displayLevelName,
-  subLinks: locationData.map(loc => ({
-    href: `#${loc.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`,
-    title: loc.location_name
-  }))
-}];
+    mainLink: '#', // or `#${levelName}`
+    title: displayLevelName,
+    subLinks: locationData.map(loc => ({
+      href: `#${loc.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`,
+      title: loc.location_name
+    }))
+  }];
 
   // Count total collectibles
   const totalCollectibles = locationData.reduce((sum, loc) => sum + loc.collectibles.length, 0);
@@ -134,6 +137,14 @@ function LevelPage() {
 
             {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
+              {/* Breadcrumb skeleton */}
+              <nav className="mb-4 flex items-center gap-2 text-sm">
+                <div className="h-4 w-9.5 bg-gray-700 rounded animate-pulse"></div>
+                <span className="text-gray-600">/</span>
+                <div className="h-4 w-10 bg-gray-700 rounded animate-pulse"></div>
+                <span className="text-gray-600">/</span>
+                <div className="h-4 w-24 bg-gray-600 rounded animate-pulse"></div>
+              </nav>
               {/* Enhanced page header skeleton - matches actual header exactly */}
               <div className="mb-10">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -192,6 +203,15 @@ function LevelPage() {
           </aside>
 
           <main className="flex-1 min-w-0">
+            {/* Breadcrumbs */}
+            <nav className="mb-4 text-sm text-gray-400">
+              <Link to="/" className="hover:text-white transition-colors">Home</Link>
+              <span className="mx-2">/</span>
+              {/* <Link to="/levels" className="hover:text-white transition-colors">Levels</Link> */}
+              <span>Levels</span>
+              <span className="mx-2">/</span>
+              <span className="text-white">{displayLevelName}</span>
+            </nav>
             {/* Enhanced page header */}
             <div className="mb-10">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -242,30 +262,67 @@ function LevelPage() {
 
             {/* Footer navigation */}
             <div className="mt-16 pt-8 border-t border-gray-800">
-              <div className="flex justify-between items-center">
-                <div className="text-gray-400 text-sm">
-                  Completed viewing {displayLevelName}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-400 mb-2">Continue to next guide</p>
-                  {nextLevel ? (
-                    <Link
-                      to={`/levels/${nextLevel.toLowerCase().replace(/\s+/g, '-')}`}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
-                    >
-                      Next Level
-                      <ArrowLeft className="w-4 h-4 rotate-180" />
-                    </Link>
-                  ) : (
-                    <Link
-                      to="/"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
-                    >
-                      Back to Home
-                      <ArrowLeft className="w-4 h-4 rotate-180" />
-                    </Link>
-                  )}
-                </div>
+              <div className="flex flex-row sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                {/* Previous Level */}
+                {previousLevel ? (
+                  <Link
+                    to={`/levels/${previousLevel.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="group flex-1 sm:flex-initial"
+                    onMouseEnter={() => prefetchLevel(previousLevel.toLowerCase().replace(/\s+/g, '-'))}
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200">
+                      <div className="p-2 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-gray-400 group-hover:text-white group-hover:-translate-x-0.5 transition-all" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-0.5">Previous</div>
+                        <div className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors truncate">
+                          {previousLevel}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex-1 sm:flex-initial"></div>
+                )}
+
+                {/* Next Level */}
+                {nextLevel ? (
+                  <Link
+                    to={`/levels/${nextLevel.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="group flex-1 sm:flex-initial"
+                    onMouseEnter={() => prefetchLevel(nextLevel.toLowerCase().replace(/\s+/g, '-'))}
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Next</div>
+                        <div className="text-sm font-semibold text-white truncate">
+                          {nextLevel}
+                        </div>
+                      </div>
+                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/"
+                    className="group flex-1 sm:flex-initial"
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Finished</div>
+                        <div className="text-sm font-semibold text-white truncate">
+                          Back to Home
+                        </div>
+                      </div>
+                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  </Link>
+                )}
               </div>
             </div>
           </main>

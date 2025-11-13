@@ -1,5 +1,3 @@
-// pages/WalkthroughsListPage.tsx
-
 import { useParams, Link } from 'react-router-dom';
 import { useWalkthroughsByType } from '../hooks/useWalkthroughs';
 
@@ -20,7 +18,7 @@ export default function WalkthroughsListPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8">{displayType}</h1>
-      
+
       <div className="space-y-4">
         {walkthroughs.map((walkthrough) => (
           <Link

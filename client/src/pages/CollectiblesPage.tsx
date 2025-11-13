@@ -12,6 +12,7 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { COLLECTIBLES } from '../constants/navigation'
 import { Map, Package, ArrowLeft } from 'lucide-react'
+import { usePrefetch } from '../hooks/usePrefetch'
 
 function CollectibleTypePage() {
   const { typeName } = useParams<{ typeName: string }>();
@@ -29,12 +30,18 @@ function CollectibleTypePage() {
   const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useState<string>('');
+  const { prefetchCollectiblesByType } = usePrefetch()
+
+  useEffect(() => {
+    setActiveSection('');
+  }, [typeName]);
 
   // Find current and next type
   const currentIndex = collectibleTypes.findIndex(type => type === typeName);
   const nextType = currentIndex >= 0 && currentIndex < collectibleTypes.length - 1
     ? collectibleTypes[currentIndex + 1]
     : null;
+  const previousType = currentIndex > 0 ? collectibleTypes[currentIndex - 1] : null;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -104,7 +111,14 @@ function CollectibleTypePage() {
   );
   const totalLevels = levelData.length;
 
-  // Generate table of contents links
+  // Generate table of contents links - only show subLinks for the active level
+  const activeLevelName = levelData.find(level =>
+    level.locations.some(loc => {
+      const sectionId = `${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+      return sectionId === activeSection;
+    })
+  )?.level_name || levelData[0]?.level_name;
+
   const tocLinks = levelData.map(level => {
     const firstLocation = level.locations[0];
     const firstLocationId = firstLocation
@@ -114,10 +128,11 @@ function CollectibleTypePage() {
     return {
       mainLink: firstLocationId,
       title: level.level_name,
-      subLinks: level.locations.map(loc => ({
+      // Only include subLinks if this level contains the active section
+      subLinks: level.level_name === activeLevelName ? level.locations.map(loc => ({
         href: `#${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
         title: loc.location_name
-      }))
+      })) : undefined
     };
   });
 
@@ -139,6 +154,13 @@ function CollectibleTypePage() {
 
             {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
+              <nav className="mb-4 flex items-center gap-2 text-sm">
+                <div className="h-4 w-9.5 bg-gray-700 rounded animate-pulse"></div>
+                <span className="text-gray-600">/</span>
+                <div className="h-4 w-19 bg-gray-700 rounded animate-pulse"></div>
+                <span className="text-gray-600">/</span>
+                <div className="h-4 w-28 bg-gray-600 rounded animate-pulse"></div>
+              </nav>
               {/* Enhanced page header skeleton - matches actual header exactly */}
               <div className="mb-10">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -193,10 +215,23 @@ function CollectibleTypePage() {
         <div className="flex gap-8">
           {/* Sidebar with TOC */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <TableOfContents links={tocLinks} currentLevel={typeName} activeSection={activeSection} />
+            <TableOfContents
+              links={tocLinks}
+              currentLevel={typeName}
+              activeSection={activeSection}
+            />
           </aside>
 
           <main className="flex-1 min-w-0">
+            <nav className="mb-4 text-sm text-gray-400">
+              <Link to="/" className="hover:text-white transition-colors">Home</Link>
+              <span className="mx-2">/</span>
+              {/* <Link to="/collectibles" className="hover:text-white transition-colors">Collectibles</Link> */}
+              <span>Collectibles</span>
+              <span className="mx-2">/</span>
+              <span className="text-white">{displayTypeName}</span>
+            </nav>
+
             {/* Enhanced page header */}
             <div className="mb-10">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -252,30 +287,67 @@ function CollectibleTypePage() {
 
             {/* Footer navigation */}
             <div className="mt-16 pt-8 border-t border-gray-800">
-              <div className="flex justify-between items-center">
-                <div className="text-gray-400 text-sm">
-                  Completed viewing {displayTypeName}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-400 mb-2">Continue browsing</p>
-                  {nextType ? (
-                    <Link
-                      to={`/collectibles/${nextType}`}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
-                    >
-                      Next Type
-                      <ArrowLeft className="w-4 h-4 rotate-180" />
-                    </Link>
-                  ) : (
-                    <Link
-                      to="/"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
-                    >
-                      Back to Home
-                      <ArrowLeft className="w-4 h-4 rotate-180" />
-                    </Link>
-                  )}
-                </div>
+              <div className="flex flex-row sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                {/* Previous Type */}
+                {previousType ? (
+                  <Link
+                    to={`/collectibles/${previousType}`}
+                    className="group flex-1 sm:flex-initial"
+                    onMouseEnter={() => prefetchCollectiblesByType(previousType)}
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200">
+                      <div className="p-2 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-gray-400 group-hover:text-white group-hover:-translate-x-0.5 transition-all" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-0.5">Previous</div>
+                        <div className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors truncate">
+                          {previousType.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex-1 sm:flex-initial"></div>
+                )}
+
+                {/* Next Type */}
+                {nextType ? (
+                  <Link
+                    to={`/collectibles/${nextType}`}
+                    className="group flex-1 sm:flex-initial"
+                    onMouseEnter={() => prefetchCollectiblesByType(nextType)}
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Next</div>
+                        <div className="text-sm font-semibold text-white truncate">
+                          {nextType.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        </div>
+                      </div>
+                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/"
+                    className="group flex-1 sm:flex-initial"
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Finished</div>
+                        <div className="text-sm font-semibold text-white truncate">
+                          Back to Home
+                        </div>
+                      </div>
+                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  </Link>
+                )}
               </div>
             </div>
           </main>

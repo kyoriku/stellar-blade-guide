@@ -9,7 +9,7 @@ function HomePage() {
   return (
     <div className="min-h-screen bg-primary">
       {/* Hero Banner */}
-      <div className="relative h-[800px] overflow-hidden">
+      <div className="relative max-h-[calc(100vh-4rem)] overflow-hidden">
         <img
           src="/images/stellar_blade.jpg"
           alt="Stellar Blade Banner"
@@ -17,7 +17,7 @@ function HomePage() {
         />
         {/* Enhanced gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
-        
+
         {/* Subtle blue glow effect at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-blue-500/20 via-blue-500/10 to-transparent"></div>
       </div>
@@ -81,7 +81,7 @@ function HomePage() {
       </div>
 
       {/* Footer - Enhanced */}
-      <footer className="bg-secondary border-t border-blue-500/10 py-8">
+      <footer className="bg-nav border-t border-blue-500/10 py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
