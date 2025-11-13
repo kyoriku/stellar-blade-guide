@@ -40,245 +40,7 @@
 
 # server/ directory:
 
-## Local Database Setup
-
-Choose either method:
-
-### Method 1: Simple
-```bash
-# Connect to PostgreSQL
-psql postgres
-
-# Create database
-CREATE DATABASE stellarblade;
-
-# Exit
-\q
-```
-
-### Method 2: SQL File
-
-Create `db/schema.sql`:
-```sql
-DROP DATABASE IF EXISTS stellarblade;
-CREATE DATABASE stellarblade;
-```
-
-Then run:
-```bash
-psql -d postgres -f db/schema.sql
-```
-
-## Seed Database
-
-After creating the database, run these scripts in order:
-
-### 1. Seed Base Data (Levels, Locations, Types)
-```bash
-python3 scripts/db/seed_db.py
-```
-
-Output:
-```
-Tables created/verified
-Database seeded successfully
-```
-
-### 2. Seed Collectibles (from JSON files)
-```bash
-python3 scripts/db/seed_collectibles.py
-```
-
-Output:
-```
-Starting database seed...
-Found 63 JSON files
-...
-Seeding complete!
-Added: 768
-```
-
-### 3. Seed Walkthroughs
-```bash
-python3 scripts/db/seed_walkthroughs.py
-```
-
-Output:
-```
-Seeding walkthroughs...
-Clearing Redis cache...
-
-Redis cache cleared
-Walkthrough seeded successfully
-```
-
-## Start Server
-```bash
-uvicorn main:app --reload
-```
-
-
-
-
-
-
-
-
-
-
-
-# server/ directory:
-
-## Environment Setup
-
-Make sure you’re inside the `server/` directory.
-
-### 1. Create and Activate Virtual Environment
-
-```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate it
-source venv/bin/activate
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-## Environment Variables
-
-Create a `.env` file in the `server/` directory and add the following:
-
-```bash
-# Database configuration
-DATABASE_URL=postgresql://<username>:<password>@localhost:5432/stellarblade
-
-# Redis configuration
-REDIS_URL=redis://localhost:6379
-
-# Cloudinary configuration
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Cache configuration (in seconds)
-CACHE_TTL_SHORT=600
-CACHE_TTL_MEDIUM=1800
-CACHE_TTL_LONG=7200
-
-# Admin secret key
-ADMIN_SECRET=your_admin_secret
-```
-
-## Local Database Setup
-
-Choose either method:
-
-### Method 1: CLI
-
-```bash
-# Connect to PostgreSQL
-psql postgres
-
-# Create database
-CREATE DATABASE stellarblade;
-
-# Exit
-\q
-```
-
-### Method 2: SQL File
-
-Create `db/schema.sql`:
-
-```sql
-DROP DATABASE IF EXISTS stellarblade;
-CREATE DATABASE stellarblade;
-```
-
-Then run:
-
-```bash
-psql -d postgres -f db/schema.sql
-```
-
-## Seed Database
-
-After creating the database, run these scripts in order:
-
-### 1. Seed Base Data (Levels, Locations, Types)
-
-```bash
-python3 scripts/db/seed_db.py
-```
-
-Output:
-
-```
-Tables created/verified
-Database seeded successfully
-```
-
-### 2. Seed Collectibles (from JSON files)
-
-```bash
-python3 scripts/db/seed_collectibles.py
-```
-
-Output:
-
-```
-Starting database seed...
-Found 63 JSON files
-...
-Seeding complete!
-Added: 768
-```
-
-### 3. Seed Walkthroughs
-
-```bash
-python3 scripts/db/seed_walkthroughs.py
-```
-
-Output:
-
-```
-Seeding walkthroughs...
-Clearing Redis cache...
-
-Redis cache cleared
-Walkthrough seeded successfully
-```
-
-
-Good catch — yeah, you never want to publish real `.env` values (especially Cloudinary keys or admin secrets). Here’s a **safe, public-ready version** you can use in your README:
-
-
-## Start Server
-
-```bash
-uvicorn main:app --reload
-```
-
-> **Note:**
-> Each time you open a new terminal session, make sure to reactivate your virtual environment before starting the server:
->
-> ```bash
-> source venv/bin/activate
-> ```
-
-
-
-
-# server/ directory
-
 Make sure you’re in the `server/` directory.
-
 
 ## 1. Virtual Environment & Dependencies
 
@@ -290,7 +52,6 @@ source venv/bin/activate
 # Install Python dependencies
 pip install -r requirements.txt
 ```
-
 
 ## 2. Environment Variables
 
@@ -312,7 +73,6 @@ ADMIN_SECRET=your_admin_secret
 ```
 
 > Make sure the database name here matches what you’ll create next.
-
 
 ## 3. Local Database
 
@@ -344,7 +104,7 @@ Then run:
 psql -d postgres -f db/schema.sql
 ```
 
-> Either method works; just pick one. Make sure the DB name matches with `DATABASE_URL`.
+> Either method works; just pick one. Make sure the DB name matches your `DATABASE_URL`.
 
 ## 4. Seed Database
 
@@ -367,5 +127,3 @@ uvicorn main:app --reload
 > ```bash
 > source venv/bin/activate
 > ```
-
-

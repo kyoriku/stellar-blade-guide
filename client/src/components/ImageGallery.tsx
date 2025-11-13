@@ -48,30 +48,26 @@ function ImageGallery({ images = [], onImageClick, showSkeleton = false }: Image
             <img
               src={image.url}
               alt={image.alt}
-              className={`w-full h-full object-cover transition-all duration-300 ${
-                shouldShowSkeleton ? 'opacity-0' : 'opacity-100'
-              } ${hoveredImage === image.id ? 'scale-100' : 'scale-100'}`}
+              className={`w-full h-full object-cover transition-all duration-300 ${shouldShowSkeleton ? 'opacity-0' : 'opacity-100'
+                } ${hoveredImage === image.id ? 'scale-100' : 'scale-100'}`}
               onLoad={() => handleImageLoad(image.id)}
               loading="lazy"
-              // fetchPriority='high'
+            // fetchPriority='high'
             />
 
             {/* Overlay on hover - only show when image is loaded */}
             {isLoaded && (
-              <div className={`absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent transition-opacity duration-200 ${
-                hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
-              }`}>
+              <div className={`absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
+                }`}>
                 {/* Zoom Icon */}
                 <div className="absolute top-3 right-3">
-                  <ZoomIn className={`w-5 h-5 text-white drop-shadow-lg transition-opacity duration-200 ${
-                    hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
-                  }`} />
+                  <ZoomIn className={`w-5 h-5 text-white drop-shadow-lg transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
+                    }`} />
                 </div>
 
                 {/* Alt text at bottom */}
-                <div className={`absolute bottom-0 left-0 right-0 p-4 transition-opacity duration-200 ${
-                  hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
-                }`}>
+                <div className={`absolute bottom-0 left-0 right-0 p-4 transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
+                  }`}>
                   <p className="text-white text-sm font-medium drop-shadow-lg">
                     {image.alt}
                   </p>
@@ -81,9 +77,8 @@ function ImageGallery({ images = [], onImageClick, showSkeleton = false }: Image
 
             {/* Subtle border on hover - only show when image is loaded */}
             {isLoaded && (
-              <div className={`absolute inset-0 rounded-lg border transition-colors duration-200 ${
-                hoveredImage === image.id ? 'border-gray-700' : 'border-transparent'
-              }`}></div>
+              <div className={`absolute inset-0 rounded-lg border transition-colors duration-200 ${hoveredImage === image.id ? 'border-gray-700' : 'border-transparent'
+                }`}></div>
             )}
           </div>
         );

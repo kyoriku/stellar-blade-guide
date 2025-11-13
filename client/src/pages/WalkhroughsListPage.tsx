@@ -16,7 +16,7 @@ export default function WalkthroughsListPage() {
     .join(' ');
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container bg-primary mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8">{displayType}</h1>
 
       <div className="space-y-4">

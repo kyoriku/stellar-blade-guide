@@ -1,11 +1,3 @@
-// export const WALKTHROUGHS = [
-//   { name: '7th Airborne Squad', slug: 'walkthroughs/1' },
-//   { slug: 'main-story', name: 'Main Story' },
-//   { slug: 'side-quests', name: 'Side Quests' },
-//   { slug: 'bulletin-board-requests', name: 'Bulletin Board Requests' },
-//   { slug: 'bosses', name: 'Bosses' },
-//   { slug: 'fishing', name: 'Fishing' },
-// ] as const;
 export const WALKTHROUGHS = [
   { slug: 'main-story', name: 'Main Story' },
   { slug: 'side-quests', name: 'Side Quests' },

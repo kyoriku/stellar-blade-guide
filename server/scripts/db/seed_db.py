@@ -17,7 +17,7 @@ async def seed_database():
     # 1 Create tables (sync inside async context)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print("\033[92m✓ Tables created/verified\033[0m")
+    print("\033[92mTables created/verified\033[0m")
 
     # 2 Use a single session for the seeding process
     async with AsyncSession(engine) as session:
@@ -25,7 +25,7 @@ async def seed_database():
             # 2a️ Check if already seeded
             result = await session.execute(select(Level))
             if result.scalars().first():
-                print("\033[93m⚠ Database already seeded, skipping\033[0m")
+                print("\033[93mDatabase already seeded, skipping\033[0m")
                 return
 
             # 2b️ Insert Levels
@@ -169,10 +169,10 @@ async def seed_database():
 
             # Commit locations
             await session.commit()
-            print("\033[92m✓ Database seeded successfully\033[0m")
+            print("\033[92mDatabase seeded successfully\033[0m")
 
         except Exception as e:
-            print(f"\033[91m✗ Error seeding database: {e}\033[0m")
+            print(f"\033[91mError seeding database: {e}\033[0m")
             import traceback
             traceback.print_exc()
             await session.rollback()

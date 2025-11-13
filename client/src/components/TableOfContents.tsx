@@ -60,8 +60,8 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                       scrollToSection(linkGroup.mainLink);
                     }}
                     className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                        ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-l-2 border-blue-400 shadow-lg shadow-blue-500/10'
-                        : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
+                      ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-l-2 border-blue-400 shadow-lg shadow-blue-500/10'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
                       }`}
                   >
                     <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-blue-400' : 'group-hover:translate-x-0.5'
@@ -77,8 +77,8 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                   <Link
                     to={linkGroup.mainLink}
                     className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                        ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-l-2 border-blue-400 shadow-lg shadow-blue-500/10'
-                        : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
+                      ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-l-2 border-blue-400 shadow-lg shadow-blue-500/10'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
                       }`}
                     onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                   >
@@ -98,7 +98,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                   <ul className="ml-4 space-y-1 overflow-hidden">
                     {linkGroup.subLinks.map((subLink, subIndex) => {
                       const isActiveSubLink = activeSection === subLink.href.substring(1);
-                      
+
                       return (
                         <li
                           key={subIndex}
@@ -112,21 +112,18 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                               e.preventDefault();
                               scrollToSection(subLink.href);
                             }}
-                            className={`group/sub flex items-center gap-2 text-sm px-3 py-1 rounded-lg transition-all duration-200 ${
-                              isActiveSubLink
+                            className={`group/sub flex items-center gap-2 text-sm px-3 py-1 rounded-lg transition-all duration-200 ${isActiveSubLink
                                 ? 'text-blue-400 bg-blue-500/10 font-medium'
                                 : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700/30'
-                            }`}
+                              }`}
                           >
-                            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                              isActiveSubLink ? 'bg-blue-400' : 'bg-gray-600 group-hover/sub:bg-blue-400'
-                            }`}></div>
+                            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isActiveSubLink ? 'bg-blue-400' : 'bg-gray-600 group-hover/sub:bg-blue-400'
+                              }`}></div>
                             <span className="flex-1">{subLink.title}</span>
-                            <ChevronRight className={`w-3 h-3 transition-all duration-200 ${
-                              isActiveSubLink
+                            <ChevronRight className={`w-3 h-3 transition-all duration-200 ${isActiveSubLink
                                 ? 'opacity-100 translate-x-0'
                                 : 'opacity-0 -translate-x-2 group-hover/sub:opacity-100 group-hover/sub:translate-x-0'
-                            }`} />
+                              }`} />
                           </a>
                         </li>
                       );

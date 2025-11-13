@@ -222,8 +222,8 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
 
         {/* Images - using ImageGallery component */}
         {galleryImages.length > 0 && (
-          <ImageGallery 
-            images={galleryImages} 
+          <ImageGallery
+            images={galleryImages}
             onImageClick={onImageClick}
             showSkeleton={true}
           />
