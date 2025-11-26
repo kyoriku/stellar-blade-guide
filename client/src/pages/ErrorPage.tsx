@@ -46,7 +46,7 @@ function ErrorPage({
   const Icon = defaults.icon;
 
   return (
-    <div className="min-h-[calc(100vh-150px)] bg-primary flex items-center justify-center px-4">
+    <div className="min-h-main bg-primary flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         <div className="mb-8 flex justify-center">
           <div className="relative">

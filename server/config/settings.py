@@ -20,11 +20,10 @@ class Settings:
     CACHE_TTL_LONG: int = int(os.getenv('CACHE_TTL_LONG', 3600))
     
     # CORS
-    CORS_ORIGINS: list = [
-        "http://localhost:3000",
-        "http://stellarbladeguide.com",
-        "https://stellarbladeguide.com"
-    ]
+    CORS_ORIGINS: list = os.getenv(
+        'CORS_ORIGINS',
+        'http://localhost:3000,https://stellarbladeguide.com'
+    ).split(',')
     
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: str = "100/minute"

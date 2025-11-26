@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
 import './index.css'
 import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -9,8 +10,8 @@ import { ApiError } from './services/api'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 60 * 1000, // 1 hour - data stays fresh for 1 hour
-      gcTime: 24 * 60 * 60 * 1000, // 1 day - cache persists for 1 day
+      staleTime: 10 * 60 * 1000, // 10 minutes - data stays fresh for 10 minutes
+      gcTime: 60 * 60 * 1000, // 1 hour - cache persists for 1 hour
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
       retry: (failureCount, error) => {
         // Check if it's an ApiError and don't retry 4xx client errors

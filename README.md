@@ -1,10 +1,15 @@
 # Stellar Blade Guide
 
-- **Frontend**: TypeScript, React, Tailwind CSS, TanStack Query
-- **Backend**: Python, FastAPI, SQLAlchemy, Pydantic
-- **Database**: PostgreSQL, Redis
+A game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 800+ database records with TypeScript, FastAPI, and PostgreSQL.
 
-## Built With
+**[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, FastAPI, PostgreSQL, Redis
+
+**Key Features:** Multi-tier Redis caching • Cloudinary CDN • Image galleries • Responsive design • Junction table queries
+
+---
+
+<details>
+<summary><b>Built With</b></summary>
 
 ### Frontend
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -18,47 +23,80 @@
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-267D36.svg?style=for-the-badge&logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
 [![Pydantic](https://img.shields.io/badge/Pydantic-00B6F1.svg?style=for-the-badge&logo=python&logoColor=white)](https://pydantic-docs.helpmanual.io/)
 
-### Database & Caching
+### Database
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791.svg?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D.svg?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 
-### Hosting
-[![Railway](https://img.shields.io/badge/Railway-000000.svg?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/)
+</details>
+
+## Table of Contents
+- [Technical Details](#technical-details)
+- [Installation](#installation)
+- [Additional Commands](#additional-commands)
+- [License](#license)
+
+## Technical Details
+
+**Frontend**
+- React with TypeScript
+- TanStack Query for data fetching and caching with prefetching
+- Tailwind CSS for styling
+- Image lightbox with zoom capability
+- Responsive design
+
+**Backend**
+- FastAPI with async endpoints
+- SQLAlchemy ORM with async support
+- Pydantic for request/response validation
+- Rate limiting (100 requests/minute)
+- CORS configuration
+
+**Database**
+- PostgreSQL with relational schema
+- Junction tables for many-to-many relationships
+- Indexed queries for performance
+
+**Performance & Caching**
+- Multi-tier Redis caching (10min/30min/60min TTLs)
+- Cloudinary CDN for image delivery
+- TanStack Query client-side caching
+
+**Features**
+- Browse 800+ collectibles by level and location
+- Filter by collectible type
+- Mission walkthroughs with objectives
+- Image galleries with 1000+ images
 
 ---
 
-## Project Highlights
-- **Full-Stack Ownership:** Developed end-to-end, from database schema design to backend API and React frontend.  
-- **Async & Scalable:** FastAPI async endpoints and Redis caching reduce API response times and handle high concurrency.  
-- **Client & Server Performance Optimizations:** Implemented TanStack Query caching with prefetching, giving near-instant page loads without loading spinners.  
-- **Data Validation & Reliability:** Pydantic models ensure strict schema validation, preventing runtime errors and improving API reliability.  
-- **Database Design:** PostgreSQL schemas optimized for query performance; Redis caches frequently-accessed data.  
-- **User Experience Focused:** Prefetching and caching strategies improve perceived performance and navigation responsiveness.  
-- **Reliable Deployment:** Hosted on Railway with automated builds on push and pull request workflows.
+## Installation
 
-# client/ directory:
+### Prerequisites
 
-# server/ directory:
+- Node.js 18+
+- Python 3.11+
+- PostgreSQL 14+
+- Redis 7+
 
-Make sure you’re in the `server/` directory.
+### Backend Setup
 
-## 1. Virtual Environment & Dependencies
+Navigate to the `server/` directory.
 
+#### 1. Virtual Environment & Dependencies
 ```bash
 # Create and activate venv
 python3 -m venv venv
 source venv/bin/activate
 
-# Install Python dependencies
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-## 2. Environment Variables
+#### 2. Environment Variables
 
 Create a `.env` file in `server/`:
-
 ```bash
-DATABASE_URL=DATABASE_URL=postgresql://localhost:5432/stellarblade
+DATABASE_URL=postgresql://localhost:5432/stellarblade
 REDIS_URL=redis://localhost:6379
 
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -72,58 +110,71 @@ CACHE_TTL_LONG=7200
 ADMIN_SECRET=your_admin_secret
 ```
 
-> Make sure the database name here matches what you’ll create next.
+#### 3. Local Database
 
-## 3. Local Database
-
-### Option 1: CLI
-
+**Option 1: CLI**
 ```bash
-# Connect to PostgreSQL
 psql postgres
-
-# Create database
 CREATE DATABASE stellarblade;
-
-# Exit
 \q
 ```
 
-### Option 2: SQL File
+**Option 2: SQL File**
 
 Create `db/schema.sql`:
-
 ```sql
 DROP DATABASE IF EXISTS stellarblade;
 CREATE DATABASE stellarblade;
 ```
 
 Then run:
-
 ```bash
 psql -d postgres -f db/schema.sql
 ```
 
-> Either method works; just pick one. Make sure the DB name matches your `DATABASE_URL`.
-
-## 4. Seed Database
-
-Run scripts in order:
-
+#### 4. Seed Database
 ```bash
 python3 scripts/db/seed_db.py
 python3 scripts/db/seed_collectibles.py
 python3 scripts/db/seed_walkthroughs.py
 ```
 
-## 5. Start Server
-
+#### 5. Start Server
 ```bash
 uvicorn main:app --reload
 ```
 
-> Every new terminal session, reactivate the venv first:
->
+> **Note:** Reactivate venv in new terminal sessions:
 > ```bash
 > source venv/bin/activate
 > ```
+
+### Frontend Setup
+
+Navigate to the `client/` directory:
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## Additional Commands
+
+### Export Data
+```bash
+python3 scripts/db/export_collectibles.py
+python3 scripts/db/export_walkthroughs.py
+```
+
+### Clear Redis Cache
+```bash
+curl -X POST http://localhost:8000/api/admin/cache/flush \
+  -H "X-ADMIN-SECRET: $ADMIN_SECRET"
+```
+
+---
+
+## License
+
+This project is for educational purposes. All *Stellar Blade* content belongs to Shift Up Corporation.
