@@ -4,6 +4,7 @@ import { List, ChevronRight } from 'lucide-react'
 interface SubLink {
   href: string;
   title: string;
+  id?: number;
 }
 
 interface TocLink {

@@ -4,16 +4,17 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { WALKTHROUGHS, LEVELS, COLLECTIBLES } from '../constants/navigation'
 
 function HomePage() {
-  const { prefetchLevel, prefetchCollectiblesByType } = usePrefetch()
+  const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch()
 
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-main bg-primary">
       {/* Hero Banner */}
       <div className="relative max-h-[calc(100vh-4rem)] overflow-hidden">
         <img
-          src="/images/stellar_blade.jpg"
+          src="/images/stellar_blade2.jpg"
           alt="Stellar Blade Banner"
           className="w-full h-full object-cover"
+          loading="eager"
         />
         {/* Enhanced gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
@@ -28,10 +29,10 @@ function HomePage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 pt-6">
         {/* Welcome Card - Enhanced with blue accents */}
-        <div className="relative bg-secondary rounded-lg p-8 mb-6 shadow-2xl border border-blue-500/20 overflow-hidden">
+        <div className="relative bg-secondary rounded-lg p-8 mb-6 shadow-2xl border border-gray-500/20 overflow-hidden">
           {/* Decorative gradient blobs - more visible blue theme */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+          {/* <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div> */}
 
           <div className="relative">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-gray-300">
@@ -53,6 +54,7 @@ function HomePage() {
             links={WALKTHROUGHS.map(item => ({
               to: `/walkthroughs/${item.slug}`,
               text: item.name,
+              prefetch: () => prefetchWalkthroughsByType(item.slug),
             }))}
           />
 

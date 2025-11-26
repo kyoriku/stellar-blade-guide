@@ -99,6 +99,7 @@ export interface WalkthroughListItem {
   level: string | null;
   mission_type: string;
   display_order: number;
+  thumbnail_url: string | null;
 }
 
 const handleResponse = async <T>(response: Response, context: string): Promise<T> => {

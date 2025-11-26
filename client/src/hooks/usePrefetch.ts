@@ -15,7 +15,6 @@ export function usePrefetch() {
     queryClient.prefetchQuery({
       queryKey: ['locations', levelName],
       queryFn: () => api.getLocations(levelName),
-      staleTime: 5 * 60000,
     })
   }
 
@@ -33,10 +32,18 @@ export function usePrefetch() {
     })
   }
 
+  const prefetchWalkthroughsByType = (type: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['walkthroughs', 'type', type],
+      queryFn: () => api.getWalkthroughsByType(type),
+    })
+  }
+
   return {
     prefetchLevel,
     prefetchLocations,
     prefetchCollectiblesByType,
     prefetchWalkthrough,
+    prefetchWalkthroughsByType,
   }
 }
