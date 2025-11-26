@@ -15,7 +15,7 @@ function Navbar() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
-  const { prefetchLevel, prefetchCollectiblesByType } = usePrefetch();
+  const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [openDropdown, setOpenDropdown] = useState<null | 'walkthroughs' | 'levels' | 'collectibles'>(null);
@@ -172,7 +172,7 @@ function Navbar() {
         }
       `}</style>
 
-      <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
+      <nav className={`sticky top-0 z-50 transition-all duration-300 px-3 md:px-0 ${scrolled
         ? 'bg-[rgba(1,4,9,0.9)] backdrop-blur-xl shadow-lg shadow-black/20 border-b border-gray-800'
         : 'bg-nav backdrop-blur-md border-b border-gray-800/50'
         }`}>
@@ -222,16 +222,16 @@ function Navbar() {
       ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}
                 >
                   <div className="py-2">
-                    {WALKTHROUGHS.map((category, index) => (
+                    {WALKTHROUGHS.map((type, index) => (
                       <Link
-                        key={category.slug}
-                        to={`walkthroughs/${category.slug}`}
+                        key={type.slug}
+                        to={`walkthroughs/${type.slug}`}
                         onClick={() => setOpenDropdown(null)}
-                        // onMouseEnter={() => prefetchWalkthrough(walkthrough.slug)}
+                        onMouseEnter={() => prefetchWalkthroughsByType(type.slug)}
                         className="block px-4 py-2.5 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-transparent hover:text-white hover:border-l-2 hover:border-blue-400 transition-all duration-200"
                         style={{ animationDelay: `${index * 30}ms` }}
                       >
-                        {category.name}
+                        {type.name}
                       </Link>
                     ))}
                   </div>
@@ -454,10 +454,10 @@ function Navbar() {
                       }`}
                   >
                     <div className="space-y-0.5 pb-2 px-2">
-                      {filteredWalkthroughs.map((walkthrough, index) => (
+                      {filteredWalkthroughs.map((type, index) => (
                         <MobileNavLink
-                          key={walkthrough.slug}
-                          to={`/${walkthrough.slug}`}
+                          key={type.slug}
+                          to={`walkthroughs/${type.slug}`}
                           onClick={() => setIsOpen(false)}
                           indent
                           color="blue"
@@ -465,7 +465,7 @@ function Navbar() {
                             animation: openSections.walkthroughs ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
-                          {walkthrough.name}
+                          {type.name}
                         </MobileNavLink>
                       ))}
                     </div>

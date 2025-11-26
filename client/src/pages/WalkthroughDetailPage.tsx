@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useWalkthrough } from '../hooks/useWalkthroughs'
+import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
 import { ApiError } from '../services/api'
 import { List, ArrowLeft, Book } from 'lucide-react'
 import Lightbox from 'yet-another-react-lightbox'
@@ -15,6 +15,7 @@ function WalkthroughPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
 
   const { data: walkthrough, isLoading, isError, error } = useWalkthrough(type!, slug!);
+  const { data: allWalkthroughs = [] } = useWalkthroughsByType(type!);
   const [activeSection, setActiveSection] = useState<string>('');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -72,9 +73,16 @@ function WalkthroughPage() {
     }
   };
 
+  // Find current, previous, and next walkthroughs
+  const currentIndex = allWalkthroughs.findIndex(w => w.slug === slug);
+  const previousWalkthrough = currentIndex > 0 ? allWalkthroughs[currentIndex - 1] : null;
+  const nextWalkthrough = currentIndex >= 0 && currentIndex < allWalkthroughs.length - 1
+    ? allWalkthroughs[currentIndex + 1]
+    : null;
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-primary">
+      <div className="min-h-main bg-primary">
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
             <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -141,7 +149,7 @@ function WalkthroughPage() {
   });
 
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-main bg-primary">
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           {/* Sidebar */}
@@ -228,27 +236,67 @@ function WalkthroughPage() {
               ))}
             </section>
 
-            {/* Footer */}
+            {/* Footer navigation */}
             <div className="mt-16 pt-8 border-t border-gray-800">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="text-gray-500 text-sm">
-                  Completed {walkthrough.title}
-                </div>
-                <div className="flex gap-3">
+              <div className="flex flex-row sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                {/* Previous Walkthrough */}
+                {previousWalkthrough ? (
+                  <Link
+                    to={`/walkthroughs/${type}/${previousWalkthrough.slug}`}
+                    className="group flex-1 sm:flex-initial"
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200">
+                      <div className="p-2 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-gray-400 group-hover:text-white group-hover:-translate-x-0.5 transition-all" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-0.5">Previous</div>
+                        <div className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors truncate">
+                          {previousWalkthrough.title}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex-1 sm:flex-initial"></div>
+                )}
+
+                {/* Next Walkthrough */}
+                {nextWalkthrough ? (
+                  <Link
+                    to={`/walkthroughs/${type}/${nextWalkthrough.slug}`}
+                    className="group flex-1 sm:flex-initial"
+                  >
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Next</div>
+                        <div className="text-sm font-semibold text-white truncate">
+                          {nextWalkthrough.title}
+                        </div>
+                      </div>
+                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
                   <Link
                     to={`/walkthroughs/${type}`}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-all duration-200"
+                    className="group flex-1 sm:flex-initial"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to {displayType}
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Finished</div>
+                        <div className="text-sm font-semibold text-white truncate">
+                          Back to {displayType}
+                        </div>
+                      </div>
+                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      </div>
+                    </div>
                   </Link>
-                  <Link
-                    to="/"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
-                  >
-                    Home
-                  </Link>
-                </div>
+                )}
               </div>
             </div>
           </main>

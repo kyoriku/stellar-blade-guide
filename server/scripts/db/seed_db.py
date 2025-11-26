@@ -65,6 +65,7 @@ async def seed_database():
                 CollectibleType(name='Exospine'),
                 CollectibleType(name='Outfit'),
                 CollectibleType(name='Glasses'),
+                CollectibleType(name='Item'),
             ]
             session.add_all(types_data)
 

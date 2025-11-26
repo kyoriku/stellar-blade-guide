@@ -131,7 +131,8 @@ function CollectibleTypePage() {
       // Only include subLinks if this level contains the active section
       subLinks: level.level_name === activeLevelName ? level.locations.map(loc => ({
         href: `#${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
-        title: loc.location_name
+        title: loc.location_name,
+        id: loc.location_id
       })) : undefined
     };
   });
@@ -210,7 +211,7 @@ function CollectibleTypePage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-main bg-primary">
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           {/* Sidebar with TOC */}

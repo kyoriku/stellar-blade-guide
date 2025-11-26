@@ -15,3 +15,4 @@ class Walkthrough(Base):
     objectives = Column(JSONB, nullable=True)  # Array of strings
     content = Column(JSONB, nullable=False)  # Array of content blocks
     display_order = Column(Integer, nullable=False)
+    thumbnail_url = Column(String(255), nullable=True)
