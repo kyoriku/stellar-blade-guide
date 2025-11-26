@@ -127,7 +127,7 @@ function LevelPage() {
   // Enhanced loading state with pixel-perfect skeletons
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-primary">
+      <div className="min-h-main bg-primary">
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
             {/* Skeleton sidebar - exact match */}
@@ -194,7 +194,7 @@ function LevelPage() {
   }
 
   return (
-    <div className="min-h-screen bg-primary">
+    <div className="min-h-main bg-primary">
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           {/* Enhanced sidebar */}

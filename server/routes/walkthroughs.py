@@ -1,3 +1,4 @@
+import time
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -33,7 +34,8 @@ async def get_all_walkthroughs(request: Request, db: AsyncSession = Depends(get_
         "subtitle": w.subtitle,
         "level": w.level,
         "mission_type": w.mission_type,
-        "display_order": w.display_order
+        "display_order": w.display_order,
+        "thumbnail_url": w.thumbnail_url
     } for w in walkthroughs]
     
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
@@ -65,7 +67,8 @@ async def get_walkthrough_by_id(walkthrough_id: int, request: Request, db: Async
         "mission_type": walkthrough.mission_type,
         "objectives": walkthrough.objectives,
         "content": walkthrough.content,
-        "display_order": walkthrough.display_order
+        "display_order": walkthrough.display_order,
+        "thumbnail_url": walkthrough.thumbnail_url
     }
     
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
@@ -75,21 +78,35 @@ async def get_walkthrough_by_id(walkthrough_id: int, request: Request, db: Async
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Get walkthroughs by type (main_story, side_quest, etc.)"""
-    cache_key = f"walkthroughs:type:{walkthrough_type}"
+    
+    # Normalize: side-quests → side-quest
+    normalized_type = walkthrough_type
+    if normalized_type.endswith('es'):
+        normalized_type = normalized_type[:-2]  # bosses → boss (if needed)
+    elif normalized_type.endswith('s'):
+        normalized_type = normalized_type[:-1]  # side-quests → side-quest
+    
+    cache_key = f"walkthroughs:type:{normalized_type}"
     cached_data = await get_cache(cache_key)
     if cached_data:
+        request.state.cache_status = "HIT"
         return cached_data
-    
+
+    request.state.cache_status = "MISS"
+    db_start = time.time()
+
     result = await db.execute(
         select(WalkthroughModel)
-        .where(WalkthroughModel.mission_type == walkthrough_type)
+        .where(WalkthroughModel.mission_type == normalized_type)
         .order_by(WalkthroughModel.display_order)
     )
     walkthroughs = result.scalars().all()
     
     if not walkthroughs:
         raise HTTPException(status_code=404, detail="No walkthroughs found for this type")
-    
+
+    request.state.db_time = (time.time() - db_start) * 1000  # in ms
+
     response = [{
         "id": w.id,
         "slug": w.slug,
@@ -97,7 +114,8 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
         "subtitle": w.subtitle,
         "level": w.level,
         "mission_type": w.mission_type,
-        "display_order": w.display_order
+        "display_order": w.display_order,
+        "thumbnail_url": w.thumbnail_url
     } for w in walkthroughs]
     
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
@@ -112,15 +130,27 @@ async def get_walkthrough_by_slug(
     db: AsyncSession = Depends(get_db)
 ):
     """Get specific walkthrough by type and slug with full content"""
-    cache_key = f"walkthrough:{walkthrough_type}:{slug}"
+    
+    # Normalize: side-quests → side-quest
+    normalized_type = walkthrough_type
+    if normalized_type.endswith('es'):
+        normalized_type = normalized_type[:-2]
+    elif normalized_type.endswith('s'):
+        normalized_type = normalized_type[:-1]
+    
+    cache_key = f"walkthrough:{normalized_type}:{slug}"
     cached_data = await get_cache(cache_key)
     if cached_data:
+        request.state.cache_status = "HIT"
         return cached_data
+    
+    request.state.cache_status = "MISS"
+    db_start = time.time()
     
     # Try exact match first
     result = await db.execute(
         select(WalkthroughModel).where(
-            (WalkthroughModel.mission_type == walkthrough_type) &
+            (WalkthroughModel.mission_type == normalized_type) &
             (WalkthroughModel.slug == slug)
         )
     )
@@ -128,7 +158,7 @@ async def get_walkthrough_by_slug(
     
     # Try case-insensitive if no exact match
     if not walkthrough:
-        formatted_type = walkthrough_type.replace('-', ' ').title()
+        formatted_type = normalized_type.replace('-', ' ').title()
         formatted_slug = slug.replace('-', ' ').title()
         
         result = await db.execute(
@@ -145,6 +175,8 @@ async def get_walkthrough_by_slug(
             detail=f"Walkthrough not found: {walkthrough_type}/{slug}"
         )
     
+    request.state.db_time = (time.time() - db_start) * 1000  # in ms
+    
     response = {
         "id": walkthrough.id,
         "slug": walkthrough.slug,
@@ -154,7 +186,8 @@ async def get_walkthrough_by_slug(
         "mission_type": walkthrough.mission_type,
         "objectives": walkthrough.objectives,
         "content": walkthrough.content,
-        "display_order": walkthrough.display_order
+        "display_order": walkthrough.display_order,
+        "thumbnail_url": walkthrough.thumbnail_url
     }
     
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
@@ -193,7 +226,8 @@ async def get_walkthroughs_by_level(level_name: str, request: Request, db: Async
         "subtitle": w.subtitle,
         "level": w.level,
         "mission_type": w.mission_type,
-        "display_order": w.display_order
+        "display_order": w.display_order,
+        "thumbnail_url": w.thumbnail_url
     } for w in walkthroughs]
     
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)

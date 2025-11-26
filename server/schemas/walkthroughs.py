@@ -32,6 +32,7 @@ class Walkthrough(BaseModel):
     objectives: Optional[List[str]]
     content: List[WalkthroughContent]
     display_order: int
+    thumbnail_url: Optional[str] = None
 
 class WalkthroughListItem(BaseModel):
     id: int
@@ -41,3 +42,4 @@ class WalkthroughListItem(BaseModel):
     level: Optional[str]
     mission_type: str
     display_order: int
+    thumbnail_url: Optional[str] = None
