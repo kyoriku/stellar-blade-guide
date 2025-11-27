@@ -1,8 +1,9 @@
 # Stellar Blade Guide
 
-A game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 800+ database records with TypeScript, FastAPI, and PostgreSQL.
+A game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 800+ database records, and 1000+ images via Cloudinary CDN.
 
-**[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, FastAPI, PostgreSQL, Redis
+<!-- **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, FastAPI, PostgreSQL, Redis -->
+**Tech Stack:** TypeScript, React, FastAPI, PostgreSQL, Redis
 
 **Key Features:** Multi-tier Redis caching • Cloudinary CDN • Image galleries • Responsive design • Junction table queries
 
