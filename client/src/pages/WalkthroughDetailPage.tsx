@@ -162,6 +162,8 @@ function WalkthroughPage() {
             <nav className="mb-4 text-sm text-gray-400">
               <Link to="/" className="hover:text-white transition-colors">Home</Link>
               <span className="mx-2">/</span>
+              <span>Walkthroughs</span>
+              <span className="mx-2">/</span>
               <Link to={`/walkthroughs/${type}`} className="hover:text-white transition-colors">
                 {displayType}
               </Link>

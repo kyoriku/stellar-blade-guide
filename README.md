@@ -98,6 +98,7 @@ Create a `.env` file in `server/`:
 ```bash
 DATABASE_URL=postgresql://localhost:5432/stellarblade
 REDIS_URL=redis://localhost:6379
+CORS_ORIGINS=http://localhost:3000
 
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
