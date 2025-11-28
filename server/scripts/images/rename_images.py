@@ -3,8 +3,8 @@ import re
 import json
 
 # === CONFIG ===
-IMAGE_DIR = "../client/public/assets/images/Wasteland/Scrap_Plains_Continued"
-JSON_FILE = "seed-data/collectibles/wasteland/scrap-plains-continued.json"
+IMAGE_DIR = "../client/public/assets/images/Spire_4/High_Orbit_Station"
+JSON_FILE = "seed-data/collectibles/spire-4/high-orbit-station.json"
 
 # === HELPERS ===
 def normalize_filename(filename):
