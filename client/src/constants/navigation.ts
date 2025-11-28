@@ -16,7 +16,7 @@ export const LEVELS = [
   { slug: 'abyss-levoire', name: 'Abyss Levoire' },
   { slug: 'eidos-9', name: 'Eidos 9' },
   { slug: 'spire-4', name: 'Spire 4' },
-  { slug: 'nest', name: 'Nest' },
+  // { slug: 'nest', name: 'Nest' },
 ] as const;
 
 export const COLLECTIBLES = [

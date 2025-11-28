@@ -9,12 +9,13 @@ function HomePage() {
   return (
     <div className="min-h-main bg-primary">
       {/* Hero Banner */}
-      <div className="relative max-h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="relative aspect-[16/9] overflow-hidden">
         <img
-          src="/images/stellar_blade2.jpg"
+          src="https://res.cloudinary.com/drw9mrozr/image/upload/f_auto,q_auto,w_1920,c_scale/stellar-blade/homepage/banner.jpg"
           alt="Stellar Blade Banner"
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
           loading="eager"
+          fetchPriority="high"
         />
         {/* Enhanced gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>

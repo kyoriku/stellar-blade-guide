@@ -4,9 +4,9 @@ import re
 from collections import defaultdict
 
 # === CONFIG ===
-JSON_FILE = "seed-data/collectibles/wasteland/scrap-plains-continued.json"
-IMAGE_DIR = "../client/public/assets/images/Wasteland/Scrap_Plains_Continued"
-URL_BASE = "/assets/images/Wasteland/Scrap_Plains_Continued/"
+JSON_FILE = "seed-data/collectibles/great-desert/central-great-desert.json"
+IMAGE_DIR = "../client/public/assets/images/Great_Desert/Central_Great_Desert"
+URL_BASE = "/assets/images/Great_Desert/Central_Great_Desert/"
 
 def group_images_by_prefix(files):
     """Group images by their numeric prefix"""
