@@ -62,8 +62,9 @@ venv/
 
 # Server specific files
 server/seed-data
-server/scripts/images/url-mapping.json
-server/scripts/images/test_upload.py
+server/scripts
+server/services
+server/tests
 
 # Documentation
 docs/
