@@ -2,7 +2,7 @@
 
 A game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 800+ database records, and 1000+ images via Cloudinary CDN.
 
-**[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, FastAPI, PostgreSQL, Redis
+**[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
 **Key Features:** Multi-tier Redis caching • Cloudinary CDN • Image galleries • Responsive design • Junction table queries
 
@@ -31,9 +31,9 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 
 ## Table of Contents
 - [Technical Details](#technical-details)
+- [Screenshots](#screenshots)
 - [Installation](#installation)
-- [Additional Commands](#additional-commands)
-- [License](#license)
+- [License](#license--legal)
 
 ## Technical Details
 
@@ -67,7 +67,15 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 - Mission walkthroughs with objectives
 - Image galleries with 1000+ images
 
----
+## Screenshots
+<details>
+<summary><b>View More Screenshots</b></summary>
+
+![Walkthrough Page](client/public/images/walkthrough.png)
+![Level Page](client/public/images/level.png)
+![Collectibles Page](client/public/images/collectibles.png)
+
+</details>
 
 ## Installation
 
@@ -158,8 +166,15 @@ npm install
 npm run dev
 ```
 
----
+## License & Legal
 
-## License
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge&logo=mit)](https://opensource.org/licenses/MIT)
 
-This project is for educational purposes. All *Stellar Blade* content belongs to Shift Up Corporation.
+### Code License
+This project is licensed under the [MIT License](LICENSE).
+
+### Game Content
+**Stellar Blade™** and all related content (screenshots, artwork, character names, locations, game mechanics) are © Shift Up Corporation and Sony Interactive Entertainment. This is an **unofficial fan-made guide** and is not affiliated with, endorsed by, or connected to the rights holders.
+
+### Fair Use Statement
+This project uses game content under fair use principles for educational, informational, and non-commercial purposes.
