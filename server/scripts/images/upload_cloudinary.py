@@ -6,6 +6,7 @@
 # import cloudinary.uploader
 # from pathlib import Path
 # import json
+# import time
 # from dotenv import load_dotenv
 
 # load_dotenv()
@@ -22,6 +23,8 @@
 #     Upload all images from client/public/assets/images to Cloudinary.
 #     Preserves folder structure with URL-friendly naming.
 #     """
+    
+#     start_time = time.time()
     
 #     # Path to images directory
 #     images_dir = Path(__file__).parent.parent.parent.parent / 'client' / 'public' / 'assets' / 'images'
@@ -40,9 +43,10 @@
 #     for ext in image_extensions:
 #         image_files.extend(images_dir.rglob(f'*{ext}'))
     
-#     print(f"Found \033[33m{len(image_files)}\033[0m images to upload\n")
+#     total_images = len(image_files)
+#     print(f"Found \033[33m{total_images}\033[0m images to upload\n")
     
-#     if len(image_files) == 0:
+#     if total_images == 0:
 #         print("\033[31m✗ No images found!\033[0m")
 #         return
     
@@ -59,17 +63,18 @@
 #     uploaded = 0
 #     skipped = 0
 #     errors = 0
+#     total_bytes = 0
     
 #     if dry_run:
 #         print("\033[33m=== DRY RUN MODE - No uploads will be performed ===\033[0m\n")
 #     else:
 #         print("\033[36m=== Uploading Images ===\033[0m\n")
     
-#     # Show first 10 and last 10 in dry run, all in real mode
+#     # Show first 10 in dry run, all in real mode
 #     show_limit = 10 if dry_run else None
 #     shown_count = 0
     
-#     for img_path in sorted(image_files):
+#     for idx, img_path in enumerate(sorted(image_files), 1):
 #         try:
 #             # Get relative path from images directory
 #             rel_path = img_path.relative_to(images_dir)
@@ -93,7 +98,7 @@
 #                     print(f"\033[90m[SKIP] {rel_path}\033[0m")
 #                     shown_count += 1
 #                 elif not dry_run:
-#                     print(f"\033[90m[SKIP] {rel_path}\033[0m")
+#                     print(f"\033[90m[{idx}/{total_images}] [SKIP] {rel_path}\033[0m")
 #                 skipped += 1
 #                 continue
             
@@ -107,13 +112,17 @@
 #                     print(f"\033[90m    → URL: {expected_url}\033[0m\n")
 #                     shown_count += 1
 #                 elif shown_count == show_limit:
-#                     print(f"\033[90m... and {len(image_files) - skipped - show_limit} more images ...\033[0m\n")
+#                     print(f"\033[90m... and {total_images - skipped - show_limit} more images ...\033[0m\n")
 #                     shown_count += 1
                 
 #                 uploaded += 1
 #                 continue
             
-#             print(f"\033[36m[UPLOAD] {rel_path}\033[0m")
+#             # Get file size
+#             file_size = img_path.stat().st_size
+#             file_size_mb = file_size / (1024 * 1024)
+            
+#             print(f"\033[36m[{idx}/{total_images}] [UPLOAD] {rel_path} ({file_size_mb:.2f} MB)\033[0m")
 #             print(f"\033[90m    → {public_id}\033[0m")
             
 #             # Upload to Cloudinary with automatic optimization
@@ -130,14 +139,22 @@
 #                 fetch_format="auto"
 #             )
             
-#             # Get Cloudinary URL
+#             # Get Cloudinary URL and size
 #             cloudinary_url = result['secure_url']
+#             cloudinary_bytes = result.get('bytes', 0)
+#             total_bytes += cloudinary_bytes
             
 #             # Store mapping
 #             url_mapping[old_url] = cloudinary_url
             
 #             uploaded += 1
-#             print(f"\033[32m    ✓ {cloudinary_url}\033[0m\n")
+            
+#             # Calculate compression ratio
+#             compression_ratio = ((file_size - cloudinary_bytes) / file_size * 100) if file_size > 0 else 0
+#             cloudinary_mb = cloudinary_bytes / (1024 * 1024)
+            
+#             print(f"\033[32m    ✓ {cloudinary_url}\033[0m")
+#             print(f"\033[90m    → Cloudinary: {cloudinary_mb:.2f} MB (saved {compression_ratio:.1f}%)\033[0m\n")
             
 #         except cloudinary.exceptions.Error as e:
 #             if 'already exists' in str(e).lower():
@@ -146,14 +163,22 @@
 #                 cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME')
 #                 cloudinary_url = f"https://res.cloudinary.com/{cloud_name}/image/upload/{public_id}.jpg"
 #                 url_mapping[old_url] = cloudinary_url
+#                 print(f"\033[90m[{idx}/{total_images}] {rel_path}\033[0m")
 #                 print(f"\033[90m    → Already exists on Cloudinary, added to mapping\033[0m\n")
 #                 skipped += 1
 #             else:
+#                 print(f"\033[31m[{idx}/{total_images}] ✗ {rel_path}\033[0m")
 #                 print(f"\033[31m    ✗ Error: {e}\033[0m\n")
 #                 errors += 1
 #         except Exception as e:
+#             print(f"\033[31m[{idx}/{total_images}] ✗ {rel_path}\033[0m")
 #             print(f"\033[31m    ✗ Error: {e}\033[0m\n")
 #             errors += 1
+    
+#     # Calculate elapsed time
+#     elapsed_time = time.time() - start_time
+#     minutes = int(elapsed_time // 60)
+#     seconds = int(elapsed_time % 60)
     
 #     # Save mapping to JSON file (only in real mode)
 #     if not dry_run:
@@ -173,8 +198,22 @@
 #             print(f"\033[31m✗ Errors: {errors}\033[0m")
 #         else:
 #             print(f"\033[32m✓ Errors: {errors}\033[0m")
+        
+#         # Storage metrics
+#         total_mb = total_bytes / (1024 * 1024)
+#         total_gb = total_mb / 1024
+#         avg_mb = total_mb / uploaded if uploaded > 0 else 0
+        
+#         print(f"\033[36m→ Total storage used: {total_mb:.2f} MB ({total_gb:.3f} GB)\033[0m")
+#         print(f"\033[36m→ Average per image: {avg_mb:.2f} MB\033[0m")
 #         print(f"\033[36m→ Total mappings: {len(url_mapping)}\033[0m")
 #         print(f"\033[36m→ Mapping file: {mapping_file}\033[0m")
+        
+#         # Time metrics
+#         print(f"\033[36m→ Time elapsed: {minutes}m {seconds}s\033[0m")
+#         if uploaded > 0:
+#             avg_time = elapsed_time / uploaded
+#             print(f"\033[36m→ Average per image: {avg_time:.2f}s\033[0m")
 
 # if __name__ == "__main__":
 #     print("\033[36m=== Cloudinary Upload Script ===\033[0m")
@@ -235,23 +274,41 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
-def upload_images(dry_run=True):
+def upload_images(dry_run=True, content_type='all'):
     """
-    Upload all images from client/public/assets/images to Cloudinary.
+    Upload images from client/public/assets/images to Cloudinary.
     Preserves folder structure with URL-friendly naming.
+    
+    Args:
+        dry_run: If True, show what would be uploaded without uploading
+        content_type: 'collectibles', 'walkthroughs', or 'all'
     """
     
     start_time = time.time()
     
-    # Path to images directory
-    images_dir = Path(__file__).parent.parent.parent.parent / 'client' / 'public' / 'assets' / 'images'
+    # Base images directory
+    base_images_dir = Path(__file__).parent.parent.parent.parent / 'client' / 'public' / 'assets' / 'images'
+    
+    # Determine target directory
+    if content_type == 'collectibles':
+        images_dir = base_images_dir / 'Collectibles'
+        if not images_dir.exists():
+            images_dir = base_images_dir  # Fallback to base if subfolder doesn't exist
+    elif content_type == 'walkthroughs':
+        images_dir = base_images_dir / 'Walkthroughs'
+        if not images_dir.exists():
+            print(f"\033[31m✗ Walkthroughs directory not found: {images_dir}\033[0m")
+            return
+    else:  # 'all'
+        images_dir = base_images_dir
     
     if not images_dir.exists():
         print(f"\033[31m✗ Images directory not found: {images_dir}\033[0m")
         return
     
     print(f"\n\033[36m=== Scanning Images ===\033[0m")
-    print(f"Directory: {images_dir}\n")
+    print(f"Directory: {images_dir}")
+    print(f"Content type: {content_type}\n")
     
     # Find all image files
     image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
@@ -293,20 +350,22 @@ def upload_images(dry_run=True):
     
     for idx, img_path in enumerate(sorted(image_files), 1):
         try:
-            # Get relative path from images directory
-            rel_path = img_path.relative_to(images_dir)
+            # Get relative path from BASE images directory (important!)
+            rel_path = img_path.relative_to(base_images_dir)
             
-            # Create URL-friendly public_id with hyphens and lowercase
-            # Great_Desert/Northern_Great_Desert/1_Image.jpg 
-            #   -> stellar-blade/collectibles/great-desert/northern-great-desert/1-image
-            folder_path = rel_path.parent.as_posix().replace('_', '-').lower()
-            filename = rel_path.stem.replace('_', '-').replace('&', 'and').lower()
-            public_id = f"stellar-blade/collectibles/{folder_path}/{filename}"
+            # Determine folder structure based on path
+            # Collectibles/Eidos_7/Silent_Street/1_Image.jpg
+            #   -> stellar-blade/collectibles/eidos-7/silent-street/1-image
+            # Walkthroughs/Main_Story/7th_Airborne_Squad/Stellar Blade_20251127220623.jpg
+            #   -> stellar-blade/walkthroughs/main-story/7th-airborne-squad/stellar-blade-20251127220623
             
-            # Asset folder for dashboard organization
-            asset_folder = f"stellar-blade/collectibles/{folder_path}"
+            folder_path = rel_path.parent.as_posix().replace('_', '-').replace(' ', '-').lower()
+            filename = rel_path.stem.replace('_', '-').replace(' ', '-').replace('&', 'and').lower()
             
-            # Old URL format (what's currently in database)
+            public_id = f"stellar-blade/{folder_path}/{filename}"
+            asset_folder = f"stellar-blade/{folder_path}"
+            
+            # Old URL format (what's currently in database/JSON)
             old_url = f"/assets/images/{rel_path.as_posix()}"
             
             # Check if already in mapping (from previous run)
@@ -448,18 +507,29 @@ if __name__ == "__main__":
         print("   - CLOUDINARY_API_SECRET")
         sys.exit(1)
     
+    # Check command-line argument
+    content_type = 'all'
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+        if arg in ['collectibles', 'walkthroughs', 'all']:
+            content_type = arg
+        else:
+            print(f"\033[31m✗ Invalid argument: {sys.argv[1]}\033[0m")
+            print("Usage: python upload_cloudinary.py [collectibles|walkthroughs|all]")
+            sys.exit(1)
+    
     # Run dry run first
-    print("\033[33m⚠  Running DRY RUN first (showing first 10 images)\033[0m")
-    upload_images(dry_run=True)
+    print(f"\033[33m⚠  Running DRY RUN for: {content_type} (showing first 10 images)\033[0m")
+    upload_images(dry_run=True, content_type=content_type)
     
     # Ask user to confirm
     print("\n\033[36m=== Confirmation ===\033[0m")
     print("This will:")
-    print("  1. Upload ALL images to Cloudinary")
+    print(f"  1. Upload {content_type.upper()} images to Cloudinary")
     print("  2. Apply URL-friendly naming (lowercase, hyphens)")
     print("  3. Enable auto-optimization (quality='auto', format='auto')")
-    print("  4. Organize in dashboard: stellar-blade/collectibles/{level}/{location}/")
-    print("  5. Create url-mapping.json for update_urls.py")
+    print(f"  4. Organize in dashboard: stellar-blade/{content_type}/...")
+    print("  5. Update url-mapping.json (shared with collectibles)")
     print("  6. Skip images already uploaded (idempotent)")
     print("\n\033[33mType 'yes' to proceed with upload:\033[0m ", end='')
     
@@ -467,6 +537,6 @@ if __name__ == "__main__":
     
     if confirm == 'yes':
         print()
-        upload_images(dry_run=False)
+        upload_images(dry_run=False, content_type=content_type)
     else:
         print("\n\033[90mCancelled - no images uploaded\033[0m")

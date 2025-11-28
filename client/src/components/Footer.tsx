@@ -23,8 +23,8 @@ export default function Footer() {
             <Link to="/privacy" className="hover:text-blue-400 transition-colors">
               Privacy
             </Link>
-            <a 
-              href="mailto:contact@stellarbladeguide.com" 
+            <a
+              href="mailto:contact@stellarbladeguide.com"
               className="hover:text-blue-400 transition-colors"
             >
               Contact

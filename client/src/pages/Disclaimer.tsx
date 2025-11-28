@@ -4,7 +4,7 @@ export default function Disclaimer() {
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 text-blue-400">Disclaimer</h1>
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
-          
+
           <section>
             <h2 className="text-2xl font-semibold mb-2 text-gray-200">Unofficial Fan-Made Guide</h2>
             <p>This website is an <strong>unofficial, non-commercial fan guide</strong> for Stellar Blade. It is <strong>not affiliated with, endorsed by, or connected to</strong> Shift Up Corporation or Sony Interactive Entertainment.</p>
