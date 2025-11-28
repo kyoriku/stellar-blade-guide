@@ -114,16 +114,16 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                               scrollToSection(subLink.href);
                             }}
                             className={`group/sub flex items-center gap-2 text-sm px-3 py-1 rounded-lg transition-all duration-200 ${isActiveSubLink
-                                ? 'text-blue-400 bg-blue-500/10 font-medium'
-                                : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700/30'
+                              ? 'text-blue-400 bg-blue-500/10 font-medium'
+                              : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700/30'
                               }`}
                           >
                             <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isActiveSubLink ? 'bg-blue-400' : 'bg-gray-600 group-hover/sub:bg-blue-400'
                               }`}></div>
                             <span className="flex-1">{subLink.title}</span>
                             <ChevronRight className={`w-3 h-3 transition-all duration-200 ${isActiveSubLink
-                                ? 'opacity-100 translate-x-0'
-                                : 'opacity-0 -translate-x-2 group-hover/sub:opacity-100 group-hover/sub:translate-x-0'
+                              ? 'opacity-100 translate-x-0'
+                              : 'opacity-0 -translate-x-2 group-hover/sub:opacity-100 group-hover/sub:translate-x-0'
                               }`} />
                           </a>
                         </li>
