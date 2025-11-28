@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, ChevronDown, Sparkles, Book, Map, Compass, Search, ChevronRight } from 'lucide-react'
+import { Menu, X, ChevronDown, Book, Map, Compass, Search, ChevronRight } from 'lucide-react'
 import { WALKTHROUGHS, LEVELS, COLLECTIBLES } from '../constants/navigation'
 import { usePrefetch } from '../hooks/usePrefetch'
 
@@ -184,10 +184,11 @@ function Navbar() {
               to="/"
               className="group flex items-center gap-2 text-xl font-bold text-white hover:text-blue-400 transition-all duration-300"
             >
-              <div className="relative">
-                <Sparkles className="w-6 h-6 text-blue-400 transition-transform duration-300 group-hover:rotate-180 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-blue-400 blur-lg opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
-              </div>
+              <img
+                src="/favicon/favicon.svg"
+                alt="Stellar Blade Guide Logo"
+                className="w-8 h-8"
+              />
               <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                 Stellar Blade Guide
               </span>
@@ -376,15 +377,15 @@ function Navbar() {
       {/* Mobile Navigation - Enhanced with Collapsible Sections */}
       <div
         ref={mobileMenuRef}
-        className={`md:hidden fixed left-0 right-0 bottom-0 bg-gray-950 transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'
+        className={`md:hidden fixed left-0 right-0 bottom-0 bg-primary transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'
           }`}
         style={{ top: '64px' }}
       >
         <div className="h-full flex flex-col">
           {/* Search Bar - Sticky */}
           <div className={`sticky top-0 z-10 px-4 py-3 flex-shrink-0 transition-all duration-200 ${searchScrolled
-            ? 'bg-gray-950/95 backdrop-blur-xl border-b border-gray-800 shadow-lg'
-            : 'bg-gray-950'
+            ? 'bg-primary/95 backdrop-blur-xl border-b border-gray-800 shadow-lg'
+            : 'bg-primary'
             }`}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
@@ -395,7 +396,7 @@ function Navbar() {
                 placeholder="Search levels, collectibles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-base"
+                className="w-full pl-11 pr-10 py-3 bg-secondary/50 border border-gray-700 rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-base"
               />
               {searchQuery && (
                 <button
@@ -428,7 +429,7 @@ function Navbar() {
                 <div className="border-b border-gray-800/50">
                   <button
                     onClick={() => toggleSection('walkthroughs')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-gray-800/30 transition-colors group active:bg-gray-800/50"
+                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -478,7 +479,7 @@ function Navbar() {
                 <div className="border-b border-gray-800/50">
                   <button
                     onClick={() => toggleSection('levels')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-gray-800/30 transition-colors group active:bg-gray-800/50"
+                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-500/10 rounded-lg">
@@ -530,7 +531,7 @@ function Navbar() {
                 <div className="border-b border-gray-800/50">
                   <button
                     onClick={() => toggleSection('collectibles')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-gray-800/30 transition-colors group active:bg-gray-800/50"
+                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-purple-500/10 rounded-lg">
@@ -580,7 +581,7 @@ function Navbar() {
               {/* No results message */}
               {searchQuery && totalResults === 0 && (
                 <div className="px-4 py-12 text-center">
-                  <div className="inline-flex p-4 bg-gray-800/30 rounded-full mb-4">
+                  <div className="inline-flex p-4 bg-secondary/30 rounded-full mb-4">
                     <Search className="w-8 h-8 text-gray-600" />
                   </div>
                   <p className="text-gray-400 font-medium text-lg mb-1">No results found</p>
@@ -613,15 +614,15 @@ function MobileNavLink({ to, onClick, children, indent = false, onMouseEnter, on
   const colorClasses = {
     blue: {
       active: 'text-white bg-gradient-to-r from-blue-600/20 to-transparent border-l-4 border-blue-400 shadow-sm',
-      hover: 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-blue-600/30 active:bg-gray-800/60'
+      hover: 'text-gray-300 hover:bg-secondary/40 hover:text-white border-l-4 border-transparent hover:border-blue-600/30 active:bg-secondary/60'
     },
     green: {
       active: 'text-white bg-gradient-to-r from-green-600/20 to-transparent border-l-4 border-green-400 shadow-sm',
-      hover: 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-green-600/30 active:bg-gray-800/60'
+      hover: 'text-gray-300 hover:bg-secondary/40 hover:text-white border-l-4 border-transparent hover:border-green-600/30 active:bg-secondary/60'
     },
     purple: {
       active: 'text-white bg-gradient-to-r from-purple-600/20 to-transparent border-l-4 border-purple-400 shadow-sm',
-      hover: 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-purple-600/30 active:bg-gray-800/60'
+      hover: 'text-gray-300 hover:bg-secondary/40 hover:text-white border-l-4 border-transparent hover:border-purple-600/30 active:bg-secondary/60'
     }
   };
 

@@ -16,21 +16,17 @@ export const LEVELS = [
   { slug: 'abyss-levoire', name: 'Abyss Levoire' },
   { slug: 'eidos-9', name: 'Eidos 9' },
   { slug: 'spire-4', name: 'Spire 4' },
-  // { slug: 'nest', name: 'Nest' },
 ] as const;
 
 export const COLLECTIBLES = [
-  // { slug: 'accessories', name: 'Accessories' },
   { slug: 'beta-cores', name: 'Beta Cores' },
   { slug: 'body-cores', name: 'Body Cores' },
   { slug: 'camps', name: 'Camps' },
   { slug: 'cans', name: 'Cans' },
   { slug: 'documents', name: 'Documents' },
-  // { slug: 'drone-appearances', name: 'Drone Appearances' },
   { slug: 'earrings', name: 'Earrings' },
   { slug: 'exospines', name: 'Exospines' },
   { slug: 'glasses', name: 'Glasses' },
-  // { slug: 'lily-outfits', name: 'Lily Outfits' },
   { slug: 'locked-chests', name: 'Locked Chests' },
   { slug: 'memorysticks', name: 'Memorysticks' },
   { slug: 'nano-suits', name: 'Nano Suits' },

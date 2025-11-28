@@ -9,19 +9,23 @@ function HomePage() {
   return (
     <div className="min-h-main bg-primary">
       {/* Hero Banner */}
-      <div className="relative aspect-[16/9] overflow-hidden">
-        <img
-          src="https://res.cloudinary.com/drw9mrozr/image/upload/f_auto,q_auto,w_1920,c_scale/stellar-blade/homepage/banner.jpg"
-          alt="Stellar Blade Banner"
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="eager"
-          fetchPriority="high"
-        />
-        {/* Enhanced gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
+      <div className="relative w-full overflow-hidden max-h-[calc(100vh-4rem)]">
+        {/* Hero image container */}
+        <div className="relative w-full h-[60vh] sm:h-[70vh] md:h-[calc(100vh-4rem)]">
+          <img
+            src="https://res.cloudinary.com/drw9mrozr/image/upload/f_auto,q_auto,w_1920,c_scale/stellar-blade/homepage/banner.jpg"
+            alt="Stellar Blade Banner"
+            className="absolute inset-0 w-full h-full object-cover object-top md:object-center"
+            loading="eager"
+            fetchPriority="high"
+          />
 
-        {/* Subtle blue glow effect at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-blue-500/20 via-blue-500/10 to-transparent"></div>
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background"></div>
+
+          {/* Subtle blue glow effect at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-blue-500/20 via-blue-500/10 to-transparent"></div>
+        </div>
       </div>
 
       {/* Blue glow separator between banner and content */}
