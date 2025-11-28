@@ -339,7 +339,7 @@ function LevelPage() {
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}
         animation={{ fade: 250, swipe: 250 }}
-        carousel={{ padding: isMobile ? "0%" : "4%" }}
+        carousel={{ padding: isMobile ? "0%" : "5%" }}
         styles={{
           container: {
             backgroundColor: "rgba(0, 0, 0, 0.75)",

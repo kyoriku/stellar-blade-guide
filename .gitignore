@@ -62,6 +62,10 @@ venv/
 
 # Server specific files
 server/seed-data
+server/scripts/images/url-mapping.json
+server/scripts/images/test_upload.py
+
+# Documentation
 docs/
 
 # TypeScript incremental build info

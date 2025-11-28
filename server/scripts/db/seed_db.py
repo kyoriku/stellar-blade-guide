@@ -39,7 +39,7 @@ async def seed_database():
                 Level(name='Abyss Levoire', display_order=7),
                 Level(name='Eidos 9', display_order=8),
                 Level(name='Spire 4', display_order=9),
-                Level(name='Nest', display_order=10),
+                # Level(name='Nest', display_order=10),
             ]
             
             session.add_all(levels_data)
@@ -75,7 +75,7 @@ async def seed_database():
             # 2d️ Fetch Level objects for locations
             level_names = ['Eidos 7', 'Xion', 'Wasteland', 'Altess Levoire',
                            'Matrix 11', 'Great Desert', 'Abyss Levoire',
-                           'Eidos 9', 'Spire 4', 'Nest']
+                           'Eidos 9', 'Spire 4']
             levels = {}
             for name in level_names:
                 result = await session.execute(select(Level).where(Level.name == name))
@@ -162,9 +162,7 @@ async def seed_database():
                 Location(level_id=levels['Spire 4'].id, name='Prestige Lounge', display_order=9),
                 Location(level_id=levels['Spire 4'].id, name='Vermillion Garden', display_order=10),
                 Location(level_id=levels['Spire 4'].id, name='High Orbit Station', display_order=11),
-
-                # Nest
-                Location(level_id=levels['Nest'].id, name='Nest', display_order=1),
+                Location(level_id=levels['Spire 4'].id, name='Nest', display_order=12),
             ]
             session.add_all(locations_data)
 
