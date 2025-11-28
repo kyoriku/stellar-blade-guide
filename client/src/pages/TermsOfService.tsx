@@ -4,7 +4,7 @@ export default function TermsOfService() {
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 text-blue-400">Terms of Service</h1>
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
-          
+
           <section>
             <p>By using this website, you agree to these Terms of Service and our Privacy Policy. If you disagree, please do not use the site.</p>
           </section>
