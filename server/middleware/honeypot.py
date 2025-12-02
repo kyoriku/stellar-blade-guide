@@ -7,11 +7,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 # ANSI color codes
-RED = '\033[91m'
-YELLOW = '\033[93m'
-GREEN = '\033[92m'
-CYAN = '\033[96m'
-MAGENTA = '\033[95m'
+RED = '\033[31m'
+YELLOW = '\033[33m'
+GREEN = '\033[32m'
+CYAN = '\033[36m'
+MAGENTA = '\033[35m'
 RESET = '\033[0m'
 
 # Paths that are NEVER legitimate - immediate long ban
