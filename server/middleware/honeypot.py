@@ -6,6 +6,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# ANSI color codes
+RED = '\033[91m'
+YELLOW = '\033[93m'
+GREEN = '\033[92m'
+CYAN = '\033[96m'
+MAGENTA = '\033[95m'
+RESET = '\033[0m'
+
 # Paths that are NEVER legitimate - immediate long ban
 OBVIOUS_BOT_PATHS = [
     '/.git', '/.env', '/.aws', '/.ssh', '/.config',
@@ -22,6 +30,21 @@ SUSPICIOUS_EXTENSIONS = [
     '.yaml', '.yml', '.map', '.toml', '.tfvars', '.tfstate'
 ]
 
+def get_client_ip(request: Request) -> str:
+    """
+    Get real client IP from proxy headers.
+    Railway (and most reverse proxies) set X-Forwarded-For header.
+    """
+    # Check X-Forwarded-For header (set by Railway/proxies)
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        # X-Forwarded-For can be: "client, proxy1, proxy2"
+        # First IP is the real client
+        return forwarded_for.split(",")[0].strip()
+    
+    # Fallback to direct connection IP (only used in local dev)
+    return request.client.host
+
 def get_subnet(ip: str) -> str:
     """Extract subnet from IP (first 3 octets)"""
     parts = ip.split('.')
@@ -35,7 +58,7 @@ async def is_banned(ip: str) -> bool:
         banned = await redis_client.get(f"badbot:{ip}")
         return banned is not None
     except Exception as e:
-        logger.error(f"Error checking ban status: {e}")
+        logger.error(f"{RED}Error checking ban status: {e}{RESET}")
         return False
 
 def get_ban_duration(attempt_count: int, is_high_severity: bool = False) -> int:
@@ -78,8 +101,8 @@ async def track_suspicious_activity(ip: str, path: str, severity: str = 'low'):
         if new_subnet_attempts >= 15 and severity != 'high':
             severity = 'high'
             logger.warning(
-                f"[SUBNET PATTERN] {subnet}.x has {new_subnet_attempts} "
-                f"violations across multiple IPs"
+                f"{CYAN}[SUBNET PATTERN]{RESET} {MAGENTA}{subnet}.x{RESET} has "
+                f"{YELLOW}{new_subnet_attempts}{RESET} violations across multiple IPs"
             )
         
         # Determine ban duration
@@ -100,10 +123,12 @@ async def track_suspicious_activity(ip: str, path: str, severity: str = 'low'):
             else f"{new_attempts} attempts"
         )
         
+        severity_color = RED if severity == 'high' else YELLOW
         logger.warning(
-            f"[SUSPICIOUS] {ip} ({subnet}.x) → {path} "
+            f"{YELLOW}[SUSPICIOUS]{RESET} {MAGENTA}{ip}{RESET} "
+            f"({CYAN}{subnet}.x{RESET}) → {path} "
             f"({attempt_display}, Subnet: {new_subnet_attempts}, "
-            f"Severity: {severity})"
+            f"Severity: {severity_color}{severity}{RESET})"
         )
         
         # Ban if threshold reached
@@ -120,26 +145,34 @@ async def track_suspicious_activity(ip: str, path: str, severity: str = 'low'):
                 else f"{new_attempts} violations"
             )
             
-            logger.error(f"[IP BANNED] {ip} banned for {ban_display} ({ban_reason})")
+            logger.error(
+                f"{RED}[IP BANNED]{RESET} {MAGENTA}{ip}{RESET} banned for "
+                f"{YELLOW}{ban_display}{RESET} ({ban_reason})"
+            )
             
     except Exception as e:
-        logger.error(f"Error tracking suspicious activity: {e}")
+        logger.error(f"{RED}Error tracking suspicious activity: {e}{RESET}")
 
 async def check_banned_ip_middleware(request: Request, call_next):
     """Middleware to block banned IPs"""
+    client_ip = get_client_ip(request)
+    
     # Skip localhost in dev
-    if request.client.host in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]:
+    if client_ip in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]:
         return await call_next(request)
     
-    banned = await is_banned(request.client.host)
+    banned = await is_banned(client_ip)
     
     if banned:
         # Log once per hour per IP to reduce spam
-        log_key = f"blocked_log:{request.client.host}"
+        log_key = f"blocked_log:{client_ip}"
         already_logged = await redis_client.get(log_key)
         
         if not already_logged:
-            logger.warning(f"[BLOCKED] {request.client.host} → {request.url.path}")
+            logger.warning(
+                f"{RED}[BLOCKED]{RESET} {MAGENTA}{client_ip}{RESET} → "
+                f"{request.url.path}"
+            )
             await redis_client.setex(log_key, 3600, "true")
         
         # Return 404 instead of 403 (don't reveal defense)
@@ -150,9 +183,10 @@ async def check_banned_ip_middleware(request: Request, call_next):
 async def bot_honeypot_middleware(request: Request, call_next):
     """Honeypot middleware for detecting bots"""
     path = request.url.path.lower()
+    client_ip = get_client_ip(request)
     
     # Skip localhost in dev
-    if request.client.host in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]:
+    if client_ip in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]:
         return await call_next(request)
     
     # Check for obvious bot paths
@@ -162,7 +196,7 @@ async def bot_honeypot_middleware(request: Request, call_next):
     has_suspicious_ext = any(path.endswith(ext) for ext in SUSPICIOUS_EXTENSIONS)
     
     if is_obvious_bot or has_suspicious_ext:
-        await track_suspicious_activity(request.client.host, path, 'high')
+        await track_suspicious_activity(client_ip, path, 'high')
         return JSONResponse(status_code=404, content={"error": "Not Found"})
     
     return await call_next(request)
