@@ -1,8 +1,18 @@
 from slowapi import Limiter
-from slowapi.util import get_remote_address
+from fastapi import Request
 from config.settings import settings
 
+def get_client_ip_for_limiter(request: Request) -> str:
+    """Get real client IP from proxy headers for rate limiting"""
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        # X-Forwarded-For format: "client, proxy1, proxy2"
+        # First IP is the real client
+        return forwarded_for.split(",")[0].strip()
+    # Fallback to direct connection IP (only used in local dev)
+    return request.client.host
+
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=get_client_ip_for_limiter,  # Use custom function instead of get_remote_address
     storage_uri=settings.REDIS_URL
 )
