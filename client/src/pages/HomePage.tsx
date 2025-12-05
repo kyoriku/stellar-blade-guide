@@ -53,7 +53,7 @@ function HomePage() {
             to="/walkthroughs"
             itemCount={WALKTHROUGHS.length}
             itemLabel="Categories"
-            imageUrl="/assets/images/Eidos_7/Silent_Street/1_Passcode_r0ar0a_1.jpg"
+            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540,c_fill/f_auto,q_auto/v1764350642/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.jpg"
           />
 
           <HomeCard
@@ -64,7 +64,7 @@ function HomePage() {
             to="/levels"
             itemCount={LEVELS.length}
             itemLabel="Levels"
-            imageUrl="/assets/images/Xion/Xion/1_Supply_Camp_1.jpg"
+            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540,c_fill/f_auto,q_auto/v1764282977/stellar-blade/collectibles/eidos-7/construction-zone/4-supply-camp-construction-zone.jpg"
           />
 
           <HomeCard
@@ -75,7 +75,7 @@ function HomePage() {
             to="/collectibles"
             itemCount={COLLECTIBLES.length}
             itemLabel="Types"
-            imageUrl="/assets/images/Wasteland/Barren_Lands/1_Supply_Camp_Hidden_Path_1.jpg"
+            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540,c_fill/f_auto,q_auto/v1764284541/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg"
           />
         </div>
       </div>
