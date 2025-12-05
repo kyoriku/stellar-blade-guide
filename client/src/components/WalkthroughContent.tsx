@@ -5,9 +5,10 @@ import ImageGallery from './ImageGallery'
 interface WalkthroughContentProps {
   content: WalkthroughContentType;
   onImageClick: (imageUrl: string) => void;
+  isInitialLoad?: boolean;
 }
 
-function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) {
+function WalkthroughContent({ content, onImageClick, isInitialLoad = true }: WalkthroughContentProps) {
   // Transform ContentImage to CollectibleImage format (add id field)
   const galleryImages = content.images.map(img => ({
     id: img.order,
@@ -82,7 +83,7 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
           <ImageGallery
             images={galleryImages}
             onImageClick={onImageClick}
-            showSkeleton={true}
+            showSkeleton={isInitialLoad}
           />
         )}
       </div>

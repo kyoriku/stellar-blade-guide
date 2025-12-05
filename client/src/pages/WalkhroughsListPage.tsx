@@ -4,9 +4,11 @@ import { ApiError } from '../services/api';
 import { Package, MapPin, ChevronRight, BookOpen } from 'lucide-react';
 import ErrorPage from './ErrorPage';
 import { WALKTHROUGHS } from '../constants/navigation';
+import { usePrefetch } from '../hooks/usePrefetch';
 
 export default function WalkthroughsListPage() {
   const { type } = useParams<{ type: string }>();
+  const { prefetchWalkthroughBySlug } = usePrefetch()
 
   // Validate type exists before fetching
   const isValidType = WALKTHROUGHS.some(w => w.slug === type);
@@ -27,15 +29,6 @@ export default function WalkthroughsListPage() {
     return (
       <div className="min-h-main bg-primary">
         <div className="container mx-auto px-3 py-8">
-          {/* Breadcrumb skeleton */}
-          <nav className="mb-4 flex items-center gap-2 text-sm">
-            <div className="h-4 w-9.5 bg-gray-700 rounded animate-pulse"></div>
-            <span className="text-gray-600">/</span>
-            <div className="h-4 w-24 bg-gray-700 rounded animate-pulse"></div>
-            <span className="text-gray-600">/</span>
-            <div className="h-4 w-28 bg-gray-600 rounded animate-pulse"></div>
-          </nav>
-
           {/* Header skeleton */}
           <div className="mb-10">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -81,15 +74,6 @@ export default function WalkthroughsListPage() {
   return (
     <div className="min-h-main bg-primary">
       <div className="container mx-auto px-3 py-8">
-        {/* Breadcrumbs */}
-        <nav className="mb-4 text-sm text-gray-400">
-          <Link to="/" className="hover:text-white transition-colors">Home</Link>
-          <span className="mx-2">/</span>
-          <span>Walkthroughs</span>
-          <span className="mx-2">/</span>
-          <span className="text-white">{displayType}</span>
-        </nav>
-
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -115,6 +99,7 @@ export default function WalkthroughsListPage() {
             <Link
               key={walkthrough.id}
               to={`/walkthroughs/${type}/${walkthrough.slug}`}
+              onMouseEnter={() => prefetchWalkthroughBySlug(type!, walkthrough.slug)}
               className="group block"
             >
               <div className="bg-secondary border border-zinc-800 rounded-lg overflow-hidden 
