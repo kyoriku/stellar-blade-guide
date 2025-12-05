@@ -271,66 +271,60 @@ function CollectibleTypePage() {
 
             {/* Footer navigation */}
             <div className="mt-16 pt-8 border-t border-gray-800">
-              <div className="flex flex-row sm:flex-row justify-between items-stretch sm:items-center gap-4">
-                {/* Previous Type */}
+              <div className="flex flex-col sm:flex-row justify-between items-stretch gap-3">
+                {/* Next Type - first on mobile, right on desktop */}
+                {nextType ? (
+                  <Link
+                    to={`/collectibles/${nextType}`}
+                    className="group w-full sm:w-auto order-1 sm:order-2"
+                    onMouseEnter={() => prefetchCollectiblesByType(nextType)}
+                  >
+                    <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-lg transition-all duration-200">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs text-blue-400 mb-0.5">Next</div>
+                        <div className="text-sm font-medium text-white truncate">
+                          {nextType.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        </div>
+                      </div>
+                      <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 flex-shrink-0" />
+                    </div>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/collectibles"
+                    className="group w-full sm:w-auto order-1 sm:order-2"
+                  >
+                    <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-lg transition-all duration-200">
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-xs text-blue-400 mb-0.5">Finished</div>
+                        <div className="text-sm font-medium text-white">
+                          All Collectibles
+                        </div>
+                      </div>
+                      <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 flex-shrink-0" />
+                    </div>
+                  </Link>
+                )}
+
+                {/* Previous Type - second on mobile, left on desktop */}
                 {previousType ? (
                   <Link
                     to={`/collectibles/${previousType}`}
-                    className="group flex-1 sm:flex-initial"
+                    className="group w-full sm:w-auto order-2 sm:order-1"
                     onMouseEnter={() => prefetchCollectiblesByType(previousType)}
                   >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200">
-                      <div className="p-2 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-gray-400 group-hover:text-white group-hover:-translate-x-0.5 transition-all" />
-                      </div>
+                    <div className="flex items-center gap-2 p-3 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-lg transition-all duration-200">
+                      <ArrowLeft className="w-4 h-4 text-gray-400 group-hover:text-white flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-0.5">Previous</div>
-                        <div className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors truncate">
+                        <div className="text-xs text-gray-500 mb-0.5">Previous</div>
+                        <div className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors truncate">
                           {previousType.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         </div>
                       </div>
                     </div>
                   </Link>
                 ) : (
-                  <div className="flex-1 sm:flex-initial"></div>
-                )}
-
-                {/* Next Type */}
-                {nextType ? (
-                  <Link
-                    to={`/collectibles/${nextType}`}
-                    className="group flex-1 sm:flex-initial"
-                    onMouseEnter={() => prefetchCollectiblesByType(nextType)}
-                  >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
-                      <div className="flex-1 min-w-0 text-right">
-                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Next</div>
-                        <div className="text-sm font-semibold text-white truncate">
-                          {nextType.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                        </div>
-                      </div>
-                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </div>
-                  </Link>
-                ) : (
-                  <Link
-                    to="/"
-                    className="group flex-1 sm:flex-initial"
-                  >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
-                      <div className="flex-1 min-w-0 text-right">
-                        <div className="text-xs font-medium text-blue-400 uppercase tracking-wider mb-0.5">Finished</div>
-                        <div className="text-sm font-semibold text-white truncate">
-                          Back to Home
-                        </div>
-                      </div>
-                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </div>
-                  </Link>
+                  <div className="hidden sm:block order-2 sm:order-1"></div>
                 )}
               </div>
             </div>
