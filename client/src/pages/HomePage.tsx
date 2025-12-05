@@ -29,7 +29,7 @@ function HomePage() {
       <div className="h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 pt-6">
+      <div className="container mx-auto px-3 pt-6">
         {/* Welcome Card */}
         <div className="relative bg-secondary rounded-lg p-8 mb-6 shadow-2xl border border-gray-500/20 overflow-hidden">
           <div className="relative">
