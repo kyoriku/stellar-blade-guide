@@ -41,8 +41,8 @@ add_rate_limit_middleware(app)
 add_logging_middleware(app)
 add_error_handler_middleware(app)
 add_security_headers_middleware(app)
-add_banned_ip_middleware(app)
 add_honeypot_middleware(app)
+add_banned_ip_middleware(app)
 
 # Routes
 app.include_router(levels.router, prefix=settings.API_PREFIX)
