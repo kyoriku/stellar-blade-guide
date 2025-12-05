@@ -131,8 +131,7 @@ function CollectibleTypePage() {
       // Only include subLinks if this level contains the active section
       subLinks: level.level_name === activeLevelName ? level.locations.map(loc => ({
         href: `#${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
-        title: loc.location_name,
-        id: loc.location_id
+        title: loc.location_name
       })) : undefined
     };
   });
@@ -155,13 +154,6 @@ function CollectibleTypePage() {
 
             {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
-              <nav className="mb-4 flex items-center gap-2 text-sm">
-                <div className="h-4 w-9.5 bg-gray-700 rounded animate-pulse"></div>
-                <span className="text-gray-600">/</span>
-                <div className="h-4 w-19 bg-gray-700 rounded animate-pulse"></div>
-                <span className="text-gray-600">/</span>
-                <div className="h-4 w-28 bg-gray-600 rounded animate-pulse"></div>
-              </nav>
               {/* Enhanced page header skeleton - matches actual header exactly */}
               <div className="mb-10">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -224,15 +216,6 @@ function CollectibleTypePage() {
           </aside>
 
           <main className="flex-1 min-w-0">
-            <nav className="mb-4 text-sm text-gray-400">
-              <Link to="/" className="hover:text-white transition-colors">Home</Link>
-              <span className="mx-2">/</span>
-              {/* <Link to="/collectibles" className="hover:text-white transition-colors">Collectibles</Link> */}
-              <span>Collectibles</span>
-              <span className="mx-2">/</span>
-              <span className="text-white">{displayTypeName}</span>
-            </nav>
-
             {/* Enhanced page header */}
             <div className="mb-10">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">

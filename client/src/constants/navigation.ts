@@ -27,7 +27,7 @@ export const COLLECTIBLES = [
   { slug: 'earrings', name: 'Earrings' },
   { slug: 'exospines', name: 'Exospines' },
   { slug: 'glasses', name: 'Glasses' },
-  { slug: 'locked-chests', name: 'Locked Chests' },
+  // { slug: 'locked-chests', name: 'Locked Chests' },
   { slug: 'memorysticks', name: 'Memorysticks' },
   { slug: 'nano-suits', name: 'Nano Suits' },
   { slug: 'outfits', name: 'Outfits' },
@@ -35,7 +35,7 @@ export const COLLECTIBLES = [
   { slug: 'robots', name: 'Robots' },
   { slug: 'supply-boxes', name: 'Supply Boxes' },
   { slug: 'supply-chests', name: 'Supply Chests' },
-  { slug: 'items', name: 'Items' },
+  // { slug: 'items', name: 'Items' },
 ] as const;
 
 export type WalkthroughSlug = typeof WALKTHROUGHS[number]['slug'];
