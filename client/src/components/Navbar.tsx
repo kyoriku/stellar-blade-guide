@@ -185,7 +185,7 @@ function Navbar() {
               className="group flex items-center gap-2 text-xl font-bold text-white hover:text-blue-400 transition-all duration-300"
             >
               <img
-                src="/favicon/favicon.svg"
+                src="/assets/favicon/favicon.svg"
                 alt="Stellar Blade Guide Logo"
                 className="w-8 h-8"
               />
@@ -202,18 +202,26 @@ function Navbar() {
                 onMouseEnter={() => handleMouseEnter('walkthroughs')}
                 onMouseLeave={handleMouseLeave}
               >
-                <button
-                  onClick={() =>
-                    setOpenDropdown(prev => (prev === 'walkthroughs' ? null : 'walkthroughs'))
-                  }
-                  className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 cursor-pointer"
-                >
-                  Walkthroughs
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'walkthroughs' ? 'rotate-180' : ''
-                      }`}
-                  />
-                </button>
+                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200">
+                  <Link
+                    to="/walkthroughs"
+                    className="hover:text-blue-400 transition-colors"
+                  >
+                    Walkthroughs
+                  </Link>
+                  <button
+                    onClick={() =>
+                      setOpenDropdown(prev => (prev === 'walkthroughs' ? null : 'walkthroughs'))
+                    }
+                    className="cursor-pointer p-1 -mr-1"
+                    aria-label="Toggle walkthroughs menu"
+                  >
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'walkthroughs' ? 'rotate-180' : ''
+                        }`}
+                    />
+                  </button>
+                </div>
 
                 {/* Hover buffer */}
                 <div className="absolute left-0 top-full h-2 w-full"></div>
@@ -223,16 +231,16 @@ function Navbar() {
       ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}
                 >
                   <div className="py-2">
-                    {WALKTHROUGHS.map((type, index) => (
+                    {WALKTHROUGHS.map((category, index) => (
                       <Link
-                        key={type.slug}
-                        to={`walkthroughs/${type.slug}`}
+                        key={category.slug}
+                        to={`walkthroughs/${category.slug}`}
                         onClick={() => setOpenDropdown(null)}
-                        onMouseEnter={() => prefetchWalkthroughsByType(type.slug)}
+                        onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
                         className="block px-4 py-2.5 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-transparent hover:text-white hover:border-l-2 hover:border-blue-400 transition-all duration-200"
                         style={{ animationDelay: `${index * 30}ms` }}
                       >
-                        {type.name}
+                        {category.name}
                       </Link>
                     ))}
                   </div>
@@ -245,18 +253,26 @@ function Navbar() {
                 onMouseEnter={() => handleMouseEnter('levels')}
                 onMouseLeave={handleMouseLeave}
               >
-                <button
-                  onClick={() =>
-                    setOpenDropdown(prev => (prev === 'levels' ? null : 'levels'))
-                  }
-                  className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 cursor-pointer"
-                >
-                  Levels
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'levels' ? 'rotate-180' : ''
-                      }`}
-                  />
-                </button>
+                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200">
+                  <Link
+                    to="/levels"
+                    className="hover:text-green-400 transition-colors"
+                  >
+                    Levels
+                  </Link>
+                  <button
+                    onClick={() =>
+                      setOpenDropdown(prev => (prev === 'levels' ? null : 'levels'))
+                    }
+                    className="cursor-pointer p-1 -mr-1"
+                    aria-label="Toggle levels menu"
+                  >
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'levels' ? 'rotate-180' : ''
+                        }`}
+                    />
+                  </button>
+                </div>
 
                 {/* Hover buffer */}
                 <div className="absolute left-0 top-full h-2 w-full"></div>
@@ -294,18 +310,26 @@ function Navbar() {
                 onMouseEnter={() => handleMouseEnter('collectibles')}
                 onMouseLeave={handleMouseLeave}
               >
-                <button
-                  onClick={() =>
-                    setOpenDropdown(prev => (prev === 'collectibles' ? null : 'collectibles'))
-                  }
-                  className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200 cursor-pointer"
-                >
-                  Collectibles
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'collectibles' ? 'rotate-180' : ''
-                      }`}
-                  />
-                </button>
+                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200">
+                  <Link
+                    to="/collectibles"
+                    className="hover:text-purple-400 transition-colors"
+                  >
+                    Collectibles
+                  </Link>
+                  <button
+                    onClick={() =>
+                      setOpenDropdown(prev => (prev === 'collectibles' ? null : 'collectibles'))
+                    }
+                    className="cursor-pointer p-1 -mr-1"
+                    aria-label="Toggle collectibles menu"
+                  >
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'collectibles' ? 'rotate-180' : ''
+                        }`}
+                    />
+                  </button>
+                </div>
 
                 {/* Hover buffer */}
                 <div className="absolute left-0 top-full h-2 w-full"></div>
@@ -455,10 +479,19 @@ function Navbar() {
                       }`}
                   >
                     <div className="space-y-0.5 pb-2 px-2">
-                      {filteredWalkthroughs.map((type, index) => (
+                      {/* View All Link */}
+                      <Link
+                        to="/walkthroughs"
+                        onClick={() => setIsOpen(false)}
+                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 border-l-4 border-blue-500/50 hover:border-blue-400 bg-blue-500/5"
+                      >
+                        View all Walkthroughs
+                      </Link>
+                      
+                      {filteredWalkthroughs.map((category, index) => (
                         <MobileNavLink
-                          key={type.slug}
-                          to={`walkthroughs/${type.slug}`}
+                          key={category.slug}
+                          to={`walkthroughs/${category.slug}`}
                           onClick={() => setIsOpen(false)}
                           indent
                           color="blue"
@@ -466,7 +499,7 @@ function Navbar() {
                             animation: openSections.walkthroughs ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
-                          {type.name}
+                          {category.name}
                         </MobileNavLink>
                       ))}
                     </div>
@@ -505,6 +538,15 @@ function Navbar() {
                       }`}
                   >
                     <div className="space-y-0.5 pb-2 px-2">
+                      {/* View All Link */}
+                      <Link
+                        to="/levels"
+                        onClick={() => setIsOpen(false)}
+                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-green-400 hover:bg-green-500/10 hover:text-green-300 border-l-4 border-green-500/50 hover:border-green-400 bg-green-500/5"
+                      >
+                        View all Levels
+                      </Link>
+                      
                       {filteredLevels.map((level, index) => (
                         <MobileNavLink
                           key={level.slug}
@@ -557,6 +599,15 @@ function Navbar() {
                       }`}
                   >
                     <div className="space-y-0.5 pb-2 px-2">
+                      {/* View All Link */}
+                      <Link
+                        to="/collectibles"
+                        onClick={() => setIsOpen(false)}
+                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 border-l-4 border-purple-500/50 hover:border-purple-400 bg-purple-500/5"
+                      >
+                        View all Collectibles
+                      </Link>
+                      
                       {filteredCollectibles.map((type, index) => (
                         <MobileNavLink
                           key={type.slug}
@@ -614,15 +665,15 @@ function MobileNavLink({ to, onClick, children, indent = false, onMouseEnter, on
   const colorClasses = {
     blue: {
       active: 'text-white bg-gradient-to-r from-blue-600/20 to-transparent border-l-4 border-blue-400 shadow-sm',
-      hover: 'text-gray-300 hover:bg-secondary/40 hover:text-white border-l-4 border-transparent hover:border-blue-600/30 active:bg-secondary/60'
+      hover: 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-blue-600/30 active:bg-gray-800/60'
     },
     green: {
       active: 'text-white bg-gradient-to-r from-green-600/20 to-transparent border-l-4 border-green-400 shadow-sm',
-      hover: 'text-gray-300 hover:bg-secondary/40 hover:text-white border-l-4 border-transparent hover:border-green-600/30 active:bg-secondary/60'
+      hover: 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-green-600/30 active:bg-gray-800/60'
     },
     purple: {
       active: 'text-white bg-gradient-to-r from-purple-600/20 to-transparent border-l-4 border-purple-400 shadow-sm',
-      hover: 'text-gray-300 hover:bg-secondary/40 hover:text-white border-l-4 border-transparent hover:border-purple-600/30 active:bg-secondary/60'
+      hover: 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-purple-600/30 active:bg-gray-800/60'
     }
   };
 
