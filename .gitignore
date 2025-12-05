@@ -59,6 +59,10 @@ venv/
 *.pyd
 *.env
 .pytest_cache
+pyproject.toml
+
+# Client specific files
+client/public/assets/images
 
 # Server specific files
 server/seed-data

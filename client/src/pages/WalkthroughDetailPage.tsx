@@ -7,6 +7,7 @@ import Lightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 import 'yet-another-react-lightbox/styles.css'
 import WalkthroughContent from '../components/WalkthroughContent'
+import WalkthroughContentSkeleton from '../components/WalkthroughContentSkeleton'
 import ErrorPage from './ErrorPage'
 import TableOfContents from '../components/TableOfContents'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
@@ -85,25 +86,58 @@ function WalkthroughPage() {
       <div className="min-h-main bg-primary">
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
+            {/* Skeleton sidebar - exact match */}
             <aside className="hidden lg:block w-64 flex-shrink-0">
               <TableOfContentsSkeleton />
             </aside>
 
+            {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
-              <div className="mb-10">
+              {/* Enhanced page header skeleton - matches actual header exactly */}
+              <div className="mb-6">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
                   <div className="h-10 md:h-14 w-80 bg-gray-700 rounded-lg animate-pulse mb-2"></div>
                   <span className="block text-2xl mt-2">
                     <div className="h-6 w-64 bg-gray-700 rounded-lg animate-pulse"></div>
                   </span>
                 </h1>
+
+                {/* Meta badge skeleton */}
+                <div className="flex flex-wrap gap-3">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <div className="w-4 h-4 bg-blue-400/50 rounded animate-pulse"></div>
+                    <div className="h-4 w-24 bg-blue-300/30 rounded animate-pulse"></div>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-48 bg-secondary rounded-lg border border-gray-800 animate-pulse"></div>
-                ))}
+              {/* Objectives skeleton */}
+              <div className="mb-6 p-4 bg-secondary rounded-lg border border-gray-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-5 h-5 bg-purple-400/50 rounded animate-pulse"></div>
+                  <div className="h-6 w-24 bg-gray-700 rounded animate-pulse"></div>
+                </div>
+                <ul className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-blue-400 font-bold">•</span>
+                      <div className="h-6 bg-gray-700 rounded animate-pulse flex-1"></div>
+                    </li>
+                  ))}
+                </ul>
               </div>
+
+              {/* Mobile TOC skeleton */}
+              <div className="lg:hidden mb-6">
+                <TableOfContentsSkeleton />
+              </div>
+
+              {/* Walkthrough content skeletons */}
+              <section className="mb-16 space-y-4">
+                <WalkthroughContentSkeleton />
+                <WalkthroughContentSkeleton />
+                <WalkthroughContentSkeleton />
+              </section>
             </main>
           </div>
         </div>
@@ -158,19 +192,6 @@ function WalkthroughPage() {
           </aside>
 
           <main className="flex-1 min-w-0">
-            {/* Breadcrumbs */}
-            <nav className="mb-4 text-sm text-gray-400">
-              <Link to="/" className="hover:text-white transition-colors">Home</Link>
-              <span className="mx-2">/</span>
-              <span>Walkthroughs</span>
-              <span className="mx-2">/</span>
-              <Link to={`/walkthroughs/${type}`} className="hover:text-white transition-colors">
-                {displayType}
-              </Link>
-              <span className="mx-2">/</span>
-              <span className="text-white">{walkthrough.title}</span>
-            </nav>
-
             {/* Header */}
             <div className="mb-6">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -233,6 +254,7 @@ function WalkthroughPage() {
                   <WalkthroughContent
                     content={content}
                     onImageClick={handleImageClick}
+                    isInitialLoad={isLoading}
                   />
                 </div>
               ))}

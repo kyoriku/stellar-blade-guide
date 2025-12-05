@@ -39,11 +39,19 @@ export function usePrefetch() {
     })
   }
 
+  const prefetchWalkthroughBySlug = (type: string, slug: string) => {
+  queryClient.prefetchQuery({
+    queryKey: ['walkthrough', type, slug],
+    queryFn: () => api.getWalkthroughBySlug(type, slug),
+  })
+}
+
   return {
     prefetchLevel,
     prefetchLocations,
     prefetchCollectiblesByType,
     prefetchWalkthrough,
     prefetchWalkthroughsByType,
+    prefetchWalkthroughBySlug,
   }
 }

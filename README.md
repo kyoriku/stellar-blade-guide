@@ -6,7 +6,7 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 
 **Key Features:** Multi-tier Redis caching • Cloudinary CDN • Image galleries • Responsive design • Junction table queries
 
-![Home Page](client/public/images/homepage.png)
+![Home Page](client/public/assets/screenshots/homepage.png)
 
 <details>
 <summary><b>Built With</b></summary>
@@ -71,9 +71,9 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 <details>
 <summary><b>View More Screenshots</b></summary>
 
-![Walkthrough Page](client/public/images/walkthrough.png)
-![Level Page](client/public/images/level.png)
-![Collectibles Page](client/public/images/collectibles.png)
+![Walkthrough Page](client/public/assets/screenshots/walkthrough.png)
+![Level Page](client/public/assets/screenshots/level.png)
+![Collectibles Page](client/public/assets/screenshots/collectibles.png)
 
 </details>
 

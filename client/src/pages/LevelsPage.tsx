@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
@@ -137,14 +136,6 @@ function LevelPage() {
 
             {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
-              {/* Breadcrumb skeleton */}
-              <nav className="mb-4 flex items-center gap-2 text-sm">
-                <div className="h-4 w-9.5 bg-gray-700 rounded animate-pulse"></div>
-                <span className="text-gray-600">/</span>
-                <div className="h-4 w-10 bg-gray-700 rounded animate-pulse"></div>
-                <span className="text-gray-600">/</span>
-                <div className="h-4 w-24 bg-gray-600 rounded animate-pulse"></div>
-              </nav>
               {/* Enhanced page header skeleton - matches actual header exactly */}
               <div className="mb-10">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -203,15 +194,6 @@ function LevelPage() {
           </aside>
 
           <main className="flex-1 min-w-0">
-            {/* Breadcrumbs */}
-            <nav className="mb-4 text-sm text-gray-400">
-              <Link to="/" className="hover:text-white transition-colors">Home</Link>
-              <span className="mx-2">/</span>
-              {/* <Link to="/levels" className="hover:text-white transition-colors">Levels</Link> */}
-              <span>Levels</span>
-              <span className="mx-2">/</span>
-              <span className="text-white">{displayLevelName}</span>
-            </nav>
             {/* Enhanced page header */}
             <div className="mb-10">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -339,7 +321,7 @@ function LevelPage() {
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}
         animation={{ fade: 250, swipe: 250 }}
-        carousel={{ padding: isMobile ? "0%" : "5%" }}
+        carousel={{ padding: isMobile ? "0%" : "4%" }}
         styles={{
           container: {
             backgroundColor: "rgba(0, 0, 0, 0.75)",
