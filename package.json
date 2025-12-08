@@ -4,7 +4,7 @@
   "description": "Stellar Blade guide with React/TypeScript frontend, Python/FastAPI backend, and PostgreSQL database.",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && source venv/bin/activate && uvicorn main:app --reload",
+    "server": "cd server && source .venv/bin/activate && uvicorn main:app --reload",
     "client": "cd client && npm run dev",
     "install": "cd client && npm install",
     "build": "cd client && npm run build"
