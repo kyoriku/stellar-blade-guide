@@ -320,7 +320,7 @@ function LevelPage() {
         plugins={[Zoom]}
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}
-        animation={{ fade: 250, swipe: 250 }}
+        animation={{ fade: 200, swipe: 200 }}
         carousel={{ padding: isMobile ? "0%" : "4%" }}
         styles={{
           container: {
