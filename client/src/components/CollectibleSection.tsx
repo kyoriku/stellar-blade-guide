@@ -9,7 +9,6 @@ interface CollectibleSectionProps {
   levelName?: string;
   collectibles: Collectible[];
   onImageClick?: (imageUrl: string) => void;
-  isInitialLoad?: boolean;
 }
 
 function CollectibleSection({
@@ -18,7 +17,6 @@ function CollectibleSection({
   levelName,
   collectibles,
   onImageClick,
-  isInitialLoad = true
 }: CollectibleSectionProps) {
   if (!collectibles || collectibles.length === 0) {
     return (
@@ -119,7 +117,7 @@ function CollectibleSection({
               <ImageGallery
                 images={collectible.images}
                 onImageClick={onImageClick}
-                showSkeleton={isInitialLoad}
+                // showSkeleton={isInitialLoad}
               />
             </div>
           </article>
