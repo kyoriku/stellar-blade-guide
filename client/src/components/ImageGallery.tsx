@@ -5,10 +5,10 @@ import { ZoomIn, Image as ImageIcon } from 'lucide-react'
 interface ImageGalleryProps {
   images: CollectibleImage[];
   onImageClick?: (imageUrl: string) => void;
-  showSkeleton?: boolean;
+  // showSkeleton?: boolean;
 }
 
-function ImageGallery({ images = [], onImageClick, showSkeleton = false }: ImageGalleryProps) {
+function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
   const [hoveredImage, setHoveredImage] = useState<number | null>(null);
 
@@ -25,7 +25,7 @@ function ImageGallery({ images = [], onImageClick, showSkeleton = false }: Image
     <div className={`grid gap-3 ${validImages.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
       {validImages.map((image) => {
         const isLoaded = loadedImages.has(image.id);
-        const shouldShowSkeleton = showSkeleton && !isLoaded;
+        const shouldShowSkeleton = !isLoaded;
 
         return (
           <div

@@ -262,7 +262,6 @@ function CollectibleTypePage() {
                       levelName={level.level_name}
                       collectibles={location.collectibles}
                       onImageClick={handleImageClick}
-                      isInitialLoad={isLoading}
                     />
                   );
                 })}
