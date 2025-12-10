@@ -237,7 +237,6 @@ function LevelPage() {
                   levelName={displayLevelName}
                   collectibles={location.collectibles}
                   onImageClick={handleImageClick}
-                  isInitialLoad={isLoading}
                 />
               );
             })}
