@@ -251,7 +251,6 @@ function WalkthroughPage() {
                   <WalkthroughContent
                     content={content}
                     onImageClick={handleImageClick}
-                    isInitialLoad={isLoading}
                   />
                 </div>
               ))}
