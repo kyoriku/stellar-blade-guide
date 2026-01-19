@@ -21,7 +21,7 @@ const queryClient = new QueryClient({
             return false; // Don't retry 404, 429, 400, etc.
           }
         }
-        
+
         // Retry network errors and 5xx server errors up to 3 times
         return failureCount < 3;
       },

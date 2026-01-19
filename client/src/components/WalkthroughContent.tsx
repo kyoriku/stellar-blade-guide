@@ -82,7 +82,6 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
           <ImageGallery
             images={galleryImages}
             onImageClick={onImageClick}
-            // showSkeleton={isInitialLoad}
           />
         )}
       </div>
