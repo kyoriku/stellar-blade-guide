@@ -117,7 +117,6 @@ function CollectibleSection({
               <ImageGallery
                 images={collectible.images}
                 onImageClick={onImageClick}
-                // showSkeleton={isInitialLoad}
               />
             </div>
           </article>
