@@ -10,7 +10,7 @@ function HomePage() {
         {/* Hero image container */}
         <div className="relative w-full h-[60vh] sm:h-[70vh] md:h-[calc(100vh-4rem)]">
           <img
-            src="https://res.cloudinary.com/drw9mrozr/image/upload/f_auto,q_auto,w_1920,c_scale/stellar-blade/homepage/banner.jpg"
+            src="https://res.cloudinary.com/drw9mrozr/image/upload/w_1920/f_webp,q_auto/stellar-blade/homepage/banner.jpg"
             alt="Stellar Blade Banner"
             className="absolute inset-0 w-full h-full object-cover object-top md:object-center"
             loading="eager"
@@ -53,7 +53,7 @@ function HomePage() {
             to="/walkthroughs"
             itemCount={WALKTHROUGHS.length}
             itemLabel="Categories"
-            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540,c_fill/f_auto,q_auto/v1765223101/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.jpg"
+            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_auto,q_auto/v1765223101/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.jpg"
           />
 
           <HomeCard
@@ -64,7 +64,7 @@ function HomePage() {
             to="/levels"
             itemCount={LEVELS.length}
             itemLabel="Levels"
-            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540,c_fill/f_auto,q_auto/v1765221117/stellar-blade/collectibles/eidos-9/fallen-overpass/10-legion-camp.jpg"
+            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_auto,q_auto/v1765221117/stellar-blade/collectibles/eidos-9/fallen-overpass/10-legion-camp.jpg"
           />
 
           <HomeCard
@@ -75,7 +75,7 @@ function HomePage() {
             to="/collectibles"
             itemCount={COLLECTIBLES.length}
             itemLabel="Types"
-            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540,c_fill/f_auto,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg"
+            imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_auto,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg"
           />
         </div>
       </div>
