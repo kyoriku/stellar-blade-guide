@@ -5,7 +5,6 @@ import { ZoomIn, Image as ImageIcon } from 'lucide-react'
 interface ImageGalleryProps {
   images: CollectibleImage[];
   onImageClick?: (imageUrl: string) => void;
-  // showSkeleton?: boolean;
 }
 
 function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
