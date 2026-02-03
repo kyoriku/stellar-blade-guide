@@ -9,7 +9,7 @@ export const WALKTHROUGH_IMAGES: Record<string, string> = {
 };
 
 export const LEVEL_IMAGES: Record<string, string> = {
-  'eidos-7': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
+  'eidos-7': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_webp,q_auto//v1769735055/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221942.jpg',
   'xion': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_webp,q_auto/v1765222145/stellar-blade/collectibles/xion/xion/1-supply-camp-1.jpg',
   'wasteland': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_webp,q_auto/v1765221844/stellar-blade/collectibles/wasteland/barren-lands/1-supply-camp-hidden-path-1.jpg',
   'altess-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_960,h_540/f_webp,q_auto/v1765220963/stellar-blade/collectibles/altess-levoire/research-lab-entrance/1-document-messages-you-are-fake.jpg',

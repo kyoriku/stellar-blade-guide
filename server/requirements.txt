@@ -16,5 +16,6 @@ slowapi==0.1.9
 pydantic==2.12.3
 python-dotenv==1.1.1
 
-# Image CDN
+# Image Processing
 cloudinary==1.44.1
+Pillow==11.0.0

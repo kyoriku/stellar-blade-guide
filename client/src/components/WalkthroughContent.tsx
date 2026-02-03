@@ -28,9 +28,13 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
         )}
 
         {/* Main text */}
-        <p className="text-gray-300 leading-relaxed mb-4">
-          {content.text}
-        </p>
+        <div className="space-y-4 mb-4">
+          {content.text.split('\n\n').map((paragraph, idx) => (
+            <p key={idx} className="text-gray-300 leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
+        </div>
 
         {/* Tip */}
         {content.tip && (

@@ -67,7 +67,17 @@ client/public/assets/images
 
 # Server specific files
 server/seed-data
-server/scripts
+server/scripts/db/*
+!server/scripts/db/seed_collectibles.py
+!server/scripts/db/seed_db.py
+!server/scripts/db/seed_walkthroughs.py
+server/scripts/images/*
+!server/scripts/images/compress_images.py
+!server/scripts/images/update_urls.py
+!server/scripts/images/upload_cloudinary.py
+server/scripts/generate_sitemap.py
+server/scripts/update_category_images.py
+!server/scripts/renumber_ids.py
 server/services
 server/tests
 
