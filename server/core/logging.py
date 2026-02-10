@@ -18,5 +18,7 @@ def setup_logging(log_level: Optional[str] = None) -> None:
     root_logger.setLevel(level)
     root_logger.addHandler(console_handler)
     
-    logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+    # Disable uvicorn's access logger - custom middleware handles this
+    # This prevents duplicate logs and allows us to filter bot spam
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.error").setLevel(logging.INFO)
