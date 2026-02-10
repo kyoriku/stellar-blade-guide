@@ -33,7 +33,13 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             print(f"\033[91m✗ Error closing Redis: {e}\033[0m")
 
-app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
+)
 
 # Middleware
 add_cors_middleware(app)
@@ -64,3 +70,4 @@ async def health_check(request: Request):
     except:
         redis_status = "disconnected"
     return {"status": "healthy", "redis": redis_status}
+
