@@ -23,7 +23,7 @@ async def get_all_levels(request: Request, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Level).order_by(Level.display_order))
     levels = result.scalars().all()
     response = [{"id": l.id, "name": l.name, "display_order": l.display_order} for l in levels]
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_SHORT)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/{level_name}/locations", response_model=List[LocationResponse])
@@ -48,5 +48,5 @@ async def get_locations_by_level(level_name: str, request: Request, db: AsyncSes
     result = await db.execute(select(Location).filter(Location.level_id == level.id).order_by(Location.display_order))
     locations = result.scalars().all()
     response = [{"id": loc.id, "name": loc.name, "display_order": loc.display_order} for loc in locations]
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response

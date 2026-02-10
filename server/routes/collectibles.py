@@ -50,7 +50,7 @@ async def get_all_collectibles(request: Request, db: AsyncSession = Depends(get_
         "images": [{"id": img.id, "url": img.cloudinary_url, "alt": img.alt_text, "order": img.display_order} for img in c.images]
     } for c in collectibles]
     
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_MEDIUM)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/levels/{level_name}")
@@ -104,7 +104,7 @@ async def get_collectibles_by_level(level_name: str, request: Request, db: Async
             } for c in collectibles]
         })
 
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_SHORT)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/types/{type_name}")
@@ -188,7 +188,7 @@ async def get_collectibles_by_type(type_name: str, request: Request, db: AsyncSe
         level_data["locations"] = sorted(level_data["locations"].values(), key=lambda x: x["location_order"])
         response.append(level_data)
 
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_SHORT)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/levels/{level_name}/locations/{location_name}", response_model=List[CollectibleResponse])
@@ -248,5 +248,5 @@ async def get_collectibles_by_location(level_name: str, location_name: str, requ
         "images": [{"id": img.id, "url": img.cloudinary_url, "alt": img.alt_text, "order": img.display_order} for img in c.images]
     } for c in collectibles]
 
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
