@@ -20,7 +20,7 @@ async def get_cache(key: str) -> Optional[dict]:
         logger.error(f"Redis error on GET {key}: {e}")
         return None
 
-async def set_cache(key: str, data: Any, ttl: int = settings.CACHE_TTL_MEDIUM) -> bool:
+async def set_cache(key: str, data: Any, ttl: int = settings.CACHE_TTL) -> bool:
     try:
         await redis_client.setex(key, ttl, json.dumps(data))
         return True

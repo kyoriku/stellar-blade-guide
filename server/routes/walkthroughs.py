@@ -38,7 +38,7 @@ async def get_all_walkthroughs(request: Request, db: AsyncSession = Depends(get_
         "thumbnail_url": w.thumbnail_url
     } for w in walkthroughs]
     
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/{walkthrough_id}", response_model=WalkthroughSchema)
@@ -71,7 +71,7 @@ async def get_walkthrough_by_id(walkthrough_id: int, request: Request, db: Async
         "thumbnail_url": walkthrough.thumbnail_url
     }
     
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/type/{walkthrough_type}", response_model=List[WalkthroughListItem])
@@ -118,7 +118,7 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
         "thumbnail_url": w.thumbnail_url
     } for w in walkthroughs]
     
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/type/{walkthrough_type}/{slug}", response_model=WalkthroughSchema)
@@ -190,7 +190,7 @@ async def get_walkthrough_by_slug(
         "thumbnail_url": walkthrough.thumbnail_url
     }
     
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
 @router.get("/level/{level_name}", response_model=List[WalkthroughListItem])
@@ -230,5 +230,5 @@ async def get_walkthroughs_by_level(level_name: str, request: Request, db: Async
         "thumbnail_url": w.thumbnail_url
     } for w in walkthroughs]
     
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
