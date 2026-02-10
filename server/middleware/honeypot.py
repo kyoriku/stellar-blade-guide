@@ -2,6 +2,7 @@ import time
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from core.cache import redis_client
+from config.settings import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,8 @@ GREEN = '\033[32m'
 CYAN = '\033[36m'
 MAGENTA = '\033[35m'
 RESET = '\033[0m'
+
+LOCALHOST_IPS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 
 # Paths that are NEVER legitimate - immediate ban
 OBVIOUS_BOT_PATHS = [
@@ -29,6 +32,10 @@ SUSPICIOUS_EXTENSIONS = [
     '.php', '.asp', '.aspx', '.jsp', '.xml',
     '.yaml', '.yml', '.map', '.toml', '.tfvars', '.tfstate'
 ]
+
+def is_localhost(ip: str) -> bool:
+    """Check if IP is localhost - only skip in local dev"""
+    return settings.DEBUG and ip in LOCALHOST_IPS
 
 def get_client_ip(request: Request) -> str:
     """
@@ -104,13 +111,15 @@ async def check_banned_ip_middleware(request: Request, call_next):
     """Middleware to block banned IPs"""
     client_ip = get_client_ip(request)
     
-    # Skip localhost in dev
-    if client_ip in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]:
+    if is_localhost(client_ip):
         return await call_next(request)
     
     banned = await is_banned(client_ip)
     
     if banned:
+        # Flag so logging middleware skips this request
+        request.state.bot_blocked = True
+        
         # Log once per hour per IP to reduce spam
         log_key = f"blocked_log:{client_ip}"
         already_logged = await redis_client.get(log_key)
@@ -132,8 +141,7 @@ async def bot_honeypot_middleware(request: Request, call_next):
     path = request.url.path.lower()
     client_ip = get_client_ip(request)
     
-    # Skip localhost in dev
-    if client_ip in ["127.0.0.1", "::1", "::ffff:127.0.0.1"]:
+    if is_localhost(client_ip):
         return await call_next(request)
     
     # Check for obvious bot paths
@@ -143,6 +151,9 @@ async def bot_honeypot_middleware(request: Request, call_next):
     has_suspicious_ext = any(path.endswith(ext) for ext in SUSPICIOUS_EXTENSIONS)
     
     if is_obvious_bot or has_suspicious_ext:
+        # Flag so logging middleware skips this request
+        request.state.bot_blocked = True
+        
         await track_suspicious_activity(client_ip, path)
         return JSONResponse(status_code=404, content={"error": "Not Found"})
     
