@@ -15,9 +15,7 @@ class Settings:
     REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379')
     
     # Cache TTL (in seconds)
-    CACHE_TTL_SHORT: int = int(os.getenv('CACHE_TTL_SHORT', 600)) # 10 minutes
-    CACHE_TTL_MEDIUM: int = int(os.getenv('CACHE_TTL_MEDIUM', 1800)) # 30 minutes
-    CACHE_TTL_LONG: int = int(os.getenv('CACHE_TTL_LONG', 3600)) # 1 hour
+    CACHE_TTL: int = int(os.getenv('CACHE_TTL', 86400))  # 24 hours
     
     # CORS
     CORS_ORIGINS: list = os.getenv(

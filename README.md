@@ -4,7 +4,7 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 
 **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
-**Key Features:** Multi-tier Redis caching • Cloudinary CDN • Image galleries • Responsive design • Junction table queries
+**Key Features:** Redis caching • Cloudinary CDN • Image galleries • Responsive design • Junction table queries
 
 ![Home Page](client/public/assets/screenshots/homepage.png)
 
@@ -57,7 +57,7 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 - Indexed queries for performance
 
 **Performance & Caching**
-- Multi-tier Redis caching (10min/30min/60min TTLs)
+- Redis caching (24-hour TTL)
 - Cloudinary CDN for image delivery
 - TanStack Query client-side caching
 
@@ -112,9 +112,7 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-CACHE_TTL_SHORT=600
-CACHE_TTL_MEDIUM=1800
-CACHE_TTL_LONG=7200
+CACHE_TTL=300
 
 ADMIN_SECRET=your_admin_secret
 ```

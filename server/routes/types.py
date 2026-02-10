@@ -23,5 +23,5 @@ async def get_collectible_types(request: Request, db: AsyncSession = Depends(get
     result = await db.execute(select(CollectibleType).order_by(CollectibleType.name))
     types = result.scalars().all()
     response = [{"id": t.id, "name": t.name} for t in types]
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL_LONG)
+    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
