@@ -3,7 +3,7 @@ import logging
 from fastapi import Request
 from middleware.honeypot import get_client_ip
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("api")
 
 async def log_requests_middleware(request: Request, call_next):
     start_time = time.time()
@@ -19,7 +19,7 @@ async def log_requests_middleware(request: Request, call_next):
     db_time = getattr(request.state, "db_time", None)
     
     log_parts = [
-        f'→ {request.method} {request.url.path}',
+        f'{client_ip} → {request.method} {request.url.path}',
         f'STATUS: {response.status_code}',
         f'TOTAL: {duration_ms:.0f}ms',
     ]
