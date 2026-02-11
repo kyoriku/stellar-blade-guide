@@ -7,18 +7,31 @@ interface ImageGalleryProps {
   onImageClick?: (imageUrl: string) => void;
 }
 
+// Track URLs that have loaded during this session
+const loadedUrlCache = new Set<string>();
+
 function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
-  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(() => {
+    // Instant lookup — no Image objects created
+    const cached = new Set<number>();
+    images.forEach(img => {
+      if (loadedUrlCache.has(img.url)) {
+        cached.add(img.id);
+      }
+    });
+    return cached;
+  });
+
+  const handleImageLoad = (imageId: number, imageUrl: string) => {
+    loadedUrlCache.add(imageUrl);
+    setLoadedImages(prev => new Set(prev).add(imageId));
+  };
   const [hoveredImage, setHoveredImage] = useState<number | null>(null);
 
   // Filter out invalid images
   const validImages = images.filter(img => img.url && img.alt);
 
   if (!validImages.length) return null;
-
-  const handleImageLoad = (imageId: number) => {
-    setLoadedImages(prev => new Set(prev).add(imageId));
-  };
 
   return (
     <div className={`grid gap-3 ${validImages.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
@@ -49,7 +62,7 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
               alt={image.alt}
               className={`w-full h-full object-cover transition-all duration-300 ${shouldShowSkeleton ? 'opacity-0' : 'opacity-100'
                 } ${hoveredImage === image.id ? 'scale-100' : 'scale-100'}`}
-              onLoad={() => handleImageLoad(image.id)}
+              onLoad={() => handleImageLoad(image.id, image.url)}
               loading="lazy"
             // fetchPriority='high'
             />
