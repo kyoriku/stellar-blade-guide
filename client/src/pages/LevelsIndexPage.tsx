@@ -3,12 +3,36 @@ import { Map, ChevronRight } from 'lucide-react';
 import { LEVELS } from '../constants/navigation';
 import { LEVEL_IMAGES } from '../constants/categoryImages';
 import { usePrefetch } from '../hooks/usePrefetch';
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 
 export default function LevelsIndexPage() {
   const { prefetchLevel } = usePrefetch();
 
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title="Levels"
+        description="Browse all Stellar Blade levels and find every collectible organized by location."
+        canonical="/levels"
+      />
+      <StructuredData
+        type="CollectionPage"
+        headline="Stellar Blade Levels"
+        description="Browse all Stellar Blade levels and find every collectible organized by location."
+        extraSchemas={[{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: 'Stellar Blade Levels',
+          numberOfItems: LEVELS.length,
+          itemListElement: LEVELS.map((level, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: level.name,
+            url: `https://stellarbladeguide.com/levels/${level.slug}`
+          }))
+        }]}
+      />
       <div className="container mx-auto px-3 py-8">
         {/* Header */}
         <div className="mb-10">
@@ -46,7 +70,7 @@ export default function LevelsIndexPage() {
                             hover:border-zinc-700 hover:bg-secondary/80
                             hover:shadow-xl hover:shadow-black/30
                             hover:-translate-y-1">
-                
+
                 {/* Image Header */}
                 <div className="aspect-video bg-gradient-to-br from-tertiary to-secondary 
                               relative overflow-hidden border-b border-zinc-800">

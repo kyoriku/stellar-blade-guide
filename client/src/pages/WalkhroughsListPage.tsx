@@ -5,6 +5,8 @@ import { Package, MapPin, ChevronRight, BookOpen } from 'lucide-react';
 import ErrorPage from './ErrorPage';
 import { WALKTHROUGHS } from '../constants/navigation';
 import { usePrefetch } from '../hooks/usePrefetch';
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 
 export default function WalkthroughsListPage() {
   const { type } = useParams<{ type: string }>();
@@ -73,6 +75,30 @@ export default function WalkthroughsListPage() {
 
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title={displayType!}
+        description={`Complete ${displayType} walkthroughs for Stellar Blade. ${walkthroughs.length} detailed guides with step-by-step instructions and screenshots.`}
+        canonical={`/walkthroughs/${type}`}
+      />
+      <StructuredData
+        type="CollectionPage"
+        headline={`${displayType} - Stellar Blade Walkthroughs`}
+        description={`All ${walkthroughs.length} ${displayType} walkthroughs for Stellar Blade.`}
+        extraSchemas={[{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: `${displayType} Walkthroughs`,
+          numberOfItems: walkthroughs.length,
+          itemListElement: walkthroughs.map((w, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: w.title,
+            url: `https://stellarbladeguide.com/walkthroughs/${type}/${w.slug}`,
+            ...(w.thumbnail_url && { image: w.thumbnail_url })
+          }))
+        }]}
+      />
+
       <div className="container mx-auto px-3 py-8">
         {/* Header */}
         <div className="mb-10">

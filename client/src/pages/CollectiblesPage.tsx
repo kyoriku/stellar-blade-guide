@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
@@ -13,6 +13,8 @@ import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton
 import { COLLECTIBLES } from '../constants/navigation'
 import { Map, Package, ArrowLeft } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 
 function CollectibleTypePage() {
   const { typeName } = useParams<{ typeName: string }>();
@@ -111,6 +113,38 @@ function CollectibleTypePage() {
   );
   const totalLevels = levelData.length;
 
+  const structuredDataSchemas = useMemo(() => {
+    if (levelData.length === 0) return undefined;
+
+    let position = 0;
+
+    const itemListSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `${displayTypeName} in Stellar Blade`,
+      description: `All ${totalCollectibles} ${displayTypeName} across ${totalLevels} levels`,
+      numberOfItems: totalCollectibles,
+      itemListElement: levelData.flatMap(level =>
+        level.locations.flatMap(location =>
+          location.collectibles.map(collectible => {
+            position++;
+            return {
+              '@type': 'ListItem',
+              position,
+              name: collectible.title,
+              description: collectible.description?.content || collectible.description?.items?.join(', '),
+              ...(collectible.images?.[0] && {
+                image: collectible.images[0].url
+              })
+            };
+          })
+        )
+      )
+    };
+
+    return [itemListSchema];
+  }, [levelData, displayTypeName, totalCollectibles, totalLevels]);
+
   // Generate table of contents links - only show subLinks for the active level
   const activeLevelName = levelData.find(level =>
     level.locations.some(loc => {
@@ -204,6 +238,17 @@ function CollectibleTypePage() {
 
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title={displayTypeName}
+        description={`Find all ${totalCollectibles} ${displayTypeName} across ${totalLevels} levels in Stellar Blade. Complete guide with screenshots and locations.`}
+        canonical={`/collectibles/${typeName}`}
+      />
+      <StructuredData
+        type="CollectionPage"
+        headline={`${displayTypeName} - Stellar Blade`}
+        description={`Find all ${totalCollectibles} ${displayTypeName} across ${totalLevels} levels in Stellar Blade.`}
+        extraSchemas={structuredDataSchemas}
+      />
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           {/* Sidebar with TOC */}

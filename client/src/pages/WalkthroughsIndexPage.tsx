@@ -3,12 +3,37 @@ import { Book, ChevronRight } from 'lucide-react';
 import { WALKTHROUGHS } from '../constants/navigation';
 import { WALKTHROUGH_IMAGES } from '../constants/categoryImages';
 import { usePrefetch } from '../hooks/usePrefetch';
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 
 export default function WalkthroughsIndexPage() {
   const { prefetchWalkthroughsByType } = usePrefetch();
 
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title="Walkthroughs"
+        description={`Complete walkthrough guides for Stellar Blade. Browse ${WALKTHROUGHS.length} categories including main story missions, side quests, and more.`}
+        canonical="/walkthroughs"
+      />
+      <StructuredData
+        type="CollectionPage"
+        headline="Stellar Blade Walkthroughs"
+        description={`Complete walkthrough guides for all Stellar Blade missions.`}
+        extraSchemas={[{
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: 'Stellar Blade Walkthrough Categories',
+          numberOfItems: WALKTHROUGHS.length,
+          itemListElement: WALKTHROUGHS.map((cat, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: cat.name,
+            url: `https://stellarbladeguide.com/walkthroughs/${cat.slug}`
+          }))
+        }]}
+      />
+
       <div className="container mx-auto px-3 py-8">
         {/* Header */}
         <div className="mb-10">
