@@ -3,12 +3,39 @@ import { Compass, ChevronRight } from 'lucide-react';
 import { COLLECTIBLES } from '../constants/navigation';
 import { COLLECTIBLE_IMAGES } from '../constants/categoryImages';
 import { usePrefetch } from '../hooks/usePrefetch';
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 
 export default function CollectiblesIndexPage() {
   const { prefetchCollectiblesByType } = usePrefetch();
 
+  const itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Stellar Blade Collectible Types',
+    description: `All ${COLLECTIBLES.length} collectible types in Stellar Blade`,
+    numberOfItems: COLLECTIBLES.length,
+    itemListElement: COLLECTIBLES.map((type, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: type.name,
+      url: `https://stellarbladeguide.com/collectibles/${type.slug}`
+    }))
+  };
+
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title="Collectibles"
+        description={`Browse all ${COLLECTIBLES.length} collectible types in Stellar Blade. Find every Beta Core, Nano Suit, Document, Can, and more with screenshots and locations.`}
+        canonical="/collectibles"
+      />
+      <StructuredData
+        type="CollectionPage"
+        headline="Stellar Blade Collectibles"
+        description={`Browse all ${COLLECTIBLES.length} collectible types in Stellar Blade.`}
+        extraSchemas={[itemListSchema]}
+      />
       <div className="container mx-auto px-3 py-8">
         {/* Header */}
         <div className="mb-10">
@@ -46,7 +73,7 @@ export default function CollectiblesIndexPage() {
                             hover:border-zinc-700 hover:bg-secondary/80
                             hover:shadow-xl hover:shadow-black/30
                             hover:-translate-y-1">
-                
+
                 {/* Image Header */}
                 <div className="aspect-video bg-gradient-to-br from-tertiary to-secondary 
                               relative overflow-hidden border-b border-zinc-800">

@@ -1,10 +1,21 @@
 import { Link } from 'react-router-dom'
 import { Book, Map, Compass, ChevronRight } from 'lucide-react'
 import { WALKTHROUGHS, LEVELS, COLLECTIBLES } from '../constants/navigation'
+import SEO from '../components/SEO'
+import StructuredData from '../components/StructuredData'
 
 function HomePage() {
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title=""
+        description="Complete guide for Stellar Blade with locations and screenshots for every collectible, walkthrough, and secret in the game."
+        canonical="/"
+      />
+      <StructuredData
+        headline="Stellar Blade Guide"
+        description="Complete guide for Stellar Blade collectibles, walkthroughs, and secrets"
+      />
       {/* Hero Banner */}
       <div className="relative w-full overflow-hidden max-h-[calc(100vh-4rem)]">
         {/* Hero image container */}
@@ -125,7 +136,7 @@ function HomeCard({ title, description, icon, iconColor, to, itemCount, itemLabe
                     hover:border-zinc-700 hover:bg-secondary/80
                     hover:shadow-xl hover:shadow-black/30
                     hover:-translate-y-1">
-        
+
         {/* Image Header */}
         <div className="aspect-video bg-gradient-to-br from-tertiary to-secondary 
                       relative overflow-hidden border-b border-zinc-800">

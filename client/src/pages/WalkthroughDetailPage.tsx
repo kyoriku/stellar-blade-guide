@@ -12,6 +12,8 @@ import ErrorPage from './ErrorPage'
 import TableOfContents from '../components/TableOfContents'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 
 function WalkthroughPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
@@ -181,6 +183,38 @@ function WalkthroughPage() {
 
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title={walkthrough.title}
+        description={walkthrough.subtitle || `Complete walkthrough for ${walkthrough.title} in Stellar Blade. Step-by-step guide with screenshots and tips.`}
+        canonical={`/walkthroughs/${type}/${slug}`}
+      />
+      <StructuredData
+        type="WebPage"
+        headline={walkthrough.title}
+        description={walkthrough.subtitle || `Complete walkthrough for ${walkthrough.title} in Stellar Blade.`}
+        extraSchemas={[{
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: walkthrough.title,
+          ...(walkthrough.subtitle && { alternativeHeadline: walkthrough.subtitle }),
+          description: walkthrough.subtitle || `Complete walkthrough for ${walkthrough.title} in Stellar Blade.`,
+          articleSection: walkthrough.mission_type,
+          ...(walkthrough.content.find(c => c.images?.length > 0)?.images[0] && {
+            image: walkthrough.content.find(c => c.images?.length > 0)!.images[0].url
+          }),
+          wordCount: walkthrough.content.reduce((sum, c) => sum + c.text.split(/\s+/).length, 0),
+          isPartOf: {
+            '@type': 'WebSite',
+            name: 'Stellar Blade Guide',
+            url: 'https://stellarbladeguide.com'
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Stellar Blade Guide'
+          }
+        }]}
+      />
+
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           {/* Sidebar */}
