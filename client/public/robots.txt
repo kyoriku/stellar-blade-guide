@@ -1,0 +1,18 @@
+# Allow good bots
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Slackbot
+User-agent: Discordbot
+Allow: /
+
+# Block aggressive crawlers
+User-agent: AhrefsBot
+User-agent: SemrushBot
+Crawl-delay: 10
+
+# Block generic scrapers
+User-agent: *
+Disallow: /api/
+Allow: /
+
+Sitemap: https://stellarbladeguide.com/sitemap.xml
