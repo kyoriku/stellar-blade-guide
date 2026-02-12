@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
@@ -13,6 +13,8 @@ import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton
 import { LEVELS } from '../constants/navigation'
 import { ArrowLeft, MapPin, Package } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 
 function LevelPage() {
   const { levelName } = useParams<{ levelName: string }>();
@@ -118,6 +120,36 @@ function LevelPage() {
   // Count total collectibles
   const totalCollectibles = locationData.reduce((sum, loc) => sum + loc.collectibles.length, 0);
 
+  const structuredDataSchemas = useMemo(() => {
+    if (locationData.length === 0) return undefined;
+
+    let position = 0;
+
+    const itemListSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: `${displayLevelName} Collectibles`,
+      description: `All ${totalCollectibles} collectibles in ${displayLevelName}`,
+      numberOfItems: totalCollectibles,
+      itemListElement: locationData.flatMap(location =>
+        location.collectibles.map(collectible => {
+          position++;
+          return {
+            '@type': 'ListItem',
+            position,
+            name: collectible.title,
+            description: collectible.description?.content || collectible.description?.items?.join(', '),
+            ...(collectible.images?.[0] && {
+              image: collectible.images[0].url
+            })
+          };
+        })
+      )
+    };
+
+    return [itemListSchema];
+  }, [locationData, displayLevelName, totalCollectibles]);
+
   // Check for invalid level FIRST (before loading state)
   if (!isValidLevel) {
     return <ErrorPage code={404} />;
@@ -186,6 +218,18 @@ function LevelPage() {
 
   return (
     <div className="min-h-main bg-primary">
+      <SEO
+        title={displayLevelName}
+        description={`Find all ${totalCollectibles} collectibles across ${locationData.length} locations in ${displayLevelName}. Complete guide with screenshots and locations.`}
+        canonical={`/levels/${levelName}`}
+      />
+      <StructuredData
+        type="CollectionPage"
+        headline={`${displayLevelName} Collectibles Guide`}
+        description={`Find all ${totalCollectibles} collectibles across ${locationData.length} locations in ${displayLevelName}.`}
+        extraSchemas={structuredDataSchemas}
+      />
+
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           {/* Enhanced sidebar */}
