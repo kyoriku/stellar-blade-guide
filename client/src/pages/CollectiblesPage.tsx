@@ -223,7 +223,7 @@ function CollectibleTypePage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-primary">
+      <div className="min-h-main bg-primary">
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
             <aside className="hidden lg:block w-64 flex-shrink-0">
