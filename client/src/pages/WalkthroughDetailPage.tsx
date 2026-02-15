@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
 import { ApiError } from '../services/api'
-import { List, ArrowLeft, Book } from 'lucide-react'
+import { List, ArrowLeft } from 'lucide-react'
 import Lightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 import 'yet-another-react-lightbox/styles.css'
@@ -97,21 +97,17 @@ function WalkthroughPage() {
 
             {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
-              {/* Enhanced page header skeleton - matches actual header exactly */}
-              <div className="mb-6">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  <div className="h-10 md:h-14 w-80 bg-gray-700 rounded-lg animate-pulse mb-2"></div>
-                  <span className="block text-2xl mt-2">
-                    <div className="h-6 w-64 bg-gray-700 rounded-lg animate-pulse"></div>
-                  </span>
-                </h1>
+              {/* Page header skeleton */}
+              <div className="md:mb-8 mb-9">
+                <div className="h-9 md:h-10 w-80 bg-gray-700 rounded-lg animate-pulse" />
+                <div className="h-5 w-64 bg-gray-700/50 rounded mt-2 animate-pulse" />
+              </div>
 
-                {/* Meta badge skeleton */}
-                <div className="flex flex-wrap gap-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <div className="w-4 h-4 bg-blue-400/50 rounded animate-pulse"></div>
-                    <div className="h-4 w-24 bg-blue-300/30 rounded animate-pulse"></div>
-                  </div>
+              {/* Meta badge skeleton */}
+              <div className="flex flex-wrap gap-3 mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <div className="w-4 h-4 bg-blue-400/50 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-blue-300/30 rounded animate-pulse"></div>
                 </div>
               </div>
 
@@ -132,8 +128,8 @@ function WalkthroughPage() {
               </div>
 
               {/* Mobile TOC skeleton */}
-              <div className="lg:hidden mb-6">
-                <TableOfContentsSkeleton />
+              <div className="lg:hidden mb-8">
+                <TableOfContentsSkeleton collapsible />
               </div>
 
               {/* Walkthrough content skeletons */}
@@ -224,26 +220,12 @@ function WalkthroughPage() {
 
           <main className="flex-1 min-w-0">
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-                  {walkthrough.title}
-                </span>
-                {walkthrough.subtitle && (
-                  <span className="block text-2xl text-gray-400 font-normal mt-2">
-                    {walkthrough.subtitle}
-                  </span>
-                )}
+            <div className="mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                {walkthrough.title}
               </h1>
-
-              {/* Meta */}
-              {walkthrough.level && (
-                <div className="flex flex-wrap gap-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <Book className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm font-medium text-gray-300">{walkthrough.level}</span>
-                  </div>
-                </div>
+              {walkthrough.subtitle && (
+                <p className="text-gray-400">{walkthrough.subtitle}</p>
               )}
             </div>
 
@@ -270,8 +252,8 @@ function WalkthroughPage() {
             )}
 
             {/* Mobile TOC */}
-            <div className="lg:hidden mb-6">
-              <TableOfContents links={tocLinks} activeSection={activeSection} />
+            <div className="lg:hidden mb-8">
+              <TableOfContents links={tocLinks} activeSection={activeSection} collapsible />
             </div>
 
             {/* Content sections */}
