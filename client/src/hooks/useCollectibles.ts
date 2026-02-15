@@ -32,10 +32,21 @@ export function useLevelCollectibles(levelName: string) {
   })
 }
 
-export function useCollectiblesByType(typeName: string) {
+export function useCollectiblesByType(typeName: string, category: string = 'collectibles') {
   return useQuery({
-    queryKey: ['type-collectibles', typeName],
-    queryFn: () => api.getCollectiblesByType(typeName),
+    queryKey: ['type-collectibles', category, typeName],
+    queryFn: () => {
+      if (category === 'upgrades') {
+        return api.getUpgradesByType(typeName);
+      }
+      if (category === 'materials') {
+        return api.getMaterialsByType(typeName);
+      }
+      if (category === 'cosmetics') {
+        return api.getCosmeticsByType(typeName);
+      }
+      return api.getCollectiblesByType(typeName);
+    },
     enabled: !!typeName,
   })
 }

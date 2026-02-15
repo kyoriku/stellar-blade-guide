@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal, List, Union
+from typing import Literal, List, Union, Optional
 
 class TextDescription(BaseModel):
     type: Literal["text"]
@@ -53,3 +53,5 @@ class LocationResponse(BaseModel):
 class TypeResponse(BaseModel):
     id: int
     name: str
+    category_group: Optional[str] = None
+    display_order: Optional[int] = None

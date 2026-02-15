@@ -18,10 +18,23 @@ export function usePrefetch() {
     })
   }
 
-  const prefetchCollectiblesByType = (typeName: string) => {
+  // UPDATE THIS FUNCTION - add category parameter
+  const prefetchCollectiblesByType = (typeName: string, category: string = 'collectibles') => {
     queryClient.prefetchQuery({
-      queryKey: ['type-collectibles', typeName],
-      queryFn: () => api.getCollectiblesByType(typeName),
+      queryKey: ['type-collectibles', category, typeName], // Match the query key structure
+      queryFn: () => {
+        // Call the correct API based on category
+        if (category === 'upgrades') {
+          return api.getUpgradesByType(typeName);
+        }
+        if (category === 'materials') {
+          return api.getMaterialsByType(typeName);
+        }
+        if (category === 'cosmetics') {
+          return api.getCosmeticsByType(typeName);
+        }
+        return api.getCollectiblesByType(typeName);
+      },
     })
   }
 
@@ -40,11 +53,11 @@ export function usePrefetch() {
   }
 
   const prefetchWalkthroughBySlug = (type: string, slug: string) => {
-  queryClient.prefetchQuery({
-    queryKey: ['walkthrough', type, slug],
-    queryFn: () => api.getWalkthroughBySlug(type, slug),
-  })
-}
+    queryClient.prefetchQuery({
+      queryKey: ['walkthrough', type, slug],
+      queryFn: () => api.getWalkthroughBySlug(type, slug),
+    })
+  }
 
   return {
     prefetchLevel,

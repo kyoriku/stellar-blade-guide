@@ -31,13 +31,23 @@ class Location(Base):
     level = relationship('Level', back_populates='locations')
     collectibles = relationship('Collectible', back_populates='location', cascade='all, delete-orphan')
 
+# class CollectibleType(Base):
+#     __tablename__ = 'collectible_types'
+    
+#     id = Column(Integer, primary_key=True)
+#     name = Column(String(50), unique=True, nullable=False)
+#     category_group = Column(String(50), nullable=False)
+#     display_order = Column(Integer, nullable=False, default=0)
+    
+#     collectibles = relationship('Collectible', secondary=collectible_type_mappings, back_populates='types')
 class CollectibleType(Base):
     __tablename__ = 'collectible_types'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False)
+    category_group = Column(String(50), nullable=True)  # nullable during migration
+    display_order = Column(Integer, nullable=True)  # nullable during migration
     
-    # Many-to-many relationship
     collectibles = relationship('Collectible', secondary=collectible_type_mappings, back_populates='types')
 
 class Collectible(Base):
