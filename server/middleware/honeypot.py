@@ -40,13 +40,10 @@ def is_localhost(ip: str) -> bool:
 def get_client_ip(request: Request) -> str:
     """
     Get real client IP from proxy headers.
-    Railway (and most reverse proxies) set X-Forwarded-For header.
     """
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
-        # X-Forwarded-For can be: "client, proxy1, proxy2"
-        # First IP is the real client
-        return forwarded_for.split(",")[0].strip()
+        return forwarded_for.split(",")[-1].strip()
     
     # Fallback to direct connection IP (only used in local dev)
     return request.client.host
