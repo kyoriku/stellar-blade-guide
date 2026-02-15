@@ -4,7 +4,6 @@ interface CollectibleSectionSkeletonProps {
   id: string;
   locationName?: string;
   cardCount?: number;
-  animate?: boolean;
 }
 
 function CollectibleSectionSkeleton({
@@ -14,63 +13,49 @@ function CollectibleSectionSkeleton({
 }: CollectibleSectionSkeletonProps) {
   return (
     <section id={id} className="mb-16 scroll-mt-4">
-      {/* Enhanced Section Header - matches CollectibleSection exactly */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+      {/* Section Header - matches CollectibleSection */}
+      <div className="flex items-baseline gap-3 mb-6 md:mb-7">
         {locationName ? (
-          <h2 className="text-3xl font-bold text-white">{locationName}</h2>
+          <h2 className="text-2xl font-bold text-white">{locationName}</h2>
         ) : (
-          <div className="h-9 w-64 bg-gray-700 rounded-lg animate-pulse"></div>
+          <div className="h-8 w-48 bg-gray-700 rounded-lg animate-pulse" />
         )}
-        <div className="flex-1 h-px bg-gradient-to-r from-gray-700 to-transparent ml-4"></div>
-        <span className="text-sm font-medium text-gray-400 bg-gray-800 px-3 py-1 rounded-full">
-          <div className="h-4 w-16 bg-gray-700 rounded animate-pulse"></div>
+        <div className="h-5 w-20 bg-gray-700/50 rounded animate-pulse" />
+        <span className="ml-auto">
+          <div className="h-4 w-16 bg-gray-700/50 rounded animate-pulse" />
         </span>
       </div>
 
-      {/* Collectible Cards Grid - matches actual cards */}
+      {/* Collectible Cards */}
       <div className="space-y-4">
         {Array.from({ length: cardCount }).map((_, index) => (
           <article
             key={index}
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800"
-          // style={{
-          //   animation: animate ? `fadeInUp 0.25s ease-out ${index * 0.05}s both` : 'none'
-          // }}
           >
-            {/* Decorative corner gradient - matches original */}
-            {/* <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div> */}
-
             <div className="relative">
-              {/* Header with Type Badges and Title - matches exact spacing */}
+              {/* Header with Type Badges and Title */}
               <div className="flex items-start gap-4 mb-4 flex-wrap">
                 <div className="flex flex-wrap gap-2">
-                  {/* Single Type badge skeleton - matches TypeBadge component */}
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 h-7.5 rounded-lg border border-blue-500 bg-blue-500/20">
-                    <div className="w-3 h-3 bg-blue-300/50 rounded animate-pulse"></div>
-                    <div className="h-4 w-16 bg-blue-300/50 rounded animate-pulse"></div>
+                    <div className="w-3 h-3 bg-blue-300/50 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-blue-300/50 rounded animate-pulse" />
                   </div>
                 </div>
-                {/* Title skeleton - matches h3 text-xl */}
                 <div className="flex-1 pt-0.5">
-                  <div className="h-7 bg-gray-700 rounded animate-pulse" style={{ width: '70%' }}></div>
+                  <div className="h-7 w-2/3 bg-gray-700 rounded animate-pulse" />
                 </div>
               </div>
 
-              {/* Description - matches exact structure with icon */}
-              <div className="mb-5">
-                <div className="flex gap-3">
-                  {/* Icon placeholder */}
-                  <div className="w-5 h-6 bg-gray-600 rounded flex-shrink-0 mt-0.5 animate-pulse"></div>
-                  {/* Text lines */}
-                  <div className="flex-1 space-y-2">
-                    <div className="h-6 bg-gray-700 rounded animate-pulse"></div>
-                    {/* <div className="h-5 bg-gray-700 rounded animate-pulse" style={{ width: '85%' }}></div> */}
-                  </div>
+              {/* Description */}
+              <div className="mb-5 mt-0.5">
+                <div className="flex flex-col gap-2">
+                  <div className="h-5 md:h-6 bg-gray-700 rounded animate-pulse mb-1 md:mb-0.5" />
+                  <div className="h-5 w-3/4 bg-gray-700 rounded animate-pulse md:hidden" />
                 </div>
               </div>
 
-              {/* Image Gallery skeleton - always 2 images */}
+              {/* Image Gallery skeleton */}
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                 <div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-gray-700 via-gray-600 to-gray-700 animate-pulse">
                   <div className="w-full h-full flex items-center justify-center">

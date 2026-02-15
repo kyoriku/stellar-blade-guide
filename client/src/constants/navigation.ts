@@ -19,25 +19,43 @@ export const LEVELS = [
 ] as const;
 
 export const COLLECTIBLES = [
-  { slug: 'beta-cores', name: 'Beta Cores' },
-  { slug: 'body-cores', name: 'Body Cores' },
   { slug: 'camps', name: 'Camps' },
   { slug: 'cans', name: 'Cans' },
   { slug: 'documents', name: 'Documents' },
-  { slug: 'earrings', name: 'Earrings' },
-  { slug: 'exospines', name: 'Exospines' },
-  { slug: 'glasses', name: 'Glasses' },
-  // { slug: 'locked-chests', name: 'Locked Chests' },
   { slug: 'memorysticks', name: 'Memorysticks' },
-  { slug: 'nano-suits', name: 'Nano Suits' },
-  { slug: 'outfits', name: 'Outfits' },
   { slug: 'passcodes', name: 'Passcodes' },
+] as const;
+
+export const UPGRADES = [
+  { slug: 'beta-cores', name: 'Beta Cores' },
+  { slug: 'body-cores', name: 'Body Cores' },
+  { slug: 'exospines', name: 'Exospines' },
   { slug: 'robots', name: 'Robots' },
+  // { slug: 'tumbler-expansion-modules', name: 'Tumbler Expansion Modules' },
+  // { slug: 'drone-upgrade-modules', name: 'Drone Upgrade Modules' },
+  // { slug: 'weapon-cores', name: 'Weapon Cores' },
+  // { slug: 'gear', name: 'Gear' },
+] as const;
+
+export const MATERIALS = [
   { slug: 'supply-boxes', name: 'Supply Boxes' },
   { slug: 'supply-chests', name: 'Supply Chests' },
-  // { slug: 'items', name: 'Items' },
+  { slug: 'items', name: 'Items' },
+] as const;
+
+export const COSMETICS = [
+  { slug: 'earrings', name: 'Earrings' },
+  { slug: 'glasses', name: 'Glasses' },
+  { slug: 'nano-suits', name: 'Nano Suits' },
+  { slug: 'outfits', name: 'Outfits' },
+  // { slug: 'lily-outfits', name: 'Lily Outfits' },
+  // { slug: 'adam-outfits', name: 'Adam Outfits' },
+  // { slug: 'drone-appearances', name: 'Drone Appearances' },
 ] as const;
 
 export type WalkthroughSlug = typeof WALKTHROUGHS[number]['slug'];
 export type LevelSlug = typeof LEVELS[number]['slug'];
 export type CollectibleSlug = typeof COLLECTIBLES[number]['slug'];
+export type UpgradeSlug = typeof UPGRADES[number]['slug'];
+export type MaterialSlug = typeof MATERIALS[number]['slug'];
+export type CosmeticSlug = typeof COSMETICS[number]['slug'];
