@@ -48,26 +48,32 @@ async def seed_database():
             levels = {level.name: level for level in levels_data}  # Now levels[name].id works
 
             # 2c️ Insert Collectible Types
+            # Collectible types with categories
             types_data = [
-                CollectibleType(name='Camp'),
-                CollectibleType(name='Document'),
-                CollectibleType(name='Can'),
-                CollectibleType(name='Memorystick'),
-                # CollectibleType(name='Locked Chest'),
-                CollectibleType(name='Supply Chest'),
-                CollectibleType(name='Passcode'),
-                CollectibleType(name='Robot'),
-                CollectibleType(name='Supply Box'),
-                CollectibleType(name='Beta Core'),
-                CollectibleType(name='Nano Suit'),
-                CollectibleType(name='Body Core'),
-                CollectibleType(name='Earrings'),
-                CollectibleType(name='Exospine'),
-                CollectibleType(name='Outfit'),
-                CollectibleType(name='Glasses'),
-                # CollectibleType(name='Item'),
-                # CollectibleType(name='Tumbler Expansion Module'),
-                # CollectibleType(name='Drone Upgrade Module'),
+                # Collectibles category
+                CollectibleType(name='Camp', category_group='collectibles', display_order=1),
+                CollectibleType(name='Can', category_group='collectibles', display_order=2),
+                CollectibleType(name='Document', category_group='collectibles', display_order=3),
+                CollectibleType(name='Memorystick', category_group='collectibles', display_order=4),
+                CollectibleType(name='Passcode', category_group='collectibles', display_order=5),
+                
+                # Upgrades category
+                CollectibleType(name='Beta Core', category_group='upgrades', display_order=1),
+                CollectibleType(name='Body Core', category_group='upgrades', display_order=2),
+                CollectibleType(name='Exospine', category_group='upgrades', display_order=3),
+                CollectibleType(name='Robot', category_group='upgrades', display_order=4),
+
+                
+                # Materials category
+                CollectibleType(name='Supply Box', category_group='materials', display_order=1),
+                CollectibleType(name='Supply Chest', category_group='materials', display_order=2),
+                CollectibleType(name='Item', category_group='materials', display_order=3),
+                
+                # Cosmetics category
+                CollectibleType(name='Earrings', category_group='cosmetics', display_order=1),
+                CollectibleType(name='Glasses', category_group='cosmetics', display_order=2),
+                CollectibleType(name='Nano Suit', category_group='cosmetics', display_order=3),
+                CollectibleType(name='Outfit', category_group='cosmetics', display_order=4),
             ]
             session.add_all(types_data)
 
