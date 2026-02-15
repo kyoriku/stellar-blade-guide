@@ -11,7 +11,7 @@ import ErrorPage from './ErrorPage'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { LEVELS } from '../constants/navigation'
-import { ArrowLeft, MapPin, Package } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -98,18 +98,8 @@ function LevelPage() {
     : null;
   const previousLevel = currentIndex > 0 ? allLevels[currentIndex - 1] : null;
 
-  // const tocLinks = allLevels.map(level => ({
-  //   mainLink: `/levels/${level.toLowerCase().replace(/\s+/g, '-')}`,
-  //   title: level,
-  //   subLinks: level === displayLevelName
-  //     ? locationData.map(loc => ({
-  //       href: `#${loc.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`,
-  //       title: loc.location_name
-  //     }))
-  //     : undefined
-  // }));
   const tocLinks = [{
-    mainLink: '#', // or `#${levelName}`
+    mainLink: '#',
     title: displayLevelName,
     subLinks: locationData.map(loc => ({
       href: `#${loc.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`,
@@ -155,47 +145,26 @@ function LevelPage() {
     return <ErrorPage code={404} />;
   }
 
-  // Enhanced loading state with pixel-perfect skeletons
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-main bg-primary">
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
-            {/* Skeleton sidebar - exact match */}
             <aside className="hidden lg:block w-64 flex-shrink-0">
               <TableOfContentsSkeleton />
             </aside>
 
-            {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
-              {/* Enhanced page header skeleton - matches actual header exactly */}
-              <div className="mb-10">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  <div className="h-10 md:h-14 w-80 bg-gray-700 rounded-lg animate-pulse mb-2"></div>
-                  <span className="block text-2xl mt-2">
-                    <div className="h-6 w-64 bg-gray-700 rounded-lg animate-pulse"></div>
-                  </span>
-                </h1>
-
-                {/* Stats skeleton - matches actual badges */}
-                <div className="flex flex-wrap gap-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <div className="w-4 h-5 bg-blue-400/50 rounded animate-pulse"></div>
-                    <div className="h-4 w-24 bg-blue-300/30 rounded animate-pulse"></div>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-purple-500/10 border border-purple-500/30 rounded-lg">
-                    <div className="w-4 h-5 bg-purple-400/50 rounded animate-pulse"></div>
-                    <div className="h-4 w-28 bg-purple-300/30 rounded animate-pulse"></div>
-                  </div>
-                </div>
+              <div className="md:mb-8 mb-9">
+                <div className="h-9 md:h-10 w-64 bg-gray-700 rounded-lg animate-pulse" />
+                <div className="h-5 w-48 bg-gray-700/50 rounded mt-2 animate-pulse mb-3" />
               </div>
 
-              {/* Mobile TOC skeleton */}
               <div className="lg:hidden mb-8">
-                <TableOfContentsSkeleton />
+                <TableOfContentsSkeleton collapsible />
               </div>
 
-              {/* Skeleton sections - matches CollectibleSection structure */}
               <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
@@ -232,41 +201,20 @@ function LevelPage() {
 
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
-          {/* Enhanced sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} />
           </aside>
 
           <main className="flex-1 min-w-0">
-            {/* Enhanced page header */}
-            <div className="mb-10">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-                  {displayLevelName}
-                </span>
-                <span className="block text-2xl text-gray-400 font-normal mt-2">Collectibles Guide</span>
-              </h1>
-
-              {/* Stats */}
-              <div className="flex flex-wrap gap-3">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <MapPin className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm font-medium text-gray-300">
-                    {locationData.length} {locationData.length === 1 ? 'Location' : 'Locations'}
-                  </span>
-                </div>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-purple-500/10 border border-purple-500/30 rounded-lg">
-                  <Package className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm font-medium text-gray-300">
-                    {totalCollectibles} {totalCollectibles === 1 ? 'Collectible' : 'Collectibles'}
-                  </span>
-                </div>
-              </div>
+            {/* Page header */}
+            <div className="mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayLevelName}</h1>
+              <p className="text-gray-400">{totalCollectibles} collectibles across {locationData.length} {locationData.length === 1 ? 'location' : 'locations'}</p>
             </div>
 
             {/* Mobile TOC */}
             <div className="lg:hidden mb-8">
-              <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} />
+              <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} collapsible/>
             </div>
 
             {/* Collectible sections */}
@@ -354,7 +302,7 @@ function LevelPage() {
         </div>
       </div>
 
-      {/* Enhanced Lightbox */}
+      {/* Lightbox */}
       <Lightbox
         open={lightboxOpen}
         close={() => setLightboxOpen(false)}

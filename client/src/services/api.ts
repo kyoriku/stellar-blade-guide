@@ -147,6 +147,27 @@ export const api = {
     return handleResponse<LevelWithLocations[]>(response, 'collectibles by type');
   },
 
+  getUpgradesByType: async (typeName: string): Promise<LevelWithLocations[]> => {
+    const response = await fetch(
+      `${API_BASE_URL}/upgrades/${encodeURIComponent(typeName)}`
+    );
+    return handleResponse<LevelWithLocations[]>(response, 'upgrades by type');
+  },
+
+  getMaterialsByType: async (typeName: string): Promise<LevelWithLocations[]> => {
+    const response = await fetch(
+      `${API_BASE_URL}/materials/${encodeURIComponent(typeName)}`
+    );
+    return handleResponse<LevelWithLocations[]>(response, 'materials by type');
+  },
+
+  getCosmeticsByType: async (typeName: string): Promise<LevelWithLocations[]> => {
+    const response = await fetch(
+      `${API_BASE_URL}/cosmetics/${encodeURIComponent(typeName)}`
+    );
+    return handleResponse<LevelWithLocations[]>(response, 'cosmetics by type');
+  },
+
   // Walkthroughs
   getWalkthroughs: async (): Promise<WalkthroughListItem[]> => {
     const response = await fetch(

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
 import Lightbox from 'yet-another-react-lightbox'
@@ -10,22 +10,62 @@ import CollectibleSection from '../components/CollectibleSection'
 import ErrorPage from './ErrorPage'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
-import { COLLECTIBLES } from '../constants/navigation'
-import { Map, Package, ArrowLeft } from 'lucide-react'
+import { COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
+import { ArrowLeft } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 
+// Single level item type
+type LevelItem = {
+  level_id: number;
+  level_name: string;
+  level_order: number;
+  locations: {
+    location_id: number;
+    location_name: string;
+    location_order: number;
+    collectibles: {
+      id: number;
+      title: string;
+      description: any;
+      display_order: number;
+      types: string[];
+      images: Array<{ id: number; url: string; alt: string; order: number }>;
+    }[];
+  }[];
+};
+
+// Array of levels
+type LevelData = LevelItem[];
+
 function CollectibleTypePage() {
   const { typeName } = useParams<{ typeName: string }>();
+  const location = useLocation();
 
-  // Validate collectible type exists before showing loading state
+  // Detect category from URL
+  const category = location.pathname.startsWith('/upgrades') ? 'upgrades'
+    : location.pathname.startsWith('/materials') ? 'materials'
+      : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
+        : 'collectibles';
+
+  // Validate type exists
   const collectibleTypes = COLLECTIBLES.map(c => c.slug);
-  const isValidType = collectibleTypes.some(type =>
+  const upgradeTypes = UPGRADES.map(u => u.slug);
+  const materialTypes = MATERIALS.map(m => m.slug);
+  const cosmeticTypes = COSMETICS.map(c => c.slug);
+
+  const validTypes = category === 'upgrades' ? upgradeTypes
+    : category === 'materials' ? materialTypes
+      : category === 'cosmetics' ? cosmeticTypes
+        : collectibleTypes;
+
+  const isValidType = validTypes.some(type =>
     type.toLowerCase().replace(/\s+/g, '-') === typeName
   );
 
-  const { data: levelData = [], isLoading, isError, error } = useCollectiblesByType(typeName!);
+  // Pass category to hook
+  const { data: levelData = [] as LevelData, isLoading, isError, error } = useCollectiblesByType(typeName!, category);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -38,12 +78,17 @@ function CollectibleTypePage() {
     setActiveSection('');
   }, [typeName]);
 
-  // Find current and next type
-  const currentIndex = collectibleTypes.findIndex(type => type === typeName);
-  const nextType = currentIndex >= 0 && currentIndex < collectibleTypes.length - 1
-    ? collectibleTypes[currentIndex + 1]
+  // Find current and next type - use the appropriate array based on category
+  const typeArray = category === 'upgrades' ? upgradeTypes
+    : category === 'materials' ? materialTypes
+      : category === 'cosmetics' ? cosmeticTypes
+        : collectibleTypes;
+
+  const currentIndex = typeArray.findIndex(type => type === typeName);
+  const nextType = currentIndex >= 0 && currentIndex < typeArray.length - 1
+    ? typeArray[currentIndex + 1]
     : null;
-  const previousType = currentIndex > 0 ? collectibleTypes[currentIndex - 1] : null;
+  const previousType = currentIndex > 0 ? typeArray[currentIndex - 1] : null;
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -175,47 +220,26 @@ function CollectibleTypePage() {
     return <ErrorPage code={404} />;
   }
 
-  // Enhanced loading state with pixel-perfect skeletons
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-primary">
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
-            {/* Skeleton sidebar - exact match */}
             <aside className="hidden lg:block w-64 flex-shrink-0">
               <TableOfContentsSkeleton />
             </aside>
 
-            {/* Skeleton main content */}
             <main className="flex-1 min-w-0">
-              {/* Enhanced page header skeleton - matches actual header exactly */}
-              <div className="mb-10">
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  <div className="h-10 md:h-14 w-80 bg-gray-700 rounded-lg animate-pulse mb-2"></div>
-                  <span className="block text-2xl mt-2">
-                    <div className="h-6 w-64 bg-gray-700 rounded-lg animate-pulse"></div>
-                  </span>
-                </h1>
-
-                {/* Stats skeleton - matches actual badges */}
-                <div className="flex flex-wrap gap-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <div className="w-4 h-5 bg-blue-400/50 rounded animate-pulse"></div>
-                    <div className="h-4 w-24 bg-blue-300/30 rounded animate-pulse"></div>
-                  </div>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-purple-500/10 border border-purple-500/30 rounded-lg">
-                    <div className="w-4 h-5 bg-purple-400/50 rounded animate-pulse"></div>
-                    <div className="h-4 w-28 bg-purple-300/30 rounded animate-pulse"></div>
-                  </div>
-                </div>
+              <div className="md:mb-8 mb-9">
+                <div className="h-9 md:h-10 w-64 bg-gray-700 rounded-lg animate-pulse" />
+                <div className="h-5 w-40 bg-gray-700/50 rounded mt-2 animate-pulse" />
               </div>
 
-              {/* Mobile TOC skeleton */}
               <div className="lg:hidden mb-8">
-                <TableOfContentsSkeleton />
+                <TableOfContentsSkeleton collapsible />
               </div>
 
-              {/* Skeleton sections - matches CollectibleSection structure */}
               <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
@@ -240,13 +264,13 @@ function CollectibleTypePage() {
     <div className="min-h-main bg-primary">
       <SEO
         title={displayTypeName}
-        description={`Find all ${totalCollectibles} ${displayTypeName} across ${totalLevels} levels in Stellar Blade. Complete guide with screenshots and locations.`}
-        canonical={`/collectibles/${typeName}`}
+        description={`Find all ${totalCollectibles} ${displayTypeName} locations in Stellar Blade with screenshots and detailed guides across ${totalLevels} levels.`}
+        canonical={`/${category}/${typeName}`}
       />
       <StructuredData
         type="CollectionPage"
-        headline={`${displayTypeName} - Stellar Blade`}
-        description={`Find all ${totalCollectibles} ${displayTypeName} across ${totalLevels} levels in Stellar Blade.`}
+        headline={`${displayTypeName} - Stellar Blade Guide`}
+        description={`All ${totalCollectibles} ${displayTypeName} across ${totalLevels} levels in Stellar Blade.`}
         extraSchemas={structuredDataSchemas}
       />
       <div className="container mx-auto px-3 py-8">
@@ -261,36 +285,15 @@ function CollectibleTypePage() {
           </aside>
 
           <main className="flex-1 min-w-0">
-            {/* Enhanced page header */}
-            <div className="mb-10">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-                  {displayTypeName}
-                </span>
-                <span className="block text-2xl text-gray-400 font-normal mt-2">All Locations</span>
-              </h1>
-
-              {/* Stats */}
-              <div className="flex flex-wrap gap-3">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <Map className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm font-medium text-gray-300">
-                    {totalLevels} {totalLevels === 1 ? 'Level' : 'Levels'}
-                  </span>
-                </div>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-purple-500/10 border border-purple-500/30 rounded-lg">
-                  <Package className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm font-medium text-gray-300">
-                    {/* {totalCollectibles} {totalCollectibles === 1 ? 'Collectible' : 'Collectibles'} */}
-                    {totalCollectibles} {displayTypeName}
-                  </span>
-                </div>
-              </div>
+            {/* Page header */}
+            <div className="mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayTypeName}</h1>
+              <p className="text-gray-400">{totalCollectibles} {displayTypeName} across {totalLevels} {totalLevels === 1 ? 'level' : 'levels'}</p>
             </div>
 
             {/* Mobile TOC */}
             <div className="lg:hidden mb-8">
-              <TableOfContents links={tocLinks} currentLevel={typeName} activeSection={activeSection} />
+              <TableOfContents links={tocLinks} currentLevel={typeName} activeSection={activeSection} collapsible />
             </div>
 
             {/* Collectibles grouped by level */}
@@ -319,9 +322,9 @@ function CollectibleTypePage() {
                 {/* Next Type - first on mobile, right on desktop */}
                 {nextType ? (
                   <Link
-                    to={`/collectibles/${nextType}`}
+                    to={`/${category}/${nextType}`}
                     className="group w-full sm:w-auto order-1 sm:order-2"
-                    onMouseEnter={() => prefetchCollectiblesByType(nextType)}
+                    onMouseEnter={() => prefetchCollectiblesByType(nextType, category)}
                   >
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
                       <div className="flex-1 min-w-0 text-right">
@@ -337,7 +340,7 @@ function CollectibleTypePage() {
                   </Link>
                 ) : (
                   <Link
-                    to="/collectibles"
+                    to={`/${category}`}
                     className="group w-full sm:w-auto order-1 sm:order-2"
                   >
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
@@ -357,9 +360,9 @@ function CollectibleTypePage() {
                 {/* Previous Type - second on mobile, left on desktop */}
                 {previousType ? (
                   <Link
-                    to={`/collectibles/${previousType}`}
+                    to={`/${category}/${previousType}`}
                     className="group w-full sm:w-auto order-2 sm:order-1"
-                    onMouseEnter={() => prefetchCollectiblesByType(previousType)}
+                    onMouseEnter={() => prefetchCollectiblesByType(previousType, category)}
                   >
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200">
                       <div className="p-2 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">
