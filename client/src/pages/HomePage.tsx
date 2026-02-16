@@ -35,8 +35,8 @@ function HomePage() {
           loading="eager"
           fetchPriority="high"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0d1117]/80 via-[#0d1117]/30 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0d1117] to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0d1117]/20 via-[#0d1117]/30 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d1117] to-transparent" />
 
         {/* Desktop only overlay */}
         <div className="hidden md:flex absolute inset-0 items-center">
