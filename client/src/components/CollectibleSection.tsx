@@ -48,7 +48,7 @@ function CollectibleSection({
             <span className="text-base text-gray-400">{levelName}</span>
           </>
         )}
-        <span className="text-sm text-gray-500 ml-auto">
+        <span className="text-sm text-gray-400 ml-auto">
           {collectibles.length} {collectibles.length === 1 ? 'collectible' : 'collectibles'}
         </span>
       </div>
