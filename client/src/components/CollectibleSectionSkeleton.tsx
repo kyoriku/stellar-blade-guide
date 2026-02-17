@@ -13,7 +13,6 @@ function CollectibleSectionSkeleton({
 }: CollectibleSectionSkeletonProps) {
   return (
     <section id={id} className="mb-16 scroll-mt-4">
-      {/* Section Header - matches CollectibleSection */}
       <div className="flex items-baseline gap-3 mb-6 md:mb-7">
         {locationName ? (
           <h2 className="text-2xl font-bold text-white">{locationName}</h2>
@@ -26,7 +25,6 @@ function CollectibleSectionSkeleton({
         </span>
       </div>
 
-      {/* Collectible Cards */}
       <div className="space-y-4">
         {Array.from({ length: cardCount }).map((_, index) => (
           <article
@@ -34,12 +32,11 @@ function CollectibleSectionSkeleton({
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800"
           >
             <div className="relative">
-              {/* Header with Type Badges and Title */}
               <div className="flex items-start gap-4 mb-4 flex-wrap">
                 <div className="flex flex-wrap gap-2">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 h-7.5 rounded-lg border border-blue-500 bg-blue-500/20">
-                    <div className="w-3 h-3 bg-blue-300/50 rounded animate-pulse" />
-                    <div className="h-4 w-16 bg-blue-300/50 rounded animate-pulse" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 h-7.5 rounded-lg border border-cyan-500/50 bg-cyan-500/20">
+                    <div className="w-3 h-3 bg-cyan-300/50 rounded animate-pulse" />
+                    <div className="h-4 w-16 bg-cyan-300/50 rounded animate-pulse" />
                   </div>
                 </div>
                 <div className="flex-1 pt-0.5">
@@ -47,7 +44,6 @@ function CollectibleSectionSkeleton({
                 </div>
               </div>
 
-              {/* Description */}
               <div className="mb-5 mt-0.5">
                 <div className="flex flex-col gap-2">
                   <div className="h-5 md:h-6 bg-gray-700 rounded animate-pulse mb-1 md:mb-0.5" />
@@ -55,7 +51,6 @@ function CollectibleSectionSkeleton({
                 </div>
               </div>
 
-              {/* Image Gallery skeleton */}
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                 <div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-gray-700 via-gray-600 to-gray-700 animate-pulse">
                   <div className="w-full h-full flex items-center justify-center">

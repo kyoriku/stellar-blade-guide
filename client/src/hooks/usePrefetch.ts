@@ -18,12 +18,10 @@ export function usePrefetch() {
     })
   }
 
-  // UPDATE THIS FUNCTION - add category parameter
   const prefetchCollectiblesByType = (typeName: string, category: string = 'collectibles') => {
     queryClient.prefetchQuery({
-      queryKey: ['type-collectibles', category, typeName], // Match the query key structure
+      queryKey: ['type-collectibles', category, typeName],
       queryFn: () => {
-        // Call the correct API based on category
         if (category === 'upgrades') {
           return api.getUpgradesByType(typeName);
         }
