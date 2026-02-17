@@ -10,7 +10,6 @@ async def log_requests_middleware(request: Request, call_next):
     response = await call_next(request)
     duration_ms = (time.time() - start_time) * 1000
     
-    # Skip logging for bot/banned requests (flagged by honeypot middleware)
     if getattr(request.state, "bot_blocked", False):
         return response
     
