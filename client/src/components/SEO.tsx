@@ -11,7 +11,7 @@ export default function SEO({
   title,
   description,
   canonical,
-  ogImage = '/images/stellar_blade.jpg',
+  ogImage = 'https://res.cloudinary.com/drw9mrozr/image/upload/w_1920/f_webp,q_auto/v1764288880/stellar-blade/homepage/banner.jpg',
   ogType = 'website',
   noindex = false
 }: SEOProps) {
@@ -28,19 +28,17 @@ export default function SEO({
 
       {noindex && <meta name="robots" content="noindex, nofollow" />}
 
-      {/* Open Graph */}
       <meta property="og:type" content={ogType} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:image" content={`${siteUrl}${ogImage}`} />
+      <meta property="og:image" content={ogImage} />
       <meta property="og:site_name" content={siteName} />
 
-      {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={`${siteUrl}${ogImage}`} />
+      <meta name="twitter:image" content={ogImage} />
     </>
   );
 }
