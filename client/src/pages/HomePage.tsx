@@ -89,7 +89,7 @@ function HomePage() {
       <div className="border-b border-zinc-800 bg-secondary/50">
         <div className="container mx-auto px-3 py-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-300 uppercase tracking-wider">Browse by Level</h2>
+            <h2 className="text-base font-semibold text-gray-200 uppercase tracking-wider">Browse by Level</h2>
             <Link
               to="/levels"
               className="text-sm text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
