@@ -44,7 +44,7 @@ function CollectibleSection({
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         {levelName && (
           <>
-            <span className="hidden sm:inline text-gray-600">·</span>
+            <span className="hidden sm:inline text-cyan-600">·</span>
             <span className="text-base text-gray-400">{levelName}</span>
           </>
         )}

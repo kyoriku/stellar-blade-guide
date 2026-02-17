@@ -28,7 +28,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
   const scrollToSection = (href: string) => {
     const element = document.querySelector(href);
     if (element) {
-      const offset = 86;
+      const offset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
 
@@ -40,13 +40,13 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
   };
 
   const handleSubLinkClick = (href: string) => {
-    scrollToSection(href);
     if (collapsible) setIsOpen(false);
+    requestAnimationFrame(() => scrollToSection(href));
   };
 
   const handleMainLinkClick = (href: string) => {
-    scrollToSection(href);
     if (collapsible) setIsOpen(false);
+    requestAnimationFrame(() => scrollToSection(href));
   };
 
   // Count total locations/sections
@@ -68,15 +68,15 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                     handleMainLinkClick(linkGroup.mainLink);
                   }}
                   className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                    ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-l-2 border-blue-400 shadow-lg shadow-blue-500/10'
+                    ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/10'
                     : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
                     }`}
                 >
-                  <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-blue-400' : 'group-hover:translate-x-0.5'
+                  <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
                     }`} />
                   <span className="flex-1">{linkGroup.title}</span>
                   {showSubLinkCount && linkGroup.subLinks && (
-                    <span className="text-xs bg-blue-500/20 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-cyan-500/20 px-2 py-0.5 rounded-full">
                       {linkGroup.subLinks.length}
                     </span>
                   )}
@@ -85,7 +85,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                 <Link
                   to={linkGroup.mainLink}
                   className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                    ? 'bg-gradient-to-r from-blue-600/20 to-blue-500/10 text-blue-400 border-l-2 border-blue-400 shadow-lg shadow-blue-500/10'
+                    ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/10'
                     : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
                     }`}
                   onClick={() => {
@@ -93,11 +93,11 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                     if (collapsible) setIsOpen(false);
                   }}
                 >
-                  <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-blue-400' : 'group-hover:translate-x-0.5'
+                  <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
                     }`} />
                   <span className="flex-1">{linkGroup.title}</span>
                   {showSubLinkCount && isCurrentLevel && linkGroup.subLinks && (
-                    <span className="text-xs bg-blue-500/20 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-cyan-500/20 px-2 py-0.5 rounded-full">
                       {linkGroup.subLinks.length}
                     </span>
                   )}
@@ -114,7 +114,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                       <li
                         key={subIndex}
                         style={{
-                          animation: `slideIn 0.25s ease-out ${subIndex * 0.025}s both`
+                          animation: `slideIn 0.25s ease-out ${subIndex * 0.015}s both`
                         }}
                       >
                         <a
@@ -124,11 +124,11 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                             handleSubLinkClick(subLink.href);
                           }}
                           className={`group/sub flex items-center gap-2 text-sm px-3 py-1 rounded-lg transition-all duration-200 ${isActiveSubLink
-                            ? 'text-blue-400 bg-blue-500/10 font-medium'
-                            : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700/30'
+                            ? 'text-cyan-400 bg-cyan-500/10 font-medium'
+                            : 'text-gray-400 hover:text-cyan-400 hover:bg-gray-700/30'
                             }`}
                         >
-                          <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isActiveSubLink ? 'bg-blue-400' : 'bg-gray-600 group-hover/sub:bg-blue-400'
+                          <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isActiveSubLink ? 'bg-cyan-400' : 'bg-gray-600 group-hover/sub:bg-cyan-400'
                             }`}></div>
                           <span className="flex-1">{subLink.title}</span>
                           <ChevronRight className={`w-3 h-3 transition-all duration-200 ${isActiveSubLink
@@ -155,8 +155,8 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-3 w-full p-3 text-left"
         >
-          <div className="p-2 bg-blue-500/10 rounded-lg">
-            <List className="w-5 h-5 text-blue-400" />
+          <div className="p-2 bg-cyan-500/10 rounded-lg">
+            <List className="w-5 h-5 text-cyan-400" />
           </div>
           <h4 className="text-xl font-bold text-white flex-1">Contents</h4>
           <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -176,8 +176,8 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
     <nav className="sticky top-4 bg-secondary rounded-lg p-3 max-h-[calc(100vh-2rem)] overflow-hidden border border-gray-800 shadow-xl">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
-        <div className="p-2 bg-blue-500/10 rounded-lg">
-          <List className="w-5 h-5 text-blue-400" />
+        <div className="p-2 bg-cyan-500/10 rounded-lg">
+          <List className="w-5 h-5 text-cyan-400" />
         </div>
         <h4 className="text-xl font-bold text-white">Contents</h4>
       </div>
