@@ -140,7 +140,7 @@ export const api = {
     return handleResponse<Collectible[]>(response, 'collectibles');
   },
 
-  // Collectibles by type
+  // Collectibles
   getCollectiblesByType: async (typeName: string): Promise<LevelWithLocations[]> => {
     const response = await fetch(
       `${API_BASE_URL}/collectibles/${encodeURIComponent(typeName)}`
@@ -179,20 +179,15 @@ export const api = {
 
   getWalkthroughsByType: async (type: string): Promise<WalkthroughListItem[]> => {
     const response = await fetch(
-      `${API_BASE_URL}/walkthroughs/type/${encodeURIComponent(type)}`
+      `${API_BASE_URL}/walkthroughs/${encodeURIComponent(type)}`
     );
     return handleResponse<WalkthroughListItem[]>(response, 'walkthroughs by type');
   },
 
   getWalkthroughBySlug: async (type: string, slug: string): Promise<Walkthrough> => {
     const response = await fetch(
-      `${API_BASE_URL}/walkthroughs/type/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
+      `${API_BASE_URL}/walkthroughs/${encodeURIComponent(type)}/${encodeURIComponent(slug)}`
     );
-    return handleResponse<Walkthrough>(response, 'walkthrough');
-  },
-
-  getWalkthroughById: async (id: number): Promise<Walkthrough> => {
-    const response = await fetch(`${API_BASE_URL}/walkthroughs/${id}`);
     return handleResponse<Walkthrough>(response, 'walkthrough');
   },
 };

@@ -23,11 +23,3 @@ export function useWalkthrough(type: string, slug: string) {
     enabled: !!type && !!slug,
   })
 }
-
-export function useWalkthroughById(id: number) {
-  return useQuery({
-    queryKey: ['walkthrough', 'id', id],
-    queryFn: () => api.getWalkthroughById(id),
-    enabled: !!id,
-  })
-}
