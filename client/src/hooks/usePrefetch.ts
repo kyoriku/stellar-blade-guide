@@ -36,13 +36,6 @@ export function usePrefetch() {
     })
   }
 
-  const prefetchWalkthrough = (id: number) => {
-    queryClient.prefetchQuery({
-      queryKey: ['walkthrough', id],
-      queryFn: () => api.getWalkthroughById(id),
-    })
-  }
-
   const prefetchWalkthroughsByType = (type: string) => {
     queryClient.prefetchQuery({
       queryKey: ['walkthroughs', 'type', type],
@@ -61,7 +54,6 @@ export function usePrefetch() {
     prefetchLevel,
     prefetchLocations,
     prefetchCollectiblesByType,
-    prefetchWalkthrough,
     prefetchWalkthroughsByType,
     prefetchWalkthroughBySlug,
   }

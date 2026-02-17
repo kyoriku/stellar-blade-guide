@@ -19,12 +19,12 @@ async def log_requests_middleware(request: Request, call_next):
     
     log_parts = [
         f'{client_ip} → {request.method} {request.url.path}',
-        f'STATUS: {response.status_code}',
-        f'TOTAL: {duration_ms:.0f}ms',
+        f'{response.status_code}',
+        f'{duration_ms:.0f}ms',
     ]
     
     if cache_status:
-        log_parts.append(f'CACHE: {cache_status}')
+        log_parts.append(cache_status)
     if db_time:
         log_parts.append(f'DB: {db_time:.0f}ms')
     
