@@ -225,7 +225,7 @@ function WalkthroughPage() {
                 {walkthrough.title}
               </h1>
               {walkthrough.subtitle && (
-                <p className="text-gray-400">{walkthrough.subtitle}</p>
+                <p className="text-gray-300">{walkthrough.subtitle}</p>
               )}
             </div>
 
