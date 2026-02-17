@@ -2,7 +2,7 @@ export default function TermsOfService() {
   return (
     <div className="min-h-main bg-primary">
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <h1 className="text-4xl font-bold mb-8 text-blue-400">Terms of Service</h1>
+        <h1 className="text-4xl font-bold mb-8 text-cyan-400">Terms of Service</h1>
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
 
           <section>
@@ -56,7 +56,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-semibold mb-2 text-gray-200">Contact</h2>
             <p>Questions about these terms:</p>
-            <p className="mt-2 font-mono text-blue-400">contact@stellarbladeguide.com</p>
+            <p className="mt-2 font-mono text-sm text-cyan-400">contact@stellarbladeguide.com</p>
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
