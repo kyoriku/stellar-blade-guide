@@ -52,7 +52,8 @@ add_banned_ip_middleware(app)
 
 # Routes
 app.include_router(levels.router, prefix=settings.API_PREFIX)
-app.include_router(collectibles.router, prefix=settings.API_PREFIX)
+app.include_router(collectibles.levels_router, prefix=settings.API_PREFIX)
+app.include_router(collectibles.collectibles_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.upgrades_router, prefix=settings.API_PREFIX) 
 app.include_router(collectibles.cosmetics_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.materials_router, prefix=settings.API_PREFIX)
