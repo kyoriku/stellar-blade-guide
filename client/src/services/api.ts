@@ -115,6 +115,7 @@ const handleResponse = async <T>(response: Response, context: string): Promise<T
 };
 
 export const api = {
+  // Levels
   getLevels: async (): Promise<Level[]> => {
     const response = await fetch(`${API_BASE_URL}/levels/`);
     return handleResponse<Level[]>(response, 'levels');
@@ -125,24 +126,24 @@ export const api = {
     return handleResponse<Location[]>(response, 'locations');
   },
 
-  getCollectibles: async (levelName: string, locationName: string): Promise<Collectible[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/collectibles/levels/${encodeURIComponent(levelName)}/locations/${encodeURIComponent(locationName)}`
-    );
-    return handleResponse<Collectible[]>(response, 'collectibles');
-  },
-
   getLevelCollectibles: async (levelName: string): Promise<LocationWithCollectibles[]> => {
     const response = await fetch(
-      `${API_BASE_URL}/collectibles/levels/${encodeURIComponent(levelName)}`
+      `${API_BASE_URL}/levels/${encodeURIComponent(levelName)}`
     );
     return handleResponse<LocationWithCollectibles[]>(response, 'level collectibles');
   },
 
-  getCollectiblesByType: async (typeName: string, filterType?: string): Promise<LevelWithLocations[]> => {
-    const query = filterType ? `?filter=${encodeURIComponent(filterType)}` : '';
+  getCollectibles: async (levelName: string, locationName: string): Promise<Collectible[]> => {
     const response = await fetch(
-      `${API_BASE_URL}/collectibles/types/${encodeURIComponent(typeName)}${query}`
+      `${API_BASE_URL}/levels/${encodeURIComponent(levelName)}/${encodeURIComponent(locationName)}`
+    );
+    return handleResponse<Collectible[]>(response, 'collectibles');
+  },
+
+  // Collectibles by type
+  getCollectiblesByType: async (typeName: string): Promise<LevelWithLocations[]> => {
+    const response = await fetch(
+      `${API_BASE_URL}/collectibles/${encodeURIComponent(typeName)}`
     );
     return handleResponse<LevelWithLocations[]>(response, 'collectibles by type');
   },
