@@ -39,12 +39,11 @@ function CollectibleSection({
 
   return (
     <section id={id} className="mb-16 scroll-mt-4">
-      {/* Section Header */}
       <div className="flex flex-wrap items-baseline gap-3 mb-6">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         {levelName && (
           <>
-            <span className="hidden sm:inline text-cyan-600">·</span>
+            <span className="hidden sm:inline text-cyan-600">•</span>
             <span className="text-base text-gray-400">{levelName}</span>
           </>
         )}
@@ -53,7 +52,6 @@ function CollectibleSection({
         </span>
       </div>
 
-      {/* Collectible Cards */}
       <div className="space-y-4">
         {collectibles.map((collectible) => (
           <article
@@ -61,7 +59,6 @@ function CollectibleSection({
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
           >
             <div className="relative">
-              {/* Header with Type Badges and Title */}
               <div className="flex flex-col mb-4">
                 <div className="flex flex-wrap items-center gap-2">
                   {[...collectible.types].sort().map((type, idx) => (
@@ -73,7 +70,6 @@ function CollectibleSection({
                 </div>
               </div>
 
-              {/* Description */}
               <div className="mb-5">
                 {collectible.description.type === 'text' ? (
                   <div className="flex gap-3">
@@ -95,7 +91,6 @@ function CollectibleSection({
                 )}
               </div>
 
-              {/* Image Gallery */}
               <ImageGallery
                 images={collectible.images}
                 onImageClick={onImageClick}

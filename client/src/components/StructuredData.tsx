@@ -17,7 +17,6 @@ export default function StructuredData({
   const pathname = window.location.pathname;
   const currentUrl = `${siteUrl}${pathname}`;
 
-  // WebSite schema (homepage only)
   const websiteSchema = pathname === '/' ? {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -27,7 +26,6 @@ export default function StructuredData({
     publisher: { '@type': 'Organization', name: 'Stellar Blade Guide' }
   } : null;
 
-  // Auto-generate breadcrumbs from URL
   const generateBreadcrumbs = () => {
     const pathParts = pathname.split('/').filter(Boolean);
     if (pathParts.length === 0) return null;
@@ -70,7 +68,6 @@ export default function StructuredData({
     }))
   } : null;
 
-  // Page schema
   const pageSchema = {
     '@context': 'https://schema.org',
     '@type': type,

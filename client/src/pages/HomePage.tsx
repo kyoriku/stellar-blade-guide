@@ -29,7 +29,7 @@ function HomePage() {
       {/* Hero */}
       <div className="relative h-[40vh] sm:h-[60vh] md:h-[70vh] overflow-hidden">
         <img
-          src="https://res.cloudinary.com/drw9mrozr/image/upload//w_1920/f_webp,q_auto/v1771136778/stellar_blade2_c9qinq.jpg"
+          src="https://res.cloudinary.com/drw9mrozr/image/upload/w_1920/f_webp,q_auto/v1771136778/stellar_blade2_c9qinq.jpg"
           alt="Stellar Blade"
           className="absolute inset-0 w-full h-full object-cover object-[center_40%] scale-125 md:scale-100"
           loading="eager"

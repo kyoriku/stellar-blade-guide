@@ -49,9 +49,6 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
     requestAnimationFrame(() => scrollToSection(href));
   };
 
-  // Count total locations/sections
-  // const totalItems = links.reduce((sum, link) => sum + (link.subLinks?.length || 1), 0);
-
   const linksContent = (
     <div className={collapsible ? 'max-h-[60vh] overflow-y-auto custom-scrollbar pr-2' : 'overflow-y-auto max-h-[calc(100vh-10rem)] custom-scrollbar pr-2'}>
       <ul className="space-y-1">
@@ -104,7 +101,6 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                 </Link>
               )}
 
-              {/* Sub-links */}
               {linkGroup.subLinks && (
                 <ul className="ml-4 space-y-1 overflow-hidden">
                   {linkGroup.subLinks.map((subLink, subIndex) => {
@@ -174,7 +170,6 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
 
   return (
     <nav className="sticky top-4 bg-secondary rounded-lg p-3 max-h-[calc(100vh-2rem)] overflow-hidden border border-gray-800 shadow-xl">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
         <div className="p-2 bg-cyan-500/10 rounded-lg">
           <List className="w-5 h-5 text-cyan-400" />
@@ -184,7 +179,6 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
 
       {linksContent}
 
-      {/* Footer decoration */}
       <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
     </nav>
   );

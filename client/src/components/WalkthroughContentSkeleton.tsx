@@ -4,19 +4,16 @@ function WalkthroughContentSkeleton() {
   return (
     <article className="relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800">
       <div className="relative">
-        {/* Section Title skeleton */}
         <div className="mb-3">
           <div className="h-7 w-64 bg-gray-700 rounded animate-pulse"></div>
         </div>
 
-        {/* Main text skeleton - 3 lines */}
         <div className="mb-4 space-y-2">
           <div className="h-6 bg-gray-700 rounded animate-pulse"></div>
           <div className="h-6 bg-gray-700 rounded animate-pulse" style={{ width: '95%' }}></div>
           <div className="h-6 bg-gray-700 rounded animate-pulse" style={{ width: '80%' }}></div>
         </div>
 
-        {/* Image gallery skeleton - 2 images */}
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
           <div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-gray-700 via-gray-600 to-gray-700 animate-pulse">
             <div className="w-full h-full flex items-center justify-center">
