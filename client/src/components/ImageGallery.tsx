@@ -7,12 +7,10 @@ interface ImageGalleryProps {
   onImageClick?: (imageUrl: string) => void;
 }
 
-// Track URLs that have loaded during this session
 const loadedUrlCache = new Set<string>();
 
 function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(() => {
-    // Instant lookup — no Image objects created
     const cached = new Set<number>();
     images.forEach(img => {
       if (loadedUrlCache.has(img.url)) {
@@ -28,7 +26,6 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
   };
   const [hoveredImage, setHoveredImage] = useState<number | null>(null);
 
-  // Filter out invalid images
   const validImages = images.filter(img => img.url && img.alt);
 
   if (!validImages.length) return null;
@@ -47,7 +44,6 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
             onMouseEnter={() => setHoveredImage(image.id)}
             onMouseLeave={() => setHoveredImage(null)}
           >
-            {/* Skeleton loader - pixel perfect */}
             {shouldShowSkeleton && (
               <div className="absolute inset-0 bg-gradient-to-br from-gray-700 via-gray-600 to-gray-700 animate-pulse z-10">
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -56,7 +52,6 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
               </div>
             )}
 
-            {/* Image - loads underneath skeleton */}
             <img
               src={image.url}
               alt={image.alt}
@@ -64,20 +59,16 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
                 } ${hoveredImage === image.id ? 'scale-100' : 'scale-100'}`}
               onLoad={() => handleImageLoad(image.id, image.url)}
               loading="lazy"
-            // fetchPriority='high'
             />
 
-            {/* Overlay on hover - only show when image is loaded */}
             {isLoaded && (
               <div className={`absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
                 }`}>
-                {/* Zoom Icon */}
                 <div className="absolute top-3 right-3">
                   <ZoomIn className={`w-5 h-5 text-white drop-shadow-lg transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
                     }`} />
                 </div>
 
-                {/* Alt text at bottom */}
                 <div className={`absolute bottom-0 left-0 right-0 p-4 transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'
                   }`}>
                   <p className="text-white text-sm font-medium drop-shadow-lg">
@@ -87,7 +78,6 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
               </div>
             )}
 
-            {/* Subtle border on hover - only show when image is loaded */}
             {isLoaded && (
               <div className={`absolute inset-0 rounded-lg border transition-colors duration-200 ${hoveredImage === image.id ? 'border-gray-700' : 'border-transparent'
                 }`}></div>

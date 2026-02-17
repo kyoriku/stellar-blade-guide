@@ -50,9 +50,9 @@ function ErrorPage({
       <div className="text-center max-w-md">
         <div className="mb-8 flex justify-center">
           <div className="relative">
-            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl"></div>
+            <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl"></div>
             <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-full border border-gray-700">
-              <Icon className="w-16 h-16 text-blue-400" />
+              <Icon className="w-16 h-16 text-cyan-400" />
             </div>
           </div>
         </div>
@@ -67,7 +67,7 @@ function ErrorPage({
 
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-600 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 rounded-lg font-medium transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 "
         >
           <Home className="w-4 h-4" />
           Back to Home
