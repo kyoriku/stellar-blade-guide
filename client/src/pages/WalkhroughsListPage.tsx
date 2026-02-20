@@ -123,10 +123,10 @@ export default function WalkthroughsListPage() {
                 {/* Content */}
                 <div className="p-4">
                   {walkthrough.subtitle && (
-                    <p className="text-sm text-gray-400 line-clamp-1 mb-2">{walkthrough.subtitle}</p>
+                    <p className="text-sm text-gray-300 line-clamp-1 mb-2">{walkthrough.subtitle}</p>
                   )}
                   {walkthrough.level && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
                       <MapPin className="w-3.5 h-3.5" />
                       <span>{walkthrough.level}</span>
                     </div>
