@@ -6,10 +6,10 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-col items-center md:items-start gap-2">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-300 text-sm">
               &copy; {new Date().getFullYear()} Stellar Blade Guide. All rights reserved.
             </p>
-            <p className="text-gray-500 text-xs">
+            <p className="text-gray-400 text-xs">
               Not affiliated with Shift Up Corporation or Sony Interactive Entertainment
             </p>
           </div>
