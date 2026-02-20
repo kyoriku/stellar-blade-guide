@@ -165,7 +165,7 @@ function HomePage() {
             </div>
 
             {WALKTHROUGHS.length <= 2 && (
-              <p className="text-sm text-gray-500 mt-3 italic">More coming soon</p>
+              <p className="text-sm text-gray-400 mt-3 italic">More coming soon</p>
             )}
           </div>
 
