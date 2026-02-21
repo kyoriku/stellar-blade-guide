@@ -11,7 +11,7 @@ sys.path.insert(0, str(project_root))
 
 from db.database import engine, Base, AsyncSessionLocal
 from models.collectibles import Level, Location, CollectibleType
-from models.walkthroughs import Walkthrough
+from models.walkthroughs import Walkthrough 
 
 async def seed_database():
     # 1 Create tables (sync inside async context)
@@ -63,17 +63,17 @@ async def seed_database():
                 CollectibleType(name='Exospine', category_group='upgrades', display_order=3),
                 CollectibleType(name='Robot', category_group='upgrades', display_order=4),
 
-                
-                # Materials category
-                CollectibleType(name='Supply Box', category_group='materials', display_order=1),
-                CollectibleType(name='Supply Chest', category_group='materials', display_order=2),
-                CollectibleType(name='Item', category_group='materials', display_order=3),
-                
                 # Cosmetics category
                 CollectibleType(name='Earrings', category_group='cosmetics', display_order=1),
                 CollectibleType(name='Glasses', category_group='cosmetics', display_order=2),
                 CollectibleType(name='Nano Suit', category_group='cosmetics', display_order=3),
                 CollectibleType(name='Outfit', category_group='cosmetics', display_order=4),
+
+                # Materials category
+                CollectibleType(name='Supply Box', category_group='materials', display_order=1),
+                CollectibleType(name='Supply Chest', category_group='materials', display_order=2),
+                CollectibleType(name='Item', category_group='materials', display_order=3),
+                
             ]
             session.add_all(types_data)
 
