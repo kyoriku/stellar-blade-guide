@@ -40,7 +40,15 @@ def is_localhost(ip: str) -> bool:
 def get_client_ip(request: Request) -> str:
     """
     Get real client IP from proxy headers.
+    Prefers Fastly-Client-IP (set by Fastly/Railway CDN) over X-Forwarded-For.
+    Falls back to direct connection IP in local dev.
     """
+    # Fastly sets this to the true client IP as seen at their edge
+    fastly_ip = request.headers.get("fastly-client-ip")
+    if fastly_ip:
+        return fastly_ip.strip()
+
+    # Fallback: use rightmost XFF entry (last untrusted proxy)
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
         return forwarded_for.split(",")[-1].strip()
