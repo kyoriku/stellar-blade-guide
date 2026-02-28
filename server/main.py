@@ -1,3 +1,5 @@
+
+import cloudinary
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 
@@ -13,6 +15,13 @@ from middleware.honeypot import add_banned_ip_middleware, add_honeypot_middlewar
 from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health
 
 setup_logging()
+
+cloudinary.config(
+    cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+    api_key=settings.CLOUDINARY_API_KEY,
+    api_secret=settings.CLOUDINARY_API_SECRET,
+    secure=True
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
