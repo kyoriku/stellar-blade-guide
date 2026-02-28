@@ -1,0 +1,12 @@
+{
+  "steps": {
+    "install": {
+      "cmds": [
+        "uv sync --locked --no-dev --no-install-project"
+      ]
+    },
+    "build": {
+      "cmds": []
+    }
+  }
+}
