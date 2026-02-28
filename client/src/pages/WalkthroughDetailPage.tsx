@@ -14,6 +14,7 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
+import CommentSection from '../components/comments/CommentSection'
 
 function WalkthroughPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
@@ -96,7 +97,7 @@ function WalkthroughPage() {
             </aside>
 
             {/* Skeleton main content */}
-            <main className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
               {/* Page header skeleton */}
               <div className="md:mb-8 mb-9">
                 <div className="h-9 md:h-10 w-80 bg-gray-700 rounded-lg animate-pulse" />
@@ -105,9 +106,9 @@ function WalkthroughPage() {
 
               {/* Meta badge skeleton */}
               <div className="flex flex-wrap gap-3 mb-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600/20 to-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <div className="w-4 h-4 bg-blue-400/50 rounded animate-pulse"></div>
-                  <div className="h-4 w-24 bg-blue-300/30 rounded animate-pulse"></div>
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                  <div className="w-4 h-4 bg-cyan-400/50 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-cyan-300/30 rounded animate-pulse"></div>
                 </div>
               </div>
 
@@ -120,7 +121,7 @@ function WalkthroughPage() {
                 <ul className="space-y-2">
                   {[1, 2, 3].map((i) => (
                     <li key={i} className="flex gap-2">
-                      <span className="text-blue-400 font-bold">•</span>
+                      <span className="text-cyan-400 font-bold">•</span>
                       <div className="h-6 bg-gray-700 rounded animate-pulse flex-1"></div>
                     </li>
                   ))}
@@ -138,7 +139,7 @@ function WalkthroughPage() {
                 <WalkthroughContentSkeleton />
                 <WalkthroughContentSkeleton />
               </section>
-            </main>
+            </div>
           </div>
         </div>
       </div>
@@ -218,7 +219,7 @@ function WalkthroughPage() {
             <TableOfContents links={tocLinks} activeSection={activeSection} />
           </aside>
 
-          <main className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
@@ -243,7 +244,7 @@ function WalkthroughPage() {
                       id={`objective-${idx}`}
                       className="flex gap-2 walkthrough-content scroll-mt-24"
                     >
-                      <span className="text-blue-400 font-bold">•</span>
+                      <span className="text-cyan-400 font-bold">•</span>
                       <span className="text-gray-300">{objective}</span>
                     </li>
                   ))}
@@ -282,15 +283,15 @@ function WalkthroughPage() {
                     className="group w-full sm:w-auto order-1 sm:order-2"
                     onMouseEnter={() => prefetchWalkthroughBySlug(type!, nextWalkthrough.slug)}
                   >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
-                        <div className="text-xs text-blue-400 mb-0.5">Next</div>
+                        <div className="text-xs text-cyan-400 mb-0.5">Next</div>
                         <div className="text-sm font-medium text-white truncate">
                           {nextWalkthrough.title}
                         </div>
                       </div>
-                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      <div className="p-2 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-cyan-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   </Link>
@@ -299,15 +300,15 @@ function WalkthroughPage() {
                     to="/walkthroughs"
                     className="group w-full sm:w-auto order-1 sm:order-2"
                   >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
-                        <div className="text-xs text-blue-400 mb-0.5">Finished</div>
+                        <div className="text-xs text-cyan-400 mb-0.5">Finished</div>
                         <div className="text-sm font-medium text-white">
                           All Walkthroughs
                         </div>
                       </div>
-                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      <div className="p-2 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-cyan-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   </Link>
@@ -337,7 +338,8 @@ function WalkthroughPage() {
                 )}
               </div>
             </div>
-          </main>
+            <CommentSection contentType="walkthrough" contentId={walkthrough.id} />
+          </div>
         </div>
       </div>
 

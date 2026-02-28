@@ -1,10 +1,10 @@
 # Stellar Blade Guide
 
-A game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 800+ database records, and 1000+ images via Cloudinary CDN.
+An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 800+ database records and 1000+ images via Cloudinary CDN.
 
 **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
-**Key Features:** Redis caching • Cloudinary CDN • Image galleries • Responsive design • Junction table queries
+**Key Features:** User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Redis caching • Cloudinary CDN • Image galleries • Responsive design
 
 ![Home Page](client/public/assets/screenshots/homepage.png)
 
@@ -38,34 +38,49 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 ## Technical Details
 
 **Frontend**
-- React with TypeScript
-- TanStack Query for data fetching and caching with prefetching
+- React 19 with TypeScript
+- TanStack Query for data fetching, caching, and prefetching on hover
 - Tailwind CSS for styling
 - Image lightbox with zoom capability
-- Responsive design
+- Skeleton loaders and smooth loading states
+- Responsive design with mobile navigation drawer
+- Protected routes with auth guards
 
 **Backend**
-- FastAPI with async endpoints
+- FastAPI with fully async endpoints
+- JWT authentication with short-lived access tokens (15 min) and rotating refresh tokens (7 days) stored as HttpOnly cookies
+- OAuth 2.0 integration with Google and Discord
+- Password reset flow via email (Resend)
 - SQLAlchemy ORM with async support
 - Pydantic for request/response validation
-- Rate limiting (100 requests/minute)
+- Role-based access control (user, moderator, admin)
+- Rate limiting (slowapi) and custom honeypot middleware for bot detection
 - CORS configuration
+- AI-powered comment moderation via OpenAI Moderation API
 
 **Database**
 - PostgreSQL with relational schema
 - Junction tables for many-to-many relationships
+- Soft deletes for comments to preserve thread context
 - Indexed queries for performance
 
 **Performance & Caching**
-- Redis caching (24-hour TTL)
-- Cloudinary CDN for image delivery
-- TanStack Query client-side caching
+- Multi-tier caching: Redis (server-side, 24hr TTL) + TanStack Query (client-side)
+- Cloudinary CDN for image delivery and optimisation
+- 60–70ms average API response times
 
-**Features**
-- Browse 800+ collectibles by level and location
-- Filter by collectible type
-- Mission walkthroughs with objectives
-- Image galleries with 1000+ images
+**Auth & User System**
+- Email/password registration and login
+- OAuth sign-in with Google and Discord (avatar pulled from provider)
+- Secure session management with refresh token rotation
+- Account settings: username, avatar, password change, account deletion
+
+**Comments**
+- Threaded comments (one level of nesting) on walkthroughs, levels, and collectible pages
+- Post, edit, and delete with ownership checks
+- Moderator and admin controls
+- AI moderation via OpenAI flags inappropriate content before it's saved
+- Soft delete preserves thread context when a parent comment is removed
 
 ## Screenshots
 <details>
@@ -81,22 +96,35 @@ A game guide and collectibles tracker for *Stellar Blade*. Full-stack web applic
 
 ### Prerequisites
 
-- Node.js 18+
-- Python 3.11+
-- PostgreSQL 14+
-- Redis 7+
+- Node.js 22+
+- Python 3.13+
+- PostgreSQL 17+
+- Redis 8+
 
-### Backend Setup
+### Setup
 
-Navigate to the `server/` directory.
+#### 1. Install dependencies
 
-#### 1. Virtual Environment & Dependencies
+Root (concurrently):
 ```bash
-# Create and activate venv
-python3 -m venv venv
-source venv/bin/activate
+npm install
+```
 
-# Install dependencies
+Client:
+```bash
+cd client && npm install
+```
+
+Server - using [uv](https://github.com/astral-sh/uv) (recommended):
+```bash
+cd server && uv sync
+```
+
+Or with standard Python venv:
+```bash
+cd server
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -104,63 +132,45 @@ pip install -r requirements.txt
 
 Create a `.env` file in `server/`:
 ```bash
-DATABASE_URL=postgresql://localhost:5432/stellarblade
+ENVIRONMENT=development
+DATABASE_URL=postgresql+asyncpg://localhost:5432/stellarblade
 REDIS_URL=redis://localhost:6379
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=http://localhost:3000,https://stellarbladeguide.com
 
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-
 CACHE_TTL=300
 
-ADMIN_SECRET=your_admin_secret
+JWT_SECRET_KEY=your_jwt_secret # Generate using: openssl rand -hex 32
+ADMIN_SECRET=your_admin_secret # Generate using: openssl rand -hex 32
+FRONTEND_URL=http://localhost:3000
+
+OPENAI_API_KEY=your_openai_api_key
+RESEND_API_KEY=your_resend_api_key
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+
+LOG_LEVEL=INFO
+DEBUG=True
 ```
 
-#### 3. Local Database
-
-**Option 1: CLI**
+#### 3. Database
 ```bash
 psql postgres
 CREATE DATABASE stellarblade;
 \q
 ```
 
-**Option 2: SQL File**
+Seed scripts are available in `server/scripts/db/` for reference, though seed data files are not included in this repository.
 
-Create `db/schema.sql`:
-```sql
-DROP DATABASE IF EXISTS stellarblade;
-CREATE DATABASE stellarblade;
-```
+#### 4. Run
 
-Then run:
+From the root directory, this starts both the FastAPI server (port 8000) and Vite dev server (port 3000) concurrently:
 ```bash
-psql -d postgres -f db/schema.sql
-```
-
-#### 4. Seed Database
-```bash
-python3 scripts/db/seed_db.py
-python3 scripts/db/seed_collectibles.py
-python3 scripts/db/seed_walkthroughs.py
-```
-
-#### 5. Start Server
-```bash
-uvicorn main:app --reload
-```
-
-> **Note:** Reactivate venv in new terminal sessions:
-> ```bash
-> source venv/bin/activate
-> ```
-
-### Frontend Setup
-
-Navigate to the `client/` directory:
-```bash
-npm install
 npm run dev
 ```
 

@@ -107,6 +107,7 @@ export default function WalkthroughsListPage() {
                     <img
                       src={walkthrough.thumbnail_url}
                       alt={walkthrough.title}
+                      fetchPriority='high'
                       className="w-full h-full object-cover"
                     />
                   ) : (
