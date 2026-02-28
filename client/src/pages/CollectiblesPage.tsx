@@ -272,8 +272,6 @@ function CollectibleTypePage() {
     return <ErrorPage code={404} />;
   }
 
-  console.log(levelData[0].type_id) 
-
   return (
     <div className="min-h-main bg-primary">
       <SEO
