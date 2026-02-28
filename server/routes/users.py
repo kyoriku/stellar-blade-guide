@@ -1,4 +1,8 @@
 import logging
+import httpx
+import cloudinary
+import cloudinary.uploader
+import openai
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -72,6 +76,49 @@ def user_to_response(user: User) -> dict:
         "created_at": user.created_at.isoformat(),
     }
 
+async def check_image_moderation(url: str) -> None:
+    """Check image against OpenAI moderation API. Raises HTTPException if flagged."""
+    client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+    response = await client.moderations.create(
+        model="omni-moderation-latest",
+        input=[{"type": "image_url", "image_url": {"url": url}}]
+    )
+    result = response.results[0]
+    if result.flagged:
+        flagged_categories = [cat for cat, flagged in result.categories.__dict__.items() if flagged]
+        logger.warning(f"Avatar image flagged by moderation: {flagged_categories}")
+        raise HTTPException(status_code=400, detail="Image was rejected by content moderation")
+
+async def upload_avatar_to_cloudinary(url: str, user_id: int) -> str:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, follow_redirects=True, timeout=10)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Could not fetch image from URL")
+        content_type = response.headers.get("content-type", "")
+        if not content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="URL does not point to an image")
+
+    await check_image_moderation(url)  # check before uploading
+
+    result = cloudinary.uploader.upload(
+        url,
+        folder="stellar-blade/avatars",
+        public_id=f"user-{user_id}.webp",
+        overwrite=True,
+        transformation=[
+            {"width": 100, "height": 100, "crop": "fill", "gravity": "face", "quality": "auto"}
+        ],
+        format="webp"
+    )
+    return result["secure_url"]
+
+def delete_avatar_from_cloudinary(user_id: int) -> None:
+    """Delete a user's avatar from Cloudinary."""
+    try:
+        cloudinary.uploader.destroy(f"stellar-blade/avatars/user-{user_id}.webp")
+    except Exception as e:
+        logger.warning(f"Failed to delete Cloudinary avatar for user {user_id}: {e}")
+
 
 # Routes
 
@@ -101,7 +148,18 @@ async def update_me(
         current_user.username = body.username
 
     if body.avatar_url is not None:
-        current_user.avatar_url = body.avatar_url
+      if body.avatar_url == "":
+          delete_avatar_from_cloudinary(current_user.id)
+          current_user.avatar_url = None
+      else:
+          try:
+              cloudinary_url = await upload_avatar_to_cloudinary(body.avatar_url, current_user.id)
+              current_user.avatar_url = cloudinary_url
+          except HTTPException:
+              raise
+          except Exception as e:
+              logger.error(f"Failed to upload avatar for user {current_user.id}: {e}")
+              raise HTTPException(status_code=400, detail="Failed to process avatar image")
 
     await db.commit()
     await db.refresh(current_user)

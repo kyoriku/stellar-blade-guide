@@ -186,7 +186,14 @@ export default function SettingsPage() {
                   className="w-10 h-10 rounded-full object-cover border border-gray-700"
                   onError={e => (e.currentTarget.style.display = 'none')}
                 />
-                <span className="text-xs text-gray-500">Preview</span>
+                <span className="text-xs text-gray-400">Preview</span>
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl('')}
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                >
+                  Remove
+                </button>
               </div>
             )}
 
