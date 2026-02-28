@@ -18,6 +18,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!contentId) return;
     const fetchComments = async () => {
       setIsLoading(true)
       setError(null)
