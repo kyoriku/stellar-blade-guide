@@ -55,6 +55,7 @@ export default function WalkthroughsIndexPage() {
                   <img
                     src={WALKTHROUGH_IMAGES[category.slug]}
                     alt={category.name}
+                    fetchPriority='high'
                     className="w-full h-full object-cover"
                   />
                 ) : (

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, ChevronDown, Book, Map, Package, Zap, Box, Sparkles, Search, ChevronRight } from 'lucide-react'
+import { Menu, X, ChevronDown, Book, Map, Package, Zap, Box, Sparkles, Search, ChevronRight, LogIn, User, LogOut, Settings } from 'lucide-react'
 import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
 import { usePrefetch } from '../hooks/usePrefetch'
+import { useAuth } from '../hooks/useAuth'
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,8 +18,29 @@ function Navbar() {
     cosmetics: false,
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  // const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch();
+  const handleLogout = async () => {
+    setUserDropdownOpen(false)
+    await logout()
+    // navigate('/')
+  }
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
+        setUserDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [openDropdown, setOpenDropdown] = useState<null | 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'materials' | 'cosmetics'>(null);
@@ -203,6 +225,7 @@ function Navbar() {
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('walkthroughs')}
                 onMouseLeave={handleMouseLeave}
+                onClick={() => setOpenDropdown(null)}
               >
                 <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
                   <Link to="/walkthroughs" className="hover:text-cyan-400 transition-colors">
@@ -213,7 +236,7 @@ function Navbar() {
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle walkthroughs menu"
                   >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'walkthroughs' ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'walkthroughs' ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
 
@@ -242,6 +265,7 @@ function Navbar() {
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('levels')}
                 onMouseLeave={handleMouseLeave}
+                onClick={() => setOpenDropdown(null)}
               >
                 <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
                   <Link to="/levels" className="hover:text-cyan-400 transition-colors">
@@ -251,8 +275,9 @@ function Navbar() {
                     onClick={() => setOpenDropdown(prev => (prev === 'levels' ? null : 'levels'))}
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle levels menu"
+                    
                   >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'levels' ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'levels' ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
 
@@ -287,6 +312,7 @@ function Navbar() {
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('collectibles')}
                 onMouseLeave={handleMouseLeave}
+                onClick={() => setOpenDropdown(null)}
               >
                 <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
                   <Link to="/collectibles" className="hover:text-cyan-400 transition-colors">
@@ -297,7 +323,7 @@ function Navbar() {
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle collectibles menu"
                   >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'collectibles' ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'collectibles' ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
 
@@ -332,6 +358,7 @@ function Navbar() {
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('upgrades')}
                 onMouseLeave={handleMouseLeave}
+                onClick={() => setOpenDropdown(null)}
               >
                 <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
                   <Link to="/upgrades" className="hover:text-cyan-400 transition-colors">
@@ -342,7 +369,7 @@ function Navbar() {
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle upgrades menu"
                   >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'upgrades' ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'upgrades' ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
 
@@ -377,6 +404,7 @@ function Navbar() {
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('cosmetics')}
                 onMouseLeave={handleMouseLeave}
+                onClick={() => setOpenDropdown(null)}
               >
                 <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
                   <Link to="/cosmetics" className="hover:text-cyan-400 transition-colors">
@@ -387,7 +415,7 @@ function Navbar() {
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle cosmetics menu"
                   >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'cosmetics' ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'cosmetics' ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
 
@@ -422,6 +450,7 @@ function Navbar() {
                 className="relative"
                 onMouseEnter={() => handleMouseEnter('materials')}
                 onMouseLeave={handleMouseLeave}
+                onClick={() => setOpenDropdown(null)}
               >
                 <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
                   <Link to="/materials" className="hover:text-cyan-400 transition-colors">
@@ -432,7 +461,7 @@ function Navbar() {
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle materials menu"
                   >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${openDropdown === 'materials' ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'materials' ? 'rotate-180' : ''}`} />
                   </button>
                 </div>
 
@@ -464,23 +493,78 @@ function Navbar() {
 
             </div>
 
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
-              aria-label="Toggle menu"
-            >
-              <div className="relative w-6 h-6">
-                <Menu
-                  className={`absolute inset-0 transition-all duration-300 ${isOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`}
-                  size={24}
-                />
-                <X
-                  className={`absolute inset-0 transition-all duration-300 ${isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}`}
-                  size={24}
-                />
-              </div>
-            </button>
+            {/* Auth UI */}
+            <div className="flex items-center gap-2">
+              {isAuthenticated && user ? (
+                <div className="relative hidden md:block" ref={userDropdownRef}>
+                  <button
+                    onClick={() => setUserDropdownOpen(p => !p)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-white cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden">
+                      {user.avatar_url
+                        ? <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                        : <User className="w-4 h-4 text-cyan-400" />
+                      }
+                    </div>
+                    <span className="text-sm font-medium max-w-[120px] truncate">{user.username}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* User dropdown */}
+                  <div className={`absolute right-0 mt-2 w-48 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${userDropdownOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                    <div className="px-4 py-3 border-b border-gray-700/50 ">
+                      <p className="text-sm font-medium text-white truncate">{user.username}</p>
+                      <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    <div className="py-1.5">
+                      <Link
+                        to="/settings"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  state={{ from: location.pathname }}
+                  className="hidden md:flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all duration-200 cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Sign in
+                </Link>
+              )}
+
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
+                aria-label="Toggle menu"
+              >
+                <div className="relative w-6 h-6">
+                  <Menu
+                    className={`absolute inset-0 transition-all duration-300 ${isOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`}
+                    size={24}
+                  />
+                  <X
+                    className={`absolute inset-0 transition-all duration-300 ${isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}`}
+                    size={24}
+                  />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -867,6 +951,60 @@ function Navbar() {
                   <p className="text-gray-500 text-sm">Try searching with different keywords</p>
                 </div>
               )}
+
+              {/* Mobile Auth Section */}
+              <div className="border-t border-gray-800/50 px-4 py-4">
+                {isAuthenticated && user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 px-2 py-2">
+                      <div className="w-8 h-8 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {user.avatar_url
+                          ? <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                          : <User className="w-4 h-4 text-cyan-400" />
+                        }
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{user.username}</p>
+                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    <Link
+                      to="/settings"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/40 transition-all duration-200 text-sm"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                    <button
+                      onClick={() => { setIsOpen(false); handleLogout(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 text-sm"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-3">
+                    <Link
+                      to="/login"
+                      state={{ from: location.pathname }}
+                      onClick={() => setIsOpen(false)}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Sign in
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setIsOpen(false)}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-500/40 transition-all duration-200 text-sm font-medium"
+                    >
+                      Create account
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

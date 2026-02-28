@@ -22,6 +22,17 @@ import TermsOfService from './pages/TermsOfService'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import ErrorPage from './pages/ErrorPage'
 
+// Auth pages
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import OAuthCallbackPage from './pages/OAuthCallbackPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import SettingsPage from './pages/SettingsPage'
+
+// Components
+import ProtectedRoute from './components/ProtectedRoute'
+
 function App() {
   return (
     <BrowserRouter>
@@ -50,6 +61,18 @@ function App() {
 
           <Route path="cosmetics" element={<CosmeticsIndexPage />} />
           <Route path="cosmetics/:typeName" element={<CollectibleTypePage />} />
+
+          {/* Auth Pages */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          } />
 
           {/* Legal Pages */}
           <Route path="/disclaimer" element={<Disclaimer />} />

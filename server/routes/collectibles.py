@@ -97,7 +97,7 @@ async def _resolve_type(type_name: str, category: str, db: AsyncSession) -> Coll
     raise HTTPException(status_code=404, detail=f"{category.title()} type not found")
 
 
-def _group_by_level(collectibles) -> list:
+def _group_by_level(collectibles, type_id: int = 0) -> list:
     """Group collectibles into a level > location > collectibles hierarchy."""
     levels_dict = {}
 
@@ -110,6 +110,7 @@ def _group_by_level(collectibles) -> list:
                 "level_id": level.id,
                 "level_name": level.name,
                 "level_order": level.display_order,
+                "type_id": type_id,
                 "locations": {}
             }
 
@@ -164,7 +165,7 @@ async def _get_items_by_type(type_name: str, category: str, request: Request, db
 
     request.state.db_time = (time.time() - db_start) * 1000
 
-    response = _group_by_level(collectibles)
+    response = _group_by_level(collectibles, type_id=collectible_type.id)
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
@@ -198,6 +199,7 @@ async def get_collectibles_by_level(level_name: str, request: Request, db: Async
     for loc in locations:
         collectibles = sorted(loc.collectibles, key=lambda c: c.display_order)
         response.append({
+            "level_id": level.id,
             "location_id": loc.id,
             "location_name": loc.name,
             "location_order": loc.display_order,
