@@ -43,8 +43,16 @@ class Settings:
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
     FRONTEND_URL: str = os.getenv('FRONTEND_URL', 'https://stellarbladeguide.com')
 
+    # OpenAI
+    OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY', '')
+
     # Email
     RESEND_API_KEY: str = os.getenv('RESEND_API_KEY', '')
+
+    # Cloudinary
+    CLOUDINARY_CLOUD_NAME: str = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+    CLOUDINARY_API_KEY: str = os.getenv('CLOUDINARY_API_KEY', '')
+    CLOUDINARY_API_SECRET: str = os.getenv('CLOUDINARY_API_SECRET', '')
 
     # OAuth - Google
     GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID', '')
