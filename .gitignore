@@ -60,7 +60,6 @@ venv/
 *.pyd
 *.env
 .pytest_cache
-requirements.txt
 
 # Client specific files
 client/public/assets/images
