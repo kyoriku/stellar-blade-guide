@@ -1,4 +1,7 @@
 import logging
+import httpx
+import cloudinary
+import cloudinary.uploader
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -72,6 +75,35 @@ def user_to_response(user: User) -> dict:
         "created_at": user.created_at.isoformat(),
     }
 
+async def upload_avatar_to_cloudinary(url: str, user_id: int) -> str:
+    """Download image from URL and upload to Cloudinary."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, follow_redirects=True, timeout=10)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Could not fetch image from URL")
+        content_type = response.headers.get("content-type", "")
+        if not content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="URL does not point to an image")
+        
+    result = cloudinary.uploader.upload(
+        url,
+        folder="stellar-blade/avatars",
+        public_id=f"user-{user_id}",
+        overwrite=True,
+        transformation=[
+            {"width": 100, "height": 100, "crop": "fill", "gravity": "face", "format": "webp", "quality": "auto"}
+        ],
+        format="webp",
+    )
+    return result["secure_url"]
+
+def delete_avatar_from_cloudinary(user_id: int) -> None:
+    """Delete a user's avatar from Cloudinary."""
+    try:
+        cloudinary.uploader.destroy(f"stellar-blade/avatars/user-{user_id}")
+    except Exception as e:
+        logger.warning(f"Failed to delete Cloudinary avatar for user {user_id}: {e}")
+
 
 # Routes
 
@@ -101,7 +133,18 @@ async def update_me(
         current_user.username = body.username
 
     if body.avatar_url is not None:
-        current_user.avatar_url = body.avatar_url
+      if body.avatar_url == "":
+          delete_avatar_from_cloudinary(current_user.id)
+          current_user.avatar_url = None
+      else:
+          try:
+              cloudinary_url = await upload_avatar_to_cloudinary(body.avatar_url, current_user.id)
+              current_user.avatar_url = cloudinary_url
+          except HTTPException:
+              raise
+          except Exception as e:
+              logger.error(f"Failed to upload avatar for user {current_user.id}: {e}")
+              raise HTTPException(status_code=400, detail="Failed to process avatar image")
 
     await db.commit()
     await db.refresh(current_user)
