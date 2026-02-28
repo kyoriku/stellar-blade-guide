@@ -54,6 +54,7 @@ export default function LevelsIndexPage() {
                   <img
                     src={LEVEL_IMAGES[level.slug]}
                     alt={level.name}
+                    fetchPriority='high'
                     className="w-full h-full object-cover"
                   />
                 ) : (

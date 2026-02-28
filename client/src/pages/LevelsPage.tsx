@@ -15,6 +15,7 @@ import { ArrowLeft } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
+import CommentSection from '../components/comments/CommentSection'
 
 function LevelPage() {
   const { levelName } = useParams<{ levelName: string }>();
@@ -121,6 +122,9 @@ function LevelPage() {
       name: `${displayLevelName} Collectibles`,
       description: `All ${totalCollectibles} collectibles in ${displayLevelName}`,
       numberOfItems: totalCollectibles,
+      category: [...new Set(locationData.flatMap(loc =>
+        loc.collectibles.flatMap(c => c.types)
+      ))].join(', '),
       itemListElement: locationData.flatMap(location =>
         location.collectibles.map(collectible => {
           position++;
@@ -155,7 +159,7 @@ function LevelPage() {
               <TableOfContentsSkeleton />
             </aside>
 
-            <main className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
               <div className="md:mb-8 mb-9">
                 <div className="h-9 md:h-10 w-64 bg-gray-700 rounded-lg animate-pulse" />
                 <div className="h-5 w-48 bg-gray-700/50 rounded mt-2 animate-pulse mb-3" />
@@ -168,7 +172,7 @@ function LevelPage() {
               <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
-            </main>
+            </div>
           </div>
         </div>
       </div>
@@ -205,7 +209,7 @@ function LevelPage() {
             <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} />
           </aside>
 
-          <main className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
             {/* Page header */}
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayLevelName}</h1>
@@ -243,15 +247,15 @@ function LevelPage() {
                     className="group w-full sm:w-auto order-1 sm:order-2"
                     onMouseEnter={() => prefetchLevel(nextLevel.toLowerCase().replace(/\s+/g, '-'))}
                   >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
-                        <div className="text-xs text-blue-400 mb-0.5">Next</div>
+                        <div className="text-xs text-cyan-400 mb-0.5">Next</div>
                         <div className="text-sm font-medium text-white truncate">
                           {nextLevel}
                         </div>
                       </div>
-                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      <div className="p-2 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-cyan-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   </Link>
@@ -260,15 +264,15 @@ function LevelPage() {
                     to="/levels"
                     className="group w-full sm:w-auto order-1 sm:order-2"
                   >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-blue-600/20 to-blue-500/10 hover:from-blue-600/30 hover:to-blue-500/20 border border-blue-500/30 hover:border-blue-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20">
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
-                        <div className="text-xs text-blue-400 mb-0.5">Finished</div>
+                        <div className="text-xs text-cyan-400 mb-0.5">Finished</div>
                         <div className="text-sm font-medium text-white">
                           All Levels
                         </div>
                       </div>
-                      <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-blue-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
+                      <div className="p-2 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-cyan-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
                       </div>
                     </div>
                   </Link>
@@ -298,7 +302,8 @@ function LevelPage() {
                 )}
               </div>
             </div>
-          </main>
+            <CommentSection contentType="level" contentId={locationData[0].level_id} />
+          </div>
         </div>
       </div>
 

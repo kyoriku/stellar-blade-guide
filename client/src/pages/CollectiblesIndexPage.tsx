@@ -54,6 +54,7 @@ export default function CollectiblesIndexPage() {
                   <img
                     src={COLLECTIBLE_IMAGES[type.slug]}
                     alt={type.name}
+                    fetchPriority='high'
                     className="w-full h-full object-cover"
                   />
                 ) : (

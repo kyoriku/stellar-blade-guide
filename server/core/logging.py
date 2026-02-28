@@ -7,8 +7,8 @@ def setup_logging(log_level: Optional[str] = None) -> None:
     level = log_level or settings.LOG_LEVEL
     
     formatter = logging.Formatter(
-        fmt='%(levelname)s:%(name)s:%(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        fmt='%(message)s',
+        # datefmt='%Y-%m-%d %H:%M:%S'
     )
     
     console_handler = logging.StreamHandler(sys.stdout)
@@ -32,3 +32,6 @@ def setup_logging(log_level: Optional[str] = None) -> None:
     honeypot_handler.setFormatter(logging.Formatter('%(message)s'))
     honeypot_logger.handlers = [honeypot_handler]
     honeypot_logger.propagate = False
+
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("openai").setLevel(logging.WARNING)

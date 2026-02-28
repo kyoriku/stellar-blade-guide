@@ -52,14 +52,14 @@ function CollectibleSectionSkeleton({
               </div>
 
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                <div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-gray-700 via-gray-600 to-gray-700 animate-pulse">
+                <div className="aspect-video overflow-hidden rounded-lg bg-gray-700 animate-pulse">
                   <div className="w-full h-full flex items-center justify-center">
-                    <ImageIcon className="w-12 h-12 text-gray-500 animate-pulse" />
+                    <ImageIcon className="w-10 h-10 text-gray-600" />
                   </div>
                 </div>
-                <div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-gray-700 via-gray-600 to-gray-700 animate-pulse">
+                <div className="aspect-video overflow-hidden rounded-lg bg-gray-700 animate-pulse">
                   <div className="w-full h-full flex items-center justify-center">
-                    <ImageIcon className="w-12 h-12 text-gray-500 animate-pulse" />
+                    <ImageIcon className="w-10 h-10 text-gray-600" />
                   </div>
                 </div>
               </div>
