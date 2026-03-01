@@ -17,6 +17,10 @@ from core.security import limiter
 from config.settings import settings
 from openai import AsyncOpenAI
 
+CYAN = "\033[96m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+RESET = "\033[0m"
 
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -30,6 +34,7 @@ async def _moderate_content(text: str) -> bool:
         response = await openai_client.moderations.create(input=text)
         return not response.results[0].flagged
     except Exception:
+        logger.warning(f"{YELLOW}OpenAI moderation check failed, failing open{RESET}")
         return True  # fail open — don't break comments if OpenAI is down
 
 
@@ -40,6 +45,7 @@ class CreateCommentRequest(BaseModel):
     content_id: int
     body: str
     parent_id: Optional[int] = None
+    content_name: Optional[str] = None 
 
     @field_validator("content_type")
     @classmethod
@@ -201,7 +207,8 @@ async def create_comment(
     )
     comment = result.scalar_one()
 
-    logger.info(f"User {current_user.username} commented on {body.content_type} {body.content_id}")
+    name_part = f": {body.content_name} (ID: {body.content_id})" if body.content_name else f" {body.content_id}"
+    logger.info(f"{CYAN}User {current_user.username} commented on {body.content_type}{name_part}{RESET}")
     return comment_to_dict(comment)
 
 
@@ -270,7 +277,7 @@ async def delete_comment(
     comment.is_deleted = True
     comment.body = "[deleted]"
     await db.commit()
-    logger.info(f"User {current_user.username} deleted comment {comment_id}")
+    logger.info(f"{CYAN}User {current_user.username} deleted comment {comment_id} on {comment.content_type} {comment.content_id}{RESET}")
 
 
 # Moderation
