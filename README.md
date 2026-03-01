@@ -73,7 +73,7 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 - Email/password registration and login
 - OAuth sign-in with Google and Discord (avatar pulled from provider)
 - Secure session management with refresh token rotation
-- Account settings: username, avatar, password change, account deletion
+- Account settings: username, avatar (uploaded to Cloudinary with AI moderation), password change, account deletion
 
 **Comments**
 - Threaded comments (one level of nesting) on walkthroughs, levels, and collectible pages

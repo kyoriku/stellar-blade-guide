@@ -16,6 +16,11 @@ from core.auth import get_current_user, require_role
 from core.security import limiter
 from config.settings import settings
 
+CYAN = "\033[96m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+RESET = "\033[0m"
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -86,7 +91,7 @@ async def check_image_moderation(url: str) -> None:
     result = response.results[0]
     if result.flagged:
         flagged_categories = [cat for cat, flagged in result.categories.__dict__.items() if flagged]
-        logger.warning(f"Avatar image flagged by moderation: {flagged_categories}")
+        logger.warning(f"{YELLOW}Avatar image flagged by moderation: {flagged_categories}{RESET}")
         raise HTTPException(status_code=400, detail="Image was rejected by content moderation")
 
 async def upload_avatar_to_cloudinary(url: str, user_id: int) -> str:
@@ -117,7 +122,7 @@ def delete_avatar_from_cloudinary(user_id: int) -> None:
     try:
         cloudinary.uploader.destroy(f"stellar-blade/avatars/user-{user_id}.webp")
     except Exception as e:
-        logger.warning(f"Failed to delete Cloudinary avatar for user {user_id}: {e}")
+        logger.warning(f"{YELLOW}Failed to delete Cloudinary avatar for user {user_id}: {e}{RESET}")
 
 
 # Routes
@@ -158,13 +163,13 @@ async def update_me(
           except HTTPException:
               raise
           except Exception as e:
-              logger.error(f"Failed to upload avatar for user {current_user.id}: {e}")
+              logger.error(f"{RED}Failed to upload avatar for user {current_user.id}: {e}{RESET}")
               raise HTTPException(status_code=400, detail="Failed to process avatar image")
 
     await db.commit()
     await db.refresh(current_user)
 
-    logger.info(f"User {current_user.username} updated their profile")
+    logger.info(f"{CYAN}User {current_user.username} updated their profile{RESET}")
     return user_to_response(current_user)
 
 
@@ -180,7 +185,7 @@ async def delete_me(
     await revoke_all_refresh_tokens(current_user.id)
     await db.delete(current_user)
     await db.commit()
-    logger.info(f"User {current_user.username} deleted their account")
+    logger.info(f"{CYAN}User {current_user.username} deleted their account{RESET}")
 
 
 @router.get("/{user_id}")
@@ -226,7 +231,7 @@ async def update_user_role(
     await db.commit()
     await db.refresh(user)
 
-    logger.info(f"Admin updated user {user_id} role to {body.role}")
+    logger.info(f"{CYAN}Admin updated user {user_id} role to {body.role}{RESET}")
     return user_to_response(user)
 
 
@@ -247,5 +252,5 @@ async def deactivate_user(
     user.is_active = False
     await db.commit()
 
-    logger.info(f"Admin deactivated user {user_id}")
+    logger.info(f"{CYAN}Admin deactivated user {user_id}{RESET}")
     return {"status": "ok", "message": f"User {user_id} deactivated"}
