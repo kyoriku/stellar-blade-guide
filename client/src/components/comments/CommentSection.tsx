@@ -9,9 +9,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 interface CommentSectionProps {
   contentType: 'walkthrough' | 'collectible' | 'level'
   contentId: number
+  contentName?: string
 }
 
-export default function CommentSection({ contentType, contentId }: CommentSectionProps) {
+export default function CommentSection({ contentType, contentId, contentName }: CommentSectionProps) {
   const { authFetch } = useAuth()
   const [comments, setComments] = useState<CommentData[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -41,7 +42,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
   const handlePostComment = async (body: string) => {
     const res = await authFetch(`${API_BASE_URL}/comments/`, {
       method: 'POST',
-      body: JSON.stringify({ content_type: contentType, content_id: contentId, body }),
+      body: JSON.stringify({ content_type: contentType, content_id: contentId, body, content_name: contentName }),
     })
     if (!res.ok) {
       const err = await res.json()
@@ -141,6 +142,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
               comment={comment}
               contentType={contentType}
               contentId={contentId}
+              contentName={contentName}
               onReplyPosted={handleReplyPosted}
               onEdited={handleEdited}
               onDeleted={handleDeleted}

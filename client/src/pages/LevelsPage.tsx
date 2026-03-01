@@ -302,7 +302,7 @@ function LevelPage() {
                 )}
               </div>
             </div>
-            <CommentSection contentType="level" contentId={locationData[0].level_id} />
+            <CommentSection contentType="level" contentId={locationData[0].level_id} contentName={displayLevelName} />
           </div>
         </div>
       </div>
