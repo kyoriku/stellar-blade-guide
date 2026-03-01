@@ -45,15 +45,6 @@ function CollectibleTypePage() {
   const { typeName } = useParams<{ typeName: string }>();
   const location = useLocation();
 
-  // function stringToId(str: string): number {
-  //   let hash = 0
-  //   for (let i = 0; i < str.length; i++) {
-  //     hash = (hash << 5) - hash + str.charCodeAt(i)
-  //     hash |= 0
-  //   }
-  //   return Math.abs(hash)
-  // }
-
   // Detect category from URL
   const category = location.pathname.startsWith('/upgrades') ? 'upgrades'
     : location.pathname.startsWith('/materials') ? 'materials'
@@ -393,7 +384,7 @@ function CollectibleTypePage() {
                 )}
               </div>
             </div>
-            <CommentSection contentType="collectible" contentId={levelData[0].type_id} />
+            <CommentSection contentType="collectible" contentId={levelData[0].type_id} contentName={displayTypeName} />
           </div>
         </div>
       </div>

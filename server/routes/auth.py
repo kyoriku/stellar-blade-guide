@@ -31,6 +31,11 @@ from core.cache import redis_client
 from core.security import limiter
 from config.settings import settings
 
+CYAN = "\033[96m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+RESET = "\033[0m"
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -165,7 +170,7 @@ async def register(
     await db.commit()
     await db.refresh(user)
 
-    logger.info(f"New user registered: {user.username} ({user.email})")
+    logger.info(f"{CYAN}New user registered: {user.username} ({user.email}){RESET}")
     return await _issue_tokens(user, response)
 
 
@@ -241,7 +246,7 @@ async def logout_all(
     """Revoke all active sessions across all devices."""
     await revoke_all_refresh_tokens(current_user.id)
     clear_refresh_cookie(response)
-    logger.info(f"User {current_user.username} logged out of all devices")
+    logger.info(f"{CYAN}User {current_user.username} logged out of all devices{RESET}")
 
 
 class ChangePasswordRequest(BaseModel):
@@ -291,7 +296,7 @@ async def change_password(
     await revoke_all_refresh_tokens(current_user.id)
     clear_refresh_cookie(response)
 
-    logger.info(f"User {current_user.username} changed their password")
+    logger.info(f"{CYAN}User {current_user.username} changed their password{RESET}")
 
 
 # Password reset
@@ -376,7 +381,7 @@ async def forgot_password(
             await _send_reset_email(user.email, token)
             logger.info(f"Password reset email sent to user {user.id}")
         except Exception as e:
-            logger.error(f"Failed to send reset email to user {user.id}: {e}")
+            logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
             # Don't expose email errors to the client
 
 
@@ -417,7 +422,7 @@ async def reset_password(
     await revoke_all_refresh_tokens(user.id)
     clear_refresh_cookie(response)
 
-    logger.info(f"User {user.id} successfully reset their password")
+    logger.info(f"{CYAN}User {user.id} successfully reset their password{RESET}")
 
 
 # OAuth
@@ -484,7 +489,7 @@ async def _get_or_create_oauth_user(
     db.add(OAuthAccount(user_id=user.id, provider=provider, provider_user_id=provider_user_id))
     await db.commit()
     await db.refresh(user)
-    logger.info(f"New OAuth user created: {user.username} via {provider}")
+    logger.info(f"{CYAN}New OAuth user created: {user.username} via {provider}{RESET}")
     return user
 
 

@@ -28,6 +28,10 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
 
+  // ── Logout all ─────────────────────────────────────────────────────────────
+  const [logoutAllLoading, setLogoutAllLoading] = useState(false)
+  const [logoutAllError, setLogoutAllError] = useState<string | null>(null)
+
   // ── Delete account ─────────────────────────────────────────────────────────
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -63,7 +67,9 @@ export default function SettingsPage() {
         throw new Error(err.detail || 'Failed to update profile')
       }
 
-      await refreshToken() // refresh user state in context
+      const data = await res.json()
+      await refreshToken()
+      setAvatarUrl(data.avatar_url ?? '')
       setProfileSuccess(true)
       setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err) {
@@ -101,6 +107,21 @@ export default function SettingsPage() {
       setPasswordError(err instanceof Error ? err.message : 'Failed to change password')
     } finally {
       setPasswordLoading(false)
+    }
+  }
+
+  const handleLogoutAll = async () => {
+    setLogoutAllError(null)
+    setLogoutAllLoading(true)
+    try {
+      const res = await authFetch(`${API_BASE_URL}/auth/logout-all`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to sign out of all devices')
+      logout()
+      navigate('/login')
+    } catch (err) {
+      setLogoutAllError(err instanceof Error ? err.message : 'Failed to sign out of all devices')
+    } finally {
+      setLogoutAllLoading(false)
     }
   }
 
@@ -178,15 +199,14 @@ export default function SettingsPage() {
             </div>
 
             {/* Avatar preview */}
-            {avatarUrl && (
+            {user.avatar_url && (
               <div className="flex items-center gap-3">
                 <img
-                  src={avatarUrl}
-                  alt="Avatar preview"
+                  src={user.avatar_url}
+                  alt="Current avatar"
                   className="w-10 h-10 rounded-full object-cover border border-gray-700"
-                  onError={e => (e.currentTarget.style.display = 'none')}
                 />
-                <span className="text-xs text-gray-400">Preview</span>
+                <span className="text-xs text-gray-400">Current avatar</span>
                 <button
                   type="button"
                   onClick={() => setAvatarUrl('')}
@@ -288,6 +308,25 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+
+          <div className="mt-6 pt-6 border-t border-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-300">Sign out of all devices</p>
+                <p className="text-xs text-gray-500 mt-0.5">Revokes all active sessions everywhere.</p>
+              </div>
+              <button
+                onClick={handleLogoutAll}
+                disabled={logoutAllLoading}
+                className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all duration-200 cursor-pointer"
+              >
+                {logoutAllLoading ? 'Signing out...' : 'Sign out all'}
+              </button>
+            </div>
+            {logoutAllError && (
+              <p className="mt-2 text-xs text-red-400">{logoutAllError}</p>
+            )}
+          </div>
         </section>
 
         {/* ── Danger Zone ──────────────────────────────────────────────────── */}

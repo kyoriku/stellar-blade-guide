@@ -11,6 +11,7 @@ export interface CommentData {
   id: number
   content_type: string
   content_id: number
+  contentName?: string
   parent_id: number | null
   body: string
   is_deleted: boolean
@@ -24,6 +25,7 @@ interface CommentProps {
   comment: CommentData
   contentType: string
   contentId: number
+  contentName?: string
   onReplyPosted: (reply: CommentData, parentId: number) => void
   onEdited: (updated: CommentData) => void
   onDeleted: (id: number) => void
@@ -46,6 +48,7 @@ export default function Comment({
   comment,
   contentType,
   contentId,
+  contentName,
   onReplyPosted,
   onEdited,
   onDeleted,
@@ -69,7 +72,7 @@ export default function Comment({
   const handleReply = async (body: string) => {
     const res = await authFetch(`${API_BASE_URL}/comments/`, {
       method: 'POST',
-      body: JSON.stringify({ content_type: contentType, content_id: contentId, parent_id: comment.id, body }),
+      body: JSON.stringify({ content_type: contentType, content_id: contentId, parent_id: comment.id, body, content_name: contentName }),
     })
     if (!res.ok) {
       const err = await res.json()
@@ -231,6 +234,7 @@ export default function Comment({
               comment={reply}
               contentType={contentType}
               contentId={contentId}
+              contentName={contentName}
               onReplyPosted={onReplyPosted}
               onEdited={onEdited}
               onDeleted={onDeleted}

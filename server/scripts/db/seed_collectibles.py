@@ -38,41 +38,23 @@ def load_all_seed_files():
     return all_data
 
 
-async def reset_sequences(db):
-    """Reset database sequences to match max IDs"""
-    print("\n\033[96m━━━ STEP 2: Resetting Database Sequences ━━━\033[0m")
+async def reset_collectibles_sequence(db):
+    """Reset collectibles sequence to match max ID"""
+    print("\n\033[96m━━━ STEP 5: Resetting Collectibles Sequence ━━━\033[0m")
     
-    # Reset collectibles sequence
     result = await db.execute(text("SELECT MAX(id) FROM collectibles"))
     max_id = result.scalar() or 0
     
     if max_id > 0:
-        # Table has data, reset to max ID
         await db.execute(
             text(f"SELECT setval(pg_get_serial_sequence('collectibles', 'id'), {max_id}, true)")
         )
         print(f"  ✓ Collectibles sequence reset to {max_id}")
     else:
-        # Table is empty, reset to 1 (not 0!)
         await db.execute(
             text("SELECT setval(pg_get_serial_sequence('collectibles', 'id'), 1, false)")
         )
         print(f"  ✓ Collectibles sequence reset to 1 (table is empty)")
-    
-    # Reset images sequence
-    result = await db.execute(text("SELECT MAX(id) FROM collectible_images"))
-    max_id = result.scalar() or 0
-    
-    if max_id > 0:
-        await db.execute(
-            text(f"SELECT setval(pg_get_serial_sequence('collectible_images', 'id'), {max_id}, true)")
-        )
-        print(f"  ✓ Images sequence reset to {max_id}")
-    else:
-        await db.execute(
-            text("SELECT setval(pg_get_serial_sequence('collectible_images', 'id'), 1, false)")
-        )
-        print(f"  ✓ Images sequence reset to 1 (table is empty)")
     
     print()
 
@@ -91,11 +73,14 @@ async def seed_database():
 
     async with AsyncSessionLocal() as db:
         try:
-            # STEP 2: Reset sequences to avoid conflicts
-            await reset_sequences(db)
-            
+            # STEP 2: Truncate images and reset identity to 1
+            print(f"\n\033[96m━━━ STEP 2: Resetting Image IDs ━━━\033[0m")
+            await db.execute(text("TRUNCATE TABLE collectible_images RESTART IDENTITY"))
+            await db.commit()
+            print(f"  ✓ Image IDs reset to 1")
+
             # STEP 3: Seed collectibles
-            print(f"\033[96m━━━ STEP 3: Seeding {len(seed_data)} Collectibles ━━━\033[0m\n")
+            print(f"\n\033[96m━━━ STEP 3: Seeding {len(seed_data)} Collectibles ━━━\033[0m\n")
             
             # Pre-cache all lookups
             print("Loading reference data...")
@@ -213,11 +198,7 @@ async def seed_database():
                         existing_collectibles[collectible_id] = new_collectible
                         added += 1
 
-                    # Clear and re-add images
-                    await db.execute(
-                        delete(CollectibleImage).where(CollectibleImage.collectible_id == collectible_instance.id)
-                    )
-
+                    # Re-add images (table was truncated at start so no need to delete first)
                     for img in item.get('images', []):
                         if not img.get('url'):
                             continue
@@ -256,7 +237,6 @@ async def seed_database():
             if orphaned_ids:
                 print(f"  Found {len(orphaned_ids)} collectibles not in seed data")
                 
-                # Delete orphaned collectibles (images will cascade delete)
                 result = await db.execute(
                     delete(Collectible).where(Collectible.id.in_(orphaned_ids))
                 )
@@ -265,12 +245,14 @@ async def seed_database():
                 await db.commit()
                 print(f"  \033[33m✓ Deleted {deleted} orphaned collectibles\033[0m")
                 
-                # Show which ones were deleted (optional, helpful for debugging)
                 for orphan_id in sorted(orphaned_ids):
                     orphan = existing_collectibles[orphan_id]
                     print(f"    - ID {orphan_id}: {orphan.title}")
             else:
                 print(f"  ✓ No orphaned collectibles found")
+
+            # STEP 5: Reset collectibles sequence to match max ID
+            await reset_collectibles_sequence(db)
 
         except Exception as e:
             print(f"\033[31m✗ Fatal error: {e}\033[0m")
@@ -279,8 +261,8 @@ async def seed_database():
             await db.rollback()
             return
 
-    # STEP 5: Clear Redis cache
-    print(f"\n\033[96m━━━ STEP 5: Clearing Cache ━━━\033[0m")
+    # STEP 6: Clear Redis cache
+    print(f"\n\033[96m━━━ STEP 6: Clearing Cache ━━━\033[0m")
     try:
         await invalidate_cache_pattern("*")
         print("\033[32m✓ Redis cache cleared\033[0m")
