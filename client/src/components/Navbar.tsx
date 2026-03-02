@@ -213,7 +213,7 @@ function Navbar() {
                 alt="Stellar Blade Guide Logo"
                 className="w-8 h-8"
               />
-              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent group-hover:from-cyan-400 group-hover:to-cyan-300 transition-all duration-300">
                 Stellar Blade Guide
               </span>
             </Link>
