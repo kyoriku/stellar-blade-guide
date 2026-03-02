@@ -968,21 +968,23 @@ function Navbar() {
                         <p className="text-xs text-gray-400 truncate">{user.email}</p>
                       </div>
                     </div>
-                    <Link
-                      to="/settings"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/40 transition-all duration-200 text-sm"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Settings
-                    </Link>
-                    <button
-                      onClick={() => { setIsOpen(false); handleLogout(); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-3 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 text-sm"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Sign out
-                    </button>
+                    <div className="flex gap-3">
+                      <Link
+                        to="/settings"
+                        onClick={() => setIsOpen(false)}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
+                      <button
+                        onClick={() => { setIsOpen(false); handleLogout(); }}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 transition-all duration-200 text-sm font-medium"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex gap-3">
