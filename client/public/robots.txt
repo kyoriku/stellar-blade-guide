@@ -1,14 +1,28 @@
 # Allow good bots
 User-agent: Googlebot
+Allow: /
+
 User-agent: Bingbot
+Allow: /
+
 User-agent: Slackbot
+Allow: /
+
 User-agent: Discordbot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
 Allow: /
 
 # Block aggressive crawlers
 User-agent: AhrefsBot
+Disallow: /
+
 User-agent: SemrushBot
-Crawl-delay: 10
+Disallow: /
 
 # Block generic scrapers
 User-agent: *
