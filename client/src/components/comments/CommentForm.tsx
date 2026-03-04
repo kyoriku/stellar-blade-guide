@@ -23,20 +23,20 @@ export default function CommentForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
-  
+
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center gap-2 py-5 px-4 rounded-xl border border-gray-800 bg-secondary/50 text-gray-300 text-sm">
-        <Link 
-          to="/login" 
-          state={{ from: location.pathname }} 
+        <Link
+          to="/login"
+          state={{ from: location.pathname }}
           className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
           Sign in
         </Link>
         <span>or</span>
-        <Link 
-          to="/register" 
-          state={{ from: location.pathname }} 
+        <Link
+          to="/register"
+          state={{ from: location.pathname }}
           className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
           create an account
         </Link>
