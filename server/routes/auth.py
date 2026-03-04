@@ -379,7 +379,7 @@ async def forgot_password(
         await redis_client.setex(f"password_reset:{token}", RESET_TOKEN_TTL, str(user.id))
         try:
             await _send_reset_email(user.email, token)
-            logger.info(f"Password reset email sent to user {user.id}")
+            logger.info(f"{CYAN}Password reset email sent to {user.username}{RESET}")
         except Exception as e:
             logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
             # Don't expose email errors to the client
@@ -422,7 +422,7 @@ async def reset_password(
     await revoke_all_refresh_tokens(user.id)
     clear_refresh_cookie(response)
 
-    logger.info(f"{CYAN}User {user.id} successfully reset their password{RESET}")
+    logger.info(f"{CYAN}User {user.username} successfully reset their password{RESET}")
 
 
 # OAuth
