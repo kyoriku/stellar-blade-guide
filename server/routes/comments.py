@@ -223,7 +223,6 @@ async def update_comment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Edit your own comment. Moderators and admins can edit any comment."""
     result = await db.execute(
         select(Comment)
         .options(selectinload(Comment.user))
@@ -235,11 +234,15 @@ async def update_comment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
 
     is_owner = comment.user_id == current_user.id
-    # is_privileged = current_user.role in ("moderator", "admin")
 
-    # if not is_owner and not is_privileged:
     if not is_owner:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit this comment")
+
+    if not await _moderate_content(body.body):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Comment was flagged as inappropriate"
+        )
 
     comment.body = body.body.strip()
     await db.commit()
@@ -277,7 +280,7 @@ async def delete_comment(
     comment.is_deleted = True
     comment.body = "[deleted]"
     await db.commit()
-    logger.info(f"{CYAN}User {current_user.username} deleted comment {comment_id} on {comment.content_type} {comment.content_id}{RESET}")
+    logger.info(f"{CYAN}User {current_user.username} deleted comment {comment_id} on {comment.content_type} (ID: {comment.content_id}){RESET}")
 
 
 # Moderation

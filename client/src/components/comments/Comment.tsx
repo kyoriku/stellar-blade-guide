@@ -58,6 +58,8 @@ export default function Comment({
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editBody, setEditBody] = useState(comment.body)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   const [showReplies, setShowReplies] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -86,14 +88,24 @@ export default function Comment({
   const handleEdit = async () => {
     const trimmed = editBody.trim()
     if (!trimmed || trimmed === comment.body) { setIsEditing(false); return }
-    const res = await authFetch(`${API_BASE_URL}/comments/${comment.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ body: trimmed }),
-    })
-    if (!res.ok) throw new Error('Failed to edit comment')
-    const updated: CommentData = await res.json()
-    onEdited(updated)
-    setIsEditing(false)
+    setEditError(null)
+    setIsSaving(true)
+    try {
+      const res = await authFetch(`${API_BASE_URL}/comments/${comment.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ body: trimmed }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        setEditError(err.detail || 'Failed to edit comment')
+        return
+      }
+      const updated: CommentData = await res.json()
+      onEdited(updated)
+      setIsEditing(false)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleDelete = async () => {
@@ -142,16 +154,22 @@ export default function Comment({
               maxLength={2000}
               className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
             />
+            {editError && (
+              <p className="text-red-400 text-xs">{editError}</p>
+            )}
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">
+              <button
+                onClick={() => { setIsEditing(false); setEditError(null) }}
+                className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+              >
                 Cancel
               </button>
               <button
                 onClick={handleEdit}
-                disabled={!editBody.trim() || editBody.trim() === comment.body}
+                disabled={isSaving || !editBody.trim() || editBody.trim() === comment.body}
                 className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all cursor-pointer"
               >
-                Save
+                {isSaving ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
