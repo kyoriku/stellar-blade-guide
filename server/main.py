@@ -12,7 +12,7 @@ from middleware.logging import add_logging_middleware
 from middleware.error_handler import add_error_handler_middleware
 from middleware.security_headers import add_security_headers_middleware
 from middleware.honeypot import add_banned_ip_middleware, add_honeypot_middleware
-from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health
+from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, robots
 
 setup_logging()
 
@@ -58,6 +58,7 @@ add_banned_ip_middleware(app)
 
 # Routes
 app.include_router(health.router)
+app.include_router(robots.router)
 app.include_router(levels.router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.levels_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.collectibles_router, prefix=settings.API_PREFIX)
