@@ -98,6 +98,21 @@ function CollectibleTypePage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Scroll to hash on load once data is ready
+  useEffect(() => {
+    if (levelData.length > 0 && window.location.hash) {
+      const hash = window.location.hash;
+      requestAnimationFrame(() => {
+        const el = document.querySelector(hash);
+        if (el) {
+          const offset = 80;
+          const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top, behavior: 'instant' });
+        }
+      });
+    }
+  }, [levelData]);
+
   // Collect all images when data loads
   useEffect(() => {
     if (levelData.length > 0) {
@@ -202,15 +217,11 @@ function CollectibleTypePage() {
   )?.level_name || levelData[0]?.level_name;
 
   const tocLinks = levelData.map(level => {
-    const firstLocation = level.locations[0];
-    const firstLocationId = firstLocation
-      ? `#${level.level_name}-${firstLocation.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')
-      : `#${level.level_name.toLowerCase().replace(/\s+/g, '-')}`;
+    const levelId = level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
 
     return {
-      mainLink: firstLocationId,
+      mainLink: `#${levelId}`,
       title: level.level_name,
-      // Only include subLinks if this level contains the active section
       subLinks: level.level_name === activeLevelName ? level.locations.map(loc => ({
         href: `#${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
         title: loc.location_name
@@ -301,7 +312,7 @@ function CollectibleTypePage() {
 
             {/* Collectibles grouped by level */}
             {levelData.map((level) => (
-              <div key={level.level_id} className="space-y-8">
+              <div key={level.level_id} id={level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')} className="space-y-8">
                 {level.locations.map((location) => {
                   const sectionId = `${level.level_name}-${location.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
 
