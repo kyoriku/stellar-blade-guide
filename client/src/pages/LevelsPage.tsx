@@ -67,6 +67,20 @@ function LevelPage() {
   }, []);
 
   useEffect(() => {
+    if (locationData.length > 0 && window.location.hash) {
+      const hash = window.location.hash;
+      requestAnimationFrame(() => {
+        const el = document.querySelector(hash);
+        if (el) {
+          const offset = 80;
+          const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top, behavior: 'instant' });
+        }
+      });
+    }
+  }, [locationData]);
+
+  useEffect(() => {
     if (locationData.length > 0) {
       const images: Array<{ src: string; alt: string }> = [];
       locationData.forEach(location => {
@@ -99,8 +113,12 @@ function LevelPage() {
     : null;
   const previousLevel = currentIndex > 0 ? allLevels[currentIndex - 1] : null;
 
+  const firstSectionId = locationData.length > 0
+    ? `#${locationData[0].location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`
+    : '#';
+
   const tocLinks = [{
-    mainLink: '#',
+    mainLink: firstSectionId,
     title: displayLevelName,
     subLinks: locationData.map(loc => ({
       href: `#${loc.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`,
@@ -218,7 +236,7 @@ function LevelPage() {
 
             {/* Mobile TOC */}
             <div className="lg:hidden mb-8">
-              <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} collapsible/>
+              <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} collapsible />
             </div>
 
             {/* Collectible sections */}
