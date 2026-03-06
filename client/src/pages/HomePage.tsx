@@ -130,7 +130,7 @@ function HomePage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-3 py-8 md:py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-8 lg:gap-10">
 
           {/* Left Column - Walkthroughs */}
           <div className="lg:col-span-2">
@@ -170,7 +170,7 @@ function HomePage() {
           </div>
 
           {/* Right Column - Categories */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <div className="flex items-center gap-2.5 mb-4">
               <Layers className="w-5 h-5 text-cyan-400" />
               <h2 className="text-lg font-bold text-white">Find by Type</h2>
