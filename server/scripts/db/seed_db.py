@@ -102,11 +102,9 @@ async def seed_database():
                 Location(level_id=levels['Eidos 7'].id, name='Construction Zone', display_order=6),
                 Location(level_id=levels['Eidos 7'].id, name='City Underground', display_order=7),
                 Location(level_id=levels['Eidos 7'].id, name='Crater', display_order=8),
-                Location(level_id=levels['Eidos 7'].id, name='Eidos 7 (Continued)', display_order=9),
                 
                 # Xion
-                Location(level_id=levels['Xion'].id, name='Xion', display_order=1),
-                Location(level_id=levels['Xion'].id, name='Xion (Continued)', display_order=2),
+                Location(level_id=levels['Xion'].id, name='Xion City', display_order=1),
 
                 # Wasteland
                 Location(level_id=levels['Wasteland'].id, name='Barren Lands', display_order=1),
@@ -115,11 +113,8 @@ async def seed_database():
                 Location(level_id=levels['Wasteland'].id, name='Oil Storage Facility', display_order=4),
                 Location(level_id=levels['Wasteland'].id, name='Scrap Yard', display_order=5),
                 Location(level_id=levels['Wasteland'].id, name='Wasteland Basin', display_order=6),
-                Location(level_id=levels['Wasteland'].id, name='Scrap Plains (Continued)', display_order=7),
-                Location(level_id=levels['Wasteland'].id, name='Plant', display_order=8),
-                Location(level_id=levels['Wasteland'].id, name='Great Canyon (Continued)', display_order=9),
-                Location(level_id=levels['Wasteland'].id, name='Forbidden Area', display_order=10),
-                Location(level_id=levels['Wasteland'].id, name='Wasteland (Continued)', display_order=11),
+                Location(level_id=levels['Wasteland'].id, name='Plant', display_order=7),
+                Location(level_id=levels['Wasteland'].id, name='Forbidden Area', display_order=8),
 
                 # Altess Levoire
                 Location(level_id=levels['Altess Levoire'].id, name='Research Lab Entrance', display_order=1),
