@@ -52,13 +52,10 @@ function App() {
           {/* Collectibles */}
           <Route path="collectibles" element={<CollectiblesIndexPage />} />
           <Route path="collectibles/:typeName" element={<CollectibleTypePage />} />
-
           <Route path="upgrades" element={<UpgradesIndexPage />} />
           <Route path="upgrades/:typeName" element={<CollectibleTypePage />} />
-
           <Route path="materials" element={<MaterialsIndexPage />} />
           <Route path="materials/:typeName" element={<CollectibleTypePage />} />
-
           <Route path="cosmetics" element={<CosmeticsIndexPage />} />
           <Route path="cosmetics/:typeName" element={<CollectibleTypePage />} />
 
