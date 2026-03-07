@@ -3,8 +3,12 @@ import type { ReactNode } from 'react'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// Hint flag — not a security mechanism, just avoids a pointless refresh call
+// for unauthenticated visitors. Worst case: cleared localStorage causes one
+// 401 on next load, which then clears the flag and never happens again.
+const SESSION_FLAG = 'sb_has_session'
 
+// Types
 export interface AuthUser {
   id: number
   email: string
@@ -25,12 +29,10 @@ interface AuthContextValue {
   refreshToken: () => Promise<string | null>
 }
 
-// ── Context ────────────────────────────────────────────────────────────────────
-
+// Context
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-// ── Provider ───────────────────────────────────────────────────────────────────
-
+// Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) {
         setUser(null)
         setAccessToken(null)
+        localStorage.removeItem(SESSION_FLAG)
         return null
       }
       const data = await res.json()
@@ -55,12 +58,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       setUser(null)
       setAccessToken(null)
+      localStorage.removeItem(SESSION_FLAG)
       return null
     }
   }, [])
 
-  // Silent refresh on mount — restores session if cookie is valid
+  // Silent refresh on mount — skip entirely if no session flag is set,
+  // meaning this visitor has never logged in (or has since logged out).
   useEffect(() => {
+    if (!localStorage.getItem(SESSION_FLAG)) {
+      setIsLoading(false)
+      return
+    }
     refreshToken().finally(() => setIsLoading(false))
   }, [refreshToken])
 
@@ -90,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await res.json()
     setUser(data.user)
     setAccessToken(data.access_token)
+    localStorage.setItem(SESSION_FLAG, '1')
   }, [])
 
   const register = useCallback(async (email: string, username: string, password: string) => {
@@ -109,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await res.json()
     setUser(data.user)
     setAccessToken(data.access_token)
+    localStorage.setItem(SESSION_FLAG, '1')
   }, [])
 
   const logout = useCallback(async () => {
@@ -120,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(null)
       setAccessToken(null)
+      localStorage.removeItem(SESSION_FLAG)
     }
   }, [])
 
@@ -139,8 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// ── Internal hook (used by useAuth.ts) ────────────────────────────────────────
-
+// Internal hook (used by useAuth.ts)
 export function useAuthContext() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuthContext must be used inside <AuthProvider>')
