@@ -13,6 +13,8 @@ from middleware.error_handler import add_error_handler_middleware
 from middleware.security_headers import add_security_headers_middleware
 from middleware.honeypot import add_banned_ip_middleware, add_honeypot_middleware
 from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, robots
+from config.settings import settings
+print(settings.DATABASE_URL)
 
 setup_logging()
 
