@@ -63,12 +63,9 @@ export default function CommentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      {error && (
-        <p className="text-red-400 text-xs">{error}</p>
-      )}
       <textarea
         value={body}
-        onChange={e => setBody(e.target.value)}
+        onChange={e => { setBody(e.target.value); setError(null) }}
         placeholder={placeholder}
         autoFocus={autoFocus}
         rows={3}
@@ -76,7 +73,10 @@ export default function CommentForm({
         className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
       />
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400">{body.length}/2000</span>
+        {error
+          ? <p className="text-red-400 text-xs">{error}</p>
+          : <span className="text-xs text-gray-400">{body.length}/2000</span>
+        }
         <div className="flex items-center gap-2">
           {onCancel && (
             <button
@@ -89,7 +89,7 @@ export default function CommentForm({
           )}
           <button
             type="submit"
-            disabled={isSubmitting || !body.trim()}
+            disabled={isSubmitting || !body.trim() || !!error}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
