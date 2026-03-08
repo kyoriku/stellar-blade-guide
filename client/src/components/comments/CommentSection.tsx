@@ -1,10 +1,7 @@
-import { useState, useEffect } from 'react'
 import { MessageSquare } from 'lucide-react'
-import Comment, { type CommentData } from './Comment'
+import Comment from './Comment'
 import CommentForm from './CommentForm'
-import { useAuth } from '../../hooks/useAuth'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+import { useComments } from '../../hooks/useComments'
 
 interface CommentSectionProps {
   contentType: 'walkthrough' | 'collectible' | 'level'
@@ -13,87 +10,15 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ contentType, contentId, contentName }: CommentSectionProps) {
-  const { authFetch } = useAuth()
-  const [comments, setComments] = useState<CommentData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!contentId) return;
-    const fetchComments = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(`${API_BASE_URL}/comments/${contentType}/${contentId}`, {
-          cache: 'no-store',
-        })
-        if (!res.ok) throw new Error('Failed to load comments')
-        const data: CommentData[] = await res.json()
-        setComments(data)
-      } catch {
-        setError('Failed to load comments')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchComments()
-  }, [contentType, contentId])
-
-  const handlePostComment = async (body: string) => {
-    const res = await authFetch(`${API_BASE_URL}/comments/`, {
-      method: 'POST',
-      body: JSON.stringify({ content_type: contentType, content_id: contentId, body, content_name: contentName }),
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || 'Failed to post comment')
-    }
-    const newComment: CommentData = await res.json()
-    setComments(prev => [...prev, { ...newComment, replies: [] }])
-  }
-
-  const handleReplyPosted = (reply: CommentData, parentId: number) => {
-    setComments(prev => prev.map(c =>
-      c.id === parentId
-        ? { ...c, replies: [...(c.replies ?? []), reply] }
-        : c
-    ))
-  }
-
-  const handleEdited = (updated: CommentData) => {
-    setComments(prev => prev.map(c => {
-      if (c.id === updated.id) return { ...updated, replies: c.replies }
-      // Also check inside replies
-      if (c.replies) {
-        return {
-          ...c,
-          replies: c.replies.map(r => r.id === updated.id ? updated : r)
-        }
-      }
-      return c
-    }))
-  }
-
-  const handleDeleted = (id: number) => {
-    const processDeleted = (comments: CommentData[]): CommentData[] =>
-      comments
-        .map(c => {
-          if (c.id === id) {
-            const hasLiveReplies = c.replies && c.replies.some(r => !r.is_deleted)
-            if (hasLiveReplies) {
-              return { ...c, is_deleted: true, body: '[deleted]', user: null }
-            }
-            return null
-          }
-          // For other comments, process their replies and check if parent should collapse
-          const updatedReplies = c.replies ? processDeleted(c.replies) as CommentData[] : undefined
-          const hasLiveReplies = updatedReplies && updatedReplies.some(r => !r.is_deleted)
-          if (c.is_deleted && !hasLiveReplies) return null
-          return { ...c, replies: updatedReplies }
-        })
-        .filter(Boolean) as CommentData[]
-    setComments(prev => processDeleted(prev))
-  }
+  const {
+    data: comments = [],
+    isLoading,
+    error,
+    postComment,
+    postReply,
+    editComment,
+    deleteComment,
+  } = useComments(contentType, contentId)
 
   const totalCount = comments.reduce((sum, c) => sum + 1 + (c.replies?.length ?? 0), 0)
 
@@ -112,7 +37,7 @@ export default function CommentSection({ contentType, contentId, contentName }: 
 
       {/* Post a comment */}
       <div className="mb-8">
-        <CommentForm onSubmit={handlePostComment} />
+        <CommentForm onSubmit={(body) => postComment(body, contentName)} />
       </div>
 
       {/* Comments list */}
@@ -131,7 +56,7 @@ export default function CommentSection({ contentType, contentId, contentName }: 
           ))}
         </div>
       ) : error ? (
-        <p className="text-gray-400 text-sm">{error}</p>
+        <p className="text-gray-400 text-sm">Failed to load comments</p>
       ) : comments.length === 0 ? (
         <p className="text-gray-400 text-sm">No comments yet. Be the first!</p>
       ) : (
@@ -143,9 +68,9 @@ export default function CommentSection({ contentType, contentId, contentName }: 
               contentType={contentType}
               contentId={contentId}
               contentName={contentName}
-              onReplyPosted={handleReplyPosted}
-              onEdited={handleEdited}
-              onDeleted={handleDeleted}
+              onReply={postReply}
+              onEdit={editComment}
+              onDelete={deleteComment}
             />
           ))}
         </div>
