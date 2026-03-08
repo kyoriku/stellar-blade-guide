@@ -1,11 +1,8 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import { MessageSquare, Pencil, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 export interface CommentData {
   id: number
@@ -26,9 +23,9 @@ interface CommentProps {
   contentType: string
   contentId: number
   contentName?: string
-  onReplyPosted: (reply: CommentData, parentId: number) => void
-  onEdited: (updated: CommentData) => void
-  onDeleted: (id: number) => void
+  onReply: (parentId: number, body: string, contentName?: string) => Promise<void>
+  onEdit: (commentId: number, body: string) => Promise<void>
+  onDelete: (commentId: number) => Promise<void>
   depth?: number
 }
 
@@ -49,20 +46,19 @@ export default function Comment({
   contentType,
   contentId,
   contentName,
-  onReplyPosted,
-  onEdited,
-  onDeleted,
+  onReply,
+  onEdit,
+  onDelete,
   depth = 0,
 }: CommentProps) {
-  const { user, authFetch } = useAuth()
+  const { user } = useAuth()
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editBody, setEditBody] = useState(comment.body)
+  const [editError, setEditError] = useState<string | null>(null)
   const [showReplies, setShowReplies] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
 
   const isOwner = user?.id === comment.user?.id
   const isMod = user?.role === 'moderator' || user?.role === 'admin'
@@ -70,39 +66,27 @@ export default function Comment({
   const hasReplies = comment.replies && comment.replies.length > 0
 
   const handleReply = async (body: string) => {
-    const res = await authFetch(`${API_BASE_URL}/comments/`, {
-      method: 'POST',
-      body: JSON.stringify({ content_type: contentType, content_id: contentId, parent_id: comment.id, body, content_name: contentName }),
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || 'Failed to post reply')
-    }
-    const reply: CommentData = await res.json()
-    onReplyPosted(reply, comment.id)
+    await onReply(comment.id, body, contentName)
     setShowReplyForm(false)
   }
 
   const handleEdit = async () => {
     const trimmed = editBody.trim()
     if (!trimmed || trimmed === comment.body) { setIsEditing(false); return }
-    const res = await authFetch(`${API_BASE_URL}/comments/${comment.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ body: trimmed }),
-    })
-    if (!res.ok) throw new Error('Failed to edit comment')
-    const updated: CommentData = await res.json()
-    onEdited(updated)
-    setIsEditing(false)
+    setEditError(null)
+    try {
+      await onEdit(comment.id, trimmed)
+      setIsEditing(false)
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to edit comment')
+    }
   }
 
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      const res = await authFetch(`${API_BASE_URL}/comments/${comment.id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to delete')
+      await onDelete(comment.id)
       setShowDeleteModal(false)
-      onDeleted(comment.id)
     } finally {
       setIsDeleting(false)
     }
@@ -135,25 +119,32 @@ export default function Comment({
           <p className="text-gray-500 text-sm italic">[deleted]</p>
         ) : isEditing ? (
           <div className="space-y-2">
-            <textarea
-              value={editBody}
-              onChange={e => setEditBody(e.target.value)}
-              rows={3}
-              maxLength={2000}
-              className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
-            />
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer">
-                Cancel
-              </button>
-              <button
-                onClick={handleEdit}
-                disabled={!editBody.trim() || editBody.trim() === comment.body}
-                className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all cursor-pointer"
-              >
-                Save
-              </button>
-            </div>
+              <textarea
+                value={editBody}
+                onChange={e => { setEditBody(e.target.value); setEditError(null) }}
+                rows={3}
+                maxLength={2000}
+                className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
+              />
+              <div className="flex gap-2 justify-end">
+                {editError
+                  ? <p className="text-red-400 text-xs my-auto mr-auto">{editError}</p>
+                  : <span className="text-xs text-gray-400 my-auto mr-auto">{editBody.length}/2000</span>
+                }
+                <button
+                  onClick={() => { setIsEditing(false); setEditError(null) }}
+                  className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEdit}
+                  disabled={!editBody.trim() || editBody.trim() === comment.body || !!editError}
+                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all cursor-pointer"
+                >
+                  Save
+                </button>
+              </div>
           </div>
         ) : (
           <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{comment.body}</p>
@@ -162,15 +153,9 @@ export default function Comment({
         {/* Actions */}
         {!comment.is_deleted && !isEditing && (
           <div className="flex items-center gap-3 mt-2">
-            {depth === 0 && (
+            {depth === 0 && user && (
               <button
-                onClick={() => {
-                  if (!user) {
-                    navigate(`/login`, { state: { from: location.pathname } })
-                    return
-                  }
-                  setShowReplyForm(p => !p)
-                }}
+                onClick={() => setShowReplyForm(p => !p)}
                 className="flex items-center gap-1 text-xs text-gray-500 hover:text-cyan-400 transition-colors cursor-pointer"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
@@ -235,9 +220,9 @@ export default function Comment({
               contentType={contentType}
               contentId={contentId}
               contentName={contentName}
-              onReplyPosted={onReplyPosted}
-              onEdited={onEdited}
-              onDeleted={onDeleted}
+              onReply={onReply}
+              onEdit={onEdit}
+              onDelete={onDelete}
               depth={depth + 1}
             />
           ))}
