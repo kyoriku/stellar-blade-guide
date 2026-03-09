@@ -15,6 +15,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
+import FloatingTOC from '../components/Floatingtoc'
 
 function WalkthroughPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
@@ -104,14 +105,6 @@ function WalkthroughPage() {
                 <div className="h-5 w-64 bg-gray-700/50 rounded mt-2 animate-pulse" />
               </div>
 
-              {/* Meta badge skeleton */}
-              <div className="flex flex-wrap gap-3 mb-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 border border-cyan-500/30 rounded-lg">
-                  <div className="w-4 h-4 bg-cyan-400/50 rounded animate-pulse"></div>
-                  <div className="h-4 w-24 bg-cyan-300/30 rounded animate-pulse"></div>
-                </div>
-              </div>
-
               {/* Objectives skeleton */}
               <div className="mb-6 p-4 bg-secondary rounded-lg border border-gray-800">
                 <div className="flex items-center gap-2 mb-3">
@@ -126,11 +119,6 @@ function WalkthroughPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
-
-              {/* Mobile TOC skeleton */}
-              <div className="lg:hidden mb-8">
-                <TableOfContentsSkeleton collapsible />
               </div>
 
               {/* Walkthrough content skeletons */}
@@ -156,16 +144,7 @@ function WalkthroughPage() {
   }
 
   // Generate TOC from content sections
-  const tocLinks = walkthrough.objectives && walkthrough.objectives.length > 0
-    ? [{
-      mainLink: '#objectives',
-      title: 'Objectives',
-      subLinks: walkthrough.objectives.map((objective, idx) => ({
-        href: `#objective-${idx}`,
-        title: objective
-      }))
-    }]
-    : [];
+  const tocLinks: { mainLink: string; title: string; subLinks: { href: string; title: string }[] }[] = [];
 
   // Add content sections to TOC
   walkthrough.content.forEach((content) => {
@@ -254,7 +233,7 @@ function WalkthroughPage() {
 
             {/* Mobile TOC */}
             <div className="lg:hidden mb-8">
-              <TableOfContents links={tocLinks} activeSection={activeSection} collapsible />
+              <FloatingTOC links={tocLinks} activeSection={activeSection} />
             </div>
 
             {/* Content sections */}
