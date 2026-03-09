@@ -6,56 +6,72 @@ export default function PrivacyPolicy() {
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Information Collection</h2>
-            <p><strong>Automatically collected:</strong> IP address, browser type, operating system, pages visited, referral source, access timestamps. This data is collected through standard server logs.</p>
-            <p className="mt-2"><strong>User-provided:</strong> If you contact us via email, we collect your email address and message content. Future features (user accounts, comments) may collect additional information—this policy will be updated accordingly.</p>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">Information We Collect</h2>
+            <p><strong>Automatically collected:</strong> IP address, browser type, operating system, pages visited, referral source, and access timestamps via standard server logs and internal analytics.</p>
+            <p className="mt-2"><strong>Account registration:</strong> If you create an account, we collect your username, email address, and a securely hashed password. We never store plaintext passwords.</p>
+            <p className="mt-2"><strong>Comments:</strong> If you post a comment, we store the comment text, the username it was posted under, a timestamp, and the page it was posted on.</p>
+            <p className="mt-2"><strong>Contact:</strong> If you email us, we collect your email address and message content.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Use of Information</h2>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">How We Use Your Information</h2>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
-              <li>Maintain and improve website performance</li>
-              <li>Monitor usage patterns and detect technical issues</li>
-              <li>Respond to inquiries (note: we may not reply to all messages)</li>
+              <li>Authenticate your account and maintain your session</li>
+              <li>Display your comments on the site</li>
+              <li>Send transactional emails (e.g. password reset)</li>
+              <li>Moderate comments for spam and policy violations</li>
+              <li>Monitor site performance and detect technical issues</li>
               <li>Comply with legal obligations</li>
             </ul>
-            <p className="mt-2">We do <strong>not</strong> sell, rent, or share personal information with third parties for marketing purposes.</p>
+            <p className="mt-2">We do <strong>not</strong> sell, rent, or share your personal information with third parties for marketing purposes.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Cookies & Tracking</h2>
-            <p>Currently minimal cookies for basic site functionality only. May expand in the future for user preferences, login sessions, or privacy-respecting analytics. You can control cookies through your browser settings.</p>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">AI Comment Moderation</h2>
+            <p>Comments are reviewed by an automated moderation system powered by OpenAI. When you submit or edit a comment, the text is sent to OpenAI's API to screen for spam, harassment, and other policy violations. OpenAI processes this data in accordance with their <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">privacy policy</a>. By posting a comment, you consent to this processing.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Third-Party Services</h2>
-            <p><strong>Current:</strong> Railway (hosting), Cloudinary (image delivery). These services have their own privacy policies.</p>
-            <p className="mt-2"><strong>Future:</strong> Analytics tools, OAuth providers (Google, Discord), additional CDN services. This policy will be updated before implementing new services.</p>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">Cookies & Sessions</h2>
+            <p>We use cookies and server-side sessions to keep you logged in after authentication. These are strictly functional — no advertising or cross-site tracking cookies are used. You can clear cookies through your browser settings, which will log you out.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Data Security & Retention</h2>
-            <p>We use HTTPS encryption, secure server infrastructure, and regular monitoring. Server logs are retained for a limited period necessary for site operation. Email correspondence is retained as needed to address inquiries. Future user accounts will include data deletion options.</p>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">Third-Party Services</h2>
+            <p>We use the following third-party services, each with their own privacy policies:</p>
+            <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
+              <li><strong>Railway</strong> - hosting and infrastructure (including Fastly)</li>
+              <li><strong>Cloudinary</strong> - image delivery and storage</li>
+              <li><strong>OpenAI</strong> - automated comment moderation (comment text only)</li>
+              <li><strong>Resend</strong> - transactional email delivery (email address only)</li>
+            </ul>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Your Rights</h2>
-            <p>Depending on your location, you may have rights to access, correct, delete, or port your data, or object to processing. To exercise these rights:</p>
-            <p className="mt-2 font-mono text-sm text-cyan-400">contact@stellarbladeguide.com</p>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">Data Security & Retention</h2>
+            <p>We use HTTPS encryption, hashed passwords, rate limiting, and IP-based abuse detection. Server logs are retained for a limited period for operational purposes. Account data is retained for as long as your account is active. You may request deletion of your account and associated data at any time by contacting us.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">International Users & Children</h2>
-            <p>This site is operated from Canada. Your information may be transferred to and processed in Canada or other countries. By using the site, you consent to this transfer. This site is not directed to children under 13, and we do not knowingly collect their information.</p>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">Your Rights</h2>
+            <p>Depending on your location, you may have rights to access, correct, delete, or export your personal data, or to withdraw consent for certain processing. To exercise any of these rights, contact us and we will respond promptly.</p>
+            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm hover:underline">
+              contact@stellarbladeguide.com
+            </a>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Changes</h2>
-            <p>Updates will be reflected via the "Last Updated" date. Significant changes may be announced on the homepage. Please review periodically.</p>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">International Users & Children</h2>
+            <p>This site is operated from Canada. Your information may be processed in Canada or other countries where our service providers operate. By using the site, you consent to this. This site is not directed at children under 13, and we do not knowingly collect their information. If you believe a child has provided us personal data, please contact us for prompt removal.</p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold mb-2 text-gray-100">Changes to This Policy</h2>
+            <p>Updates are reflected via the "Last Updated" date below. Significant changes will be announced on the homepage. We encourage you to review this policy periodically.</p>
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: November 15, 2025
+            Last Updated: March 9, 2026
           </div>
         </div>
       </div>
