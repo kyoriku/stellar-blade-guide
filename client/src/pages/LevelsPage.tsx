@@ -16,6 +16,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
+import FloatingTOC from '../components/Floatingtoc'
 
 function LevelPage() {
   const { levelName } = useParams<{ levelName: string }>();
@@ -183,10 +184,6 @@ function LevelPage() {
                 <div className="h-5 w-48 bg-gray-700/50 rounded mt-2 animate-pulse mb-3" />
               </div>
 
-              <div className="lg:hidden mb-8">
-                <TableOfContentsSkeleton collapsible />
-              </div>
-
               <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
               <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
@@ -236,7 +233,7 @@ function LevelPage() {
 
             {/* Mobile TOC */}
             <div className="lg:hidden mb-8">
-              <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} collapsible />
+              <FloatingTOC links={tocLinks} currentLevel={levelName} activeSection={activeSection} />
             </div>
 
             {/* Collectible sections */}
