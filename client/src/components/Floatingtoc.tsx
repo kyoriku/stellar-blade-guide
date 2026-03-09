@@ -20,20 +20,20 @@ interface FloatingTOCProps {
   activeSection?: string
 }
 
-// iOS-safe scroll lock
+let savedScrollY = 0
+
 function lockScroll() {
-  const scrollY = window.scrollY
+  savedScrollY = window.scrollY
   document.body.style.position = 'fixed'
-  document.body.style.top = `-${scrollY}px`
+  document.body.style.top = `-${savedScrollY}px`
   document.body.style.width = '100%'
 }
 
 function unlockScroll() {
-  const scrollY = document.body.style.top
   document.body.style.position = ''
   document.body.style.top = ''
   document.body.style.width = ''
-  window.scrollTo(0, parseInt(scrollY || '0') * -1)
+  window.scrollTo({ top: savedScrollY, behavior: 'instant' })
 }
 
 export default function FloatingTOC({ links, currentLevel, activeSection }: FloatingTOCProps) {
@@ -117,7 +117,10 @@ export default function FloatingTOC({ links, currentLevel, activeSection }: Floa
         </div>
 
         {/* Drawer content */}
-        <div className="overflow-y-auto custom-scrollbar px-3 py-3" style={{ maxHeight: 'calc(70vh - 56px)' }}>
+        <div
+          className="overflow-y-auto custom-scrollbar px-3 py-3"
+          style={{ maxHeight: 'calc(70vh - 56px)', overscrollBehavior: 'contain' }}
+        >
           <ul className="space-y-1">
             {links.map((linkGroup, index) => {
               const isCurrentLevel = currentLevel === linkGroup.title
