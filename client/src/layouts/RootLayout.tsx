@@ -11,7 +11,7 @@ function RootLayout() {
     <div className="flex flex-col min-h-screen bg-primary">
       <ScrollToTop />
       <Navbar />
-      <div className="flex-1 pb-8">
+      <div className="flex-1">
         {!isLoading && <Outlet />}
       </div>
       <Footer />
