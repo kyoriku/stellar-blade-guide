@@ -73,7 +73,7 @@ async def get_stats(request: Request):
         },
         "status_codes": status_codes,
         "unique_visitors": unique_ips,
-        "total_requests": sum(int(v) for v in endpoints.values()),
+        "total_requests": sum(int(v) for v in sorted_endpoints.values()),
     }
 
 @router.post("/stats/reset")
