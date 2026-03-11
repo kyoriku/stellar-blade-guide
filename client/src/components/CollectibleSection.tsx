@@ -2,6 +2,7 @@ import { type Collectible } from '../services/api'
 import ImageGallery from './ImageGallery'
 import TypeBadge from './TypeBadge';
 import { FileText, List } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 interface CollectibleSectionProps {
   id: string;
@@ -9,6 +10,17 @@ interface CollectibleSectionProps {
   levelName?: string;
   collectibles: Collectible[];
   onImageClick?: (imageUrl: string) => void;
+}
+
+function parseDescription(text: string) {
+  const parts = text.split(/(\[\[.*?\]\])/g);
+  return parts.map((part, i) => {
+    const match = part.match(/^\[\[(.+?)\|(.+?)\]\]$/);
+    if (match) {
+      return <Link key={i} to={`/${match[1]}`} className="text-cyan-400 hover:text-cyan-300 transition-colors">{match[2]}</Link>;
+    }
+    return part;
+  });
 }
 
 function CollectibleSection({
@@ -74,7 +86,7 @@ function CollectibleSection({
                 {collectible.description.type === 'text' ? (
                   <div className="flex gap-3">
                     <FileText className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5 hidden" />
-                    <p className="text-gray-300 leading-relaxed">{collectible.description.content}</p>
+                    <p className="text-gray-300 leading-relaxed">{parseDescription(collectible.description.content ?? '')}</p>
                   </div>
                 ) : (
                   <div className="flex gap-3">
