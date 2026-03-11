@@ -40,6 +40,8 @@ async def log_requests_middleware(request: Request, call_next):
         if cache_status:
             pipe.hincrby("stats:cache", cache_status, 1)
         pipe.hincrby("stats:status_codes", str(response.status_code), 1)
+        if response.status_code == 404: 
+            pipe.hincrby("stats:404_endpoints", request.url.path, 1) 
         await pipe.execute()
     except Exception:
         pass  # Stats are nice-to-have, never block requests

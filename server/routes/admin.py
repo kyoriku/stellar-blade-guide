@@ -47,10 +47,15 @@ async def get_stats(request: Request):
     cache = await redis_client.hgetall("stats:cache")
     status_codes = await redis_client.hgetall("stats:status_codes")
     unique_ips = await redis_client.pfcount("stats:unique_ips")
+    not_found_endpoints = await redis_client.hgetall("stats:404_endpoints")
 
     # Sort endpoints by hit count descending
     sorted_endpoints = dict(
-        sorted(endpoints.items(), key=lambda x: int(x[1]), reverse=True)
+        sorted(
+            {k: v for k, v in endpoints.items() if k != "/" and not k.startswith("/api/admin")},
+            key=lambda x: int(x[1]),
+            reverse=True
+        )
     )
 
     # Calculate cache hit rate
@@ -61,6 +66,7 @@ async def get_stats(request: Request):
 
     return {
         "endpoints": sorted_endpoints,
+        "404_endpoints": dict(sorted(not_found_endpoints.items(), key=lambda x: int(x[1]), reverse=True)),  # new
         "cache": {
             **cache,
             "hit_rate": hit_rate,
@@ -85,6 +91,7 @@ async def reset_stats(request: Request):
     pipe.delete("stats:cache")
     pipe.delete("stats:status_codes")
     pipe.delete("stats:unique_ips")
+    pipe.delete("stats:404_endpoints")
     await pipe.execute()
 
     return {"status": "ok", "message": "Stats reset"}
