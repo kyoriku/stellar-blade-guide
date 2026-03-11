@@ -52,8 +52,8 @@ async def get_stats(request: Request):
     # Sort endpoints by hit count descending
     sorted_endpoints = dict(
         sorted(
-            {k: v for k, v in endpoints.items() if k != "/" and not k.startswith("/api/admin")},
-            key=lambda x: int(x[1]),
+            {k: v for k, v in endpoints.items() if k != "/" and not k.startswith("/api/admin")}.items(),
+            key=lambda x: int(x[1]) if x[1].isdigit() else 0,
             reverse=True
         )
     )
@@ -66,7 +66,7 @@ async def get_stats(request: Request):
 
     return {
         "endpoints": sorted_endpoints,
-        "404_endpoints": dict(sorted(not_found_endpoints.items(), key=lambda x: int(x[1]), reverse=True)),  # new
+        "404_endpoints": dict(sorted(not_found_endpoints.items(), key=lambda x: int(x[1]) if x[1].isdigit() else 0, reverse=True)),
         "cache": {
             **cache,
             "hit_rate": hit_rate,
