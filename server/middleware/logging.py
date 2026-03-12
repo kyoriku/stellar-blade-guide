@@ -39,7 +39,8 @@ async def log_requests_middleware(request: Request, call_next):
         pipe.pfadd("stats:unique_ips", client_ip)
         if cache_status:
             pipe.hincrby("stats:cache", cache_status, 1)
-        pipe.hincrby("stats:status_codes", str(response.status_code), 1)
+        if not request.url.path.startswith("/api/admin"):
+            pipe.hincrby("stats:status_codes", str(response.status_code), 1)
         if response.status_code == 404: 
             pipe.hincrby("stats:404_endpoints", request.url.path, 1) 
         await pipe.execute()
