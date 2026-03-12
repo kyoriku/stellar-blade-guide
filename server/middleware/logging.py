@@ -35,14 +35,15 @@ async def log_requests_middleware(request: Request, call_next):
     # Track stats in Redis (fire-and-forget, don't slow down responses)
     try:
         pipe = redis_client.pipeline(transaction=False)
-        pipe.hincrby("stats:endpoints", request.url.path, 1)
-        pipe.pfadd("stats:unique_ips", client_ip)
-        if cache_status:
-            pipe.hincrby("stats:cache", cache_status, 1)
-        if not request.url.path.startswith("/api/admin"):
+        is_real_endpoint = request.url.path.startswith("/api/") and not request.url.path.startswith("/api/admin")
+        if is_real_endpoint:
+            pipe.hincrby("stats:endpoints", request.url.path, 1)
+            if cache_status:
+                pipe.hincrby("stats:cache", cache_status, 1)
+            pipe.pfadd("stats:unique_ips", client_ip)
             pipe.hincrby("stats:status_codes", str(response.status_code), 1)
-        if response.status_code == 404: 
-            pipe.hincrby("stats:404_endpoints", request.url.path, 1) 
+            if response.status_code == 404:
+                pipe.hincrby("stats:404_endpoints", request.url.path, 1)
         await pipe.execute()
     except Exception:
         pass  # Stats are nice-to-have, never block requests
