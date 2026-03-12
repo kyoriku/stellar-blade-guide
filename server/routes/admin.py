@@ -52,7 +52,7 @@ async def get_stats(request: Request):
     # Sort endpoints by hit count descending
     sorted_endpoints = dict(
         sorted(
-            {k: v for k, v in endpoints.items() if k != "/" and not k.startswith("/api/admin")}.items(),
+            endpoints.items(),
             key=lambda x: int(x[1]) if x[1].isdigit() else 0,
             reverse=True
         )
