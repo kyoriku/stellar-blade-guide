@@ -105,7 +105,7 @@ function HomePage() {
                 onMouseEnter={() => prefetchLevel(level.slug)}
                 className="group flex-shrink-0"
               >
-                <div className="relative w-40 md:w-50 aspect-[16/10] rounded-lg overflow-hidden border border-zinc-800 
+                <div className="relative w-40 md:w-50 aspect-[4/3] sm:aspect-[16/10] rounded-lg overflow-hidden border border-zinc-800 
                               hover:border-zinc-600 transition-all duration-200">
                   {LEVEL_IMAGES[level.slug] ? (
                     <img
@@ -237,7 +237,7 @@ function CategoryCard({ title, description, icon, to, count, imageUrl }: Categor
                     hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
 
         {/* Image */}
-        <div className="aspect-[16/9] relative overflow-hidden">
+        <div className="aspect-[4/3] sm:aspect-[16/9] relative overflow-hidden">
           <img
             src={imageUrl}
             alt={title}
