@@ -32,7 +32,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Create Account — Stellar Blade Guide"
+        title="Create Account"
         description="Create a Stellar Blade Guide account to join the community"
       />
 
