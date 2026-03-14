@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Login — Stellar Blade Guide"
+        title="Login"
         description="Log in to your Stellar Blade Guide account"
       />
 
