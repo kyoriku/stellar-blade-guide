@@ -37,7 +37,7 @@ export const UPGRADE_IMAGES: Record<string, string> = {
 export const COSMETIC_IMAGES: Record<string, string> = {
   'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765220994/stellar-blade/collectibles/eidos-7/construction-zone/15-crimson-tear-earrings.jpg',
   'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221692/stellar-blade/collectibles/spire-4/cargo-lift-121/7-glasses-large-round-2.jpg',
-  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765220975/stellar-blade/collectibles/eidos-7/abandoned-station/4-planet-diving-suit-7th-v2-nano-suit.jpg',
+  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1773189944/stellar-blade/eidos-7/silent-street/stellar-blade-20260310200110.jpg',
   'outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221046/stellar-blade/collectibles/eidos-7/flooded-commercial-sector/14-armoured-pack-drone-skin-appearance-pack-3.jpg',
 };
 

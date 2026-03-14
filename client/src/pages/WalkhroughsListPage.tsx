@@ -35,7 +35,7 @@ export default function WalkthroughsListPage() {
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="rounded-lg overflow-hidden border border-zinc-800">
-                <div className="aspect-[16/10] bg-tertiary animate-pulse" />
+                <div className="aspect-[16/9] bg-tertiary animate-pulse" />
                 <div className="p-4 space-y-2 bg-secondary">
                   <div className="h-4 bg-tertiary rounded w-full animate-pulse" />
                   <div className="h-3 bg-tertiary rounded w-2/3 animate-pulse" />
@@ -102,7 +102,7 @@ export default function WalkthroughsListPage() {
                             hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
 
                 {/* Image */}
-                <div className="relative aspect-[16/10] overflow-hidden">
+                <div className="relative aspect-[16/9] overflow-hidden">
                   {walkthrough.thumbnail_url ? (
                     <img
                       src={walkthrough.thumbnail_url}

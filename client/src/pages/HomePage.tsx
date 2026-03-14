@@ -199,7 +199,7 @@ function HomePage() {
                 icon={<Sparkles size={18} />}
                 to="/cosmetics"
                 count={COSMETICS.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270/f_webp,q_auto/v1769725933/stellar-blade/xion/xion/stellar-blade-20260104000600.jpg"
+                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270//f_webp,q_auto/v1773189944/stellar-blade/eidos-7/silent-street/stellar-blade-20260310200110.jpg"
               />
               <CategoryCard
                 title="Materials"
