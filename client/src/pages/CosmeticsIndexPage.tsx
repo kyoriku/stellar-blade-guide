@@ -42,9 +42,9 @@ function CosmeticsIndexPage() {
               to={`/cosmetics/${type.slug}`}
               className="group block"
             >
-              <div className="relative aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
-                            hover:border-zinc-600 transition-all duration-200
-                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+              <div className="relative aspect-[4/3] sm:aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
+                hover:border-zinc-600 transition-all duration-200
+                hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
                 {COSMETIC_IMAGES[type.slug] ? (
                   <img
                     src={COSMETIC_IMAGES[type.slug]}
