@@ -19,8 +19,8 @@ export const LEVEL_IMAGES: Record<string, string> = {
 };
 
 export const COLLECTIBLE_IMAGES: Record<string, string> = {
-  'camps': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221107/stellar-blade/collectibles/eidos-7/silent-street/5-legion-camp-1.jpg',
-  'cans': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765220991/stellar-blade/collectibles/eidos-7/construction-zone/12-can-potential-blast-1.jpg',
+  'camps': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221001/stellar-blade/collectibles/eidos-7/construction-zone/4-supply-camp-construction-zone.jpg',
+  'cans': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg',
   'documents': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221101/stellar-blade/collectibles/eidos-7/silent-street/18-document-series-plastic-hearts-vol-3.jpg',
   'memorysticks': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1764283145/stellar-blade/collectibles/eidos-7/silent-street/2-memorystick-legionnaire-451-s-resolution-2.jpg',
   'passcodes': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221103/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-2.jpg',
