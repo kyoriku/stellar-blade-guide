@@ -24,8 +24,16 @@ def add_security_headers_middleware(app: FastAPI):
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
-        response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=3600"
         response.headers["Server"] = "SecureAPI"
+
+        # Cache-Control
+        if request.method == "GET" and response.status_code == 200:
+            if request.url.path.startswith("/api/"):
+                response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=3600"
+            else:
+                response.headers["Cache-Control"] = "no-store"
+        else:
+            response.headers["Cache-Control"] = "no-store"
 
         if settings.DEBUG:
             response.headers["Content-Security-Policy"] = (
