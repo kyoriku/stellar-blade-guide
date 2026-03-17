@@ -1,6 +1,9 @@
+import SEO from '../components/SEO'
+
 export default function Disclaimer() {
   return (
     <div className="min-h-main bg-primary">
+      <SEO title="Disclaimer" description="Disclaimer for Stellar Blade Guide — an unofficial fan-made guide not affiliated with Shift Up Corporation or Sony Interactive Entertainment." />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 text-cyan-400">Disclaimer</h1>
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">

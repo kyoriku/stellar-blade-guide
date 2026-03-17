@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Reset Password — Stellar Blade Guide"
+        title="Reset Password"
         description="Set a new password for your Stellar Blade Guide account"
       />
 

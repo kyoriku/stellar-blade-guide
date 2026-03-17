@@ -1,6 +1,9 @@
+import SEO from '../components/SEO'
+
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-main bg-primary">
+      <SEO title="Privacy Policy" description="Privacy Policy for Stellar Blade Guide. Learn how we collect, use, and protect your data." />
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-8 text-cyan-400">Privacy Policy</h1>
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
