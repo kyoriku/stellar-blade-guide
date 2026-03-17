@@ -2,10 +2,13 @@ import { Link } from 'react-router-dom'
 import { MATERIALS } from '../constants/navigation'
 import { MATERIAL_IMAGES } from '../constants/categoryImages'
 import { Box } from 'lucide-react'
+import { usePrefetch } from '../hooks/usePrefetch';
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 
 function MaterialsIndexPage() {
+  const { prefetchCollectiblesByType } = usePrefetch();
+
   return (
     <div className="min-h-main bg-primary">
       <SEO
@@ -40,6 +43,7 @@ function MaterialsIndexPage() {
             <Link
               key={type.slug}
               to={`/materials/${type.slug}`}
+              onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'materials')}
               className="group block"
             >
               <div className="relative aspect-[4/3] sm:aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
