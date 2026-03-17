@@ -17,7 +17,6 @@ RESET = '\033[0m'
 
 LOCALHOST_IPS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 
-# Paths that are NEVER legitimate - immediate ban
 OBVIOUS_BOT_PATHS = [
     '/.git', '/.env', '/.aws', '/.ssh', '/.config',
     '/wp-admin', '/wp-login', '/wp-includes', '/wp-content',
@@ -27,11 +26,18 @@ OBVIOUS_BOT_PATHS = [
     '/.kube', '/kubernetes', '/docker-compose',
 ]
 
-# File extensions that indicate bot scanning
 SUSPICIOUS_EXTENSIONS = [
-    '.php', '.asp', '.aspx', '.jsp', '.xml',
+    '.php', '.asp', '.aspx', '.jsp',
     '.yaml', '.yml', '.map', '.toml', '.tfvars', '.tfstate'
 ]
+
+SAFE_PATHS = [
+    '/sitemap.xml',
+    '/robots.txt',
+    '/favicon.ico',
+    '/favicon.svg',
+]
+
 
 def is_localhost(ip: str) -> bool:
     """Check if IP is localhost - only skip in local dev"""
@@ -148,6 +154,10 @@ async def bot_honeypot_middleware(request: Request, call_next):
     
     if is_localhost(client_ip):
         return await call_next(request)
+
+    # Always allow legitimate paths
+    if any(path == safe_path for safe_path in SAFE_PATHS):
+        return await call_next(request)
     
     # Check for obvious bot paths
     is_obvious_bot = any(path.startswith(bot_path.lower()) for bot_path in OBVIOUS_BOT_PATHS)
@@ -156,9 +166,7 @@ async def bot_honeypot_middleware(request: Request, call_next):
     has_suspicious_ext = any(path.endswith(ext) for ext in SUSPICIOUS_EXTENSIONS)
     
     if is_obvious_bot or has_suspicious_ext:
-        # Flag so logging middleware skips this request
         request.state.bot_blocked = True
-        
         await track_suspicious_activity(client_ip, path)
         return JSONResponse(status_code=404, content={"error": "Not Found"})
     
