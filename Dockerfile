@@ -24,4 +24,4 @@ COPY server/ ./
 COPY --from=client-builder /client/dist ../client/dist
 
 EXPOSE 8000
-CMD ["/server/.venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+CMD /server/.venv/bin/uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers
