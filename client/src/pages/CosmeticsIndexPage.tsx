@@ -2,10 +2,13 @@ import { Link } from 'react-router-dom'
 import { COSMETICS } from '../constants/navigation'
 import { COSMETIC_IMAGES } from '../constants/categoryImages'
 import { Sparkles } from 'lucide-react'
+import { usePrefetch } from '../hooks/usePrefetch';
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 
 function CosmeticsIndexPage() {
+  const { prefetchCollectiblesByType } = usePrefetch();
+
   return (
     <div className="min-h-main bg-primary">
       <SEO
@@ -40,6 +43,7 @@ function CosmeticsIndexPage() {
             <Link
               key={type.slug}
               to={`/cosmetics/${type.slug}`}
+              onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
               className="group block"
             >
               <div className="relative aspect-[4/3] sm:aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
