@@ -2,10 +2,13 @@ import { Link } from 'react-router-dom'
 import { UPGRADES } from '../constants/navigation'
 import { UPGRADE_IMAGES } from '../constants/categoryImages'
 import { Zap } from 'lucide-react'
+import { usePrefetch } from '../hooks/usePrefetch';
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 
 function UpgradesIndexPage() {
+  const { prefetchCollectiblesByType } = usePrefetch();
+
   return (
     <div className="min-h-main bg-primary">
       <SEO
@@ -40,6 +43,7 @@ function UpgradesIndexPage() {
             <Link
               key={type.slug}
               to={`/upgrades/${type.slug}`}
+              onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
               className="group block"
             >
               <div className="relative aspect-[4/3] sm:aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
