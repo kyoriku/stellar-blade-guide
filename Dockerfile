@@ -23,5 +23,9 @@ COPY server/ ./
 # Copy built client from stage 1
 COPY --from=client-builder /client/dist ../client/dist
 
+# Run as non-root user
+RUN useradd --no-create-home --shell /bin/false appuser
+USER appuser
+
 EXPOSE 8000
 CMD /server/.venv/bin/uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers
