@@ -7,6 +7,10 @@ class ETagMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
 
+        # Skip if FileResponse already set an ETag
+        if 'etag' in response.headers:
+            return response
+
         # Only bother for successful GET responses
         if request.method != "GET" or response.status_code != 200:
             return response

@@ -15,37 +15,38 @@ def add_security_headers_middleware(app: FastAPI):
         allowed_hosts=allowed_hosts
     )
 
+    CSP = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https://res.cloudinary.com https://lh3.googleusercontent.com https://cdn.discordapp.com; "
+        "connect-src 'self'; "
+        "font-src 'self'; "
+        "frame-src 'none'; "
+        "frame-ancestors 'none'; "
+        "object-src 'none';"
+    )
+
     @app.middleware("http")
     async def apply_security_headers(request: Request, call_next):
         response: Response = await call_next(request)
 
-        response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
         response.headers["Server"] = "SecureAPI"
+        response.headers["Content-Security-Policy"] = CSP
 
         # Cache-Control
         if request.method == "GET" and response.status_code == 200:
-            if request.url.path.startswith("/api/"):
+            if request.url.path.startswith("/assets/"):
+                response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            elif request.url.path.startswith("/api/"):
                 response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=3600"
             else:
                 response.headers["Cache-Control"] = "no-store"
         else:
             response.headers["Cache-Control"] = "no-store"
-
-        if settings.DEBUG:
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'none'; "
-                "script-src 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
-                "style-src 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-                "font-src https://fonts.gstatic.com; "
-                "img-src 'self' data: https:; "
-                "connect-src 'self'; "
-                "worker-src blob:; "
-            )
-        else:
-            response.headers["Content-Security-Policy"] = "default-src 'none'"
 
         return response

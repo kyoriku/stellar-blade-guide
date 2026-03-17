@@ -1,7 +1,9 @@
-
+import os
 import cloudinary
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from starlette.middleware.gzip import GZipMiddleware
 
 from config.settings import settings
@@ -14,7 +16,7 @@ from middleware.error_handler import add_error_handler_middleware
 from middleware.security_headers import add_security_headers_middleware
 from middleware.honeypot import add_banned_ip_middleware, add_honeypot_middleware
 from middleware.etag import ETagMiddleware
-from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, robots
+from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health
 
 setup_logging()
 
@@ -62,7 +64,6 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Routes
 app.include_router(health.router)
-app.include_router(robots.router)
 app.include_router(levels.router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.levels_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.collectibles_router, prefix=settings.API_PREFIX)
@@ -75,3 +76,22 @@ app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
+
+# Static file serving
+CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
+
+if os.path.exists(CLIENT_DIST):
+    app.mount('/assets', StaticFiles(directory=f'{CLIENT_DIST}/assets'), name='assets')
+
+    @app.get('/{full_path:path}', include_in_schema=False)
+    async def serve_spa(full_path: str):
+        # Serve real files first (robots.txt, sitemap, favicons etc.)
+        file_path = os.path.join(CLIENT_DIST, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # Serve prerendered index.html if it exists for this route
+        prerendered = os.path.join(CLIENT_DIST, full_path, 'index.html')
+        if os.path.isfile(prerendered):
+            return FileResponse(prerendered)
+        # Fall back to root index.html for client-side routing
+        return FileResponse(os.path.join(CLIENT_DIST, 'index.html'))

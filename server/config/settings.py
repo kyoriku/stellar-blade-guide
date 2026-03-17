@@ -57,11 +57,11 @@ class Settings:
     # OAuth - Google
     GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID', '')
     GOOGLE_CLIENT_SECRET: str = os.getenv('GOOGLE_CLIENT_SECRET', '')
-    GOOGLE_REDIRECT_URI: str = os.getenv('GOOGLE_REDIRECT_URI', 'https://api.stellarbladeguide.com/api/auth/google/callback')
+    GOOGLE_REDIRECT_URI: str = os.getenv('GOOGLE_REDIRECT_URI', 'https://stellarbladeguide.com/api/auth/google/callback')
 
     # OAuth - Discord
     DISCORD_CLIENT_ID: str = os.getenv('DISCORD_CLIENT_ID', '')
     DISCORD_CLIENT_SECRET: str = os.getenv('DISCORD_CLIENT_SECRET', '')
-    DISCORD_REDIRECT_URI: str = os.getenv('DISCORD_REDIRECT_URI', 'https://api.stellarbladeguide.com/api/auth/discord/callback')
+    DISCORD_REDIRECT_URI: str = os.getenv('DISCORD_REDIRECT_URI', 'https://stellarbladeguide.com/api/auth/discord/callback')
 
 settings = Settings()
