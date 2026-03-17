@@ -1,0 +1,6 @@
+{
+  "providers": [
+    "python",
+    "node"
+  ]
+}
