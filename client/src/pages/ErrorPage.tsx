@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Home, AlertCircle, Clock, ServerCrash } from 'lucide-react'
+import SEO from '../components/SEO'
 
 interface ErrorPageProps {
   code?: number;
@@ -47,6 +48,7 @@ function ErrorPage({
 
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4">
+      <SEO title={`${code} ${title || defaults.title}`} description={message || defaults.message} noindex />
       <div className="text-center max-w-md">
         <div className="mb-8 flex justify-center">
           <div className="relative">
