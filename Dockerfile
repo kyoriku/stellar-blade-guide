@@ -28,4 +28,4 @@ RUN useradd --no-create-home --shell /bin/false appuser
 USER appuser
 
 EXPOSE 8000
-CMD /server/.venv/bin/uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers
+CMD ["/bin/sh", "-c", "/server/.venv/bin/uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers"]
