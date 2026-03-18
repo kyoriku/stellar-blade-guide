@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuthContext } from '../context/AuthContext'
+import { useAuthContext, SESSION_FLAG } from '../context/AuthContext'
 
 /**
  * Landing page for OAuth callbacks.
@@ -21,7 +21,10 @@ export default function OAuthCallbackPage() {
       return
     }
 
-    refreshToken().then(() => {
+    refreshToken().then((token) => {
+      if (token) {
+        localStorage.setItem(SESSION_FLAG, '1')
+      }
       const redirect = localStorage.getItem('oauth_redirect') || '/'
       localStorage.removeItem('oauth_redirect')
       navigate(redirect, { replace: true })

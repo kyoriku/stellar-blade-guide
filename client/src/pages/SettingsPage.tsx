@@ -14,7 +14,7 @@ export default function SettingsPage() {
 
   // ── Profile ────────────────────────────────────────────────────────────────
   const [username, setUsername] = useState(user?.username ?? '')
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? '')
+  const [avatarUrl, setAvatarUrl] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState(false)
@@ -42,6 +42,29 @@ export default function SettingsPage() {
   //   return null
   // }
 
+  const handleRemoveAvatar = async () => {
+    setProfileError(null)
+    setProfileSuccess(false)
+    setProfileLoading(true)
+    try {
+      const res = await authFetch(`${API_BASE_URL}/users/me`, {
+        method: 'PATCH',
+        body: JSON.stringify({ avatar_url: '' }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.detail || 'Failed to remove avatar')
+      }
+      await refreshToken()
+      setProfileSuccess(true)
+      setTimeout(() => setProfileSuccess(false), 3000)
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : 'Failed to remove avatar')
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setProfileError(null)
@@ -67,9 +90,9 @@ export default function SettingsPage() {
         throw new Error(err.detail || 'Failed to update profile')
       }
 
-      const data = await res.json()
+      await res.json()  // consume response but don't need the data
       await refreshToken()
-      setAvatarUrl(data.avatar_url ?? '')
+      setAvatarUrl('')
       setProfileSuccess(true)
       setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err) {
@@ -209,7 +232,7 @@ export default function SettingsPage() {
                 <span className="text-xs text-gray-400">Current avatar</span>
                 <button
                   type="button"
-                  onClick={() => setAvatarUrl('')}
+                  onClick={handleRemoveAvatar}
                   className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
                 >
                   Remove

@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Forgot Password — Stellar Blade Guide"
+        title="Forgot Password"
         description="Reset your Stellar Blade Guide password"
       />
 

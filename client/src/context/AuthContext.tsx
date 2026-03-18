@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
 // for unauthenticated visitors. Worst case: cleared localStorage causes one
 // 401 on next load, which then clears the flag and never happens again.
-const SESSION_FLAG = 'sb_has_session'
+export const SESSION_FLAG = 'sb_has_session'
 
 // Types
 export interface AuthUser {
