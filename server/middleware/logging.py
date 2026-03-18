@@ -11,8 +11,13 @@ async def log_requests_middleware(request: Request, call_next):
     response = await call_next(request)
     duration_ms = (time.time() - start_time) * 1000
     
-    # Skip logging for bot/banned requests (flagged by honeypot middleware)
+    # Skip logging for bot/banned requests
     if getattr(request.state, "bot_blocked", False):
+        return response
+
+    # Only log API routes
+    if not request.url.path.startswith("/api/"):
+        response.headers["X-Process-Time"] = str(duration_ms / 1000)
         return response
     
     client_ip = get_client_ip(request)
@@ -32,7 +37,7 @@ async def log_requests_middleware(request: Request, call_next):
     
     logger.info(' | '.join(log_parts))
     
-    # Track stats in Redis (fire-and-forget, don't slow down responses)
+    # Track stats in Redis
     try:
         pipe = redis_client.pipeline(transaction=False)
         is_real_endpoint = request.url.path.startswith("/api/") and not request.url.path.startswith("/api/admin")
@@ -46,8 +51,8 @@ async def log_requests_middleware(request: Request, call_next):
                 pipe.hincrby("stats:404_endpoints", request.url.path, 1)
         await pipe.execute()
     except Exception:
-        pass  # Stats are nice-to-have, never block requests
-    
+        pass
+
     response.headers["X-Process-Time"] = str(duration_ms / 1000)
     return response
 
