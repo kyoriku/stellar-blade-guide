@@ -320,7 +320,6 @@ async def _send_reset_email(email: str, token: str) -> None:
         "subject": "Reset your password",
         "html": f"""
             <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-                <h2>Reset your password</h2>
                 <p>We received a request to reset your password. Click the link below to choose a new one.</p>
                 <p>
                     <a href="{reset_url}" style="
