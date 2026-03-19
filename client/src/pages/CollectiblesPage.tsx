@@ -230,6 +230,11 @@ function CollectibleTypePage() {
     };
   });
 
+  const categoryLabel = category === 'upgrades' ? 'All Upgrades'
+    : category === 'materials' ? 'All Materials'
+      : category === 'cosmetics' ? 'All Cosmetics'
+        : 'All Collectibles'
+
   // Check for invalid type FIRST (before loading state)
   if (!isValidType) {
     return <ErrorPage code={404} />;
@@ -359,9 +364,9 @@ function CollectibleTypePage() {
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
                         <div className="text-xs text-cyan-400 mb-0.5">Finished</div>
-                        <div className="text-sm font-medium text-white">
-                          All Collectibles
-                        </div>
+                          <div className="text-sm font-medium text-white">
+                            {categoryLabel}
+                          </div>
                       </div>
                       <div className="p-2 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors">
                         <ArrowLeft className="w-4 h-4 text-cyan-400 rotate-180 group-hover:translate-x-0.5 transition-all" />
