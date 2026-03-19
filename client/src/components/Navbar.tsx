@@ -873,8 +873,8 @@ function Navbar() {
                           key={type.slug}
                           to={`/cosmetics/${type.slug}`}
                           onClick={() => setIsOpen(false)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug)}
-                          onTouchStart={() => prefetchCollectiblesByType(type.slug)}
+                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
+                          onTouchStart={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
                           indent
                           style={{
                             animation: openSections.cosmetics ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
@@ -953,7 +953,7 @@ function Navbar() {
               )}
 
               {/* Mobile Auth Section */}
-              <div className="border-t border-gray-800/50 px-4 py-4">
+              <div className="px-4 py-4">
                 {isAuthenticated && user ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 px-2 py-2">
