@@ -4,6 +4,11 @@
   --min-height-main: calc(100vh - 174px);
 }
 
+.min-h-main {
+  padding-bottom: 4rem;
+  /* pb-16 */
+}
+
 /* Custom Scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
