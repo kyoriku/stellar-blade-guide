@@ -3,7 +3,7 @@ import cloudinary
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from starlette.middleware.gzip import GZipMiddleware
 
 from config.settings import settings
@@ -63,7 +63,7 @@ app.add_middleware(ETagMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Routes
-app.include_router(health.router)
+app.include_router(health.router, prefix=settings.API_PREFIX)
 app.include_router(levels.router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.levels_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.collectibles_router, prefix=settings.API_PREFIX)
@@ -76,6 +76,10 @@ app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
+ 
+@app.head("/", include_in_schema=False)
+async def head_root():
+    return Response(status_code=200)
 
 # Static file serving
 CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
@@ -89,9 +93,5 @@ if os.path.exists(CLIENT_DIST):
         file_path = os.path.join(CLIENT_DIST, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
-        # Serve prerendered index.html if it exists for this route
-        prerendered = os.path.join(CLIENT_DIST, full_path, 'index.html')
-        if os.path.isfile(prerendered):
-            return FileResponse(prerendered)
         # Fall back to root index.html for client-side routing
         return FileResponse(os.path.join(CLIENT_DIST, 'index.html'))
