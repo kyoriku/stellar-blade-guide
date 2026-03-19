@@ -76,7 +76,7 @@ app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
-
+ 
 @app.head("/", include_in_schema=False)
 async def head_root():
     return Response(status_code=200)
