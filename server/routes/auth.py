@@ -515,9 +515,12 @@ async def google_login(request: Request):
 async def google_callback(
     request: Request,
     response: Response,
-    code: str,
+    code: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
+    if not code:
+        raise HTTPException(status_code=400, detail="Bad request")
+    
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
 
@@ -588,9 +591,12 @@ async def discord_login(request: Request):
 async def discord_callback(
     request: Request,
     response: Response,
-    code: str,
+    code: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
+    if not code:
+        raise HTTPException(status_code=400, detail="Bad request")
+
     if not DISCORD_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Discord OAuth not configured")
 
