@@ -165,7 +165,10 @@ async def bot_honeypot_middleware(request: Request, call_next):
     # Check for suspicious extensions
     has_suspicious_ext = any(path.endswith(ext) for ext in SUSPICIOUS_EXTENSIONS)
     
-    if is_obvious_bot or has_suspicious_ext:
+    # Check for .env anywhere in path
+    has_env_probe = '.env' in path
+
+    if is_obvious_bot or has_suspicious_ext or has_env_probe:
         request.state.bot_blocked = True
         await track_suspicious_activity(client_ip, path)
         return JSONResponse(status_code=404, content={"error": "Not Found"})
