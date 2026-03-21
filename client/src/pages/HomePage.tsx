@@ -7,8 +7,8 @@ import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 
 const SITE_STATS = {
-  collectibles: 818,
-  screenshots: 1000,
+  collectibles: 800,
+  screenshots: 1500,
 } as const;
 
 function HomePage() {
@@ -50,7 +50,7 @@ function HomePage() {
               </p>
               <div className="flex gap-5 text-base">
                 <span className="text-gray-400">
-                  <span className="text-white font-semibold">{SITE_STATS.collectibles}</span> Collectibles
+                  <span className="text-white font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
                 </span>
                 <span className="text-gray-400">
                   <span className="text-white font-semibold">{LEVELS.length}</span> Levels
@@ -179,7 +179,7 @@ function HomePage() {
             <div className="grid grid-cols-2 gap-3">
               <CategoryCard
                 title="Collectibles"
-                description="Camps, Cans, Documents, Memorysticks"
+                description="Cans, Camps, Documents, Memorysticks"
                 icon={<Compass size={18} />}
                 to="/collectibles"
                 count={COLLECTIBLES.length}
@@ -187,7 +187,7 @@ function HomePage() {
               />
               <CategoryCard
                 title="Upgrades"
-                description="Beta Cores, Body Cores, Exospines"
+                description="Exospines, Beta Cores, Body Cores"
                 icon={<Zap size={18} />}
                 to="/upgrades"
                 count={UPGRADES.length}
@@ -195,11 +195,11 @@ function HomePage() {
               />
               <CategoryCard
                 title="Cosmetics"
-                description="Earrings, Glasses, Nano Suits"
+                description="Nano Suits, Earrings, Glasses"
                 icon={<Sparkles size={18} />}
                 to="/cosmetics"
                 count={COSMETICS.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270//f_webp,q_auto/v1773189944/stellar-blade/eidos-7/silent-street/stellar-blade-20260310200110.jpg"
+                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270/f_webp,q_auto/v1774063994/stellar-blade/default/default/stellar-blade-20260320183427.jpg"
               />
               <CategoryCard
                 title="Materials"
