@@ -33,7 +33,7 @@ def add_security_headers_middleware(app: FastAPI):
 
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
-        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
         response.headers["Server"] = "SecureAPI"
         response.headers["Content-Security-Policy"] = CSP
