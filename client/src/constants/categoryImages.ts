@@ -30,14 +30,14 @@ export const COLLECTIBLE_IMAGES: Record<string, string> = {
 export const UPGRADE_IMAGES: Record<string, string> = {
   'beta-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg',
   'body-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221082/stellar-blade/collectibles/eidos-7/parking-tower/1-body-core-1-2.jpg',
-  'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221086/stellar-blade/collectibles/eidos-7/parking-tower/6-chain-type-exospine-1.jpg',
+  'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1773965485/stellar-blade/eidos-7/parking-tower/stellar-blade-20260319190946.jpg',
   'robots': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
 };
 
 export const COSMETIC_IMAGES: Record<string, string> = {
-  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765220994/stellar-blade/collectibles/eidos-7/construction-zone/15-crimson-tear-earrings.jpg',
-  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221692/stellar-blade/collectibles/spire-4/cargo-lift-121/7-glasses-large-round-2.jpg',
-  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1773189944/stellar-blade/eidos-7/silent-street/stellar-blade-20260310200110.jpg',
+  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774063997/stellar-blade/eidos-7/construction-zone/stellar-blade-20260320183910.jpg',
+  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774065213/stellar-blade/wasteland/scrap-yard/stellar-blade-20260320183820.jpg',
+  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774063994/stellar-blade/default/default/stellar-blade-20260320183427.jpg',
   'outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221046/stellar-blade/collectibles/eidos-7/flooded-commercial-sector/14-armoured-pack-drone-skin-appearance-pack-3.jpg',
 };
 
