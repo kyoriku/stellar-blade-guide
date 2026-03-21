@@ -304,7 +304,7 @@ async def change_password(
 import uuid
 import resend
 
-RESET_TOKEN_TTL = 60 * 15  # 15 minutes
+RESET_TOKEN_TTL = 60 * 60  # 1 hour
 
 
 async def _send_reset_email(email: str, token: str) -> None:
@@ -333,7 +333,7 @@ async def _send_reset_email(email: str, token: str) -> None:
                     ">Reset Password</a>
                 </p>
                 <p style="color: #6b7280; font-size: 14px;">
-                    This link expires in 15 minutes. If you didn't request this, you can safely ignore this email.
+                    This link expires in 1 hour. If you didn't request this, you can safely ignore this email.
                 </p>
                 <p style="color: #6b7280; font-size: 12px;">
                     Or copy this link: {reset_url}
