@@ -76,10 +76,6 @@ app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
- 
-@app.head("/", include_in_schema=False)
-async def head_root():
-    return Response(status_code=200)
 
 # Static file serving
 CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
@@ -87,7 +83,7 @@ CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
 if os.path.exists(CLIENT_DIST):
     app.mount('/assets', StaticFiles(directory=f'{CLIENT_DIST}/assets'), name='assets')
 
-    @app.get('/{full_path:path}', include_in_schema=False)
+    @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str):
         # Serve real files first (robots.txt, sitemap, favicons etc.)
         file_path = os.path.join(CLIENT_DIST, full_path)
