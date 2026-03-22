@@ -32,20 +32,22 @@ def add_security_headers_middleware(app: FastAPI):
         response: Response = await call_next(request)
 
         response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
-        response.headers["Server"] = "SecureAPI"
         response.headers["Content-Security-Policy"] = CSP
 
         # Cache-Control
-        if request.method == "GET" and response.status_code == 200:
+        if request.method in ("GET", "HEAD") and response.status_code == 200:
             if request.url.path.startswith("/assets/"):
                 response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
             elif request.url.path.startswith("/api/"):
                 response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=3600"
             else:
-                response.headers["Cache-Control"] = "no-store"
+                response.headers["Cache-Control"] = "no-cache"
         else:
             response.headers["Cache-Control"] = "no-store"
 
