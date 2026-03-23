@@ -33,6 +33,7 @@ class CollectibleResponse(BaseModel):
     title: str
     description: Union[TextDescription, ListDescription]
     display_order: int
+    cycle: str = "Base"
     types: List[str]
     images: List[CollectibleImageResponse]
 
