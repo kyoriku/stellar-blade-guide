@@ -23,6 +23,12 @@ function parseDescription(text: string) {
   });
 }
 
+const CYCLE_STYLES: Record<string, string> = {
+  'NG+': 'bg-purple-400/20 text-purple-400 border-purple-400/50',
+  'NG++': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+  'DLC': 'bg-green-500/20 text-green-400 border-green-500/50',
+};
+
 function CollectibleSection({
   id,
   title,
@@ -68,6 +74,7 @@ function CollectibleSection({
         {collectibles.map((collectible) => (
           <article
             key={collectible.id}
+            id={`collectible-${collectible.id}`}
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
           >
             <div className="relative">
@@ -76,9 +83,19 @@ function CollectibleSection({
                   {[...collectible.types].sort().map((type, idx) => (
                     <TypeBadge key={idx} type={type} />
                   ))}
-                  <h3 className="text-xl font-semibold text-gray-100 leading-tight ">
+                  {collectible.cycle && collectible.cycle !== 'Base' && (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-sm font-semibold border whitespace-nowrap ${CYCLE_STYLES[collectible.cycle] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                      {collectible.cycle}
+                    </span>
+                  )}
+                  <h3 className="text-xl font-semibold text-gray-100 leading-tight">
                     {collectible.title}
                   </h3>
+                  {'_levelName' in collectible && (
+                    <p className="text-sm text-gray-400 mt-1">
+                      {(collectible as any)._levelName} · {(collectible as any)._locationName}
+                    </p>
+                  )}
                 </div>
               </div>
 
