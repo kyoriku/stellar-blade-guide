@@ -488,6 +488,8 @@ function CollectibleTypePage() {
                       levelName={sortMode === 'alphabetical' ? '' : level.level_name}
                       collectibles={location.collectibles}
                       onImageClick={handleImageClick}
+                      hideTypeBadge
+                      itemLabel={displayTypeName}
                     />
                   );
                 })}
