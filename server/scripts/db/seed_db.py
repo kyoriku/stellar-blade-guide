@@ -32,6 +32,7 @@ async def seed_database():
 
             # 2b️ Insert Levels
             levels_data = [
+                Level(name='Default', display_order=0),  # Pseudo-level for uncategorized collectibles
                 Level(name='Eidos 7', display_order=1),
                 Level(name='Xion', display_order=2),
                 Level(name='Wasteland', display_order=3),
@@ -42,6 +43,7 @@ async def seed_database():
                 Level(name='Eidos 9', display_order=8),
                 Level(name='Spire 4', display_order=9),
                 # Level(name='Nest', display_order=10),
+                Level(name='Boss Challenge', display_order=10),  # Pseudo-level for boss challenge collectibles
             ]
             
             session.add_all(levels_data)
@@ -83,9 +85,9 @@ async def seed_database():
             await session.commit()
 
             # 2d️ Fetch Level objects for locations
-            level_names = ['Eidos 7', 'Xion', 'Wasteland', 'Altess Levoire',
+            level_names = ['Default', 'Eidos 7', 'Xion', 'Wasteland', 'Altess Levoire',
                            'Matrix 11', 'Great Desert', 'Abyss Levoire',
-                           'Eidos 9', 'Spire 4']
+                           'Eidos 9', 'Spire 4', 'Boss Challenge']
             levels = {}
             for name in level_names:
                 result = await session.execute(select(Level).where(Level.name == name))
@@ -93,6 +95,9 @@ async def seed_database():
 
             # 2e️ Insert Locations
             locations_data = [
+                # Default level (for uncategorized collectibles)
+                Location(level_id=levels['Default'].id, name='Default', display_order=1),
+
                 # Eidos 7
                 Location(level_id=levels['Eidos 7'].id, name='Silent Street', display_order=1),
                 Location(level_id=levels['Eidos 7'].id, name='Parking Tower', display_order=2),
@@ -168,6 +173,10 @@ async def seed_database():
                 Location(level_id=levels['Spire 4'].id, name='Vermillion Garden', display_order=10),
                 Location(level_id=levels['Spire 4'].id, name='High Orbit Station', display_order=11),
                 Location(level_id=levels['Spire 4'].id, name='Nest', display_order=12),
+
+                # Boss Challenge
+                Location(level_id=levels['Boss Challenge'].id, name='Boss Challenge', display_order=1),
+
             ]
             session.add_all(locations_data)
 
