@@ -74,7 +74,7 @@ function HomePage() {
         </p>
         <div className="flex gap-4 text-sm">
           <span className="text-gray-400">
-            <span className="text-white font-semibold">{SITE_STATS.collectibles}</span> Collectibles
+            <span className="text-white font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
           </span>
           <span className="text-gray-400">
             <span className="text-white font-semibold">{LEVELS.length}</span> Levels

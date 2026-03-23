@@ -10,6 +10,8 @@ interface CollectibleSectionProps {
   levelName?: string;
   collectibles: Collectible[];
   onImageClick?: (imageUrl: string) => void;
+  hideTypeBadge?: boolean;
+  itemLabel?: string;
 }
 
 function parseDescription(text: string) {
@@ -23,12 +25,20 @@ function parseDescription(text: string) {
   });
 }
 
+const CYCLE_STYLES: Record<string, string> = {
+  'NG+': 'bg-purple-400/20 text-purple-400 border-purple-400/50',
+  'NG++': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+  'DLC': 'bg-green-500/20 text-green-400 border-green-500/50',
+};
+
 function CollectibleSection({
   id,
   title,
   levelName,
   collectibles,
   onImageClick,
+  hideTypeBadge = false,
+  itemLabel = 'items',
 }: CollectibleSectionProps) {
   if (!collectibles || collectibles.length === 0) {
     return (
@@ -51,34 +61,64 @@ function CollectibleSection({
 
   return (
     <section id={id} className="mb-16 scroll-mt-4">
-      <div className="flex flex-wrap items-baseline gap-3 mb-6">
+      {/* Desktop header */}
+      <div className="hidden sm:flex flex-wrap items-baseline gap-3 mb-6">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
-        {levelName && (
+        {levelName && levelName !== title && (
           <>
-            <span className="hidden sm:inline text-cyan-600">•</span>
+            <span className="text-cyan-600">•</span>
             <span className="text-base text-gray-400">{levelName}</span>
           </>
         )}
         <span className="text-sm text-gray-400 ml-auto">
-          {collectibles.length} {collectibles.length === 1 ? 'collectible' : 'collectibles'}
+          {collectibles.length} {collectibles.length === 1 ? itemLabel.replace(/s$/, '') : itemLabel}
         </span>
+      </div>
+
+      {/* Mobile header */}
+      <div className="sm:hidden mb-6">
+        <h2 className="text-2xl font-bold text-white mb-1.5">{title}</h2>
+        <div className="flex items-center justify-between">
+          {levelName && levelName !== title ? (
+            <span className="text-base text-gray-400 pl-2 border-l border-gray-700">{levelName}</span>
+          ) : (
+            <span />
+          )}
+          <span className="text-sm text-gray-400">
+            {collectibles.length} {collectibles.length === 1 ? itemLabel.replace(/s$/, '') : itemLabel}
+          </span>
+        </div>
       </div>
 
       <div className="space-y-4">
         {collectibles.map((collectible) => (
           <article
             key={collectible.id}
+            id={`collectible-${collectible.id}`}
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
           >
             <div className="relative">
               <div className="flex flex-col mb-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  {[...collectible.types].sort().map((type, idx) => (
+                  {!hideTypeBadge && [...collectible.types].sort().map((type, idx) => (
                     <TypeBadge key={idx} type={type} />
                   ))}
-                  <h3 className="text-xl font-semibold text-gray-100 leading-tight ">
+                  {collectible.cycle && collectible.cycle !== 'Base' && (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-sm font-semibold border whitespace-nowrap ${CYCLE_STYLES[collectible.cycle] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                      {collectible.cycle}
+                    </span>
+                  )}
+                  <h3 className="text-xl font-semibold text-gray-100 leading-tight">
                     {collectible.title}
                   </h3>
+                  {'_levelName' in collectible && (
+                    <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-700">
+                      <span className="text-gray-300">{(collectible as any)._levelName}</span>
+                      {(collectible as any)._locationName !== (collectible as any)._levelName && (
+                        <> <span className="text-cyan-600">·</span> {(collectible as any)._locationName}</>
+                      )}
+                    </p>
+                  )}
                 </div>
               </div>
 

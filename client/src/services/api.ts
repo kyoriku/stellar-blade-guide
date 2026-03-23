@@ -38,6 +38,7 @@ export interface Collectible {
     items?: string[];
   };
   display_order: number;
+  cycle: string;
   types: string[];
   images: CollectibleImage[];
 }

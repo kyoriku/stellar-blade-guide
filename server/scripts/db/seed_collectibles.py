@@ -173,6 +173,9 @@ async def seed_database():
                     else:
                         description_json = {"type": "text", "content": desc}
 
+                    # Get cycle (defaults to "Base" if not specified)
+                    cycle = item.get("cycle", "Base")
+
                     # Check cache for existing collectible
                     existing = existing_collectibles.get(collectible_id)
 
@@ -181,6 +184,7 @@ async def seed_database():
                         existing.description = description_json
                         existing.location_id = location.id
                         existing.display_order = item.get("display_order", 0)
+                        existing.cycle = cycle
                         existing.types = collectible_types
                         collectible_instance = existing
                         updated += 1
@@ -191,6 +195,7 @@ async def seed_database():
                             description=description_json,
                             location_id=location.id,
                             display_order=item.get("display_order", 0),
+                            cycle=cycle,
                             types=collectible_types
                         )
                         db.add(new_collectible)
@@ -264,8 +269,15 @@ async def seed_database():
     # STEP 6: Clear Redis cache
     print(f"\n\033[96m━━━ STEP 6: Clearing Cache ━━━\033[0m")
     try:
-        await invalidate_cache_pattern("*")
-        print("\033[32m✓ Redis cache cleared\033[0m")
+        total = 0
+        for pattern in ["collectibles:*", "levels:*", "locations:*", "cosmetics:*", "upgrades:*", "materials:*"]:
+            count = await invalidate_cache_pattern(pattern)
+            if count:
+                print(f"\033[32m[CLEARED]\033[0m {pattern} ({count} keys)")
+            else:
+                print(f"\033[90m[SKIP]\033[0m {pattern} (no keys)")
+            total += count
+        print(f"\033[32m✓ {total} keys cleared\033[0m")
     except Exception as e:
         print(f"\033[31m✗ Failed to clear Redis cache: {e}\033[0m")
 
