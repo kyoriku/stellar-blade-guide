@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
@@ -33,6 +33,7 @@ type LevelItem = {
       title: string;
       description: any;
       display_order: number;
+      cycle: string;
       types: string[];
       images: Array<{ id: number; url: string; alt: string; order: number }>;
     }[];
@@ -75,11 +76,17 @@ function CollectibleTypePage() {
   const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useState<string>('');
+  const [cycleFilter, setCycleFilter] = useState<string>('All');
+  const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
   const { prefetchCollectiblesByType } = usePrefetch()
 
-  useEffect(() => {
+  const prevTypeName = useRef(typeName);
+  if (typeName !== prevTypeName.current) {
+    prevTypeName.current = typeName;
     setActiveSection('');
-  }, [typeName]);
+    setCycleFilter('All');
+    setSortMode('default');
+  }
 
   // Find current and next type - use the appropriate array based on category
   const typeArray = category === 'upgrades' ? upgradeTypes
@@ -98,6 +105,69 @@ function CollectibleTypePage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Get unique cycles from the data
+  const availableCycles = useMemo(() => {
+    const cycleOrder = ['Base', 'NG+', 'NG++', 'DLC'];
+    const cycles = new Set<string>();
+    levelData.forEach(level =>
+      level.locations.forEach(loc =>
+        loc.collectibles.forEach(c => cycles.add(c.cycle))
+      )
+    );
+    return cycleOrder.filter(c => cycles.has(c));
+  }, [levelData]);
+
+  const showCycleFilter = availableCycles.length > 1;
+
+  // Filter data by cycle
+  const filteredLevelData = useMemo(() => {
+    if (cycleFilter === 'All') return levelData;
+
+    return levelData
+      .map(level => ({
+        ...level,
+        locations: level.locations
+          .map(loc => ({
+            ...loc,
+            collectibles: loc.collectibles.filter(c => c.cycle === cycleFilter)
+          }))
+          .filter(loc => loc.collectibles.length > 0)
+      }))
+      .filter(level => level.locations.length > 0);
+  }, [levelData, cycleFilter]);
+
+  // Sort data alphabetically (wraps filtered data in a fake single-level structure)
+  const sortedLevelData = useMemo(() => {
+    if (sortMode !== 'alphabetical') return filteredLevelData;
+
+    const allCollectibles = filteredLevelData
+      .flatMap(level =>
+        level.locations.flatMap(loc =>
+          loc.collectibles.map(c => ({
+            ...c,
+            _levelName: level.level_name,
+            _locationName: loc.location_name,
+          }))
+        )
+      )
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    if (allCollectibles.length === 0) return [];
+
+    return [{
+      level_id: 0,
+      level_name: 'All',
+      level_order: 0,
+      type_id: filteredLevelData[0]?.type_id || 0,
+      locations: [{
+        location_id: 0,
+        location_name: 'A\u2013Z',
+        location_order: 0,
+        collectibles: allCollectibles
+      }]
+    }];
+  }, [filteredLevelData, sortMode]);
 
   // Scroll to hash on load once data is ready
   useEffect(() => {
@@ -155,7 +225,7 @@ function CollectibleTypePage() {
     return () => {
       sections.forEach((section) => observer.unobserve(section));
     };
-  }, [levelData]);
+  }, [sortedLevelData]);
 
   const handleImageClick = (imageUrl: string) => {
     const index = allImages.findIndex(img => img.src === imageUrl);
@@ -170,11 +240,15 @@ function CollectibleTypePage() {
     ? typeName.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
     : '';
 
-  // Count totals
+  // Count totals (use full data for header, filtered for display)
   const totalCollectibles = levelData.reduce((sum, level) =>
     sum + level.locations.reduce((locSum, loc) => locSum + loc.collectibles.length, 0), 0
   );
   const totalLevels = levelData.length;
+
+  const filteredTotal = filteredLevelData.reduce((sum, level) =>
+    sum + level.locations.reduce((locSum, loc) => locSum + loc.collectibles.length, 0), 0
+  );
 
   const structuredDataSchemas = useMemo(() => {
     if (levelData.length === 0) return undefined;
@@ -209,26 +283,40 @@ function CollectibleTypePage() {
     return [itemListSchema];
   }, [levelData, displayTypeName, totalCollectibles, totalLevels]);
 
-  // Generate table of contents links - only show subLinks for the active level
-  const activeLevelName = levelData.find(level =>
+  // Generate table of contents links
+  const activeLevelName = sortedLevelData.find(level =>
     level.locations.some(loc => {
       const sectionId = `${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
       return sectionId === activeSection;
     })
-  )?.level_name || levelData[0]?.level_name;
+  )?.level_name || sortedLevelData[0]?.level_name;
 
-  const tocLinks = levelData.map(level => {
-    const levelId = level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+  const tocLinks = useMemo(() => {
+    if (sortMode === 'alphabetical') {
+      const allCollectibles = sortedLevelData[0]?.locations[0]?.collectibles || [];
+      return [{
+        mainLink: '#all',
+        title: `${allCollectibles.length} ${displayTypeName}`,
+        subLinks: allCollectibles.map(c => ({
+          href: `#collectible-${c.id}`,
+          title: c.title
+        }))
+      }];
+    }
 
-    return {
-      mainLink: `#${levelId}`,
-      title: level.level_name,
-      subLinks: level.level_name === activeLevelName ? level.locations.map(loc => ({
-        href: `#${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
-        title: loc.location_name
-      })) : undefined
-    };
-  });
+    return sortedLevelData.map(level => {
+      const levelId = level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+
+      return {
+        mainLink: `#${levelId}`,
+        title: level.level_name,
+        subLinks: level.level_name === activeLevelName ? level.locations.map(loc => ({
+          href: `#${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
+          title: loc.location_name
+        })) : undefined
+      };
+    });
+  }, [sortedLevelData, sortMode, activeLevelName, displayTypeName]);
 
   const categoryLabel = category === 'upgrades' ? 'All Upgrades'
     : category === 'materials' ? 'All Materials'
@@ -301,10 +389,82 @@ function CollectibleTypePage() {
           </aside>
 
           <div className="flex-1 min-w-0">
-            {/* Page header */}
+            {/* Page header + filters */}
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayTypeName}</h1>
-              <p className="text-gray-400">{totalCollectibles} {displayTypeName} across {totalLevels} {totalLevels === 1 ? 'level' : 'levels'}</p>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayTypeName}</h1>
+                  <p className="text-gray-400">
+                    {cycleFilter !== 'All'
+                      ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName} (${cycleFilter})`
+                      : `${totalCollectibles} ${displayTypeName} across ${totalLevels} ${totalLevels === 1 ? 'level' : 'levels'}`
+                    }
+                  </p>
+                </div>
+
+                {/* Cycle filter - only when multiple cycles */}
+                {showCycleFilter && (
+                  <div className="flex flex-wrap items-center gap-2 mb-6">
+                    {['All', ...availableCycles].map(cycle => (
+                      <button
+                        key={cycle}
+                        onClick={() => setCycleFilter(cycle)}
+                        className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
+                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                          : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                          }`}
+                      >
+                        {cycle}
+                      </button>
+                    ))}
+
+                    <div className="w-px h-6 bg-gray-700 mx-1" />
+
+                    <button
+                      onClick={() => setSortMode('default')}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'default'
+                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                        : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                        }`}
+                    >
+                      Default
+                    </button>
+                    <button
+                      onClick={() => setSortMode('alphabetical')}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
+                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                        : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                        }`}
+                    >
+                      A–Z
+                    </button>
+                  </div>
+                )}
+
+                {/* Sort toggle - always show when no cycle filter */}
+                {!showCycleFilter && (
+                  <div className="flex items-center gap-2 mb-6">
+                    <button
+                      onClick={() => setSortMode('default')}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'default'
+                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                        : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                        }`}
+                    >
+                      Default
+                    </button>
+                    <button
+                      onClick={() => setSortMode('alphabetical')}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
+                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                        : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                        }`}
+                    >
+                      A–Z
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Mobile TOC */}
@@ -314,8 +474,8 @@ function CollectibleTypePage() {
               activeSection={activeSection}
             />
 
-            {/* Collectibles grouped by level */}
-            {levelData.map((level) => (
+            {/* Collectibles grouped by level (or flat A-Z) */}
+            {sortedLevelData.map((level) => (
               <div key={level.level_id} id={level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')} className="space-y-8">
                 {level.locations.map((location) => {
                   const sectionId = `${level.level_name}-${location.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
@@ -324,8 +484,8 @@ function CollectibleTypePage() {
                     <CollectibleSection
                       key={location.location_id}
                       id={sectionId}
-                      title={location.location_name}
-                      levelName={level.level_name}
+                      title={sortMode === 'alphabetical' ? '' : location.location_name}
+                      levelName={sortMode === 'alphabetical' ? '' : level.level_name}
                       collectibles={location.collectibles}
                       onImageClick={handleImageClick}
                     />
@@ -333,6 +493,13 @@ function CollectibleTypePage() {
                 })}
               </div>
             ))}
+
+            {/* Empty state when filter yields no results */}
+            {sortedLevelData.length === 0 && cycleFilter !== 'All' && (
+              <div className="bg-secondary rounded-lg p-8 border border-zinc-800 text-center">
+                <p className="text-gray-400">No {cycleFilter} {displayTypeName} found.</p>
+              </div>
+            )}
 
             {/* Footer navigation */}
             <div className="mt-16 pt-8 border-t border-gray-800">
@@ -364,9 +531,9 @@ function CollectibleTypePage() {
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
                         <div className="text-xs text-cyan-400 mb-0.5">Finished</div>
-                          <div className="text-sm font-medium text-white">
-                            {categoryLabel}
-                          </div>
+                        <div className="text-sm font-medium text-white">
+                          {categoryLabel}
+                        </div>
                       </div>
                       <div className="p-2 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors">
                         <ArrowLeft className="w-4 h-4 text-cyan-400 rotate-180 group-hover:translate-x-0.5 transition-all" />

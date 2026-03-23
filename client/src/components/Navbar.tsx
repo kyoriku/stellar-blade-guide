@@ -665,7 +665,7 @@ function Navbar() {
                           onClick={() => setIsOpen(false)}
                           indent
                           style={{
-                            animation: openSections.walkthroughs ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
+                            animation: openSections.walkthroughs ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
                           {category.name}
@@ -718,7 +718,7 @@ function Navbar() {
                           onTouchStart={() => prefetchLevel(level.slug)}
                           indent
                           style={{
-                            animation: openSections.levels ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
+                            animation: openSections.levels ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
                           {level.name}
@@ -771,7 +771,7 @@ function Navbar() {
                           onTouchStart={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
                           indent
                           style={{
-                            animation: openSections.collectibles ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
+                            animation: openSections.collectibles ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
                           {type.name}
@@ -824,7 +824,7 @@ function Navbar() {
                           onTouchStart={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
                           indent
                           style={{
-                            animation: openSections.upgrades ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
+                            animation: openSections.upgrades ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
                           {type.name}
@@ -877,7 +877,7 @@ function Navbar() {
                           onTouchStart={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
                           indent
                           style={{
-                            animation: openSections.cosmetics ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
+                            animation: openSections.cosmetics ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
                           {type.name}
@@ -930,7 +930,7 @@ function Navbar() {
                           onTouchStart={() => prefetchCollectiblesByType(type.slug, 'materials')}
                           indent
                           style={{
-                            animation: openSections.materials ? `slideIn 0.3s ease-out ${index * 0.05}s both` : 'none'
+                            animation: openSections.materials ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
                           }}
                         >
                           {type.name}
@@ -1036,7 +1036,7 @@ function MobileNavLink({ to, onClick, children, indent = false, onMouseEnter, on
       onMouseEnter={onMouseEnter}
       onTouchStart={onTouchStart}
       style={style}
-      className={`block py-3.5 rounded-lg font-medium transition-all duration-200 min-h-[52px] flex items-center ${indent ? 'px-8 text-[15px]' : 'px-4'
+      className={`block py-3.5 rounded-lg font-medium transition-all duration-100 min-h-[52px] flex items-center ${indent ? 'px-8 text-[15px]' : 'px-4'
         } ${isActive
           ? 'text-white bg-gray-800/70 border-l-4 border-white shadow-sm'
           : 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-gray-500 active:bg-gray-800/60'
