@@ -10,6 +10,8 @@ interface CollectibleSectionProps {
   levelName?: string;
   collectibles: Collectible[];
   onImageClick?: (imageUrl: string) => void;
+  hideTypeBadge?: boolean;
+  itemLabel?: string;
 }
 
 function parseDescription(text: string) {
@@ -35,6 +37,8 @@ function CollectibleSection({
   levelName,
   collectibles,
   onImageClick,
+  hideTypeBadge = false,
+  itemLabel = 'items',
 }: CollectibleSectionProps) {
   if (!collectibles || collectibles.length === 0) {
     return (
@@ -57,17 +61,33 @@ function CollectibleSection({
 
   return (
     <section id={id} className="mb-16 scroll-mt-4">
-      <div className="flex flex-wrap items-baseline gap-3 mb-6">
+      {/* Desktop header */}
+      <div className="hidden sm:flex flex-wrap items-baseline gap-3 mb-6">
         <h2 className="text-2xl font-bold text-white">{title}</h2>
-        {levelName && (
+        {levelName && levelName !== title && (
           <>
-            <span className="hidden sm:inline text-cyan-600">•</span>
+            <span className="text-cyan-600">•</span>
             <span className="text-base text-gray-400">{levelName}</span>
           </>
         )}
         <span className="text-sm text-gray-400 ml-auto">
-          {collectibles.length} {collectibles.length === 1 ? 'collectible' : 'collectibles'}
+          {collectibles.length} {collectibles.length === 1 ? itemLabel.replace(/s$/, '') : itemLabel}
         </span>
+      </div>
+
+      {/* Mobile header */}
+      <div className="sm:hidden mb-6">
+        <h2 className="text-2xl font-bold text-white mb-1.5">{title}</h2>
+        <div className="flex items-center justify-between">
+          {levelName && levelName !== title ? (
+            <span className="text-base text-gray-400 pl-2 border-l border-gray-700">{levelName}</span>
+          ) : (
+            <span />
+          )}
+          <span className="text-sm text-gray-400">
+            {collectibles.length} {collectibles.length === 1 ? itemLabel.replace(/s$/, '') : itemLabel}
+          </span>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -80,7 +100,7 @@ function CollectibleSection({
             <div className="relative">
               <div className="flex flex-col mb-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  {[...collectible.types].sort().map((type, idx) => (
+                  {!hideTypeBadge && [...collectible.types].sort().map((type, idx) => (
                     <TypeBadge key={idx} type={type} />
                   ))}
                   {collectible.cycle && collectible.cycle !== 'Base' && (
@@ -92,8 +112,11 @@ function CollectibleSection({
                     {collectible.title}
                   </h3>
                   {'_levelName' in collectible && (
-                    <p className="text-sm text-gray-400 mt-1">
-                      {(collectible as any)._levelName} · {(collectible as any)._locationName}
+                    <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-700">
+                      <span className="text-gray-300">{(collectible as any)._levelName}</span>
+                      {(collectible as any)._locationName !== (collectible as any)._levelName && (
+                        <> <span className="text-cyan-600">·</span> {(collectible as any)._locationName}</>
+                      )}
                     </p>
                   )}
                 </div>
