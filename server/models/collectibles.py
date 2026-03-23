@@ -58,6 +58,7 @@ class Collectible(Base):
     title = Column(String(255), nullable=False)
     description = Column(JSONB, nullable=False)
     display_order = Column(Integer, nullable=False)
+    cycle = Column(String(10), nullable=False, server_default='Base')
     
     location = relationship('Location', back_populates='collectibles')
     # Many-to-many relationship with types
