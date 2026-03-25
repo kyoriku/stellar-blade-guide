@@ -38,7 +38,8 @@ def add_security_headers_middleware(app: FastAPI):
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
-        response.headers["Content-Security-Policy"] = CSP
+        if not settings.DEBUG:
+            response.headers["Content-Security-Policy"] = CSP
 
         # Cache-Control
         if request.method in ("GET", "HEAD") and response.status_code == 200:
