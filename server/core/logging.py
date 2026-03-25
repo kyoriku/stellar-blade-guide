@@ -27,11 +27,5 @@ def setup_logging(log_level: Optional[str] = None) -> None:
     api_logger.handlers = [api_handler]
     api_logger.propagate = False
 
-    honeypot_logger = logging.getLogger("middleware.honeypot")
-    honeypot_handler = logging.StreamHandler(sys.stdout)
-    honeypot_handler.setFormatter(logging.Formatter('%(message)s'))
-    honeypot_logger.handlers = [honeypot_handler]
-    honeypot_logger.propagate = False
-
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("openai").setLevel(logging.WARNING)
