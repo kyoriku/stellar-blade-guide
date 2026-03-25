@@ -1,7 +1,7 @@
 import time
 import logging
 from fastapi import Request
-from middleware.honeypot import get_client_ip
+from middleware.bot_filter import get_client_ip
 from core.cache import redis_client
 
 logger = logging.getLogger("api")
