@@ -77,15 +77,6 @@ app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
 
-@app.get("/api/debug-headers")
-async def debug_headers(request: Request):
-    return {
-        "fastly-client-ip": request.headers.get("fastly-client-ip"),
-        "x-forwarded-for": request.headers.get("x-forwarded-for"),
-        "x-real-ip": request.headers.get("x-real-ip"),
-        "client-host": request.client.host,
-    }
-
 # Static file serving
 CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
 
