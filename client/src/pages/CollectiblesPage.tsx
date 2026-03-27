@@ -17,6 +17,8 @@ import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
 import FloatingTOC from '../components/Floatingtoc'
+import BackToTop from '../components/BackToTop'
+import MobileBackToTop from '../components/MobileBackToTop'
 
 // Single level item type
 type LevelItem = {
@@ -186,9 +188,9 @@ function CollectibleTypePage() {
 
   // Collect all images when data loads
   useEffect(() => {
-    if (levelData.length > 0) {
+    if (sortedLevelData.length > 0) {
       const images: Array<{ src: string; alt: string }> = [];
-      levelData.forEach(level => {
+      sortedLevelData.forEach(level => {
         level.locations.forEach(location => {
           location.collectibles.forEach(collectible => {
             collectible.images?.forEach(img => {
@@ -199,7 +201,7 @@ function CollectibleTypePage() {
       });
       setAllImages(images);
     }
-  }, [levelData]);
+  }, [sortedLevelData]);
 
   // Scroll spy effect
   useEffect(() => {
@@ -222,10 +224,13 @@ function CollectibleTypePage() {
     const sections = document.querySelectorAll('section[id]');
     sections.forEach((section) => observer.observe(section));
 
-    return () => {
-      sections.forEach((section) => observer.unobserve(section));
-    };
-  }, [sortedLevelData]);
+    if (sortMode === 'alphabetical') {
+      const articles = document.querySelectorAll('article[id^="collectible-"]');
+      articles.forEach((article) => observer.observe(article));
+    }
+
+    return () => observer.disconnect();
+  }, [sortedLevelData, sortMode]);
 
   const handleImageClick = (imageUrl: string) => {
     const index = allImages.findIndex(img => img.src === imageUrl);
@@ -365,7 +370,7 @@ function CollectibleTypePage() {
   }
 
   return (
-    <div className="min-h-main bg-primary">
+    <div className="min-h-dvh bg-primary">
       <SEO
         title={displayTypeName}
         description={`Find all ${totalCollectibles} ${displayTypeName} locations in Stellar Blade with screenshots and detailed guides across ${totalLevels} levels.`}
@@ -381,11 +386,16 @@ function CollectibleTypePage() {
         <div className="flex gap-8">
           {/* Sidebar with TOC */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <TableOfContents
-              links={tocLinks}
-              currentLevel={typeName}
-              activeSection={activeSection}
-            />
+            <div className="sticky top-4 pb-4">
+              <TableOfContents
+                links={tocLinks}
+                currentLevel={typeName}
+                activeSection={activeSection}
+              />
+              <div className="mt-3">
+                <BackToTop />
+              </div>
+            </div>
           </aside>
 
           <div className="flex-1 min-w-0">
@@ -404,7 +414,7 @@ function CollectibleTypePage() {
 
                 {/* Cycle filter - only when multiple cycles */}
                 {showCycleFilter && (
-                  <div className="flex flex-wrap items-center gap-2 mb-6">
+                  <div className="flex flex-wrap items-center gap-2">
                     {['All', ...availableCycles].map(cycle => (
                       <button
                         key={cycle}
@@ -418,7 +428,7 @@ function CollectibleTypePage() {
                       </button>
                     ))}
 
-                    <div className="w-px h-6 bg-gray-700 mx-1" />
+                    <div className="w-px h-6 bg-gray-600 mx-1" />
 
                     <button
                       onClick={() => setSortMode('default')}
@@ -473,6 +483,7 @@ function CollectibleTypePage() {
               currentLevel={typeName}
               activeSection={activeSection}
             />
+            <MobileBackToTop />
 
             {/* Collectibles grouped by level (or flat A-Z) */}
             {sortedLevelData.map((level) => (
@@ -556,7 +567,7 @@ function CollectibleTypePage() {
                         <ArrowLeft className="w-4 h-4 text-gray-400 group-hover:text-white group-hover:-translate-x-0.5 transition-all" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs text-gray-500 mb-0.5">Previous</div>
+                        <div className="text-xs text-gray-400 mb-0.5">Previous</div>
                         <div className="text-sm font-medium text-gray-200 group-hover:text-white transition-colors truncate">
                           {previousType.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                         </div>
