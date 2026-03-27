@@ -50,7 +50,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
   };
 
   const linksContent = (
-    <div className={collapsible ? 'max-h-[60vh] overflow-y-auto custom-scrollbar pr-2' : 'overflow-y-auto max-h-[calc(100vh-10rem)] custom-scrollbar pr-2'}>
+    <div className={collapsible ? 'max-h-[60vh] overflow-y-auto custom-scrollbar pr-2' : 'overflow-y-auto max-h-[calc(100vh-12rem)] custom-scrollbar pr-2 pb-3'}>
       <ul className="space-y-1">
         {links.map((linkGroup, index) => {
           const isCurrentLevel = currentLevel === linkGroup.title;
@@ -110,7 +110,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                       <li
                         key={subIndex}
                         style={{
-                          animation: `slideIn 0.25s ease-out ${subIndex * 0.015}s both`
+                          animation: `slideIn 0.25s ease-out ${subIndex * 0.005}s both`
                         }}
                       >
                         <a
@@ -169,7 +169,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
   }
 
   return (
-    <nav className="sticky top-4 bg-secondary rounded-lg p-3 max-h-[calc(100vh-2rem)] overflow-hidden border border-gray-800 shadow-xl">
+    <nav className="bg-secondary rounded-lg p-3 max-h-[calc(100vh-6rem)] overflow-hidden border border-gray-800 shadow-xl">
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
         <div className="p-2 bg-cyan-500/10 rounded-lg">
           <List className="w-5 h-5 text-cyan-400" />
@@ -179,7 +179,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
 
       {linksContent}
 
-      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
+      {/* <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div> */}
     </nav>
   );
 }
