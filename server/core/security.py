@@ -3,12 +3,15 @@ from fastapi import Request
 from config.settings import settings
 
 def get_client_ip_for_limiter(request: Request) -> str:
-    """Get real client IP from proxy headers for rate limiting.
-    Prefers Fastly-Client-IP (set by Fastly/Railway CDN) over X-Forwarded-For.
-    """
+    """Get real client IP from proxy headers for rate limiting."""
     fastly_ip = request.headers.get("fastly-client-ip")
     if fastly_ip:
         return fastly_ip.strip()
+    
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+
 
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:

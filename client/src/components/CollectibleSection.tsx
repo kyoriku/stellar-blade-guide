@@ -80,7 +80,7 @@ function CollectibleSection({
         <h2 className="text-2xl font-bold text-white mb-1.5">{title}</h2>
         <div className="flex items-center justify-between">
           {levelName && levelName !== title ? (
-            <span className="text-base text-gray-400 pl-2 border-l border-gray-700">{levelName}</span>
+            <span className="text-base text-gray-400 pl-2 border-l border-gray-600">{levelName}</span>
           ) : (
             <span />
           )}
@@ -112,7 +112,7 @@ function CollectibleSection({
                     {collectible.title}
                   </h3>
                   {'_levelName' in collectible && (
-                    <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-700">
+                    <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
                       <span className="text-gray-300">{(collectible as any)._levelName}</span>
                       {(collectible as any)._locationName !== (collectible as any)._levelName && (
                         <> <span className="text-cyan-600">·</span> {(collectible as any)._locationName}</>
