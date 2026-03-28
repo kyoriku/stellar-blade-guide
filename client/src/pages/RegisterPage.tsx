@@ -34,6 +34,7 @@ export default function RegisterPage() {
       <SEO
         title="Create Account"
         description="Create a Stellar Blade Guide account to join the community"
+        noindex
       />
 
       <div className="w-full max-w-md">

@@ -208,7 +208,7 @@ function LevelPage() {
     <div className="min-h-main bg-primary">
       <SEO
         title={displayLevelName}
-        description={`Find all ${totalCollectibles} collectibles across ${locationData.length} locations in ${displayLevelName}. Complete guide with screenshots and locations.`}
+        description={`All ${totalCollectibles} collectibles in ${displayLevelName} — Nano Suits, documents, cans, and more. Screenshots and guides for every location.`}
         canonical={`/levels/${levelName}`}
       />
       <StructuredData

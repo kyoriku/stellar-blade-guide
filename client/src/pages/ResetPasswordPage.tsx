@@ -57,6 +57,7 @@ export default function ResetPasswordPage() {
       <SEO
         title="Reset Password"
         description="Set a new password for your Stellar Blade Guide account"
+        noindex
       />
 
       <div className="w-full max-w-md">

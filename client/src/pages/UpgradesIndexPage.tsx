@@ -13,7 +13,8 @@ function UpgradesIndexPage() {
     <div className="min-h-main bg-primary">
       <SEO
         title="Upgrades"
-        description="Browse all upgrade types in Stellar Blade including Beta Cores, Body Cores, and Exospines"
+        description={`Browse all ${UPGRADES.length} upgrade types in Stellar Blade. Find every Beta Core, Body Core, and Exospine with screenshots and locations.`}
+        canonical="/upgrades"
       />
       <StructuredData
         type="CollectionPage"

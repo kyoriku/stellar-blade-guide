@@ -13,7 +13,7 @@ export default function LevelsIndexPage() {
     <div className="min-h-main bg-primary">
       <SEO
         title="Levels"
-        description="Browse all Stellar Blade levels and find every collectible organized by location."
+        description={`All ${LEVELS.length} levels in Stellar Blade with 800+ collectibles organized by location. Screenshots and guides for every item.`}
         canonical="/levels"
       />
       <StructuredData
