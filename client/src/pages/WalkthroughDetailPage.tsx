@@ -16,6 +16,8 @@ import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
 import FloatingTOC from '../components/Floatingtoc'
+import BackToTop from '../components/BackToTop'
+import MobileBackToTop from '../components/MobileBackToTop'
 
 function WalkthroughPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
@@ -195,7 +197,15 @@ function WalkthroughPage() {
         <div className="flex gap-8">
           {/* Sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <TableOfContents links={tocLinks} activeSection={activeSection} />
+            <div className="sticky top-4 pb-4">
+              <TableOfContents
+                links={tocLinks}
+                activeSection={activeSection}
+              />
+              <div className="mt-3">
+                <BackToTop />
+              </div>
+            </div>
           </aside>
 
           <div className="flex-1 min-w-0">
@@ -233,7 +243,11 @@ function WalkthroughPage() {
 
             {/* Mobile TOC */}
             <div className="lg:hidden mb-8">
-              <FloatingTOC links={tocLinks} activeSection={activeSection} />
+              <FloatingTOC 
+                links={tocLinks} 
+                activeSection={activeSection} 
+              />
+              <MobileBackToTop />
             </div>
 
             {/* Content sections */}
