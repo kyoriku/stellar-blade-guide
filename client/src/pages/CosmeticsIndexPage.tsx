@@ -13,7 +13,8 @@ function CosmeticsIndexPage() {
     <div className="min-h-main bg-primary">
       <SEO
         title="Cosmetics"
-        description="Browse all cosmetic types in Stellar Blade including Earrings, Glasses, and Nano Suits"
+        description={`Browse all ${COSMETICS.length} cosmetic types in Stellar Blade. Find every Nano Suit, Earring, and pair of Glasses with screenshots and locations.`}
+        canonical="/cosmetics"
       />
       <StructuredData
         type="CollectionPage"

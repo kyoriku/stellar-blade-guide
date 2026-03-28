@@ -48,7 +48,11 @@ function ErrorPage({
 
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4">
-      <SEO title={`${code} ${title || defaults.title}`} description={message || defaults.message} noindex />
+      <SEO 
+        title={`${code} ${title || defaults.title}`} 
+        description={message || defaults.message} 
+        noindex 
+      />
       <div className="text-center max-w-md">
         <div className="mb-8 flex justify-center">
           <div className="relative">

@@ -167,7 +167,8 @@ export default function SettingsPage() {
     <div className="min-h-main bg-primary py-12 px-4">
       <SEO
         title="Settings"
-        description="Manage your Stellar Blade Guide account settings"
+        description=""
+        noindex
       />
 
       <div className="max-w-2xl mx-auto space-y-6">
