@@ -13,7 +13,8 @@ function MaterialsIndexPage() {
     <div className="min-h-main bg-primary">
       <SEO
         title="Materials"
-        description="Browse all material types in Stellar Blade including Supply Boxes, Supply Chests, and Items"
+        description={`Browse all ${MATERIALS.length} material types in Stellar Blade. Find every Supply Box, Supply Chest, and Item with screenshots and locations.`}
+        canonical="/materials"
       />
       <StructuredData
         type="CollectionPage"

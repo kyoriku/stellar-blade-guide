@@ -373,7 +373,11 @@ function CollectibleTypePage() {
     <div className="min-h-dvh bg-primary">
       <SEO
         title={displayTypeName}
-        description={`Find all ${totalCollectibles} ${displayTypeName} locations in Stellar Blade with screenshots and detailed guides across ${totalLevels} levels.`}
+        description={
+          showCycleFilter
+            ? `All ${totalCollectibles} ${displayTypeName} in Stellar Blade — Base, NG+, NG++, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.`
+            : `Complete guide to all ${totalCollectibles} ${displayTypeName} in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.`
+        }
         canonical={`/${category}/${typeName}`}
       />
       <StructuredData
