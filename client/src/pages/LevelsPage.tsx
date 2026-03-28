@@ -17,6 +17,8 @@ import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
 import FloatingTOC from '../components/Floatingtoc'
+import BackToTop from '../components/BackToTop'
+import MobileBackToTop from '../components/MobileBackToTop'
 
 function LevelPage() {
   const { levelName } = useParams<{ levelName: string }>();
@@ -221,7 +223,16 @@ function LevelPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <TableOfContents links={tocLinks} currentLevel={levelName} activeSection={activeSection} />
+            <div className="sticky top-4 pb-4">
+              <TableOfContents
+                links={tocLinks}
+                currentLevel={levelName}
+                activeSection={activeSection}
+              />
+              <div className="mt-3">
+                <BackToTop />
+              </div>
+            </div>
           </aside>
 
           <div className="flex-1 min-w-0">
@@ -233,7 +244,12 @@ function LevelPage() {
 
             {/* Mobile TOC */}
             <div className="lg:hidden mb-8">
-              <FloatingTOC links={tocLinks} currentLevel={levelName} activeSection={activeSection} />
+              <FloatingTOC 
+                links={tocLinks} 
+                currentLevel={levelName} 
+                activeSection={activeSection} 
+              />
+              <MobileBackToTop />
             </div>
 
             {/* Collectible sections */}
