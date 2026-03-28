@@ -18,7 +18,7 @@ function HomePage() {
     <div className="min-h-main bg-primary">
       <SEO
         title=""
-        description="Complete guide for Stellar Blade with locations and screenshots for every collectible, walkthrough, and secret in the game."
+        description="Complete Stellar Blade guide with every collectible and full walkthroughs. Locations, screenshots, and detailed descriptions for the entire game."
         canonical="/"
       />
       <StructuredData
