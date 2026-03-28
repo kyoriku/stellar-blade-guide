@@ -161,19 +161,19 @@ function WalkthroughPage() {
     <div className="min-h-main bg-primary">
       <SEO
         title={walkthrough.title}
-        description={walkthrough.subtitle || `Complete walkthrough for ${walkthrough.title} in Stellar Blade. Step-by-step guide with screenshots and tips.`}
+        description={`${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`}
         canonical={`/walkthroughs/${type}/${slug}`}
       />
       <StructuredData
         type="WebPage"
         headline={walkthrough.title}
-        description={walkthrough.subtitle || `Complete walkthrough for ${walkthrough.title} in Stellar Blade.`}
+        description={`${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`}
         extraSchemas={[{
           '@context': 'https://schema.org',
           '@type': 'Article',
           headline: walkthrough.title,
           ...(walkthrough.subtitle && { alternativeHeadline: walkthrough.subtitle }),
-          description: walkthrough.subtitle || `Complete walkthrough for ${walkthrough.title} in Stellar Blade.`,
+          description: `${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`,
           articleSection: walkthrough.mission_type,
           ...(walkthrough.content.find(c => c.images?.length > 0)?.images[0] && {
             image: walkthrough.content.find(c => c.images?.length > 0)!.images[0].url

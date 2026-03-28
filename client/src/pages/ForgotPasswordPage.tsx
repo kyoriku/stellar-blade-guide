@@ -35,6 +35,7 @@ export default function ForgotPasswordPage() {
       <SEO
         title="Forgot Password"
         description="Reset your Stellar Blade Guide password"
+        noindex
       />
 
       <div className="w-full max-w-md">

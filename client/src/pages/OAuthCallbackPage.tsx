@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthContext, SESSION_FLAG } from '../context/AuthContext'
+import SEO from '../components/SEO';
 
 /**
  * Landing page for OAuth callbacks.
@@ -33,6 +34,7 @@ export default function OAuthCallbackPage() {
 
   return (
     <div className="min-h-main bg-primary flex items-center justify-center">
+      <SEO title="Signing in..." description="" noindex />
       <div className="text-center">
         <div className="inline-block w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mb-4" />
         <p className="text-gray-400 text-sm">Signing you in...</p>

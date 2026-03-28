@@ -42,6 +42,7 @@ export default function LoginPage() {
       <SEO
         title="Login"
         description="Log in to your Stellar Blade Guide account"
+        noindex
       />
 
       <div className="w-full max-w-md">
