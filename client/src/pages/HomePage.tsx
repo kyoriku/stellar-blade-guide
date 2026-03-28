@@ -70,7 +70,7 @@ function HomePage() {
           Stellar Blade Guide
         </h1>
         <p className="text-gray-400 mb-3">
-          Every collectible, walkthrough, and location - with detailed screenshots and locations.
+          Every collectible, walkthrough, and secret - with detailed screenshots and locations.
         </p>
         <div className="flex gap-4 text-sm">
           <span className="text-gray-400">
