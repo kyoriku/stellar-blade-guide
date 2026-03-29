@@ -239,7 +239,7 @@ if (isLoading) {
             {/* Page header */}
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayLevelName}</h1>
-              <p className="text-gray-400">{totalCollectibles} collectibles across {locationData.length} {locationData.length === 1 ? 'location' : 'locations'}</p>
+              <p className="text-gray-400">{totalCollectibles} collectibles</p>
             </div>
 
             {/* Mobile TOC */}
