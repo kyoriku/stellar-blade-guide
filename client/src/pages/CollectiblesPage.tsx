@@ -344,14 +344,27 @@ function CollectibleTypePage() {
             </aside>
 
             <div className="flex-1 min-w-0">
-              <div className="md:mb-8 mb-9">
-                <div className="h-9 md:h-10 w-64 bg-gray-700 rounded-lg animate-pulse" />
-                <div className="h-5 w-40 bg-gray-700/50 rounded mt-2 animate-pulse" />
+              <div className="mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayTypeName}</h1>
+                    <div className="h-6 w-40 bg-gray-700/50 rounded animate-pulse" />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="px-3 py-1.5 text-sm rounded-lg border bg-cyan-500/20 border-cyan-500/50 text-cyan-400">
+                      Default
+                    </div>
+                    <div className="px-3 py-1.5 text-sm rounded-lg border bg-gray-800/50 border-gray-700 text-gray-400">
+                      A–Z
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
-              <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
-              <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
+              <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} hideTypeBadge />
+              <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} hideTypeBadge />
+              <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} hideTypeBadge />
             </div>
           </div>
         </div>
@@ -411,7 +424,7 @@ function CollectibleTypePage() {
                   <p className="text-gray-400">
                     {cycleFilter !== 'All'
                       ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName} (${cycleFilter})`
-                      : `${totalCollectibles} ${displayTypeName} across ${totalLevels} ${totalLevels === 1 ? 'level' : 'levels'}`
+                      : `${totalCollectibles} ${displayTypeName}`
                     }
                   </p>
                 </div>
@@ -457,7 +470,7 @@ function CollectibleTypePage() {
 
                 {/* Sort toggle - always show when no cycle filter */}
                 {!showCycleFilter && (
-                  <div className="flex items-center gap-2 mb-6">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => setSortMode('default')}
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'default'

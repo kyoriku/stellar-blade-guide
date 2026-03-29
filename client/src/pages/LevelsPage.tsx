@@ -171,30 +171,30 @@ function LevelPage() {
   }
 
   // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-main bg-primary">
-        <div className="container mx-auto px-3 py-8">
-          <div className="flex gap-8">
-            <aside className="hidden lg:block w-64 flex-shrink-0">
-              <TableOfContentsSkeleton />
-            </aside>
+if (isLoading) {
+  return (
+    <div className="min-h-main bg-primary">
+      <div className="container mx-auto px-3 py-8">
+        <div className="flex gap-8">
+          <aside className="hidden lg:block w-64 flex-shrink-0">
+            <TableOfContentsSkeleton />
+          </aside>
 
-            <div className="flex-1 min-w-0">
-              <div className="md:mb-8 mb-9">
-                <div className="h-9 md:h-10 w-64 bg-gray-700 rounded-lg animate-pulse" />
-                <div className="h-5 w-48 bg-gray-700/50 rounded mt-2 animate-pulse mb-3" />
-              </div>
-
-              <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
-              <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
-              <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
+          <div className="flex-1 min-w-0">
+            <div className="mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayLevelName}</h1>
+              <div className="h-6 w-48 bg-gray-700/50 rounded animate-pulse" />
             </div>
+
+            <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
+            <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
+            <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   // Show error page with appropriate code
   if (isError) {

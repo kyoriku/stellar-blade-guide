@@ -38,20 +38,20 @@ function CollectibleSection({
   collectibles,
   onImageClick,
   hideTypeBadge = false,
-  itemLabel = 'items',
 }: CollectibleSectionProps) {
   if (!collectibles || collectibles.length === 0) {
     return (
       <section id={id} className="mb-16 scroll-mt-4">
-        <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-          {levelName && (
-            <>
-              <span className="hidden sm:inline text-gray-600">·</span>
-              <span className="text-base text-gray-400">{levelName}</span>
-            </>
-          )}
-        </div>
+        {title && (
+          <div className="flex items-center gap-3 mb-5">
+            <span className="text-lg text-gray-400 whitespace-nowrap">
+              {levelName && levelName !== title ? (
+                <>{levelName} <span className="text-gray-600">·</span> {title}</>
+              ) : title}
+            </span>
+            <div className="h-px flex-1 bg-gray-700" />
+          </div>
+        )}
         <div className="bg-secondary rounded-lg p-8 border border-zinc-800">
           <p className="text-gray-400 text-center">No collectibles found for this location.</p>
         </div>
@@ -61,34 +61,16 @@ function CollectibleSection({
 
   return (
     <section id={id} className="mb-16 scroll-mt-4">
-      {/* Desktop header */}
-      <div className="hidden sm:flex flex-wrap items-baseline gap-3 mb-6">
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
-        {levelName && levelName !== title && (
-          <>
-            <span className="text-cyan-600">•</span>
-            <span className="text-base text-gray-400">{levelName}</span>
-          </>
-        )}
-        <span className="text-sm text-gray-400 ml-auto">
-          {collectibles.length} {collectibles.length === 1 ? itemLabel.replace(/s$/, '') : itemLabel}
-        </span>
-      </div>
-
-      {/* Mobile header */}
-      <div className="sm:hidden mb-6">
-        <h2 className="text-2xl font-bold text-white mb-1.5">{title}</h2>
-        <div className="flex items-center justify-between">
-          {levelName && levelName !== title ? (
-            <span className="text-base text-gray-400 pl-2 border-l border-gray-600">{levelName}</span>
-          ) : (
-            <span />
-          )}
-          <span className="text-sm text-gray-400">
-            {collectibles.length} {collectibles.length === 1 ? itemLabel.replace(/s$/, '') : itemLabel}
+      {title && (
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-lg text-gray-300 whitespace-nowrap">
+            {levelName && levelName !== title ? (
+              <><span className="text-gray-100">{levelName}</span> <span className="text-cyan-600">·</span> {title}</>
+            ) : title}
           </span>
+          <div className="h-px flex-1 bg-gray-700" />
         </div>
-      </div>
+      )}
 
       <div className="space-y-4">
         {collectibles.map((collectible) => (
