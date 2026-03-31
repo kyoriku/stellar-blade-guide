@@ -7,7 +7,7 @@ import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 
 const SITE_STATS = {
-  collectibles: 800,
+  collectibles: 900,
   screenshots: 1500,
 } as const;
 
