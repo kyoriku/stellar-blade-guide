@@ -351,10 +351,7 @@ function CollectibleTypePage() {
                     <div className="h-6 w-40 bg-gray-700/50 rounded animate-pulse" />
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="px-3 py-1.5 text-sm rounded-lg border bg-cyan-500/20 border-cyan-500/50 text-cyan-400">
-                      Default
-                    </div>
+                  <div className="flex justify-end sm:justify-start">
                     <div className="px-3 py-1.5 text-sm rounded-lg border bg-gray-800/50 border-gray-700 text-gray-400">
                       A–Z
                     </div>
@@ -427,37 +424,31 @@ function CollectibleTypePage() {
                       : `${totalCollectibles} ${displayTypeName}`
                     }
                   </p>
+                  
                 </div>
 
                 {/* Cycle filter - only when multiple cycles */}
                 {showCycleFilter && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {['All', ...availableCycles].map(cycle => (
-                      <button
-                        key={cycle}
-                        onClick={() => setCycleFilter(cycle)}
-                        className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
-                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
-                          : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
-                          }`}
-                      >
-                        {cycle}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between w-full sm:w-auto sm:gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {['All', ...availableCycles].map(cycle => (
+                        <button
+                          key={cycle}
+                          onClick={() => setCycleFilter(cycle)}
+                          className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
+                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                            : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                            }`}
+                        >
+                          {cycle}
+                        </button>
+                      ))}
+                    </div>
 
-                    <div className="w-px h-6 bg-gray-600 mx-1" />
+                    <div className="w-px h-6 bg-gray-700 mx-2" />
 
                     <button
-                      onClick={() => setSortMode('default')}
-                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'default'
-                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
-                        : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
-                        }`}
-                    >
-                      Default
-                    </button>
-                    <button
-                      onClick={() => setSortMode('alphabetical')}
+                      onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
                         ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
                         : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
@@ -470,18 +461,9 @@ function CollectibleTypePage() {
 
                 {/* Sort toggle - always show when no cycle filter */}
                 {!showCycleFilter && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex justify-end sm:justify-start">
                     <button
-                      onClick={() => setSortMode('default')}
-                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'default'
-                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
-                        : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
-                        }`}
-                    >
-                      Default
-                    </button>
-                    <button
-                      onClick={() => setSortMode('alphabetical')}
+                      onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
                         ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
                         : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
@@ -493,7 +475,6 @@ function CollectibleTypePage() {
                 )}
               </div>
             </div>
-
             {/* Mobile TOC */}
             <FloatingTOC
               links={tocLinks}
