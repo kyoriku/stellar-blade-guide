@@ -108,7 +108,13 @@ function CollectibleSection({
                 {collectible.description.type === 'text' ? (
                   <div className="flex gap-3">
                     <FileText className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5 hidden" />
-                    <p className="text-gray-300 leading-relaxed">{parseDescription(collectible.description.content ?? '')}</p>
+                    <div className="space-y-3">
+                      {(collectible.description.content ?? '').split('\n\n').map((paragraph, idx) => (
+                        <p key={idx} className="text-gray-300 leading-relaxed">
+                          {parseDescription(paragraph)}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex gap-3">
