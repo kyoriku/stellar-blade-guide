@@ -86,7 +86,9 @@ export default function WalkthroughsListPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayType}</h1>
-          <p className="text-gray-300">{walkthroughs.length} {walkthroughs.length === 1 ? 'walkthrough' : 'walkthroughs'}</p>
+          <p className="text-gray-300 mt-2 max-w-3xl">
+            {walkthroughs.length} {displayType?.toLowerCase()} {walkthroughs.length === 1 ? 'walkthrough' : 'walkthroughs'} for Stellar Blade with step-by-step instructions, screenshots, and boss strategies.
+          </p>
         </div>
 
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

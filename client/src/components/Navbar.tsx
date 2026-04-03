@@ -92,6 +92,15 @@ function Navbar() {
 
   const totalResults = filteredWalkthroughs.length + filteredLevels.length + filteredCollectibles.length + filteredUpgrades.length + filteredMaterials.length + filteredCosmetics.length;
 
+  // Derive which category is active
+  const activeCategory = location.pathname.startsWith('/walkthroughs') ? 'walkthroughs'
+    : location.pathname.startsWith('/levels') ? 'levels'
+      : location.pathname.startsWith('/collectibles') ? 'collectibles'
+        : location.pathname.startsWith('/upgrades') ? 'upgrades'
+          : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
+            : location.pathname.startsWith('/materials') ? 'materials'
+              : null;
+
   useEffect(() => {
     if (searchQuery.trim()) {
       setOpenSections({
@@ -227,7 +236,8 @@ function Navbar() {
                 onMouseLeave={handleMouseLeave}
                 onClick={() => setOpenDropdown(null)}
               >
-                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
+                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'walkthroughs' ? 'text-cyan-400' : 'text-gray-300'
+                  }`}>
                   <Link to="/walkthroughs" className="hover:text-cyan-400 transition-colors">
                     Walkthroughs
                   </Link>
@@ -244,18 +254,24 @@ function Navbar() {
 
                 <div className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                   <div className="py-2">
-                    {WALKTHROUGHS.map((category, index) => (
-                      <Link
-                        key={category.slug}
-                        to={`walkthroughs/${category.slug}`}
-                        onClick={() => setOpenDropdown(null)}
-                        onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
-                        className="block px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400 transition-all duration-200"
-                        style={{ animationDelay: `${index * 30}ms` }}
-                      >
-                        {category.name}
-                      </Link>
-                    ))}
+                    {WALKTHROUGHS.map((category, index) => {
+                      const isActive = location.pathname.startsWith(`/walkthroughs/${category.slug}`);
+                      return (
+                        <Link
+                          key={category.slug}
+                          to={`/walkthroughs/${category.slug}`}
+                          onClick={() => setOpenDropdown(null)}
+                          onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
+                          className={`block px-4 py-2.5 text-sm transition-all duration-100 ${isActive
+                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
+                            : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
+                            }`}
+                          style={{ animationDelay: `${index * 30}ms` }}
+                        >
+                          {category.name}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -267,7 +283,8 @@ function Navbar() {
                 onMouseLeave={handleMouseLeave}
                 onClick={() => setOpenDropdown(null)}
               >
-                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
+                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'levels' ? 'text-cyan-400' : 'text-gray-300'
+                  }`}>
                   <Link to="/levels" className="hover:text-cyan-400 transition-colors">
                     Levels
                   </Link>
@@ -275,7 +292,7 @@ function Navbar() {
                     onClick={() => setOpenDropdown(prev => (prev === 'levels' ? null : 'levels'))}
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle levels menu"
-                    
+
                   >
                     <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'levels' ? 'rotate-180' : ''}`} />
                   </button>
@@ -294,7 +311,7 @@ function Navbar() {
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchLevel(level.slug)}
                           className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-white bg-gray-800/70 border-l-2 border-white font-medium'
+                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
                             : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
@@ -314,7 +331,8 @@ function Navbar() {
                 onMouseLeave={handleMouseLeave}
                 onClick={() => setOpenDropdown(null)}
               >
-                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
+                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'collectibles' ? 'text-cyan-400' : 'text-gray-300'
+                  }`}>
                   <Link to="/collectibles" className="hover:text-cyan-400 transition-colors">
                     Collectibles
                   </Link>
@@ -340,7 +358,7 @@ function Navbar() {
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
                           className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-white bg-gray-800/70 border-l-2 border-white font-medium'
+                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
                             : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
@@ -360,7 +378,8 @@ function Navbar() {
                 onMouseLeave={handleMouseLeave}
                 onClick={() => setOpenDropdown(null)}
               >
-                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
+                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'upgrades' ? 'text-cyan-400' : 'text-gray-300'
+                  }`}>
                   <Link to="/upgrades" className="hover:text-cyan-400 transition-colors">
                     Upgrades
                   </Link>
@@ -386,7 +405,7 @@ function Navbar() {
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
                           className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-white bg-gray-800/70 border-l-2 border-white font-medium'
+                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
                             : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
@@ -406,7 +425,8 @@ function Navbar() {
                 onMouseLeave={handleMouseLeave}
                 onClick={() => setOpenDropdown(null)}
               >
-                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
+                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'cosmetics' ? 'text-cyan-400' : 'text-gray-300'
+                  }`}>
                   <Link to="/cosmetics" className="hover:text-cyan-400 transition-colors">
                     Cosmetics
                   </Link>
@@ -432,7 +452,7 @@ function Navbar() {
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
                           className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-white bg-gray-800/70 border-l-2 border-white font-medium'
+                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
                             : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
@@ -452,7 +472,8 @@ function Navbar() {
                 onMouseLeave={handleMouseLeave}
                 onClick={() => setOpenDropdown(null)}
               >
-                <div className="flex items-center gap-1 px-4 py-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-all duration-200">
+                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'materials' ? 'text-cyan-400' : 'text-gray-300'
+                  }`}>
                   <Link to="/materials" className="hover:text-cyan-400 transition-colors">
                     Materials
                   </Link>
@@ -478,7 +499,7 @@ function Navbar() {
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'materials')}
                           className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-white bg-gray-800/70 border-l-2 border-white font-medium'
+                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
                             : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
@@ -1038,7 +1059,7 @@ function MobileNavLink({ to, onClick, children, indent = false, onMouseEnter, on
       style={style}
       className={`block py-3.5 rounded-lg font-medium transition-all duration-100 min-h-[52px] flex items-center ${indent ? 'px-8 text-[15px]' : 'px-4'
         } ${isActive
-          ? 'text-white bg-gray-800/70 border-l-4 border-white shadow-sm'
+          ? 'text-cyan-400 bg-cyan-500/10 border-l-4 border-cyan-400 shadow-sm'
           : 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-gray-500 active:bg-gray-800/60'
         }`}
     >

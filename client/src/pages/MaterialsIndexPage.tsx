@@ -36,7 +36,9 @@ function MaterialsIndexPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Materials</h1>
-          <p className="text-gray-300">Supply Boxes, Supply Chests, and Items</p>
+          <p className="text-gray-300 mt-2 max-w-3xl">
+            All material items in Stellar Blade including Supply Boxes, Supply Chests, and miscellaneous items. Found throughout every level, often containing resources and upgrade materials.
+          </p>
         </div>
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
