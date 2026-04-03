@@ -81,6 +81,7 @@ function CollectibleTypePage() {
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
   const { prefetchCollectiblesByType } = usePrefetch()
+  const resetActiveSection = () => setActiveSection('');
 
   const prevTypeName = useRef(typeName);
   if (typeName !== prevTypeName.current) {
@@ -407,7 +408,7 @@ function CollectibleTypePage() {
                 activeSection={activeSection}
               />
               <div className="mt-3">
-                <BackToTop />
+                <BackToTop onScrollToTop={resetActiveSection} />
               </div>
             </div>
           </aside>
@@ -424,10 +425,9 @@ function CollectibleTypePage() {
                       : `${totalCollectibles} ${displayTypeName}`
                     }
                   </p>
-                  
                 </div>
 
-                {/* Cycle filter - only when multiple cycles */}
+                {/* Cycle filter */}
                 {showCycleFilter && (
                   <div className="flex items-center justify-between w-full sm:w-auto sm:gap-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -459,7 +459,6 @@ function CollectibleTypePage() {
                   </div>
                 )}
 
-                {/* Sort toggle - always show when no cycle filter */}
                 {!showCycleFilter && (
                   <div className="flex justify-end sm:justify-start">
                     <button
@@ -481,7 +480,7 @@ function CollectibleTypePage() {
               currentLevel={typeName}
               activeSection={activeSection}
             />
-            <MobileBackToTop />
+            <MobileBackToTop onScrollToTop={resetActiveSection} />
 
             {/* Collectibles grouped by level (or flat A-Z) */}
             {sortedLevelData.map((level) => (

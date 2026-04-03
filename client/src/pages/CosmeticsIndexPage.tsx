@@ -36,7 +36,9 @@ function CosmeticsIndexPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Cosmetics</h1>
-          <p className="text-gray-300">Earrings, Glasses, and Nano Suits</p>
+          <p className="text-gray-300 mt-2 max-w-3xl">
+            All cosmetic items in Stellar Blade including Nano Suits, Earrings, Glasses, Drone Appearances, Hairstyles, and outfits for Lily and Adam. Most are found in chests, purchased from shops, or earned through quests.
+          </p>
         </div>
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
