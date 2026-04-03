@@ -37,7 +37,9 @@ export default function WalkthroughsIndexPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Walkthroughs</h1>
-          <p className="text-gray-300">Complete guides for all missions</p>
+          <p className="text-gray-300 mt-2 max-w-3xl">
+            Step-by-step walkthrough guides for Stellar Blade covering the main story, side quests, and more. Each guide includes screenshots, boss strategies, and tips.
+          </p>
         </div>
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
