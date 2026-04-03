@@ -37,6 +37,7 @@ function LevelPage() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useState<string>('');
   const { prefetchLevel } = usePrefetch()
+  const resetActiveSection = () => setActiveSection('');
 
   useEffect(() => {
     const observerOptions = {
@@ -230,7 +231,7 @@ if (isLoading) {
                 activeSection={activeSection}
               />
               <div className="mt-3">
-                <BackToTop />
+                <BackToTop onScrollToTop={resetActiveSection} />
               </div>
             </div>
           </aside>
@@ -249,7 +250,7 @@ if (isLoading) {
                 currentLevel={levelName} 
                 activeSection={activeSection} 
               />
-              <MobileBackToTop />
+              <MobileBackToTop onScrollToTop={resetActiveSection} />
             </div>
 
             {/* Collectible sections */}

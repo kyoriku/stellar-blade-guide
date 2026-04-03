@@ -93,13 +93,13 @@ function Navbar() {
   const totalResults = filteredWalkthroughs.length + filteredLevels.length + filteredCollectibles.length + filteredUpgrades.length + filteredMaterials.length + filteredCosmetics.length;
 
   // Derive which category is active
-const activeCategory = location.pathname.startsWith('/walkthroughs') ? 'walkthroughs'
-  : location.pathname.startsWith('/levels') ? 'levels'
-    : location.pathname.startsWith('/collectibles') ? 'collectibles'
-      : location.pathname.startsWith('/upgrades') ? 'upgrades'
-        : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
-          : location.pathname.startsWith('/materials') ? 'materials'
-            : null;
+  const activeCategory = location.pathname.startsWith('/walkthroughs') ? 'walkthroughs'
+    : location.pathname.startsWith('/levels') ? 'levels'
+      : location.pathname.startsWith('/collectibles') ? 'collectibles'
+        : location.pathname.startsWith('/upgrades') ? 'upgrades'
+          : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
+            : location.pathname.startsWith('/materials') ? 'materials'
+              : null;
 
   useEffect(() => {
     if (searchQuery.trim()) {
@@ -292,7 +292,7 @@ const activeCategory = location.pathname.startsWith('/walkthroughs') ? 'walkthro
                     onClick={() => setOpenDropdown(prev => (prev === 'levels' ? null : 'levels'))}
                     className="cursor-pointer p-1 -mr-1"
                     aria-label="Toggle levels menu"
-                    
+
                   >
                     <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'levels' ? 'rotate-180' : ''}`} />
                   </button>
