@@ -40,7 +40,7 @@ export const UPGRADES = [
 export const MATERIALS = [
   { slug: 'supply-boxes', name: 'Supply Boxes' },
   { slug: 'supply-chests', name: 'Supply Chests' },
-  { slug: 'items', name: 'Items' },
+  // { slug: 'items', name: 'Items' },
 ] as const;
 
 export const COSMETICS = [
