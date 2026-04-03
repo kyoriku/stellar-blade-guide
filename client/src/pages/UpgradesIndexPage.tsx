@@ -36,7 +36,9 @@ function UpgradesIndexPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Upgrades</h1>
-          <p className="text-gray-300">Beta Cores, Body Cores, and Exospines</p>
+          <p className="text-gray-300 mt-2 max-w-3xl">
+            All upgrade items in Stellar Blade including Beta Cores, Body Cores, Exospines, and Robots. These items enhance Eve's abilities and equipment throughout the game.
+          </p>
         </div>
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
