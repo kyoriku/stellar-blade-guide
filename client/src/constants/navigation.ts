@@ -47,7 +47,7 @@ export const COSMETICS = [
   { slug: 'nano-suits', name: 'Nano Suits' },
   { slug: 'glasses', name: 'Glasses' },
   { slug: 'earrings', name: 'Earrings' },
-  // { slug: 'hairstyles', name: 'Hairstyles' },
+  { slug: 'hairstyles', name: 'Hairstyles' },
   { slug: 'drone-appearances', name: 'Drone Appearances' },
   { slug: 'lily-outfits', name: 'Lily Outfits' },
   { slug: 'adam-outfits', name: 'Adam Outfits' },
