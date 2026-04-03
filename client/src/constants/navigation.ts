@@ -44,13 +44,13 @@ export const MATERIALS = [
 ] as const;
 
 export const COSMETICS = [
-  { slug: 'earrings', name: 'Earrings' },
-  { slug: 'glasses', name: 'Glasses' },
   { slug: 'nano-suits', name: 'Nano Suits' },
-  { slug: 'outfits', name: 'Outfits' },
-  // { slug: 'lily-outfits', name: 'Lily Outfits' },
-  // { slug: 'adam-outfits', name: 'Adam Outfits' },
-  // { slug: 'drone-appearances', name: 'Drone Appearances' },
+  { slug: 'glasses', name: 'Glasses' },
+  { slug: 'earrings', name: 'Earrings' },
+  // { slug: 'hairstyles', name: 'Hairstyles' },
+  { slug: 'drone-appearances', name: 'Drone Appearances' },
+  { slug: 'lily-outfits', name: 'Lily Outfits' },
+  { slug: 'adam-outfits', name: 'Adam Outfits' },
 ] as const;
 
 export type WalkthroughSlug = typeof WALKTHROUGHS[number]['slug'];
