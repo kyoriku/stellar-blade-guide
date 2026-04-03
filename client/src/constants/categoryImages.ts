@@ -35,9 +35,10 @@ export const UPGRADE_IMAGES: Record<string, string> = {
 };
 
 export const COSMETIC_IMAGES: Record<string, string> = {
-  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774063997/stellar-blade/eidos-7/construction-zone/stellar-blade-20260320183910.jpg',
-  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774065213/stellar-blade/wasteland/scrap-yard/stellar-blade-20260320183820.jpg',
   'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774063994/stellar-blade/default/default/stellar-blade-20260320183427.jpg',
+  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774065213/stellar-blade/wasteland/scrap-yard/stellar-blade-20260320183820.jpg',
+  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774063997/stellar-blade/eidos-7/construction-zone/stellar-blade-20260320183910.jpg',
+  'hairstyles': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775234963/stellar-blade/default/default/stellar-blade-20260402231657.jpg',
   'drone-appearances': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775187873/stellar-blade/default/default/stellar-blade-20260402231441.jpg',
   'lily-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775187874/stellar-blade/default/default/stellar-blade-20260402231457.jpg',
   'adam-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775187872/stellar-blade/default/default/stellar-blade-20260402231429.jpg',
