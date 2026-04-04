@@ -195,7 +195,7 @@ function HomePage() {
               />
               <CategoryCard
                 title="Cosmetics"
-                description="Nano Suits, Earrings, Glasses"
+                description="Nano Suits, Glasses, Earrings, Hairstyles, Drone Appearances, and outfits for Lily and Adam"
                 icon={<Sparkles size={18} />}
                 to="/cosmetics"
                 count={COSMETICS.length}
