@@ -30,9 +30,8 @@ export const UPGRADES = [
   { slug: 'beta-cores', name: 'Beta Cores' },
   { slug: 'body-cores', name: 'Body Cores' },
   { slug: 'exospines', name: 'Exospines' },
-  { slug: 'robots', name: 'Robots' },
-  // { slug: 'tumbler-expansion-modules', name: 'Tumbler Expansion Modules' },
-  // { slug: 'drone-upgrade-modules', name: 'Drone Upgrade Modules' },
+  { slug: 'tumbler-expansion-modules', name: 'Tumbler Expansion Modules' },
+  { slug: 'drone-upgrade-modules', name: 'Drone Upgrade Modules' },
   // { slug: 'weapon-cores', name: 'Weapon Cores' },
   // { slug: 'gear', name: 'Gear' },
 ] as const;
