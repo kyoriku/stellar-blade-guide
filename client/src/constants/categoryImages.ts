@@ -31,7 +31,8 @@ export const UPGRADE_IMAGES: Record<string, string> = {
   'beta-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg',
   'body-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221082/stellar-blade/collectibles/eidos-7/parking-tower/1-body-core-1-2.jpg',
   'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1773965485/stellar-blade/eidos-7/parking-tower/stellar-blade-20260319190946.jpg',
-  'robots': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
+  'tumbler-expansion-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
+  'drone-upgrade-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221075/stellar-blade/collectibles/eidos-7/parking-tower/15-robot-2.jpg',
 };
 
 export const COSMETIC_IMAGES: Record<string, string> = {
