@@ -18,6 +18,7 @@ interface FloatingTOCProps {
   links: TocLink[]
   currentLevel?: string
   activeSection?: string
+  onNavigate?: (href: string) => void
 }
 
 let savedScrollY = 0
@@ -36,7 +37,7 @@ function unlockScroll() {
   window.scrollTo({ top: savedScrollY, behavior: 'instant' })
 }
 
-export default function FloatingTOC({ links, currentLevel, activeSection }: FloatingTOCProps) {
+export default function FloatingTOC({ links, currentLevel, activeSection, onNavigate }: FloatingTOCProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const open = useCallback(() => {
@@ -68,10 +69,12 @@ export default function FloatingTOC({ links, currentLevel, activeSection }: Floa
       const offset = 80
       const top = element.getBoundingClientRect().top + window.pageYOffset - offset
       window.scrollTo({ top, behavior: 'instant' })
+      history.replaceState(null, '', href)
     }
   }
 
   const handleLinkClick = (href: string) => {
+    onNavigate?.(href)
     close()
     requestAnimationFrame(() => scrollToSection(href))
   }
