@@ -20,9 +20,10 @@ interface TableOfContentsProps {
   showSubLinkCount?: boolean;
   activeSection?: string;
   collapsible?: boolean;
+  onNavigate?: (href: string) => void;
 }
 
-function TableOfContents({ links, currentLevel, showSubLinkCount = false, activeSection, collapsible = false }: TableOfContentsProps) {
+function TableOfContents({ links, currentLevel, showSubLinkCount = false, activeSection, collapsible = false, onNavigate }: TableOfContentsProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const scrollToSection = (href: string) => {
@@ -36,17 +37,21 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
         top: offsetPosition,
         behavior: 'instant'
       });
+
+      history.replaceState(null, '', href);
     }
   };
 
   const handleSubLinkClick = (href: string) => {
     if (collapsible) setIsOpen(false);
-    requestAnimationFrame(() => scrollToSection(href));
+    onNavigate?.(href);
+    scrollToSection(href);
   };
 
   const handleMainLinkClick = (href: string) => {
     if (collapsible) setIsOpen(false);
-    requestAnimationFrame(() => scrollToSection(href));
+    onNavigate?.(href);
+    scrollToSection(href);
   };
 
   const linksContent = (

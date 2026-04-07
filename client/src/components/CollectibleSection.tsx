@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { type Collectible } from '../services/api'
 import ImageGallery from './ImageGallery'
 import TypeBadge from './TypeBadge';
@@ -76,7 +77,7 @@ function CollectibleSection({
         {collectibles.map((collectible) => (
           <article
             key={collectible.id}
-            id={`collectible-${collectible.id}`}
+            id={'_slug' in collectible ? (collectible as any)._slug : `collectible-${collectible.id}`}
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
           >
             <div className="relative">
@@ -143,4 +144,4 @@ function CollectibleSection({
   );
 }
 
-export default CollectibleSection;
+export default memo(CollectibleSection);

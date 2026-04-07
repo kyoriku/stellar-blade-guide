@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
@@ -91,6 +91,10 @@ function CollectibleTypePage() {
     setSortMode('default');
   }
 
+  function slugifyTitle(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  }
+
   // Find current and next type - use the appropriate array based on category
   const typeArray = category === 'upgrades' ? upgradeTypes
     : category === 'materials' ? materialTypes
@@ -142,9 +146,44 @@ function CollectibleTypePage() {
 
   // Sort data alphabetically (wraps filtered data in a fake single-level structure)
   const sortedLevelData = useMemo(() => {
-    if (sortMode !== 'alphabetical') return filteredLevelData;
+    // Generate unique slugs for ALL collectibles (both modes)
+    const allCollectibles = filteredLevelData.flatMap(level =>
+      level.locations.flatMap(loc => loc.collectibles)
+    );
 
-    const allCollectibles = filteredLevelData
+    const slugCounts: Record<string, number> = {};
+    for (const c of allCollectibles) {
+      const base = slugifyTitle(c.title);
+      slugCounts[base] = (slugCounts[base] || 0) + 1;
+    }
+
+    const slugUsed: Record<string, number> = {};
+    const slugMap = new Map<number, string>();
+    for (const c of allCollectibles) {
+      const base = slugifyTitle(c.title);
+      if (slugCounts[base] > 1) {
+        slugUsed[base] = (slugUsed[base] || 0) + 1;
+        slugMap.set(c.id, `${base}-${slugUsed[base]}`);
+      } else {
+        slugMap.set(c.id, base);
+      }
+    }
+
+    // Apply slugs to all collectibles
+    const dataWithSlugs = filteredLevelData.map(level => ({
+      ...level,
+      locations: level.locations.map(loc => ({
+        ...loc,
+        collectibles: loc.collectibles.map(c => ({
+          ...c,
+          _slug: slugMap.get(c.id)!,
+        }))
+      }))
+    }));
+
+    if (sortMode !== 'alphabetical') return dataWithSlugs;
+
+    const sorted = dataWithSlugs
       .flatMap(level =>
         level.locations.flatMap(loc =>
           loc.collectibles.map(c => ({
@@ -156,18 +195,18 @@ function CollectibleTypePage() {
       )
       .sort((a, b) => a.title.localeCompare(b.title));
 
-    if (allCollectibles.length === 0) return [];
+    if (sorted.length === 0) return [];
 
     return [{
       level_id: 0,
       level_name: 'All',
       level_order: 0,
-      type_id: filteredLevelData[0]?.type_id || 0,
+      type_id: dataWithSlugs[0]?.type_id || 0,
       locations: [{
         location_id: 0,
         location_name: 'A\u2013Z',
         location_order: 0,
-        collectibles: allCollectibles
+        collectibles: sorted
       }]
     }];
   }, [filteredLevelData, sortMode]);
@@ -179,7 +218,7 @@ function CollectibleTypePage() {
       requestAnimationFrame(() => {
         const el = document.querySelector(hash);
         if (el) {
-          const offset = 80;
+          const offset = 76;
           const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
           window.scrollTo({ top, behavior: 'instant' });
         }
@@ -226,20 +265,20 @@ function CollectibleTypePage() {
     sections.forEach((section) => observer.observe(section));
 
     if (sortMode === 'alphabetical') {
-      const articles = document.querySelectorAll('article[id^="collectible-"]');
+      const articles = document.querySelectorAll('article[id]');
       articles.forEach((article) => observer.observe(article));
     }
 
     return () => observer.disconnect();
   }, [sortedLevelData, sortMode]);
 
-  const handleImageClick = (imageUrl: string) => {
+  const handleImageClick = useCallback((imageUrl: string) => {
     const index = allImages.findIndex(img => img.src === imageUrl);
     if (index !== -1) {
       setLightboxIndex(index);
       setLightboxOpen(true);
     }
-  };
+  }, [allImages]);
 
   // Format type name for display
   const displayTypeName = typeName
@@ -290,12 +329,15 @@ function CollectibleTypePage() {
   }, [levelData, displayTypeName, totalCollectibles, totalLevels]);
 
   // Generate table of contents links
-  const activeLevelName = sortedLevelData.find(level =>
-    level.locations.some(loc => {
-      const sectionId = `${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
-      return sectionId === activeSection;
-    })
-  )?.level_name || sortedLevelData[0]?.level_name;
+  const activeLevelName = useMemo(() =>
+    sortedLevelData.find(level =>
+      level.locations.some(loc => {
+        const sectionId = `${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+        return sectionId === activeSection;
+      })
+    )?.level_name || sortedLevelData[0]?.level_name,
+    [sortedLevelData, activeSection]
+  );
 
   const tocLinks = useMemo(() => {
     if (sortMode === 'alphabetical') {
@@ -304,7 +346,7 @@ function CollectibleTypePage() {
         mainLink: '#all',
         title: `${allCollectibles.length} ${displayTypeName}`,
         subLinks: allCollectibles.map(c => ({
-          href: `#collectible-${c.id}`,
+          href: `#${(c as any)._slug || slugifyTitle(c.title)}`,
           title: c.title
         }))
       }];
@@ -328,6 +370,32 @@ function CollectibleTypePage() {
     : category === 'materials' ? 'All Materials'
       : category === 'cosmetics' ? 'All Cosmetics'
         : 'All Collectibles'
+
+  const handleTocNavigate = useCallback((href: string) => {
+    const targetId = href.substring(1);
+
+    if (sortMode === 'alphabetical') {
+      setActiveSection(targetId);
+      return;
+    }
+
+    // Check if this is a level link (e.g. #wasteland) vs a section link (e.g. #wasteland-scrap-yard)
+    const matchedLevel = sortedLevelData.find(level => {
+      const levelId = level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+      return levelId === targetId;
+    });
+
+    if (matchedLevel && matchedLevel.locations.length > 0) {
+      // Clicked a level — set activeSection to its first location so sublinks open immediately
+      const firstLoc = matchedLevel.locations[0];
+      const sectionId = `${matchedLevel.level_name}-${firstLoc.location_name}`
+        .toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+      setActiveSection(sectionId);
+    } else {
+      // Clicked a sublink — set directly
+      setActiveSection(targetId);
+    }
+  }, [sortedLevelData, sortMode]);
 
   // Check for invalid type FIRST (before loading state)
   if (!isValidType) {
@@ -406,6 +474,7 @@ function CollectibleTypePage() {
                 links={tocLinks}
                 currentLevel={typeName}
                 activeSection={activeSection}
+                onNavigate={handleTocNavigate}
               />
               <div className="mt-3">
                 <BackToTop onScrollToTop={resetActiveSection} />
@@ -479,6 +548,7 @@ function CollectibleTypePage() {
               links={tocLinks}
               currentLevel={typeName}
               activeSection={activeSection}
+              onNavigate={handleTocNavigate}
             />
             <MobileBackToTop onScrollToTop={resetActiveSection} />
 
