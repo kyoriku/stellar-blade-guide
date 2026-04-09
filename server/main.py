@@ -14,7 +14,6 @@ from middleware.logging import add_logging_middleware
 from middleware.error_handler import add_error_handler_middleware
 from middleware.security_headers import add_security_headers_middleware
 from middleware.bot_filter import add_bot_filter_middleware
-# from middleware.honeypot import add_banned_ip_middleware, add_honeypot_middleware
 from middleware.etag import ETagMiddleware
 from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health
 
@@ -57,8 +56,6 @@ add_logging_middleware(app)
 add_error_handler_middleware(app)
 add_security_headers_middleware(app)
 add_bot_filter_middleware(app)
-# add_honeypot_middleware(app)
-# add_banned_ip_middleware(app)
 app.add_middleware(ETagMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -85,9 +82,9 @@ if os.path.exists(CLIENT_DIST):
 
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str):
-        # Serve real files first (robots.txt, sitemap, favicons etc.)
+        if full_path.startswith('api/'):
+            return Response(status_code=404)
         file_path = os.path.join(CLIENT_DIST, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
-        # Fall back to root index.html for client-side routing
         return FileResponse(os.path.join(CLIENT_DIST, 'index.html'))
