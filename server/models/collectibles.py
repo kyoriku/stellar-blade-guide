@@ -59,9 +59,9 @@ class Collectible(Base):
     description = Column(JSONB, nullable=False)
     display_order = Column(Integer, nullable=False)
     cycle = Column(String(10), nullable=False, server_default='Base')
+    quantity = Column(Integer, nullable=False, server_default='1')
     
     location = relationship('Location', back_populates='collectibles')
-    # Many-to-many relationship with types
     types = relationship('CollectibleType', secondary=collectible_type_mappings, back_populates='collectibles')
     images = relationship('CollectibleImage', back_populates='collectible', cascade='all, delete-orphan', order_by='CollectibleImage.display_order')
 
