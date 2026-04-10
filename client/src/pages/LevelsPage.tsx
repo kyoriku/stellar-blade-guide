@@ -131,7 +131,8 @@ function LevelPage() {
   }];
 
   // Count total collectibles
-  const totalCollectibles = locationData.reduce((sum, loc) => sum + loc.collectibles.length, 0);
+  const totalCollectibles = locationData.reduce((sum, loc) =>
+    sum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0);
 
   const structuredDataSchemas = useMemo(() => {
     if (locationData.length === 0) return undefined;

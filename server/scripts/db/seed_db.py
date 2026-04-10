@@ -42,7 +42,6 @@ async def seed_database():
                 Level(name='Abyss Levoire', display_order=7),
                 Level(name='Eidos 9', display_order=8),
                 Level(name='Spire 4', display_order=9),
-                # Level(name='Nest', display_order=10),
                 Level(name='Boss Challenge', display_order=10),  # Pseudo-level for boss challenge collectibles
             ]
             
@@ -65,13 +64,19 @@ async def seed_database():
                 CollectibleType(name='Beta Core', category_group='upgrades', display_order=1),
                 CollectibleType(name='Body Core', category_group='upgrades', display_order=2),
                 CollectibleType(name='Exospine', category_group='upgrades', display_order=3),
-                CollectibleType(name='Robot', category_group='upgrades', display_order=4),
+                CollectibleType(name='Tumbler Expansion Module', category_group='upgrades', display_order=4),
+                CollectibleType(name='Drone Upgrade Module', category_group='upgrades', display_order=5),
+                CollectibleType(name='Weapon Core', category_group='upgrades', display_order=6),
+                CollectibleType(name='Gear', category_group='upgrades', display_order=7),
 
                 # Cosmetics category
                 CollectibleType(name='Earrings', category_group='cosmetics', display_order=1),
                 CollectibleType(name='Glasses', category_group='cosmetics', display_order=2),
                 CollectibleType(name='Nano Suit', category_group='cosmetics', display_order=3),
-                CollectibleType(name='Outfit', category_group='cosmetics', display_order=4),
+                CollectibleType(name='Drone Appearance', category_group='cosmetics', display_order=4),
+                CollectibleType(name='Lily Outfit', category_group='cosmetics', display_order=5),
+                CollectibleType(name='Adam Outfit', category_group='cosmetics', display_order=6),
+                CollectibleType(name='Hairstyle', category_group='cosmetics', display_order=7),
 
                 # Materials category
                 CollectibleType(name='Supply Box', category_group='materials', display_order=1),
