@@ -93,6 +93,9 @@ function CollectibleSection({
                   )}
                   <h3 className="text-xl font-semibold text-gray-100 leading-tight">
                     {collectible.title}
+                    {collectible.quantity > 1 && (
+                      <span className="ml-2 text-base font-medium text-cyan-400">x{collectible.quantity}</span>
+                    )}
                   </h3>
                   {'_levelName' in collectible && (
                     <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-600">

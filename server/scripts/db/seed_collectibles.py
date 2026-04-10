@@ -184,6 +184,7 @@ async def seed_database():
                         existing.description = description_json
                         existing.location_id = location.id
                         existing.display_order = item.get("display_order", 0)
+                        existing.quantity = item.get("quantity", 1)
                         existing.cycle = cycle
                         existing.types = collectible_types
                         collectible_instance = existing
@@ -195,6 +196,7 @@ async def seed_database():
                             description=description_json,
                             location_id=location.id,
                             display_order=item.get("display_order", 0),
+                            quantity=item.get("quantity", 1),
                             cycle=cycle,
                             types=collectible_types
                         )
