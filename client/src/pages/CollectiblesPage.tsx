@@ -36,6 +36,7 @@ type LevelItem = {
       description: any;
       display_order: number;
       cycle: string;
+      quantity: number;
       types: string[];
       images: Array<{ id: number; url: string; alt: string; order: number }>;
     }[];
@@ -287,12 +288,14 @@ function CollectibleTypePage() {
 
   // Count totals (use full data for header, filtered for display)
   const totalCollectibles = levelData.reduce((sum, level) =>
-    sum + level.locations.reduce((locSum, loc) => locSum + loc.collectibles.length, 0), 0
+    sum + level.locations.reduce((locSum, loc) =>
+      locSum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0), 0
   );
   const totalLevels = levelData.length;
 
   const filteredTotal = filteredLevelData.reduce((sum, level) =>
-    sum + level.locations.reduce((locSum, loc) => locSum + loc.collectibles.length, 0), 0
+    sum + level.locations.reduce((locSum, loc) =>
+      locSum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0), 0
   );
 
   const structuredDataSchemas = useMemo(() => {

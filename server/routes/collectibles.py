@@ -32,6 +32,7 @@ def _serialize_collectible(c) -> dict:
         "description": c.description,
         "display_order": c.display_order,
         "cycle": c.cycle,
+        "quantity": c.quantity,
         "types": [t.name for t in c.types],
         "images": [
             {"id": img.id, "url": img.cloudinary_url, "alt": img.alt_text, "order": img.display_order}
