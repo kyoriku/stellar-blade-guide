@@ -10,6 +10,10 @@ class ETagMiddleware(BaseHTTPMiddleware):
         # Skip if FileResponse already set an ETag
         if 'etag' in response.headers:
             return response
+        
+        # Skip mutable per-user endpoints
+        if request.url.path.startswith("/api/progress"):
+            return response
 
         # Only bother for successful GET responses
         if request.method != "GET" or response.status_code != 200:
