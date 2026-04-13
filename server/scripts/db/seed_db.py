@@ -13,7 +13,8 @@ from db.database import engine, Base, AsyncSessionLocal
 from models.collectibles import Level, Location, CollectibleType
 from models.walkthroughs import Walkthrough
 from models.users import User, OAuthAccount
-from models.comments import Comment    
+from models.comments import Comment
+from models.progress import UserProgress   
 
 async def seed_database():
     # 1 Create tables (sync inside async context)

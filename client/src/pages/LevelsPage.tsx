@@ -13,6 +13,7 @@ import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton
 import { LEVELS } from '../constants/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
+import { useProgress } from '../hooks/useProgress'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -37,6 +38,7 @@ function LevelPage() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useState<string>('');
   const { prefetchLevel } = usePrefetch()
+  const { isCompleted, toggle, completedIds } = useProgress()
   const resetActiveSection = () => setActiveSection('');
 
   useEffect(() => {
@@ -241,7 +243,17 @@ if (isLoading) {
             {/* Page header */}
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayLevelName}</h1>
-              <p className="text-gray-400">{totalCollectibles} collectibles</p>
+              <p className="text-gray-400">
+                {totalCollectibles} collectibles
+                {completedIds.size > 0 && (() => {
+                  const pageIds = new Set(
+                    locationData.flatMap(loc => loc.collectibles.map(c => c.id))
+                  );
+                  const found = [...completedIds].filter(id => pageIds.has(id)).length;
+                  if (found === 0) return null;
+                  return <span className="text-cyan-400 ml-2">· {found === pageIds.size ? `all ${found}` : found} found</span>;
+                })()}
+              </p>
             </div>
 
             {/* Mobile TOC */}
@@ -266,6 +278,8 @@ if (isLoading) {
                   levelName={displayLevelName}
                   collectibles={location.collectibles}
                   onImageClick={handleImageClick}
+                  isCompleted={isCompleted}
+                  onToggleProgress={toggle}
                 />
               );
             })}
