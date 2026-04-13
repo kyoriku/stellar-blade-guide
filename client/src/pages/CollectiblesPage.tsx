@@ -13,12 +13,14 @@ import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton
 import { COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
+import { useProgress } from '../hooks/useProgress'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
 import FloatingTOC from '../components/Floatingtoc'
 import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
+import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 
 // Single level item type
 type LevelItem = {
@@ -72,7 +74,7 @@ function CollectibleTypePage() {
   );
 
   // Pass category to hook
-  const { data: levelData = [] as LevelData, isLoading, isError, error } = useCollectiblesByType(typeName!, category);
+const { data: levelData = [] as LevelData, isLoading, isError, error } = useCollectiblesByType(typeName!, category, isValidType);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -82,6 +84,7 @@ function CollectibleTypePage() {
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
   const { prefetchCollectiblesByType } = usePrefetch()
+  const { isCompleted, toggle, completedIds } = useProgress()
   const resetActiveSection = () => setActiveSection('');
 
   const prevTypeName = useRef(typeName);
@@ -417,17 +420,23 @@ function CollectibleTypePage() {
 
             <div className="flex-1 min-w-0">
               <div className="mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
                   <div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayTypeName}</h1>
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayTypeName}</h1>
                     <div className="h-6 w-40 bg-gray-700/50 rounded animate-pulse" />
                   </div>
 
-                  <div className="flex justify-end sm:justify-start">
+                  <div className="flex justify-end sm:justify-start order-3 sm:order-none">
                     <div className="px-3 py-1.5 text-sm rounded-lg border bg-gray-800/50 border-gray-700 text-gray-400">
                       A–Z
                     </div>
                   </div>
+
+                  {TYPE_DESCRIPTIONS[typeName!] && (
+                    <p className="text-gray-400 order-2 sm:order-none sm:basis-full">
+                      {TYPE_DESCRIPTIONS[typeName!]}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -488,7 +497,7 @@ function CollectibleTypePage() {
           <div className="flex-1 min-w-0">
             {/* Page header + filters */}
             <div className="mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayTypeName}</h1>
                   <p className="text-gray-400">
@@ -496,12 +505,21 @@ function CollectibleTypePage() {
                       ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName} (${cycleFilter})`
                       : `${totalCollectibles} ${displayTypeName}`
                     }
+                    {completedIds.size > 0 && (() => {
+                      const pageIds = new Set(
+                        levelData.flatMap(l => l.locations.flatMap(loc => loc.collectibles.map(c => c.id)))
+                      );
+                      const found = [...completedIds].filter(id => pageIds.has(id)).length;
+                      if (found === 0) return null;
+                      const total = pageIds.size;
+                      return <span className="text-cyan-400 ml-2">· {found === total ? `all ${found}` : found} found</span>;
+                    })()}
                   </p>
                 </div>
 
                 {/* Cycle filter */}
                 {showCycleFilter && (
-                  <div className="flex items-center justify-between w-full sm:w-auto sm:gap-2">
+                  <div className="flex items-center justify-between w-full sm:w-auto sm:gap-2 order-3 sm:order-none">
                     <div className="flex flex-wrap items-center gap-2">
                       {['All', ...availableCycles].map(cycle => (
                         <button
@@ -532,7 +550,7 @@ function CollectibleTypePage() {
                 )}
 
                 {!showCycleFilter && (
-                  <div className="flex justify-end sm:justify-start">
+                  <div className="flex justify-end sm:justify-start order-3 sm:order-none">
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
@@ -543,6 +561,12 @@ function CollectibleTypePage() {
                       A–Z
                     </button>
                   </div>
+                )}
+
+                {TYPE_DESCRIPTIONS[typeName!] && (
+                  <p className="text-gray-400 order-2 sm:order-none sm:basis-full">
+                    {TYPE_DESCRIPTIONS[typeName!]}
+                  </p>
                 )}
               </div>
             </div>
@@ -571,6 +595,8 @@ function CollectibleTypePage() {
                       onImageClick={handleImageClick}
                       hideTypeBadge
                       itemLabel={displayTypeName}
+                      isCompleted={isCompleted}
+                      onToggleProgress={toggle}
                     />
                   );
                 })}
