@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/progress", tags=["progress"])
 
 
-@router.get("/", response_model=List[int])
+@router.get("", response_model=List[int])
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def get_progress(
     request: Request,
