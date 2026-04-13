@@ -15,8 +15,7 @@ from middleware.error_handler import add_error_handler_middleware
 from middleware.security_headers import add_security_headers_middleware
 from middleware.bot_filter import add_bot_filter_middleware
 from middleware.etag import ETagMiddleware
-from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health
-
+from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, progress
 setup_logging()
 
 cloudinary.config(
@@ -73,6 +72,7 @@ app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
+app.include_router(progress.router, prefix=settings.API_PREFIX)
 
 # Static file serving
 CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')

@@ -32,7 +32,7 @@ export function useLevelCollectibles(levelName: string) {
   })
 }
 
-export function useCollectiblesByType(typeName: string, category: string = 'collectibles') {
+export function useCollectiblesByType(typeName: string, category: string = 'collectibles', enabled: boolean = true) {
   return useQuery({
     queryKey: ['type-collectibles', category, typeName],
     queryFn: () => {
@@ -47,6 +47,6 @@ export function useCollectiblesByType(typeName: string, category: string = 'coll
       }
       return api.getCollectiblesByType(typeName);
     },
-    enabled: !!typeName,
+    enabled: !!typeName && enabled,
   })
 }
