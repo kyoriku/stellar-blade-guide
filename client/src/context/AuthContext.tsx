@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -81,6 +81,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 14 * 60 * 1000) // every 14 minutes
     return () => clearInterval(interval)
   }, [accessToken, refreshToken])
+
+  const prevAuthRef = useRef(false)
+
+  useEffect(() => {
+    if (!isLoading && user && !prevAuthRef.current) {
+      const local = localStorage.getItem('sb_progress')
+      if (local) {
+        try {
+          const ids = JSON.parse(local)
+          if (ids.length > 0) {
+            fetch(`${API_BASE_URL}/progress/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify({ collectible_ids: ids }),
+            }).then(res => {
+              if (res.ok) localStorage.removeItem('sb_progress')
+            }).catch(() => { })
+          }
+        } catch { }
+      }
+    }
+    prevAuthRef.current = !!user
+  }, [user, isLoading, accessToken])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {

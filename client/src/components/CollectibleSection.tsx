@@ -13,6 +13,8 @@ interface CollectibleSectionProps {
   onImageClick?: (imageUrl: string) => void;
   hideTypeBadge?: boolean;
   itemLabel?: string;
+  isCompleted?: (id: number) => boolean;
+  onToggleProgress?: (id: number) => void;
 }
 
 function parseDescription(text: string) {
@@ -39,6 +41,8 @@ function CollectibleSection({
   collectibles,
   onImageClick,
   hideTypeBadge = false,
+  isCompleted,
+  onToggleProgress,
 }: CollectibleSectionProps) {
   if (!collectibles || collectibles.length === 0) {
     return (
@@ -82,28 +86,49 @@ function CollectibleSection({
           >
             <div className="relative">
               <div className="flex flex-col mb-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  {!hideTypeBadge && [...collectible.types].sort().map((type, idx) => (
-                    <TypeBadge key={idx} type={type} />
-                  ))}
-                  {collectible.cycle && collectible.cycle !== 'Base' && (
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-sm font-semibold border whitespace-nowrap ${CYCLE_STYLES[collectible.cycle] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
-                      {collectible.cycle}
-                    </span>
-                  )}
-                  <h3 className="text-xl font-semibold text-gray-100 leading-tight">
-                    {collectible.title}
-                    {collectible.quantity > 1 && (
-                      <span className="ml-2 text-base font-medium text-cyan-400">x{collectible.quantity}</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                    {!hideTypeBadge && [...collectible.types].sort().map((type, idx) => (
+                      <TypeBadge key={idx} type={type} />
+                    ))}
+                    {collectible.cycle && collectible.cycle !== 'Base' && (
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-sm font-semibold border whitespace-nowrap ${CYCLE_STYLES[collectible.cycle] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                        {collectible.cycle}
+                      </span>
                     )}
-                  </h3>
-                  {'_levelName' in collectible && (
-                    <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
-                      <span className="text-gray-300">{(collectible as any)._levelName}</span>
-                      {(collectible as any)._locationName !== (collectible as any)._levelName && (
-                        <> <span className="text-cyan-600">·</span> {(collectible as any)._locationName}</>
+                    <h3 className="text-xl font-semibold text-gray-100 leading-tight">
+                      {collectible.title}
+                      {collectible.quantity > 1 && (
+                        <span className="ml-2 text-base font-medium text-cyan-400">x{collectible.quantity}</span>
                       )}
-                    </p>
+                    </h3>
+                    {'_levelName' in collectible && (
+                      <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
+                        <span className="text-gray-300">{(collectible as any)._levelName}</span>
+                        {(collectible as any)._locationName !== (collectible as any)._levelName && (
+                          <> <span className="text-cyan-600">·</span> {(collectible as any)._locationName}</>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  {onToggleProgress && (
+                    <button
+                      onClick={() => onToggleProgress(collectible.id)}
+                      className="flex-shrink-0 cursor-pointer"
+                      title={isCompleted?.(collectible.id) ? 'Mark as not found' : 'Mark as found'}
+                      aria-label={isCompleted?.(collectible.id) ? 'Mark as not found' : 'Mark as found'}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isCompleted?.(collectible.id)
+                        ? 'bg-cyan-500 border-cyan-500'
+                        : 'border-gray-500 hover:border-gray-400'
+                        }`}>
+                        {isCompleted?.(collectible.id) && (
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
                   )}
                 </div>
               </div>
