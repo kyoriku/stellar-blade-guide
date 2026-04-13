@@ -46,7 +46,10 @@ def add_security_headers_middleware(app: FastAPI):
             if request.url.path.startswith("/assets/"):
                 response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
             elif request.url.path.startswith("/api/"):
-                response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=3600"
+                if request.url.path.startswith("/api/progress"):
+                    response.headers["Cache-Control"] = "no-store"
+                else:
+                    response.headers["Cache-Control"] = "public, max-age=300, stale-while-revalidate=3600"
             else:
                 response.headers["Cache-Control"] = "no-cache"
         else:
