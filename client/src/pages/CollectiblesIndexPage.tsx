@@ -35,7 +35,7 @@ export default function CollectiblesIndexPage() {
       />
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Collectibles</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">Collectibles</h1>
           <p className="text-gray-300 mt-2 max-w-3xl">
             All collectible types in Stellar Blade including Cans, Documents, Memorysticks, Passcodes, and Camps. Found throughout every level with screenshots and detailed locations.
           </p>

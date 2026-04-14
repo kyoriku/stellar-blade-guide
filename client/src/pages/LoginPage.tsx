@@ -90,7 +90,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-700" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="px-3 bg-secondary text-gray-500">or continue with email</span>
+              <span className="px-3 bg-secondary text-gray-400">or continue with email</span>
             </div>
           </div>
 
@@ -163,7 +163,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-gray-400 text-sm mt-6">
           Don't have an account?{' '}
           <Link to="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
             Create one

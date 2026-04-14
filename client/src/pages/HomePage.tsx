@@ -42,7 +42,7 @@ function HomePage() {
         <div className="hidden md:flex absolute inset-0 items-center">
           <div className="container mx-auto px-4">
             <div className="max-w-lg">
-              <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">
+              <h1 className="text-5xl font-bold text-gray-100 mb-2 drop-shadow-lg">
                 Stellar Blade Guide
               </h1>
               <p className="text-gray-300 text-lg max-w-lg mb-4">
@@ -50,13 +50,13 @@ function HomePage() {
               </p>
               <div className="flex gap-5 text-base">
                 <span className="text-gray-400">
-                  <span className="text-white font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
+                  <span className="text-gray-100 font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
                 </span>
                 <span className="text-gray-400">
-                  <span className="text-white font-semibold">{LEVELS.length}</span> Levels
+                  <span className="text-gray-100 font-semibold">{LEVELS.length}</span> Levels
                 </span>
                 <span className="text-gray-400">
-                  <span className="text-white font-semibold">{SITE_STATS.screenshots}+</span> Screenshots
+                  <span className="text-gray-100 font-semibold">{SITE_STATS.screenshots}+</span> Screenshots
                 </span>
               </div>
             </div>
@@ -66,21 +66,21 @@ function HomePage() {
 
       {/* Mobile only text - below the image */}
       <div className="md:hidden p-4">
-        <h1 className="text-3xl font-bold text-white mb-2">
+        <h1 className="text-3xl font-bold text-gray-100 mb-2">
           Stellar Blade Guide
         </h1>
-        <p className="text-gray-400 mb-3">
+        <p className="text-gray-300 mb-3">
           Every collectible, walkthrough, and secret - with detailed screenshots and locations.
         </p>
         <div className="flex gap-4 text-sm">
           <span className="text-gray-400">
-            <span className="text-white font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
+            <span className="text-gray-100 font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
           </span>
           <span className="text-gray-400">
-            <span className="text-white font-semibold">{LEVELS.length}</span> Levels
+            <span className="text-gray-100 font-semibold">{LEVELS.length}</span> Levels
           </span>
           <span className="text-gray-400">
-            <span className="text-white font-semibold">{SITE_STATS.screenshots}+</span> Screenshots
+            <span className="text-gray-100 font-semibold">{SITE_STATS.screenshots}+</span> Screenshots
           </span>
         </div>
       </div>
@@ -92,7 +92,7 @@ function HomePage() {
             <h2 className="text-base font-semibold text-gray-200 uppercase tracking-wider">Browse by Level</h2>
             <Link
               to="/levels"
-              className="text-sm text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
+              className="text-sm text-gray-300 hover:text-gray-200 transition-colors flex items-center gap-1"
             >
               View all <ChevronRight className="w-3.5 h-3.5" />
             </Link>
@@ -137,11 +137,11 @@ function HomePage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5">
                 <Book className="w-5 h-5 text-cyan-400" />
-                <h2 className="text-lg font-bold text-white">Walkthroughs</h2>
+                <h2 className="text-lg font-bold text-gray-100">Walkthroughs</h2>
               </div>
               <Link
                 to="/walkthroughs"
-                className="text-sm text-gray-400 hover:text-gray-300 transition-colors flex items-center gap-1"
+                className="text-sm text-gray-300 hover:text-gray-200 transition-colors flex items-center gap-1"
               >
                 View all <ChevronRight className="w-3.5 h-3.5" />
               </Link>
@@ -173,7 +173,7 @@ function HomePage() {
           <div className="lg:col-span-4">
             <div className="flex items-center gap-2.5 mb-4">
               <Layers className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-lg font-bold text-white">Find by Type</h2>
+              <h2 className="text-lg font-bold text-gray-100">Find by Type</h2>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
