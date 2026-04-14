@@ -5,6 +5,14 @@ from middleware.bot_filter import get_client_ip
 
 logger = logging.getLogger("api")
 
+# ANSI colors
+GREEN = "\033[92m"
+RED = "\033[91m"
+YELLOW = "\033[93m"
+CYAN = "\033[96m"
+GRAY = "\033[90m"
+RESET = "\033[0m"
+
 
 def parse_ua(ua: str) -> str:
     """Extract short browser identifier from User-Agent string."""
@@ -19,6 +27,28 @@ def parse_ua(ua: str) -> str:
     if 'Safari/' in ua and 'Chrome/' not in ua:
         return 'Safari/' + ua.split('Version/')[1].split(' ')[0] if 'Version/' in ua else 'Safari'
     return ua[:30]
+
+
+def color_status(status: int) -> str:
+    if status < 300:
+        return f'{GREEN}{status}{RESET}'
+    if status < 400:
+        return f'{YELLOW}{status}{RESET}'
+    return f'{RED}{status}{RESET}'
+
+
+def color_duration(ms: float) -> str:
+    if ms < 50:
+        return f'{GREEN}{ms:.0f}ms{RESET}'
+    if ms < 200:
+        return f'{YELLOW}{ms:.0f}ms{RESET}'
+    return f'{RED}{ms:.0f}ms{RESET}'
+
+
+def color_cache(status: str) -> str:
+    if status == "HIT":
+        return f'{GREEN}{status}{RESET}'
+    return f'{RED}{status}{RESET}'
 
 
 async def log_requests_middleware(request: Request, call_next):
@@ -42,16 +72,16 @@ async def log_requests_middleware(request: Request, call_next):
     
     log_parts = [
         f'{client_ip} → {request.method} {request.url.path}',
-        f'{response.status_code}',
-        f'{duration_ms:.0f}ms',
+        color_status(response.status_code),
+        color_duration(duration_ms),
     ]
     
     if cache_status:
-        log_parts.append(cache_status)
+        log_parts.append(color_cache(cache_status))
     if db_time:
         log_parts.append(f'DB: {db_time:.0f}ms')
     
-    log_parts.append(f'UA: {parse_ua(user_agent)}')
+    log_parts.append(f'{GRAY}UA: {parse_ua(user_agent)}{RESET}')
 
     logger.info(' | '.join(log_parts))
 

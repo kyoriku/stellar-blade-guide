@@ -55,11 +55,11 @@ export default function ForgotPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-white font-semibold mb-2">Check your email</h2>
+              <h2 className="text-gray-100 font-semibold mb-2">Check your email</h2>
               <p className="text-gray-400 text-sm">
                 If an account exists for <span className="text-gray-200">{email}</span>, you'll receive a reset link within a few minutes.
               </p>
-              <p className="text-gray-500 text-xs mt-3">The link expires in 15 minutes.</p>
+              <p className="text-gray-400 text-xs mt-3">The link expires in 15 minutes.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
           )}
         </div>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-gray-400 text-sm mt-6">
           Remembered it?{' '}
           <Link to="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
             Back to login

@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
             <KeyRound className="w-6 h-6 text-cyan-400" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Set new password</h1>
+          <h1 className="text-3xl font-bold text-gray-100 mb-2">Set new password</h1>
           <p className="text-gray-400">Choose something strong</p>
         </div>
 
@@ -77,7 +77,7 @@ export default function ResetPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-white font-semibold mb-2">Password updated</h2>
+              <h2 className="text-gray-100 font-semibold mb-2">Password updated</h2>
               <p className="text-gray-400 text-sm">Redirecting you to login...</p>
             </div>
           ) : (
@@ -112,7 +112,7 @@ export default function ResetPasswordPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="mt-1.5 text-xs text-gray-500">Minimum 8 characters.</p>
+                <p className="mt-1.5 text-xs text-gray-400">Minimum 8 characters.</p>
               </div>
 
               <button
