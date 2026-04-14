@@ -63,7 +63,7 @@ function ErrorPage({
           </div>
         </div>
 
-        <h1 className="text-6xl font-bold text-white mb-4">{code}</h1>
+        <h1 className="text-6xl font-bold text-gray-100 mb-4">{code}</h1>
         <h2 className="text-2xl font-semibold text-gray-300 mb-4">
           {title || defaults.title}
         </h2>

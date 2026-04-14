@@ -43,7 +43,7 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
             <UserPlus className="w-6 h-6 text-cyan-400" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Create account</h1>
+          <h1 className="text-3xl font-bold text-gray-100 mb-2">Create account</h1>
           <p className="text-gray-400">Join the community</p>
         </div>
 
@@ -82,7 +82,7 @@ export default function RegisterPage() {
               <div className="w-full border-t border-gray-700" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="px-3 bg-secondary text-gray-500">or continue with email</span>
+              <span className="px-3 bg-secondary text-gray-400">or continue with email</span>
             </div>
           </div>
 
@@ -167,7 +167,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-gray-400 text-sm mt-6">
           Already have an account?{' '}
           <Link to="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
             Sign in

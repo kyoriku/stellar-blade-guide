@@ -159,7 +159,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
           <div className="p-2 bg-cyan-500/10 rounded-lg">
             <List className="w-5 h-5 text-cyan-400" />
           </div>
-          <h4 className="text-xl font-bold text-white flex-1">Contents</h4>
+          <h4 className="text-xl font-bold text-gray-100 flex-1">Contents</h4>
           <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
         {isOpen && (
