@@ -242,8 +242,8 @@ if (isLoading) {
           <div className="flex-1 min-w-0">
             {/* Page header */}
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayLevelName}</h1>
-              <p className="text-gray-400">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
+              <p className="text-gray-200">
                 {totalCollectibles} collectibles
                 {completedIds.size > 0 && (() => {
                   const pageIds = new Set(

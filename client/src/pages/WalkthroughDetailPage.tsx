@@ -211,11 +211,11 @@ function WalkthroughPage() {
           <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">
                 {walkthrough.title}
               </h1>
               {walkthrough.subtitle && (
-                <p className="text-gray-300">{walkthrough.subtitle}</p>
+                <p className="text-gray-200">{walkthrough.subtitle}</p>
               )}
             </div>
 

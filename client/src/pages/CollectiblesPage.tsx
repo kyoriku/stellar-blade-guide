@@ -433,7 +433,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
                   </div>
 
                   {TYPE_DESCRIPTIONS[typeName!] && (
-                    <p className="text-gray-400 order-2 sm:order-none sm:basis-full">
+                    <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
                       {TYPE_DESCRIPTIONS[typeName!]}
                     </p>
                   )}
@@ -499,8 +499,8 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
             <div className="mb-8">
               <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayTypeName}</h1>
-                  <p className="text-gray-400">
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayTypeName}</h1>
+                  <p className="text-gray-200">
                     {cycleFilter !== 'All'
                       ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName} (${cycleFilter})`
                       : `${totalCollectibles} ${displayTypeName}`
@@ -564,7 +564,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
                 )}
 
                 {TYPE_DESCRIPTIONS[typeName!] && (
-                  <p className="text-gray-400 order-2 sm:order-none sm:basis-full">
+                  <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
                     {TYPE_DESCRIPTIONS[typeName!]}
                   </p>
                 )}
