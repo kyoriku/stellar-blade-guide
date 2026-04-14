@@ -1,10 +1,10 @@
 # Stellar Blade Guide
 
-An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 800+ database records and 1000+ images via Cloudinary CDN.
+An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 900+ database records and 1500+ images via Cloudinary CDN.
 
 **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
-**Key Features:** User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Redis caching • Cloudinary CDN • Image galleries • Responsive design
+**Key Features:** Progress tracking (guest + authenticated) • User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Redis caching • Cloudinary CDN • Image galleries • Responsive design
 
 ![Home Page](client/public/assets/screenshots/homepage.png)
 
@@ -45,6 +45,8 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 - Skeleton loaders and smooth loading states
 - Responsive design with mobile navigation drawer
 - Protected routes with auth guards
+- Progress tracking with localStorage for guests and API persistence for authenticated users
+- Optimistic UI updates with automatic rollback on failure
 
 **Backend**
 - FastAPI with fully async endpoints
@@ -57,6 +59,7 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 - Rate limiting (slowapi) and custom honeypot middleware for bot detection
 - CORS configuration
 - AI-powered comment moderation via OpenAI Moderation API
+- Progress tracking with guest-to-authenticated sync on login
 
 **Database**
 - PostgreSQL with relational schema
@@ -65,7 +68,8 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 - Indexed queries for performance
 
 **Performance & Caching**
-- Multi-tier caching: Redis (server-side, 24hr TTL) + TanStack Query (client-side)
+- Multi-tier caching: Redis (server-side, 7-day TTL) + ETag/304 responses + TanStack Query (client-side)
+- Cache-Control exclusions for mutable per-user data (progress tracking)
 - Cloudinary CDN for image delivery and optimisation
 - 60–70ms average API response times
 
