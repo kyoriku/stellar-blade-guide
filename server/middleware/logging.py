@@ -17,7 +17,10 @@ RESET = "\033[0m"
 def parse_ua(ua: str) -> str:
     """Extract short browser identifier from User-Agent string."""
     if 'bot' in ua.lower() or 'crawl' in ua.lower() or 'spider' in ua.lower():
-        return ua.split('/')[0] if '/' in ua else ua[:30]
+        for part in ua.split():
+            if 'bot' in part.lower() or 'crawl' in part.lower() or 'spider' in part.lower():
+                return part.split('/')[0]
+        return ua[:30]
     if 'Firefox/' in ua:
         return 'Firefox/' + ua.split('Firefox/')[1].split(' ')[0]
     if 'Chrome/' in ua and 'Edg/' not in ua:
