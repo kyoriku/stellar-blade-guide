@@ -30,7 +30,7 @@ export default function CommentSection({ contentType, contentId, contentName }: 
         <h2 className="text-lg font-semibold text-white">
           Comments
           {totalCount > 0 && (
-            <span className="ml-2 text-sm font-normal text-gray-500">({totalCount})</span>
+            <span className="ml-2 text-sm font-normal text-gray-400">({totalCount})</span>
           )}
         </h2>
       </div>

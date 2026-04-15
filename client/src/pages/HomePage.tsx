@@ -49,13 +49,13 @@ function HomePage() {
                 Every collectible, walkthrough, and secret - with detailed screenshots and locations.
               </p>
               <div className="flex gap-5 text-base">
-                <span className="text-gray-400">
+                <span className="text-gray-300">
                   <span className="text-gray-100 font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
                 </span>
-                <span className="text-gray-400">
+                <span className="text-gray-300">
                   <span className="text-gray-100 font-semibold">{LEVELS.length}</span> Levels
                 </span>
-                <span className="text-gray-400">
+                <span className="text-gray-300">
                   <span className="text-gray-100 font-semibold">{SITE_STATS.screenshots}+</span> Screenshots
                 </span>
               </div>
@@ -73,13 +73,13 @@ function HomePage() {
           Every collectible, walkthrough, and secret - with detailed screenshots and locations.
         </p>
         <div className="flex gap-4 text-sm">
-          <span className="text-gray-400">
+          <span className="text-gray-300">
             <span className="text-gray-100 font-semibold">{SITE_STATS.collectibles}+</span> Collectibles
           </span>
-          <span className="text-gray-400">
+          <span className="text-gray-300">
             <span className="text-gray-100 font-semibold">{LEVELS.length}</span> Levels
           </span>
-          <span className="text-gray-400">
+          <span className="text-gray-300">
             <span className="text-gray-100 font-semibold">{SITE_STATS.screenshots}+</span> Screenshots
           </span>
         </div>

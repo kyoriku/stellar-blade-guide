@@ -71,7 +71,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                   }}
                   className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
                     ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/10'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
+                    : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
                     }`}
                 >
                   <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
@@ -88,7 +88,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                   to={linkGroup.mainLink}
                   className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
                     ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/10'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
+                    : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
                     }`}
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -126,7 +126,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                           }}
                           className={`group/sub flex items-center gap-2 text-sm px-3 py-1 rounded-lg transition-all duration-200 ${isActiveSubLink
                             ? 'text-cyan-400 bg-cyan-500/10 font-medium'
-                            : 'text-gray-400 hover:text-cyan-400 hover:bg-gray-700/30'
+                            : 'text-gray-300 hover:text-cyan-400 hover:bg-gray-700/30'
                             }`}
                         >
                           <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isActiveSubLink ? 'bg-cyan-400' : 'bg-gray-600 group-hover/sub:bg-cyan-400'
