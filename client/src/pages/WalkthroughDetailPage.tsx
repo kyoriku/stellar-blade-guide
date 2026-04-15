@@ -145,19 +145,20 @@ function WalkthroughPage() {
     return <ErrorPage code={404} />;
   }
 
-  // Generate TOC from content sections
-  const tocLinks: { mainLink: string; title: string; subLinks: { href: string; title: string }[] }[] = [];
+  function slugifySection(title: string): string {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  }
 
-  // Add content sections to TOC
-  walkthrough.content.forEach((content) => {
-    if (content.section_title) {
-      tocLinks.push({
-        mainLink: `#section-${content.order}`,
-        title: content.section_title,
-        subLinks: []
-      });
-    }
-  });
+  const tocLinks = [{
+    mainLink: `#${slugifySection(walkthrough.content.find(c => c.section_title)?.section_title || 'start')}`,
+    title: walkthrough.title,
+    subLinks: walkthrough.content
+      .filter(content => content.section_title)
+      .map(content => ({
+        href: `#${slugifySection(content.section_title!)}`,
+        title: content.section_title!
+      }))
+  }];
 
   return (
     <div className="min-h-main bg-primary">
@@ -215,7 +216,7 @@ function WalkthroughPage() {
                 {walkthrough.title}
               </h1>
               {walkthrough.subtitle && (
-                <p className="text-gray-200">{walkthrough.subtitle}</p>
+                <p className="text-gray-300">{walkthrough.subtitle}</p>
               )}
             </div>
 
@@ -224,7 +225,7 @@ function WalkthroughPage() {
               <div id="objectives" className="mb-6 p-4 bg-secondary rounded-lg border border-gray-800">
                 <div className="flex items-center gap-2 mb-3">
                   <List className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-lg font-semibold text-white">Objectives</h2>
+                  <h2 className="text-lg font-semibold text-gray-100">Objectives</h2>
                 </div>
                 <ul className="space-y-2">
                   {walkthrough.objectives.map((objective, idx) => (
@@ -255,7 +256,7 @@ function WalkthroughPage() {
               {walkthrough.content.map((content) => (
                 <div
                   key={content.order}
-                  id={`section-${content.order}`}
+                  id={content.section_title ? slugifySection(content.section_title) : `section-${content.order}`}
                   className="walkthrough-content scroll-mt-24"
                 >
                   <WalkthroughContent

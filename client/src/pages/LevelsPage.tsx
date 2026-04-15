@@ -243,15 +243,15 @@ if (isLoading) {
             {/* Page header */}
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
-              <p className="text-gray-200">
+              <p className="text-gray-300">
                 {totalCollectibles} collectibles
                 {completedIds.size > 0 && (() => {
-                  const pageIds = new Set(
-                    locationData.flatMap(loc => loc.collectibles.map(c => c.id))
-                  );
-                  const found = [...completedIds].filter(id => pageIds.has(id)).length;
+                  const pageCollectibles = locationData.flatMap(loc => loc.collectibles);
+                  const found = pageCollectibles
+                    .filter(c => completedIds.has(c.id))
+                    .reduce((sum, c) => sum + (c.quantity || 1), 0);
                   if (found === 0) return null;
-                  return <span className="text-cyan-400 ml-2">· {found === pageIds.size ? `all ${found}` : found} found</span>;
+                  return <span className="text-cyan-400 ml-2">· {found === totalCollectibles ? `all ${found}` : found} found</span>;
                 })()}
               </p>
             </div>
