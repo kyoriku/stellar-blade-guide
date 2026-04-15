@@ -111,12 +111,12 @@ export default function Comment({
               {comment.user.role}
             </span>
           )}
-          <span className="text-xs text-gray-500 ml-auto">{timeAgo(comment.created_at)}</span>
+          <span className="text-xs text-gray-400 ml-auto">{timeAgo(comment.created_at)}</span>
         </div>
 
         {/* Body */}
         {comment.is_deleted ? (
-          <p className="text-gray-500 text-sm italic">[deleted]</p>
+          <p className="text-gray-400 text-sm italic">[deleted]</p>
         ) : isEditing ? (
           <div className="space-y-2">
               <textarea
@@ -156,7 +156,8 @@ export default function Comment({
             {depth === 0 && user && (
               <button
                 onClick={() => setShowReplyForm(p => !p)}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-cyan-400 transition-colors cursor-pointer"
+                title="Reply to comment"
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 Reply
@@ -168,7 +169,8 @@ export default function Comment({
                 {isOwner && (
                   <button
                     onClick={() => { setIsEditing(true); setEditBody(comment.body) }}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-white transition-colors cursor-pointer"
+                    title="Edit comment"
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-100 transition-colors cursor-pointer"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     Edit
@@ -176,7 +178,8 @@ export default function Comment({
                 )}
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
+                  title="Delete comment"
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete

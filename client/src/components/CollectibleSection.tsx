@@ -68,10 +68,10 @@ function CollectibleSection({
     <section id={id} className="mb-16 scroll-mt-4">
       {title && (
         <div className="flex items-center gap-3 mb-5">
-          <span className="text-lg text-gray-400 whitespace-nowrap">
+          <span className="text-lg text-gray-300 whitespace-nowrap">
             {levelName && levelName !== title ? (
-              <><span className="text-gray-300">{levelName}</span> <span className="text-cyan-600">·</span> {title}</>
-            ) : title}
+              <><span className="text-gray-200">{levelName}</span> <span className="text-cyan-600">·</span> {title}</>
+            ) : <span className="text-gray-200">{title}</span>}
           </span>
           <div className="h-px flex-1 bg-gray-700" />
         </div>
@@ -96,15 +96,15 @@ function CollectibleSection({
                         {collectible.cycle}
                       </span>
                     )}
-                    <h3 className="text-xl font-semibold text-gray-100 leading-tight">
+                    <h2 className="text-xl font-semibold text-gray-100 leading-tight">
                       {collectible.title}
                       {collectible.quantity > 1 && (
                         <span className="ml-2 text-base font-medium text-cyan-400">x{collectible.quantity}</span>
                       )}
-                    </h3>
+                    </h2>
                     {'_levelName' in collectible && (
-                      <p className="w-full sm:w-auto text-sm text-gray-400 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
-                        <span className="text-gray-300">{(collectible as any)._levelName}</span>
+                      <p className="w-full sm:w-auto text-sm text-gray-300 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
+                        <span className="text-gray-200">{(collectible as any)._levelName}</span>
                         {(collectible as any)._locationName !== (collectible as any)._levelName && (
                           <> <span className="text-cyan-600">·</span> {(collectible as any)._locationName}</>
                         )}
@@ -118,9 +118,9 @@ function CollectibleSection({
                       title={isCompleted?.(collectible.id) ? 'Mark as not found' : 'Mark as found'}
                       aria-label={isCompleted?.(collectible.id) ? 'Mark as not found' : 'Mark as found'}
                     >
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isCompleted?.(collectible.id)
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isCompleted?.(collectible.id)
                         ? 'bg-cyan-500 border-cyan-500'
-                        : 'border-gray-500 hover:border-gray-400'
+                        : 'border-gray-400 hover:border-gray-300'
                         }`}>
                         {isCompleted?.(collectible.id) && (
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

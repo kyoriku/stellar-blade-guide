@@ -500,19 +500,18 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
               <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayTypeName}</h1>
-                  <p className="text-gray-200">
+                  <p className="text-gray-300">
                     {cycleFilter !== 'All'
                       ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName} (${cycleFilter})`
                       : `${totalCollectibles} ${displayTypeName}`
                     }
                     {completedIds.size > 0 && (() => {
-                      const pageIds = new Set(
-                        levelData.flatMap(l => l.locations.flatMap(loc => loc.collectibles.map(c => c.id)))
-                      );
-                      const found = [...completedIds].filter(id => pageIds.has(id)).length;
+                      const pageCollectibles = levelData.flatMap(l => l.locations.flatMap(loc => loc.collectibles));
+                      const found = pageCollectibles
+                        .filter(c => completedIds.has(c.id))
+                        .reduce((sum, c) => sum + (c.quantity || 1), 0);
                       if (found === 0) return null;
-                      const total = pageIds.size;
-                      return <span className="text-cyan-400 ml-2">· {found === total ? `all ${found}` : found} found</span>;
+                      return <span className="text-cyan-400 ml-2">· {found === totalCollectibles ? `all ${found}` : found} found</span>;
                     })()}
                   </p>
                 </div>
@@ -525,6 +524,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
                         <button
                           key={cycle}
                           onClick={() => setCycleFilter(cycle)}
+                          title={`Show ${cycle === 'All' ? 'all' : cycle} ${displayTypeName}`}
                           className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
                             ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
                             : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
@@ -539,6 +539,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
 
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
+                      title="Sort alphabetically"
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
                         ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
                         : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
@@ -553,6 +554,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
                   <div className="flex justify-end sm:justify-start order-3 sm:order-none">
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
+                      title="Sort alphabetically"
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
                         ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
                         : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
