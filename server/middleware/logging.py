@@ -1,5 +1,6 @@
 import time
 import logging
+from datetime import datetime
 from fastapi import Request
 from middleware.bot_filter import get_client_ip
 
@@ -74,7 +75,7 @@ async def log_requests_middleware(request: Request, call_next):
     db_time = getattr(request.state, "db_time", None)
     
     log_parts = [
-        f'{client_ip} → {request.method} {request.url.path}',
+        f'{datetime.now().strftime("%H:%M:%S")} {client_ip} → {request.method} {request.url.path}',
         color_status(response.status_code),
         color_duration(duration_ms),
     ]
