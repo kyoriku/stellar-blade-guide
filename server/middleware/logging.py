@@ -75,7 +75,7 @@ async def log_requests_middleware(request: Request, call_next):
     db_time = getattr(request.state, "db_time", None)
     
     log_parts = [
-        f'{datetime.now().strftime("%H:%M:%S")} {client_ip} → {request.method} {request.url.path}',
+        f'{datetime.now().strftime("%H:%M:%S")} · {client_ip} → {request.method} {request.url.path}',
         color_status(response.status_code),
         color_duration(duration_ms),
     ]
