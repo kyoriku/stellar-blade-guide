@@ -59,6 +59,7 @@ export default function Comment({
   const [showReplies, setShowReplies] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const isOwner = user?.id === comment.user?.id
   const isMod = user?.role === 'moderator' || user?.role === 'admin'
@@ -74,14 +75,16 @@ export default function Comment({
     const trimmed = editBody.trim()
     if (!trimmed || trimmed === comment.body) { setIsEditing(false); return }
     setEditError(null)
+    setIsSaving(true)
     try {
       await onEdit(comment.id, trimmed)
       setIsEditing(false)
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'Failed to edit comment')
+    } finally {
+      setIsSaving(false)
     }
   }
-
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
@@ -139,10 +142,10 @@ export default function Comment({
                 </button>
                 <button
                   onClick={handleEdit}
-                  disabled={!editBody.trim() || editBody.trim() === comment.body || !!editError}
+                  disabled={isSaving || !editBody.trim() || editBody.trim() === comment.body || !!editError}
                   className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all cursor-pointer"
                 >
-                  Save
+                  {isSaving ? 'Saving...' : 'Save'}
                 </button>
               </div>
           </div>
