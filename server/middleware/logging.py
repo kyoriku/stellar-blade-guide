@@ -82,7 +82,7 @@ async def log_requests_middleware(request: Request, call_next):
 
     # Fixed-width columns 
     log_parts = [
-        f'{datetime.now(LOG_TZ).strftime("%H:%M:%S")} · {client_ip:<15} → {request.method:<4}',
+        f'{datetime.now(LOG_TZ).strftime("%H:%M:%S")} · {client_ip:<15} → {request.method:<6}',
         color_status(response.status_code),
         color_duration(duration_ms),
         color_cache(cache_status) if cache_status else '    ',
