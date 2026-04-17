@@ -80,22 +80,22 @@ async def log_requests_middleware(request: Request, call_next):
     cache_status = getattr(request.state, "cache_status", None)
     db_time = getattr(request.state, "db_time", None)
 
+    # Fixed-width columns 
     log_parts = [
-        f'{datetime.now(LOG_TZ).strftime("%H:%M:%S")} · {client_ip:<15} → {request.method:<4} {request.url.path}',
+        f'{datetime.now(LOG_TZ).strftime("%H:%M:%S")} · {client_ip:<15} → {request.method:<4}',
         color_status(response.status_code),
         color_duration(duration_ms),
+        color_cache(cache_status) if cache_status else '    ',
+        f'DB: {db_time:>3.0f}ms' if db_time else '         ',
     ]
 
-    if cache_status:
-        log_parts.append(color_cache(cache_status))
-    if db_time:
-        log_parts.append(f'DB: {db_time:.0f}ms')
+    log_line = ' | '.join(log_parts) + f' | {request.url.path}'
 
-    # Only show UA for auth endpoints or non-2xx responses
+    # Only show UA for auth endpoints or non-2xx responses — appended after path
     if request.url.path.startswith("/api/auth") or response.status_code >= 400:
-        log_parts.append(f'{GRAY}UA: {parse_ua(user_agent)}{RESET}')
+        log_line += f' | {GRAY}UA: {parse_ua(user_agent)}{RESET}'
 
-    logger.info(' | '.join(log_parts))
+    logger.info(log_line)
 
     response.headers["X-Process-Time"] = str(duration_ms / 1000)
     return response
