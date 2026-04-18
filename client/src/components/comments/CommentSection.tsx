@@ -6,10 +6,9 @@ import { useComments } from '../../hooks/useComments'
 interface CommentSectionProps {
   contentType: 'walkthrough' | 'collectible' | 'level'
   contentId: number
-  contentName?: string
 }
 
-export default function CommentSection({ contentType, contentId, contentName }: CommentSectionProps) {
+export default function CommentSection({ contentType, contentId }: CommentSectionProps) {
   const {
     data: comments = [],
     isLoading,
@@ -37,7 +36,7 @@ export default function CommentSection({ contentType, contentId, contentName }: 
 
       {/* Post a comment */}
       <div className="mb-8">
-        <CommentForm onSubmit={(body) => postComment(body, contentName)} />
+        <CommentForm onSubmit={postComment} />
       </div>
 
       {/* Comments list */}
@@ -67,7 +66,6 @@ export default function CommentSection({ contentType, contentId, contentName }: 
               comment={comment}
               contentType={contentType}
               contentId={contentId}
-              contentName={contentName}
               onReply={postReply}
               onEdit={editComment}
               onDelete={deleteComment}

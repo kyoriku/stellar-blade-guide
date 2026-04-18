@@ -45,7 +45,6 @@ class CreateCommentRequest(BaseModel):
     content_id: int
     body: str
     parent_id: Optional[int] = None
-    content_name: Optional[str] = None 
 
     @field_validator("content_type")
     @classmethod
@@ -207,8 +206,10 @@ async def create_comment(
     )
     comment = result.scalar_one()
 
-    name_part = f": {body.content_name} (ID: {body.content_id})" if body.content_name else f" {body.content_id}"
-    logger.info(f"{CYAN}User {current_user.username} commented on {body.content_type}{name_part}{RESET}")
+    logger.info(
+        f"{CYAN}User {current_user.username} commented on "
+        f"{body.content_type} {body.content_id}{RESET}"
+    )
     return comment_to_dict(comment)
 
 
@@ -280,46 +281,7 @@ async def delete_comment(
     comment.is_deleted = True
     comment.body = "[deleted]"
     await db.commit()
-    logger.info(f"{CYAN}User {current_user.username} deleted comment {comment_id} on {comment.content_type} (ID: {comment.content_id}){RESET}")
-
-
-# Moderation
-
-# @router.get("/moderation/queue")
-# @limiter.limit("30/minute")
-# async def moderation_queue(
-#     request: Request,
-#     db: AsyncSession = Depends(get_db),
-#     _mod: User = Depends(require_role("moderator", "admin")),
-# ):
-#     """Moderator/admin only: list all unapproved comments."""
-#     result = await db.execute(
-#         select(Comment)
-#         .options(selectinload(Comment.user))
-#         .where(Comment.is_approved == False, Comment.is_deleted == False)
-#         .order_by(Comment.created_at.asc())
-#     )
-#     comments = result.scalars().all()
-#     return [comment_to_dict(c) for c in comments]
-
-
-# @router.patch("/{comment_id}/approve")
-# @limiter.limit("30/minute")
-# async def approve_comment(
-#     request: Request,
-#     comment_id: int,
-#     db: AsyncSession = Depends(get_db),
-#     _mod: User = Depends(require_role("moderator", "admin")),
-# ):
-#     """Moderator/admin only: approve a comment in the moderation queue."""
-#     result = await db.execute(select(Comment).where(Comment.id == comment_id))
-#     comment = result.scalar_one_or_none()
-
-#     if not comment:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
-
-#     comment.is_approved = True
-#     await db.commit()
-
-#     logger.info(f"Comment {comment_id} approved by moderator")
-#     return {"status": "ok", "comment_id": comment_id}
+    logger.info(
+        f"{CYAN}User {current_user.username} deleted comment {comment_id} "
+        f"on {comment.content_type} {comment.content_id}{RESET}"
+    )
