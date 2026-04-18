@@ -13,12 +13,12 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Service Description</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Service Description</h2>
             <p>Stellar Blade Guide provides unofficial walkthroughs, collectible locations, and gameplay information for educational and informational purposes only. We also offer optional user accounts and a community comment system.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">User Accounts</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">User Accounts</h2>
             <p>You must be at least 13 years old to create an account. By registering, you agree to:</p>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
               <li>Provide accurate information and keep it up to date</li>
@@ -30,7 +30,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Comments & Community Conduct</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Comments & Community Conduct</h2>
             <p>When posting comments, you agree not to:</p>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
               <li>Post spam, self-promotion, or repetitive content</li>
@@ -44,7 +44,7 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">General User Responsibilities</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">General User Responsibilities</h2>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
               <li>Use the site lawfully and respectfully</li>
               <li>Do not interfere with site functionality or attempt to access unauthorized areas</li>
@@ -54,35 +54,35 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Intellectual Property</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Intellectual Property</h2>
             <p><strong>Game Content:</strong> Stellar Blade&trade; and all related content are owned by Shift Up Corporation and Sony Interactive Entertainment. We claim no ownership over game assets, screenshots, or related material.</p>
             <p className="mt-2"><strong>Our Content:</strong> Original guide text, website design, and commentary are &copy; 2025&ndash;{new Date().getFullYear()} Stellar Blade Guide. You may view or share links for personal, non-commercial use. Commercial use or redistribution requires written permission.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Disclaimers & Liability</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Disclaimers & Liability</h2>
             <p>This website is provided "as is" without warranties of any kind. We make no guarantees about accuracy, completeness, or availability.</p>
             <p className="mt-2"><strong>Important:</strong> Game content changes with patches and updates. Guide information may become outdated. Always verify critical information in-game before making irreversible decisions (selling rare items, choosing permanent upgrades, etc.).</p>
             <p className="mt-2">We are not liable for any damages arising from use of this site, including loss of game progress, missed collectibles, or consequences of following outdated information. <strong>Use at your own risk.</strong></p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Third-Party Links</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Third-Party Links</h2>
             <p>External links are provided for convenience. We are not responsible for third-party content or practices.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Changes & Termination</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Changes & Termination</h2>
             <p>We may modify these terms at any time. Continued use after changes constitutes acceptance. We reserve the right to terminate access for violations without notice.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Governing Law</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Governing Law</h2>
             <p>These terms are governed by the laws of Canada and the Province of Ontario. Disputes should first be addressed through good-faith communication.</p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-2 text-gray-200">Contact</h2>
+            <h2 className="text-xl font-semibold mb-2 text-gray-200">Contact</h2>
             <p>Questions about these terms:</p>
             <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm hover:underline">
               contact@stellarbladeguide.com
