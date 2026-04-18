@@ -8,7 +8,6 @@ export interface CommentData {
   id: number
   content_type: string
   content_id: number
-  contentName?: string
   parent_id: number | null
   body: string
   is_deleted: boolean
@@ -22,8 +21,7 @@ interface CommentProps {
   comment: CommentData
   contentType: string
   contentId: number
-  contentName?: string
-  onReply: (parentId: number, body: string, contentName?: string) => Promise<void>
+  onReply: (parentId: number, body: string) => Promise<void>
   onEdit: (commentId: number, body: string) => Promise<void>
   onDelete: (commentId: number) => Promise<void>
   depth?: number
@@ -45,7 +43,6 @@ export default function Comment({
   comment,
   contentType,
   contentId,
-  contentName,
   onReply,
   onEdit,
   onDelete,
@@ -67,7 +64,7 @@ export default function Comment({
   const hasReplies = comment.replies && comment.replies.length > 0
 
   const handleReply = async (body: string) => {
-    await onReply(comment.id, body, contentName)
+    await onReply(comment.id, body)
     setShowReplyForm(false)
   }
 
@@ -225,7 +222,6 @@ export default function Comment({
               comment={reply}
               contentType={contentType}
               contentId={contentId}
-              contentName={contentName}
               onReply={onReply}
               onEdit={onEdit}
               onDelete={onDelete}

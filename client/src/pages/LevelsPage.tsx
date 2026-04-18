@@ -349,7 +349,7 @@ if (isLoading) {
                 )}
               </div>
             </div>
-            <CommentSection contentType="level" contentId={locationData[0].level_id} contentName={displayLevelName} />
+            <CommentSection contentType="level" contentId={locationData[0].level_id} />
           </div>
         </div>
       </div>
