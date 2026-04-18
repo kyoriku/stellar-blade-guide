@@ -38,10 +38,10 @@ export function useComments(contentType: string, contentId: number) {
   /**
    * Post a top-level comment. Appends the server response to the cache.
    */
-  const postComment = async (body: string, contentName?: string): Promise<void> => {
+  const postComment = async (body: string): Promise<void> => {
     const res = await authFetch(`${API_BASE_URL}/comments/`, {
       method: 'POST',
-      body: JSON.stringify({ content_type: contentType, content_id: contentId, body, content_name: contentName }),
+      body: JSON.stringify({ content_type: contentType, content_id: contentId, body }),
     })
     if (!res.ok) {
       const err = await res.json()
@@ -54,10 +54,10 @@ export function useComments(contentType: string, contentId: number) {
   /**
    * Post a reply. Appends the server response into the parent comment's replies.
    */
-  const postReply = async (parentId: number, body: string, contentName?: string): Promise<void> => {
+  const postReply = async (parentId: number, body: string): Promise<void> => {
     const res = await authFetch(`${API_BASE_URL}/comments/`, {
       method: 'POST',
-      body: JSON.stringify({ content_type: contentType, content_id: contentId, parent_id: parentId, body, content_name: contentName }),
+      body: JSON.stringify({ content_type: contentType, content_id: contentId, parent_id: parentId, body }),
     })
     if (!res.ok) {
       const err = await res.json()
