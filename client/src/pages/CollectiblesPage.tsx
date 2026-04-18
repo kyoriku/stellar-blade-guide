@@ -677,7 +677,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
                 )}
               </div>
             </div>
-            <CommentSection contentType="collectible" contentId={levelData[0].type_id} contentName={displayTypeName} />
+            <CommentSection contentType="collectible" contentId={levelData[0].type_id} />
           </div>
         </div>
       </div>
