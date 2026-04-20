@@ -85,8 +85,8 @@ def get_client_ip(request: Request) -> str:
     return request.client.host
 
 
-# Paths that look like normal URL segments (letters, digits, hyphens, slashes)
-SPA_SAFE_PATH = re.compile(r'^/[a-z0-9\-/]*$')
+# Paths that look like normal URL segments (letters, digits, hyphens, slashes — no empty segments)
+SPA_SAFE_PATH = re.compile(r'^/(?:[a-z0-9\-]+/?)*$')
 
 
 async def bot_filter_middleware(request: Request, call_next):
