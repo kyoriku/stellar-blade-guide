@@ -43,7 +43,8 @@ async def seed_database():
                 Level(name='Abyss Levoire', display_order=7),
                 Level(name='Eidos 9', display_order=8),
                 Level(name='Spire 4', display_order=9),
-                Level(name='Boss Challenge', display_order=10),  # Pseudo-level for boss challenge collectibles
+                Level(name='Nest', display_order=10),
+                Level(name='Boss Challenge', display_order=11),  # Pseudo-level for boss challenge collectibles
             ]
             
             session.add_all(levels_data)
@@ -126,6 +127,7 @@ async def seed_database():
                 Location(level_id=levels['Wasteland'].id, name='Wasteland Basin', display_order=6),
                 Location(level_id=levels['Wasteland'].id, name='Plant', display_order=7),
                 Location(level_id=levels['Wasteland'].id, name='Forbidden Area', display_order=8),
+                Location(level_id=levels['Wasteland'].id, name='Hidden Canyon', display_order=9),
 
                 # Altess Levoire
                 Location(level_id=levels['Altess Levoire'].id, name='Research Lab Entrance', display_order=1),
@@ -136,6 +138,7 @@ async def seed_database():
                 Location(level_id=levels['Altess Levoire'].id, name='Top Secret Research Complex', display_order=6),
                 Location(level_id=levels['Altess Levoire'].id, name='Deteriorated Lobby', display_order=7),
                 Location(level_id=levels['Altess Levoire'].id, name='Air Vent', display_order=8),
+                Location(level_id=levels['Altess Levoire'].id, name='Heart of the Infection', display_order=9),
 
                 # Matrix 11
                 Location(level_id=levels['Matrix 11'].id, name='Closed Off Platform', display_order=1),
@@ -145,6 +148,7 @@ async def seed_database():
                 Location(level_id=levels['Matrix 11'].id, name='Rotten Labyrinth', display_order=5),
                 Location(level_id=levels['Matrix 11'].id, name='Temporary Armoury', display_order=6),
                 Location(level_id=levels['Matrix 11'].id, name='Train Graveyard', display_order=7),
+                Location(level_id=levels['Matrix 11'].id, name='Contaminated Water Purification Plant', display_order=8),
 
                 # Great Desert
                 Location(level_id=levels['Great Desert'].id, name='Solar Tower', display_order=1),
@@ -160,6 +164,7 @@ async def seed_database():
                 Location(level_id=levels['Abyss Levoire'].id, name='Capsule Cluster Room', display_order=3),
                 Location(level_id=levels['Abyss Levoire'].id, name='Underground Passage', display_order=4),
                 Location(level_id=levels['Abyss Levoire'].id, name='Laboratory Ruins', display_order=5),
+                Location(level_id=levels['Abyss Levoire'].id, name='Heart of the Contamination', display_order=6),
 
                 # Eidos 9
                 Location(level_id=levels['Eidos 9'].id, name='Fallen Overpass', display_order=1),
@@ -178,7 +183,9 @@ async def seed_database():
                 Location(level_id=levels['Spire 4'].id, name='Prestige Lounge', display_order=9),
                 Location(level_id=levels['Spire 4'].id, name='Vermillion Garden', display_order=10),
                 Location(level_id=levels['Spire 4'].id, name='High Orbit Station', display_order=11),
-                Location(level_id=levels['Spire 4'].id, name='Nest', display_order=12),
+                
+                # Nest
+                Location(level_id=levels['Nest'].id, name='Nest', display_order=1),
 
                 # Boss Challenge
                 Location(level_id=levels['Boss Challenge'].id, name='Boss Challenge', display_order=1),
