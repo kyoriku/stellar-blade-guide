@@ -16,6 +16,7 @@ export const LEVEL_IMAGES: Record<string, string> = {
   'abyss-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765220924/stellar-blade/collectibles/abyss-levoire/emergency-exit/1-supply-camp.jpg',
   'eidos-9': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221128/stellar-blade/collectibles/eidos-9/fallen-overpass/1-locked-supply-chest.jpg',
   'spire-4': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221730/stellar-blade/collectibles/spire-4/orca-space-complex/1-legion-camp-space-complex-entryway.jpg',
+  'nest': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221722/stellar-blade/collectibles/spire-4/nest/2-supply-camp-nest.jpg',
 };
 
 export const COLLECTIBLE_IMAGES: Record<string, string> = {
@@ -30,7 +31,9 @@ export const COLLECTIBLE_IMAGES: Record<string, string> = {
 export const UPGRADE_IMAGES: Record<string, string> = {
   'beta-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg',
   'body-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221082/stellar-blade/collectibles/eidos-7/parking-tower/1-body-core-1-2.jpg',
+  'weapon-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1776717957/stellar-blade/eidos-7/crater/stellar-blade-20251205213635.jpg',
   'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1773965485/stellar-blade/eidos-7/parking-tower/stellar-blade-20260319190946.jpg',
+  'gear': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1776717958/stellar-blade/eidos-7/crater/stellar-blade-20251205213644.jpg',
   'tumbler-expansion-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
   'drone-upgrade-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221075/stellar-blade/collectibles/eidos-7/parking-tower/15-robot-2.jpg',
 };
@@ -46,7 +49,7 @@ export const COSMETIC_IMAGES: Record<string, string> = {
 };
 
 export const MATERIAL_IMAGES: Record<string, string> = {
-  'supply-boxes': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221108/stellar-blade/collectibles/eidos-7/silent-street/6-crate-2.jpg',
-  'supply-chests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221074/stellar-blade/collectibles/eidos-7/parking-tower/14-locked-chest-2.jpg',
+  'supply-boxes': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221139/stellar-blade/collectibles/eidos-9/fallen-overpass/27-legion-supply-box.jpg',
+  'supply-chests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221128/stellar-blade/collectibles/eidos-9/fallen-overpass/1-locked-supply-chest.jpg',
   'items': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
 };
