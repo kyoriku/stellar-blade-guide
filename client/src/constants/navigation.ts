@@ -16,25 +16,26 @@ export const LEVELS = [
   { slug: 'abyss-levoire', name: 'Abyss Levoire' },
   { slug: 'eidos-9', name: 'Eidos 9' },
   { slug: 'spire-4', name: 'Spire 4' },
+  { slug: 'nest', name: 'Nest' },
 ] as const;
 
 export const COLLECTIBLES = [
-  { slug: 'camps', name: 'Camps' },
   { slug: 'cans', name: 'Cans' },
   { slug: 'documents', name: 'Documents' },
   { slug: 'memorysticks', name: 'Memorysticks' },
   { slug: 'passcodes', name: 'Passcodes' },
+  { slug: 'camps', name: 'Camps' },
 ] as const;
 
 export const UPGRADES = [
   { slug: 'beta-cores', name: 'Beta Cores' },
   { slug: 'body-cores', name: 'Body Cores' },
+  { slug: 'weapon-cores', name: 'Weapon Cores' },
   { slug: 'exospines', name: 'Exospines' },
+  { slug: 'gear', name: 'Gear' },
   { slug: 'tumbler-expansion-modules', name: 'Tumbler Expansion Modules' },
   { slug: 'drone-upgrade-modules', name: 'Drone Upgrade Modules' },
-  // { slug: 'weapon-cores', name: 'Weapon Cores' },
-  // { slug: 'gear', name: 'Gear' },
-] as const;
+]
 
 export const MATERIALS = [
   { slug: 'supply-boxes', name: 'Supply Boxes' },

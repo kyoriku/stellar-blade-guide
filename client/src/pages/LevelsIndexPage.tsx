@@ -37,7 +37,7 @@ export default function LevelsIndexPage() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">Levels</h1>
           <p className="text-gray-300 mt-2 max-w-3xl">
-            All 9 levels in Stellar Blade with every collectible organized by location. Each level page includes Camps, Cans, Documents, Memorysticks, Nano Suits, and more - with screenshots and detailed directions.
+            All 10 levels in Stellar Blade with every collectible organized by location. Each level page includes Camps, Cans, Documents, Memorysticks, Nano Suits, and more - with screenshots and detailed directions.
           </p>
         </div>
 

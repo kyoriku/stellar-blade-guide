@@ -97,7 +97,14 @@ function CollectibleSection({
                       </span>
                     )}
                     <h2 className="text-xl font-semibold text-gray-100 leading-tight">
-                      {collectible.title}
+                      {collectible.title.includes(' / ') ? (
+                        collectible.title.split(' / ').map((part, i, arr) => (
+                          <span key={i}>
+                            {part}
+                            {i < arr.length - 1 && <span className="text-gray-400 font-normal mx-1"> / </span>}
+                          </span>
+                        ))
+                      ) : collectible.title}
                       {collectible.quantity > 1 && (
                         <span className="ml-2 text-base font-medium text-cyan-400">x{collectible.quantity}</span>
                       )}
