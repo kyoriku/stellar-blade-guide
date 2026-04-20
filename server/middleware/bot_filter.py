@@ -18,8 +18,51 @@ ALLOWED_EXACT = {
     '/sitemap.xml',
 }
 
-# Paths that look like normal URL segments (letters, digits, hyphens, slashes)
-SPA_SAFE_PATH = re.compile(r'^/[a-z0-9\-/]*$')
+# Pure bot-signature path prefixes that pass the regex but are never legitimate
+BOT_SIGNATURES = (
+    # WordPress
+    '/wp-admin',
+    '/wp-content',
+    '/wp-includes',
+    '/wp-login',
+    '/wp-json',
+    '/wp-config',
+    '/wordpress',
+
+    # Other CMS admin panels
+    '/phpmyadmin',
+    '/administrator',    # Joomla
+    '/typo3',            # TYPO3
+    '/ghost',            # Ghost CMS
+    '/drupal',
+    '/joomla',
+    '/magento',
+
+    # Framework / stack probes
+    '/laravel',
+    '/symfony',
+    '/codeigniter',
+    '/kubernetes',
+    '/terraform',
+    '/jenkins',
+
+    # System/config probes (lowercase versions that regex misses)
+    '/etc/',
+    '/proc/',
+    '/var/',
+    '/tmp/',
+    '/actuator',         # Spring Boot actuator
+    '/server-status',
+    '/server-info',
+    '/xmlrpc',
+
+    # Common attack endpoints
+    '/shell',
+    '/cmd',
+    '/webshell',
+    '/backdoor',
+    '/phpinfo',
+)
 
 
 def is_localhost(ip: str) -> bool:
@@ -42,6 +85,10 @@ def get_client_ip(request: Request) -> str:
     return request.client.host
 
 
+# Paths that look like normal URL segments (letters, digits, hyphens, slashes)
+SPA_SAFE_PATH = re.compile(r'^/[a-z0-9\-/]*$')
+
+
 async def bot_filter_middleware(request: Request, call_next):
     original_path = request.url.path
     normalized = original_path.lower().rstrip('/') or '/'
@@ -50,14 +97,14 @@ async def bot_filter_middleware(request: Request, call_next):
     if is_localhost(get_client_ip(request)):
         return await call_next(request)
 
-    # Reject path traversal attempts
-    if '..' in normalized:
-        request.state.bot_blocked = True
-        return JSONResponse(status_code=404, content={"error": "Not Found"})
-
     # Allow API, static assets, and SEO files (case-sensitive)
     if original_path.startswith(ALLOWED_PREFIXES) or original_path in ALLOWED_EXACT:
         return await call_next(request)
+
+    # Block known bot-signature paths (checked before regex since they'd otherwise pass)
+    if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
+        request.state.bot_blocked = True
+        return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow normal-shaped URLs through to React Router
     if SPA_SAFE_PATH.match(normalized):
