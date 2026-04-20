@@ -82,8 +82,6 @@ if os.path.exists(CLIENT_DIST):
 
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str):
-        if full_path.startswith('api/'):
-            return Response(status_code=404)
         file_path = os.path.join(CLIENT_DIST, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
