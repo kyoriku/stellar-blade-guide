@@ -50,6 +50,21 @@ function WalkthroughPage() {
     }
   }, [walkthrough]);
 
+  // Scroll to hash on load
+  useEffect(() => {
+    if (walkthrough && window.location.hash) {
+      const hash = decodeURIComponent(window.location.hash);
+      requestAnimationFrame(() => {
+        const el = document.getElementById(hash.substring(1));
+        if (el) {
+          const offset = 76;
+          const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top, behavior: 'instant' });
+        }
+      });
+    }
+  }, [walkthrough]);
+
   useEffect(() => {
     const observerOptions = {
       root: null,
