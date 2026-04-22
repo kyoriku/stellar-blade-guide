@@ -4,16 +4,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi import Request
 from middleware.bot_filter import get_client_ip
+from core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
 
 logger = logging.getLogger("api")
-
-# ANSI colors
-GREEN = "\033[92m"
-RED = "\033[91m"
-YELLOW = "\033[93m"
-CYAN = "\033[96m"
-GRAY = "\033[90m"
-RESET = "\033[0m"
 
 LOG_TZ = ZoneInfo("America/New_York")
 
