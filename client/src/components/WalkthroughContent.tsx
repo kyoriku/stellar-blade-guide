@@ -1,6 +1,7 @@
 import { type WalkthroughContent as WalkthroughContentType } from '../services/api'
 import { Lightbulb, AlertTriangle, Skull } from 'lucide-react'
 import ImageGallery from './ImageGallery'
+import { parseDescription } from '../utils/parseDescription'
 
 interface WalkthroughContentProps {
   content: WalkthroughContentType;
@@ -28,7 +29,7 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
         <div className="space-y-4 mb-4">
           {content.text.split('\n\n').map((paragraph, idx) => (
             <p key={idx} className="text-gray-300 leading-relaxed">
-              {paragraph}
+              {parseDescription(paragraph)}
             </p>
           ))}
         </div>
