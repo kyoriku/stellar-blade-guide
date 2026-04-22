@@ -179,7 +179,7 @@ function HomePage() {
             <div className="grid grid-cols-2 gap-3">
               <CategoryCard
                 title="Collectibles"
-                description="Cans, Camps, Documents, Memorysticks"
+                description="Cans, Documents, Memorysticks, Passcodes, Camps"
                 icon={<Compass size={18} />}
                 to="/collectibles"
                 count={COLLECTIBLES.length}
@@ -187,7 +187,7 @@ function HomePage() {
               />
               <CategoryCard
                 title="Upgrades"
-                description="Exospines, Beta Cores, Body Cores"
+                description="Beta Cores, Body Cores, Weapon Cores, Exospines, Gear, Tumbler Expansion Modules, Drone Upgrade Modules"
                 icon={<Zap size={18} />}
                 to="/upgrades"
                 count={UPGRADES.length}
@@ -195,7 +195,7 @@ function HomePage() {
               />
               <CategoryCard
                 title="Cosmetics"
-                description="Nano Suits, Glasses, Earrings, Hairstyles, Drone Appearances, and outfits for Lily and Adam"
+                description="Nano Suits, Glasses, Earrings, Hairstyles, Drone Appearances, Lily Outfits, Adam Outfits"
                 icon={<Sparkles size={18} />}
                 to="/cosmetics"
                 count={COSMETICS.length}
@@ -203,7 +203,7 @@ function HomePage() {
               />
               <CategoryCard
                 title="Materials"
-                description="Supply Boxes, Supply Chests, Items"
+                description="Supply Boxes, Supply Chests"
                 icon={<Box size={18} />}
                 to="/materials"
                 count={MATERIALS.length}
