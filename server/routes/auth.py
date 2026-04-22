@@ -29,12 +29,8 @@ from core.auth import (
 )
 from core.cache import redis_client
 from core.security import limiter
+from core.colours import CYAN, YELLOW, RED, RESET
 from config.settings import settings
-
-CYAN = "\033[96m"
-YELLOW = "\033[93m"
-RED = "\033[91m"
-RESET = "\033[0m"
 
 logger = logging.getLogger(__name__)
 
