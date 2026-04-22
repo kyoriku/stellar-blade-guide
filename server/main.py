@@ -9,6 +9,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from config.settings import settings
 from core.logging import setup_logging
 from core.cache import redis_client
+from core.colours import GREEN, RED, RESET
 from middleware.rate_limit import add_rate_limit_middleware
 from middleware.logging import add_logging_middleware
 from middleware.error_handler import add_error_handler_middleware
@@ -29,17 +30,17 @@ cloudinary.config(
 async def lifespan(app: FastAPI):
     try:
         await redis_client.ping()
-        print("\033[92m✓ Redis connection established\033[0m")
+        print(f"{GREEN}✓ Redis connection established{RESET}")
     except Exception as e:
-        print(f"\033[91m✗ Redis connection failed: {e}\033[0m")
+        print(f"{RED}✗ Redis connection failed: {e}{RESET}")
     try:
         yield
     finally:
         try:
             await redis_client.close()
-            print("\033[92m✓ Redis connection closed\033[0m")
+            print(f"{GREEN}✓ Redis connection closed{RESET}")
         except Exception as e:
-            print(f"\033[91m✗ Error closing Redis: {e}\033[0m")
+            print(f"{RED}✗ Error closing Redis: {e}{RESET}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -82,6 +83,9 @@ if os.path.exists(CLIENT_DIST):
 
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str):
+        # Unknown API paths should 404 instead of falling through to the SPA
+        if full_path.startswith('api/'):
+            return Response(status_code=404)
         file_path = os.path.join(CLIENT_DIST, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
