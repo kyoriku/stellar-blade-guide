@@ -14,12 +14,8 @@ from db.database import get_db
 from models.users import User
 from core.auth import get_current_user, require_role
 from core.security import limiter
+from core.colours import CYAN, YELLOW, RED, RESET
 from config.settings import settings
-
-CYAN = "\033[96m"
-YELLOW = "\033[93m"
-RED = "\033[91m"
-RESET = "\033[0m"
 
 logger = logging.getLogger(__name__)
 

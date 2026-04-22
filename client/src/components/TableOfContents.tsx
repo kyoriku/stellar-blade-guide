@@ -27,7 +27,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
   const [isOpen, setIsOpen] = useState(false);
 
   const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
+    const element = document.getElementById(href.substring(1));
     if (element) {
       const offset = 76;
       const elementPosition = element.getBoundingClientRect().top;

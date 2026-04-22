@@ -4,16 +4,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi import Request
 from middleware.bot_filter import get_client_ip
+from core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
 
 logger = logging.getLogger("api")
-
-# ANSI colors
-GREEN = "\033[92m"
-RED = "\033[91m"
-YELLOW = "\033[93m"
-CYAN = "\033[96m"
-GRAY = "\033[90m"
-RESET = "\033[0m"
 
 LOG_TZ = ZoneInfo("America/New_York")
 
@@ -82,7 +75,7 @@ async def log_requests_middleware(request: Request, call_next):
 
     # Fixed-width columns 
     log_parts = [
-        f'{datetime.now(LOG_TZ).strftime("%H:%M:%S")} · {client_ip:<15} → {request.method:<6}',
+        f'{datetime.now(LOG_TZ).strftime("%m-%d %H:%M:%S")} · {client_ip:<15} → {request.method:<6}',
         color_status(response.status_code),
         color_duration(duration_ms),
         color_cache(cache_status) if cache_status else '    ',

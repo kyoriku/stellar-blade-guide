@@ -14,13 +14,9 @@ from models.comments import Comment
 from models.users import User
 from core.auth import get_current_user
 from core.security import limiter
+from core.colours import CYAN, YELLOW, RESET
 from config.settings import settings
 from openai import AsyncOpenAI
-
-CYAN = "\033[96m"
-YELLOW = "\033[93m"
-RED = "\033[91m"
-RESET = "\033[0m"
 
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
