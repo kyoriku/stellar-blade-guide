@@ -27,11 +27,29 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
         )}
 
         <div className="space-y-4 mb-4">
-          {content.text.split('\n\n').map((paragraph, idx) => (
-            <p key={idx} className="text-gray-300 leading-relaxed">
-              {parseDescription(paragraph)}
-            </p>
-          ))}
+          {content.text.split('\n\n').map((block, idx) => {
+            const lines = block.split('\n');
+            const isList = lines.length > 1 && lines.every(line => line.startsWith('- '));
+
+            if (isList) {
+              return (
+                <ul key={idx} className="space-y-1.5">
+                  {lines.map((line, lineIdx) => (
+                    <li key={lineIdx} className="flex gap-2 text-gray-300 leading-relaxed">
+                      <span className="text-cyan-400 font-bold">•</span>
+                      <span className="flex-1">{parseDescription(line.slice(2))}</span>
+                    </li>
+                  ))}
+                </ul>
+              );
+            }
+
+            return (
+              <p key={idx} className="text-gray-300 leading-relaxed">
+                {parseDescription(block)}
+              </p>
+            );
+          })}
         </div>
 
         {content.tip && (
