@@ -2,6 +2,7 @@ import os
 import uuid
 import logging
 import jwt
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -50,8 +51,11 @@ def create_refresh_token() -> str:
 
 # Redis helpers
 
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
 def _refresh_key(user_id: int, token: str) -> str:
-    return f"refresh:{user_id}:{token}"
+    return f"refresh:{user_id}:{_hash_token(token)}"
 
 
 async def store_refresh_token(user_id: int, token: str) -> None:
