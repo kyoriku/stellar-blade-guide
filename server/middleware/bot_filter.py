@@ -8,9 +8,6 @@ LOCALHOST_IPS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 ALLOWED_PREFIXES = (
     '/api/',
     '/assets/',
-    '/docs',
-    '/redoc',
-    '/openapi.json',
 )
 
 ALLOWED_EXACT = {
@@ -37,6 +34,7 @@ BOT_SIGNATURES = (
     '/drupal',
     '/joomla',
     '/magento',
+    '/admin/controller',
 
     # Framework / stack probes
     '/laravel',
@@ -55,6 +53,29 @@ BOT_SIGNATURES = (
     '/server-status',
     '/server-info',
     '/xmlrpc',
+    '/kubeconfig',
+
+    # API docs / dev tools probes
+    '/swagger',
+    '/scalar',
+    '/v3/api-docs',
+    '/api-docs',
+    '/docs',           # FastAPI Swagger UI
+    '/redoc',          # FastAPI ReDoc UI
+    '/graphql',
+    '/graphiql',
+    '/playground',
+    '/graphql-playground',
+    '/voyager',
+    '/mini-profiler-resources',
+    '/debug',
+
+    # Spring Boot / k8s management
+    '/manage',
+    '/management',
+    '/healthz',
+    '/livez',
+    '/readyz',
 
     # Common attack endpoints
     '/shell',
@@ -62,6 +83,12 @@ BOT_SIGNATURES = (
     '/webshell',
     '/backdoor',
     '/phpinfo',
+
+    # Directory listing probes
+    '/static',
+    '/content',
+    '/files',
+    '/uploads',
 )
 
 
