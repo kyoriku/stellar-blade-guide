@@ -7,7 +7,7 @@ export function parseDescription(text: string) {
     const match = part.match(/^\[\[(.+?)\|(.+?)\]\]$/);
     if (match) {
       return <Link key={ i } to = {`/${match[1]}`
-    } className = "text-cyan-400 hover:text-cyan-300 transition-colors" > { match[2]} </Link>;
+    } className = "text-cyan-400 hover:text-cyan-300 transition-colors" > { match[2]}</Link>;
   }
     return part;
 });
