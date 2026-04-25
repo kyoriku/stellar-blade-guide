@@ -96,7 +96,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
   }
 
   function slugifyTitle(title: string): string {
-    return title.toLowerCase().replace(/[^a-z0-9\u0370-\u03ff]+/g, '-').replace(/(^-|-$)/g, '');
+    return title.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9\u0370-\u03ff]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
   // Find current and next type - use the appropriate array based on category
