@@ -32,8 +32,8 @@ function PrefetchableLink({ to, className, children }: Props) {
   const handleIntent = () => {
     const target = parsePrefetchTarget(to);
     if (!target) return;
-    if (target.kind === 'type') prefetchCollectiblesByType(target.typeName, target.category);
-    else prefetchLevel(target.levelName);
+    if (target.kind === 'type') prefetchCollectiblesByType(target.typeName, target.category, target.anchor);
+    else prefetchLevel(target.levelName, target.anchor);
   };
 
   return (
