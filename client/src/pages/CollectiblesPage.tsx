@@ -13,6 +13,7 @@ import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton
 import { COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
+import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { useProgress } from '../hooks/useProgress'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -95,10 +96,6 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
     setSortMode('default');
   }
 
-  function slugifyTitle(title: string): string {
-    return title.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9\u0370-\u03ff]+/g, '-').replace(/(^-|-$)/g, '');
-  }
-
   // Find current and next type - use the appropriate array based on category
   const typeArray = category === 'upgrades' ? upgradeTypes
     : category === 'materials' ? materialTypes
@@ -155,23 +152,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
       level.locations.flatMap(loc => loc.collectibles)
     );
 
-    const slugCounts: Record<string, number> = {};
-    for (const c of allCollectibles) {
-      const base = slugifyTitle(c.title);
-      slugCounts[base] = (slugCounts[base] || 0) + 1;
-    }
-
-    const slugUsed: Record<string, number> = {};
-    const slugMap = new Map<number, string>();
-    for (const c of allCollectibles) {
-      const base = slugifyTitle(c.title);
-      if (slugCounts[base] > 1) {
-        slugUsed[base] = (slugUsed[base] || 0) + 1;
-        slugMap.set(c.id, `${base}-${slugUsed[base]}`);
-      } else {
-        slugMap.set(c.id, base);
-      }
-    }
+    const slugMap = buildSlugMap(allCollectibles);
 
     // Apply slugs to all collectibles
     const dataWithSlugs = filteredLevelData.map(level => ({

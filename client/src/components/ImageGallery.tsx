@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import { type CollectibleImage } from '../services/api'
 import { ZoomIn, Image as ImageIcon } from 'lucide-react'
+import { loadedUrlCache } from '../utils/imageCache'
+import { thumbnailUrl } from '../utils/cloudinary'
 
 interface ImageGalleryProps {
   images: CollectibleImage[];
   onImageClick?: (imageUrl: string) => void;
 }
 
-const loadedUrlCache = new Set<string>();
-
 function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(() => {
     const cached = new Set<number>();
     images.forEach(img => {
-      if (loadedUrlCache.has(img.url)) {
+      if (loadedUrlCache.has(thumbnailUrl(img.url))) {
         cached.add(img.id);
       }
     });
@@ -51,10 +51,10 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
             )}
 
             <img
-              src={image.url}
+              src={thumbnailUrl(image.url)}
               alt={image.alt}
               className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-              onLoad={() => handleImageLoad(image.id, image.url)}
+              onLoad={() => handleImageLoad(image.id, thumbnailUrl(image.url))}
               loading="lazy"
             />
 
