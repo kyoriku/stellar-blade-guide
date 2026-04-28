@@ -66,7 +66,7 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
   const scrollToSection = (href: string) => {
     const element = document.getElementById(href.substring(1));
     if (element) {
-      const offset = 80
+      const offset = 76
       const top = element.getBoundingClientRect().top + window.pageYOffset - offset
       window.scrollTo({ top, behavior: 'instant' })
       history.replaceState(null, '', href)
