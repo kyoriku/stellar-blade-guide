@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
@@ -216,17 +216,15 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
   }, [filteredLevelData, sortMode]);
 
   // Scroll to hash on load once data is ready
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (levelData.length > 0 && window.location.hash) {
       const hash = decodeURIComponent(window.location.hash);
-      requestAnimationFrame(() => {
-        const el = document.getElementById(hash.substring(1));
-        if (el) {
-          const offset = 76;
-          const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
-          window.scrollTo({ top, behavior: 'instant' });
-        }
-      });
+      const el = document.getElementById(hash.substring(1));
+      if (el) {
+        const offset = 76;
+        const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top, behavior: 'instant' });
+      }
     }
   }, [levelData]);
 
