@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
@@ -72,17 +72,15 @@ function LevelPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (locationData.length > 0 && window.location.hash) {
       const hash = window.location.hash;
-      requestAnimationFrame(() => {
-        const el = document.querySelector(hash);
-        if (el) {
-          const offset = 80;
-          const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
-          window.scrollTo({ top, behavior: 'instant' });
-        }
-      });
+      const el = document.querySelector(hash);
+      if (el) {
+        const offset = 76;
+        const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top, behavior: 'instant' });
+      }
     }
   }, [locationData]);
 
