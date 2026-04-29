@@ -7,16 +7,16 @@ export const WALKTHROUGH_IMAGES: Record<string, string> = {
 };
 
 export const LEVEL_IMAGES: Record<string, string> = {
-  'eidos-7': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1769735055/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221942.jpg',
-  'xion': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765222145/stellar-blade/collectibles/xion/xion/1-supply-camp-1.jpg',
-  'wasteland': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221844/stellar-blade/collectibles/wasteland/barren-lands/1-supply-camp-hidden-path-1.jpg',
-  'altess-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765220963/stellar-blade/collectibles/altess-levoire/research-lab-entrance/1-document-messages-you-are-fake.jpg',
-  'matrix-11': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221567/stellar-blade/collectibles/matrix-11/closed-off-platform/1-supply-camp.jpg',
-  'great-desert': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221519/stellar-blade/collectibles/great-desert/solar-tower/1-supply-camp-great-desert-1.jpg',
-  'abyss-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765220924/stellar-blade/collectibles/abyss-levoire/emergency-exit/1-supply-camp.jpg',
-  'eidos-9': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221128/stellar-blade/collectibles/eidos-9/fallen-overpass/1-locked-supply-chest.jpg',
-  'spire-4': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221730/stellar-blade/collectibles/spire-4/orca-space-complex/1-legion-camp-space-complex-entryway.jpg',
-  'nest': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221722/stellar-blade/collectibles/spire-4/nest/2-supply-camp-nest.jpg',
+  'eidos-7': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1769735055/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221942.jpg',
+  'xion': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765222145/stellar-blade/collectibles/xion/xion/1-supply-camp-1.jpg',
+  'wasteland': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221844/stellar-blade/collectibles/wasteland/barren-lands/1-supply-camp-hidden-path-1.jpg',
+  'altess-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765220963/stellar-blade/collectibles/altess-levoire/research-lab-entrance/1-document-messages-you-are-fake.jpg',
+  'matrix-11': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221567/stellar-blade/collectibles/matrix-11/closed-off-platform/1-supply-camp.jpg',
+  'great-desert': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221519/stellar-blade/collectibles/great-desert/solar-tower/1-supply-camp-great-desert-1.jpg',
+  'abyss-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765220924/stellar-blade/collectibles/abyss-levoire/emergency-exit/1-supply-camp.jpg',
+  'eidos-9': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221128/stellar-blade/collectibles/eidos-9/fallen-overpass/1-locked-supply-chest.jpg',
+  'spire-4': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221730/stellar-blade/collectibles/spire-4/orca-space-complex/1-legion-camp-space-complex-entryway.jpg',
+  'nest': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221722/stellar-blade/collectibles/spire-4/nest/2-supply-camp-nest.jpg',
 };
 
 export const COLLECTIBLE_IMAGES: Record<string, string> = {
