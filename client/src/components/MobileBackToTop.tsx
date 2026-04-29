@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { ArrowUp } from 'lucide-react'
 
 export default function MobileBackToTop({ onScrollToTop }: { onScrollToTop?: () => void }) {
-  const [visible, setVisible] = useState(() => window.scrollY > 500)
+  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    setVisible(window.scrollY > 500)
     const handleScroll = () => setVisible(window.scrollY > 500)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
