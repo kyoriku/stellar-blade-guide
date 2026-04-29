@@ -1,10 +1,17 @@
-import { Link } from 'react-router-dom';
-import { Map } from 'lucide-react';
-import { LEVELS } from '../constants/navigation';
-import { LEVEL_IMAGES } from '../constants/categoryImages';
-import { usePrefetch } from '../hooks/usePrefetch';
-import SEO from '../components/SEO';
-import StructuredData from '../components/StructuredData';
+import { Link } from "react-router-dom";
+import { Map } from "lucide-react";
+import { LEVELS } from "../constants/navigation";
+import { LEVEL_IMAGES } from "../constants/categoryImages";
+import { usePrefetch } from "../hooks/usePrefetch";
+import SEO from "../components/SEO";
+import StructuredData from "../components/StructuredData";
+
+const LEVELS_ITEM_LIST = LEVELS.map((level, i) => ({
+  "@type": "ListItem",
+  position: i + 1,
+  name: level.name,
+  url: `https://stellarbladeguide.com/levels/${level.slug}`,
+}));
 
 export default function LevelsIndexPage() {
   const { prefetchLevel } = usePrefetch();
@@ -16,28 +23,32 @@ export default function LevelsIndexPage() {
         description={`All ${LEVELS.length} levels in Stellar Blade with 800+ collectibles organized by location. Screenshots and guides for every item.`}
         canonical="/levels"
       />
+
       <StructuredData
         type="CollectionPage"
         headline="Stellar Blade Levels"
         description="Browse all Stellar Blade levels and find every collectible organized by location."
-        extraSchemas={[{
-          '@context': 'https://schema.org',
-          '@type': 'ItemList',
-          name: 'Stellar Blade Levels',
-          numberOfItems: LEVELS.length,
-          itemListElement: LEVELS.map((level, i) => ({
-            '@type': 'ListItem',
-            position: i + 1,
-            name: level.name,
-            url: `https://stellarbladeguide.com/levels/${level.slug}`
-          }))
-        }]}
+        extraSchemas={[
+          {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "Stellar Blade Levels",
+            numberOfItems: LEVELS.length,
+            itemListElement: LEVELS_ITEM_LIST,
+          },
+        ]}
       />
+
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">Levels</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">
+            Levels
+          </h1>
           <p className="text-gray-300 mt-2 max-w-3xl">
-            All 10 levels in Stellar Blade with every collectible organized by location. Each level page includes Camps, Cans, Documents, Memorysticks, Nano Suits, and more - with screenshots and detailed directions.
+            All 10 levels in Stellar Blade with every collectible organized by
+            location. Each level page includes Camps, Cans, Documents,
+            Memorysticks, Nano Suits, and more - with screenshots and detailed
+            directions.
           </p>
         </div>
 
@@ -46,25 +57,27 @@ export default function LevelsIndexPage() {
             <Link
               key={level.slug}
               to={`/levels/${level.slug}`}
-              onMouseEnter={() => prefetchLevel(level.slug)}
+              onMouseEnter={() => void prefetchLevel(level.slug)}
               className="group block"
             >
-              <div className="relative aspect-[4/3] sm:aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
+              <div
+                className="relative aspect-4/3 sm:aspect-video rounded-lg overflow-hidden border border-zinc-800
                             hover:border-zinc-600 transition-all duration-200
-                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
+              >
                 {LEVEL_IMAGES[level.slug] ? (
                   <img
                     src={LEVEL_IMAGES[level.slug]}
                     alt={level.name}
-                    fetchPriority='high'
                     className="w-full h-full object-cover"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-full h-full bg-tertiary flex items-center justify-center">
                     <Map className="w-12 h-12 text-zinc-700" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
                 <span className="absolute bottom-3 left-4 text-lg font-semibold text-white drop-shadow-lg">
                   {level.name}
                 </span>
