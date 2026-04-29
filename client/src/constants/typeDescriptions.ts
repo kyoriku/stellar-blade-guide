@@ -1,5 +1,5 @@
 export const TYPE_DESCRIPTIONS: Record<string, string> = {
-  'nano-suits': 'There are 125 Nano Suits in Stellar Blade across Base, NG+, NG++, and DLC. Most are found in collectible chests or purchased from shops, with some earned through quests and boss challenges. Collecting 30 unlocks the Nano Suit Collector trophy.',
+  'nano-suits': 'There are 126 Nano Suits in Stellar Blade across Base, NG+, NG++, and DLC. Most are found in collectible chests or purchased from shops, with some earned through quests and boss challenges. Collecting 30 unlocks the Nano Suit Collector trophy.',
   'cans': 'There are 49 Cans hidden across every level in Stellar Blade. Collecting all 49 and returning them to the Can Vending Machine in Xion rewards the Black Pearl Nano Suit.',
   'camps': 'Camps serve as rest points where Eve can save, fast travel, and replenish her Rechargeable Tumbler. Supply Camps also provide access to Repair Consoles for upgrading the drone and weapons. Finding all camps unlocks the Meticulous Explorer trophy.',
   'documents': 'There are 112 Documents scattered throughout Stellar Blade. These written records provide lore about the world, its factions, and the events leading up to the Naytiba invasion. They contribute toward the Records Collector trophy.',
