@@ -1,12 +1,19 @@
-import { Link } from 'react-router-dom';
-import { Book } from 'lucide-react';
-import { WALKTHROUGHS } from '../constants/navigation';
-import { WALKTHROUGH_IMAGES } from '../constants/categoryImages';
-import { usePrefetch } from '../hooks/usePrefetch';
-import SEO from '../components/SEO';
-import StructuredData from '../components/StructuredData';
+import { Link } from "react-router-dom";
+import { Book } from "lucide-react";
+import { WALKTHROUGHS } from "../constants/navigation";
+import { WALKTHROUGH_IMAGES } from "../constants/categoryImages";
+import { usePrefetch } from "../hooks/usePrefetch";
+import SEO from "../components/SEO";
+import StructuredData from "../components/StructuredData";
 
-export default function WalkthroughsIndexPage() {
+const WALKTHROUGHS_ITEM_LIST = WALKTHROUGHS.map((cat, i) => ({
+  "@type": "ListItem",
+  position: i + 1,
+  name: cat.name,
+  url: `https://stellarbladeguide.com/walkthroughs/${cat.slug}`,
+}));
+
+function WalkthroughsIndexPage() {
   const { prefetchWalkthroughsByType } = usePrefetch();
 
   return (
@@ -20,25 +27,26 @@ export default function WalkthroughsIndexPage() {
         type="CollectionPage"
         headline="Stellar Blade Walkthroughs"
         description={`Complete walkthrough guides for all Stellar Blade missions.`}
-        extraSchemas={[{
-          '@context': 'https://schema.org',
-          '@type': 'ItemList',
-          name: 'Stellar Blade Walkthrough Categories',
-          numberOfItems: WALKTHROUGHS.length,
-          itemListElement: WALKTHROUGHS.map((cat, i) => ({
-            '@type': 'ListItem',
-            position: i + 1,
-            name: cat.name,
-            url: `https://stellarbladeguide.com/walkthroughs/${cat.slug}`
-          }))
-        }]}
+        extraSchemas={[
+          {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "Stellar Blade Walkthrough Categories",
+            numberOfItems: WALKTHROUGHS.length,
+            itemListElement: WALKTHROUGHS_ITEM_LIST,
+          },
+        ]}
       />
 
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">Walkthroughs</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">
+            Walkthroughs
+          </h1>
           <p className="text-gray-300 mt-2 max-w-3xl">
-            Step-by-step walkthrough guides for Stellar Blade covering the main story, side quests, and more. Each guide includes screenshots, boss strategies, and tips.
+            Step-by-step walkthrough guides for Stellar Blade covering the main
+            story, side quests, and more. Each guide includes screenshots, boss
+            strategies, and tips.
           </p>
         </div>
 
@@ -50,22 +58,24 @@ export default function WalkthroughsIndexPage() {
               onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
               className="group block"
             >
-              <div className="relative aspect-[4/3] sm:aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
+              <div
+                className="relative aspect-4/3 sm:aspect-video rounded-lg overflow-hidden border border-zinc-800
                             hover:border-zinc-600 transition-all duration-200
-                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
+              >
                 {WALKTHROUGH_IMAGES[category.slug] ? (
                   <img
                     src={WALKTHROUGH_IMAGES[category.slug]}
                     alt={category.name}
-                    fetchPriority='high'
                     className="w-full h-full object-cover"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-full h-full bg-tertiary flex items-center justify-center">
                     <Book className="w-12 h-12 text-zinc-700" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
                 <span className="absolute bottom-3 left-4 text-lg font-semibold text-white drop-shadow-lg">
                   {category.name}
                 </span>
@@ -77,3 +87,5 @@ export default function WalkthroughsIndexPage() {
     </div>
   );
 }
+
+export default WalkthroughsIndexPage;

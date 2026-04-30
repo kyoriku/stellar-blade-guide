@@ -13,7 +13,7 @@ const LEVELS_ITEM_LIST = LEVELS.map((level, i) => ({
   url: `https://stellarbladeguide.com/levels/${level.slug}`,
 }));
 
-export default function LevelsIndexPage() {
+function LevelsIndexPage() {
   const { prefetchLevel } = usePrefetch();
 
   return (
@@ -89,3 +89,5 @@ export default function LevelsIndexPage() {
     </div>
   );
 }
+
+export default LevelsIndexPage;
