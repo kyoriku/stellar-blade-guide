@@ -1,9 +1,9 @@
 export const WALKTHROUGH_IMAGES: Record<string, string> = {
-  'main-story': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765223101/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.jpg',
-  'side-quests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
-  'bulletin-board-requests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
-  'bosses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
-  'fishing': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
+  'main-story': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765223101/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.jpg',
+  'side-quests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
+  'bulletin-board-requests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
+  'bosses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
+  'fishing': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
 };
 
 export const LEVEL_IMAGES: Record<string, string> = {
@@ -20,36 +20,36 @@ export const LEVEL_IMAGES: Record<string, string> = {
 };
 
 export const COLLECTIBLE_IMAGES: Record<string, string> = {
-  'camps': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221001/stellar-blade/collectibles/eidos-7/construction-zone/4-supply-camp-construction-zone.jpg',
-  'cans': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg',
-  'documents': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221101/stellar-blade/collectibles/eidos-7/silent-street/18-document-series-plastic-hearts-vol-3.jpg',
-  'memorysticks': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1764283145/stellar-blade/collectibles/eidos-7/silent-street/2-memorystick-legionnaire-451-s-resolution-2.jpg',
-  'passcodes': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221103/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-2.jpg',
-  'robots': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
+  'camps': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221001/stellar-blade/collectibles/eidos-7/construction-zone/4-supply-camp-construction-zone.jpg',
+  'cans': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg',
+  'documents': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221101/stellar-blade/collectibles/eidos-7/silent-street/18-document-series-plastic-hearts-vol-3.jpg',
+  'memorysticks': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1764283145/stellar-blade/collectibles/eidos-7/silent-street/2-memorystick-legionnaire-451-s-resolution-2.jpg',
+  'passcodes': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221103/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-2.jpg',
+  'robots': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
 };
 
 export const UPGRADE_IMAGES: Record<string, string> = {
-  'beta-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg',
-  'body-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221082/stellar-blade/collectibles/eidos-7/parking-tower/1-body-core-1-2.jpg',
+  'beta-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg',
+  'body-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221082/stellar-blade/collectibles/eidos-7/parking-tower/1-body-core-1-2.jpg',
   'weapon-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1776717957/stellar-blade/eidos-7/crater/stellar-blade-20251205213635.jpg',
-  'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1773965485/stellar-blade/eidos-7/parking-tower/stellar-blade-20260319190946.jpg',
-  'gear': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1776717958/stellar-blade/eidos-7/crater/stellar-blade-20251205213644.jpg',
-  'tumbler-expansion-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
-  'drone-upgrade-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221075/stellar-blade/collectibles/eidos-7/parking-tower/15-robot-2.jpg',
+  'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1773965485/stellar-blade/eidos-7/parking-tower/stellar-blade-20260319190946.jpg',
+  'gear': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1776717958/stellar-blade/eidos-7/crater/stellar-blade-20251205213644.jpg',
+  'tumbler-expansion-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
+  'drone-upgrade-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221075/stellar-blade/collectibles/eidos-7/parking-tower/15-robot-2.jpg',
 };
 
 export const COSMETIC_IMAGES: Record<string, string> = {
-  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774063994/stellar-blade/default/default/stellar-blade-20260320183427.jpg',
-  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774065213/stellar-blade/wasteland/scrap-yard/stellar-blade-20260320183820.jpg',
-  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1774063997/stellar-blade/eidos-7/construction-zone/stellar-blade-20260320183910.jpg',
-  'hairstyles': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775234963/stellar-blade/default/default/stellar-blade-20260402231657.jpg',
-  'drone-appearances': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775187873/stellar-blade/default/default/stellar-blade-20260402231441.jpg',
-  'lily-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775187874/stellar-blade/default/default/stellar-blade-20260402231457.jpg',
-  'adam-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1775187872/stellar-blade/default/default/stellar-blade-20260402231429.jpg',
+  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774063994/stellar-blade/default/default/stellar-blade-20260320183427.jpg',
+  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774065213/stellar-blade/wasteland/scrap-yard/stellar-blade-20260320183820.jpg',
+  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774063997/stellar-blade/eidos-7/construction-zone/stellar-blade-20260320183910.jpg',
+  'hairstyles': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775234963/stellar-blade/default/default/stellar-blade-20260402231657.jpg',
+  'drone-appearances': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187873/stellar-blade/default/default/stellar-blade-20260402231441.jpg',
+  'lily-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187874/stellar-blade/default/default/stellar-blade-20260402231457.jpg',
+  'adam-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187872/stellar-blade/default/default/stellar-blade-20260402231429.jpg',
 };
 
 export const MATERIAL_IMAGES: Record<string, string> = {
-  'supply-boxes': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221139/stellar-blade/collectibles/eidos-9/fallen-overpass/27-legion-supply-box.jpg',
-  'supply-chests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221128/stellar-blade/collectibles/eidos-9/fallen-overpass/1-locked-supply-chest.jpg',
-  'items': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_720,h_405/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
+  'supply-boxes': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221139/stellar-blade/collectibles/eidos-9/fallen-overpass/27-legion-supply-box.jpg',
+  'supply-chests': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221128/stellar-blade/collectibles/eidos-9/fallen-overpass/1-locked-supply-chest.jpg',
+  'items': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
 };
