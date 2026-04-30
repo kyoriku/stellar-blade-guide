@@ -1,10 +1,17 @@
-import { Link } from 'react-router-dom'
-import { UPGRADES } from '../constants/navigation'
-import { UPGRADE_IMAGES } from '../constants/categoryImages'
-import { Zap } from 'lucide-react'
-import { usePrefetch } from '../hooks/usePrefetch';
-import SEO from '../components/SEO'
-import StructuredData from '../components/StructuredData'
+import { Link } from "react-router-dom";
+import { UPGRADES } from "../constants/navigation";
+import { UPGRADE_IMAGES } from "../constants/categoryImages";
+import { Zap } from "lucide-react";
+import { usePrefetch } from "../hooks/usePrefetch";
+import SEO from "../components/SEO";
+import StructuredData from "../components/StructuredData";
+
+const UPGRADES_ITEM_LIST = UPGRADES.map((type, i) => ({
+  "@type": "ListItem",
+  position: i + 1,
+  name: type.name,
+  url: `https://stellarbladeguide.com/upgrades/${type.slug}`,
+}));
 
 function UpgradesIndexPage() {
   const { prefetchCollectiblesByType } = usePrefetch();
@@ -16,28 +23,31 @@ function UpgradesIndexPage() {
         description={`Browse all ${UPGRADES.length} upgrade types in Stellar Blade. Find every Beta Core, Body Core, and Exospine with screenshots and locations.`}
         canonical="/upgrades"
       />
+
       <StructuredData
         type="CollectionPage"
         headline="Stellar Blade Upgrades"
         description={`Browse all ${UPGRADES.length} upgrade types in Stellar Blade.`}
-        extraSchemas={[{
-          '@context': 'https://schema.org',
-          '@type': 'ItemList',
-          name: 'Stellar Blade Upgrade Types',
-          numberOfItems: UPGRADES.length,
-          itemListElement: UPGRADES.map((type, i) => ({
-            '@type': 'ListItem',
-            position: i + 1,
-            name: type.name,
-            url: `https://stellarbladeguide.com/upgrades/${type.slug}`
-          }))
-        }]}
+        extraSchemas={[
+          {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: "Stellar Blade Upgrade Types",
+            numberOfItems: UPGRADES.length,
+            itemListElement: UPGRADES_ITEM_LIST,
+          },
+        ]}
       />
+
       <div className="container mx-auto px-3 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">Upgrades</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">
+            Upgrades
+          </h1>
           <p className="text-gray-300 mt-2 max-w-3xl">
-            All upgrade items in Stellar Blade including Beta Cores, Body Cores, Exospines, Tumbler Expansion Modules, and Drone Upgrade Modules. These items enhance Eve's abilities and equipment.
+            All upgrade items in Stellar Blade including Beta Cores, Body Cores,
+            Exospines, Tumbler Expansion Modules, and Drone Upgrade Modules.
+            These items enhance Eve's abilities and equipment.
           </p>
         </div>
 
@@ -46,24 +56,29 @@ function UpgradesIndexPage() {
             <Link
               key={type.slug}
               to={`/upgrades/${type.slug}`}
-              onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
+              onMouseEnter={() =>
+                void prefetchCollectiblesByType(type.slug, "upgrades")
+              }
               className="group block"
             >
-              <div className="relative aspect-[4/3] sm:aspect-[16/9] rounded-lg overflow-hidden border border-zinc-800
+              <div
+                className="relative aspect-4/3 sm:aspect-video rounded-lg overflow-hidden border border-zinc-800
                             hover:border-zinc-600 transition-all duration-200
-                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
+              >
                 {UPGRADE_IMAGES[type.slug] ? (
                   <img
                     src={UPGRADE_IMAGES[type.slug]}
                     alt={type.name}
                     className="w-full h-full object-cover"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-full h-full bg-tertiary flex items-center justify-center">
                     <Zap className="w-12 h-12 text-zinc-700" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
                 <span className="absolute bottom-3 left-4 text-lg font-semibold text-white drop-shadow-lg">
                   {type.name}
                 </span>
@@ -73,7 +88,7 @@ function UpgradesIndexPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default UpgradesIndexPage
+export default UpgradesIndexPage;
