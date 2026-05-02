@@ -4,28 +4,38 @@ import { buildSlugMap } from '../utils/slugify'
 import { buildSrcSet, thumbnailUrl, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES } from '../utils/cloudinary'
 import { loadedUrlCache } from '../utils/imageCache'
 
+const ABOVE_FOLD_PREFETCH_COUNT = 3;
 const prefetchedImageUrls = new Set<string>();
 
 function prefetchImage(anchor: string | undefined, collectibles: { id: number; title: string; images: { url: string }[] }[]) {
-  if (!anchor) return;
-  const slugMap = buildSlugMap(collectibles);
-  const match = collectibles.find(c => slugMap.get(c.id) === anchor);
-  if (!match) return;
-  const imageCount = match.images.length;
-  const predictedWidth = predictRenderedWidth(imageCount, window.innerWidth, window.devicePixelRatio);
-  const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
-  for (const image of match.images) {
-    if (prefetchedImageUrls.has(image.url)) continue;
-    prefetchedImageUrls.add(image.url);
-    const predictedUrl = thumbnailUrl(image.url, predictedWidth);
-    loadedUrlCache.add(predictedUrl);
-    new Image().src = predictedUrl;
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.imageSrcset = buildSrcSet(image.url);
-    link.imageSizes = sizes;
-    document.head.appendChild(link);
+  let targets: typeof collectibles;
+  if (anchor) {
+    const slugMap = buildSlugMap(collectibles);
+    const match = collectibles.find(c => slugMap.get(c.id) === anchor);
+    if (!match) return;
+    targets = [match];
+  } else {
+    targets = collectibles.slice(0, ABOVE_FOLD_PREFETCH_COUNT);
+  }
+
+  for (const collectible of targets) {
+    const imageCount = collectible.images.length;
+    if (!imageCount) continue;
+    const predictedWidth = predictRenderedWidth(imageCount, window.innerWidth, window.devicePixelRatio);
+    const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
+    for (const image of collectible.images) {
+      if (prefetchedImageUrls.has(image.url)) continue;
+      prefetchedImageUrls.add(image.url);
+      const predictedUrl = thumbnailUrl(image.url, predictedWidth);
+      loadedUrlCache.add(predictedUrl);
+      new Image().src = predictedUrl;
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.imageSrcset = buildSrcSet(image.url);
+      link.imageSizes = sizes;
+      document.head.appendChild(link);
+    }
   }
 }
 
