@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { type CollectibleImage } from '../services/api'
 import { ZoomIn, Image as ImageIcon } from 'lucide-react'
 import { loadedUrlCache } from '../utils/imageCache'
-import { thumbnailUrl } from '../utils/cloudinary'
+import { thumbnailUrl, buildSrcSet, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES } from '../utils/cloudinary'
 
 interface ImageGalleryProps {
   images: CollectibleImage[];
@@ -11,9 +11,12 @@ interface ImageGalleryProps {
 
 function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(() => {
+    const validCount = images.filter(img => img.url && img.alt).length;
+    if (!validCount) return new Set<number>();
+    const predictedWidth = predictRenderedWidth(validCount, window.innerWidth, window.devicePixelRatio);
     const cached = new Set<number>();
     images.forEach(img => {
-      if (loadedUrlCache.has(thumbnailUrl(img.url))) {
+      if (img.url && img.alt && loadedUrlCache.has(thumbnailUrl(img.url, predictedWidth))) {
         cached.add(img.id);
       }
     });
@@ -22,8 +25,8 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
 
   const [hoveredImage, setHoveredImage] = useState<number | null>(null);
 
-  const handleImageLoad = (imageId: number, imageUrl: string) => {
-    loadedUrlCache.add(imageUrl);
+  const handleImageLoad = (imageId: number, e: React.SyntheticEvent<HTMLImageElement>) => {
+    loadedUrlCache.add(e.currentTarget.currentSrc);
     setLoadedImages(prev => new Set(prev).add(imageId));
   };
 
@@ -31,8 +34,11 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
 
   if (!validImages.length) return null;
 
+  const isSingle = validImages.length === 1;
+  const sizes = isSingle ? SINGLE_SIZES : GRID_SIZES;
+
   return (
-    <div className={`grid gap-3 ${validImages.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
+    <div className={`grid gap-3 ${isSingle ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
       {validImages.map((image) => {
         const isLoaded = loadedImages.has(image.id);
 
@@ -51,10 +57,12 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
             )}
 
             <img
-              src={thumbnailUrl(image.url)}
+              src={thumbnailUrl(image.url, isSingle ? 1200 : 960)}
+              srcSet={buildSrcSet(image.url)}
+              sizes={sizes}
               alt={image.alt}
               className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-              onLoad={() => handleImageLoad(image.id, thumbnailUrl(image.url))}
+              onLoad={(e) => handleImageLoad(image.id, e)}
               loading="lazy"
             />
 
