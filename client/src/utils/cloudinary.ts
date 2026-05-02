@@ -31,13 +31,13 @@ function getCssWidth(imageCount: number, viewportWidth: number): number {
   if (imageCount === 0) return GALLERY_WIDTHS[0];
   if (viewportWidth < 640) return Math.max(1, viewportWidth - 48);
   if (imageCount === 1) {
-    if (viewportWidth < 768)  return 592;
+    if (viewportWidth < 768) return 592;
     if (viewportWidth < 1024) return 696;
     if (viewportWidth < 1280) return 664;
     if (viewportWidth < 1536) return 920;
     return 1176;
   }
-  if (viewportWidth < 768)  return 290;
+  if (viewportWidth < 768) return 290;
   if (viewportWidth < 1024) return 342;
   if (viewportWidth < 1280) return 326;
   if (viewportWidth < 1536) return 454;
