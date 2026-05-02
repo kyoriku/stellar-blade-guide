@@ -1,20 +1,31 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { api, type LevelWithLocations, type LocationWithCollectibles } from '../services/api'
-import { loadedUrlCache } from '../utils/imageCache'
 import { buildSlugMap } from '../utils/slugify'
-import { thumbnailUrl } from '../utils/cloudinary'
+import { buildSrcSet, thumbnailUrl, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES } from '../utils/cloudinary'
+import { loadedUrlCache } from '../utils/imageCache'
+
+const prefetchedImageUrls = new Set<string>();
 
 function prefetchImage(anchor: string | undefined, collectibles: { id: number; title: string; images: { url: string }[] }[]) {
   if (!anchor) return;
   const slugMap = buildSlugMap(collectibles);
   const match = collectibles.find(c => slugMap.get(c.id) === anchor);
   if (!match) return;
+  const imageCount = match.images.length;
+  const predictedWidth = predictRenderedWidth(imageCount, window.innerWidth, window.devicePixelRatio);
+  const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
   for (const image of match.images) {
-    const thumb = thumbnailUrl(image.url);
-    if (!loadedUrlCache.has(thumb)) {
-      loadedUrlCache.add(thumb);
-      new Image().src = thumb;
-    }
+    if (prefetchedImageUrls.has(image.url)) continue;
+    prefetchedImageUrls.add(image.url);
+    const predictedUrl = thumbnailUrl(image.url, predictedWidth);
+    loadedUrlCache.add(predictedUrl);
+    new Image().src = predictedUrl;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.imageSrcset = buildSrcSet(image.url);
+    link.imageSizes = sizes;
+    document.head.appendChild(link);
   }
 }
 
