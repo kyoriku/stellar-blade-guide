@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { api, type LevelWithLocations, type LocationWithCollectibles } from '../services/api'
+import { api, type LevelWithLocations, type LocationWithCollectibles, type Walkthrough } from '../services/api'
 import { buildSlugMap } from '../utils/slugify'
 import { buildSrcSet, thumbnailUrl, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES } from '../utils/cloudinary'
 import { loadedUrlCache } from '../utils/imageCache'
 
 const ABOVE_FOLD_PREFETCH_COUNT = 3;
+const WALKTHROUGH_ABOVE_FOLD_COUNT = 2;
 const prefetchedImageUrls = new Set<string>();
 
 function prefetchImage(anchor: string | undefined, collectibles: { id: number; title: string; images: { url: string }[] }[]) {
@@ -36,6 +37,32 @@ function prefetchImage(anchor: string | undefined, collectibles: { id: number; t
       link.imageSizes = sizes;
       document.head.appendChild(link);
     }
+  }
+}
+
+function prefetchWalkthroughImages(walkthrough: Walkthrough) {
+  let sectionCount = 0;
+  for (const section of walkthrough.content) {
+    if (sectionCount >= WALKTHROUGH_ABOVE_FOLD_COUNT) break;
+    const sectionImages = section.images ?? [];
+    if (!sectionImages.length) continue;
+    const imageCount = sectionImages.length;
+    const predictedWidth = predictRenderedWidth(imageCount, window.innerWidth, window.devicePixelRatio);
+    const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
+    for (const image of sectionImages) {
+      if (prefetchedImageUrls.has(image.url)) continue;
+      prefetchedImageUrls.add(image.url);
+      const predictedUrl = thumbnailUrl(image.url, predictedWidth);
+      loadedUrlCache.add(predictedUrl);
+      new Image().src = predictedUrl;
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.imageSrcset = buildSrcSet(image.url);
+      link.imageSizes = sizes;
+      document.head.appendChild(link);
+    }
+    sectionCount++;
   }
 }
 
@@ -87,11 +114,14 @@ export function usePrefetch() {
     })
   }
 
-  const prefetchWalkthroughBySlug = (type: string, slug: string) => {
-    void queryClient.prefetchQuery({
-      queryKey: ['walkthrough', type, slug],
+  const prefetchWalkthroughBySlug = async (type: string, slug: string) => {
+    const queryKey = ['walkthrough', type, slug] as const;
+    await queryClient.prefetchQuery({
+      queryKey,
       queryFn: () => api.getWalkthroughBySlug(type, slug),
     })
+    const data = queryClient.getQueryData<Walkthrough>(queryKey);
+    if (data) prefetchWalkthroughImages(data);
   }
 
   return {
