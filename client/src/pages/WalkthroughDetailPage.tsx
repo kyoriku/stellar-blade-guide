@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
 import { ApiError } from '../services/api'
@@ -51,17 +51,15 @@ function WalkthroughPage() {
   }, [walkthrough]);
 
   // Scroll to hash on load
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (walkthrough && window.location.hash) {
       const hash = decodeURIComponent(window.location.hash);
-      requestAnimationFrame(() => {
-        const el = document.getElementById(hash.substring(1));
-        if (el) {
-          const offset = 76;
-          const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
-          window.scrollTo({ top, behavior: 'instant' });
-        }
-      });
+      const el = document.getElementById(hash.substring(1));
+      if (el) {
+        const offset = 76;
+        const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top, behavior: 'instant' });
+      }
     }
   }, [walkthrough]);
 
