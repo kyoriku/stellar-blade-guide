@@ -55,7 +55,9 @@ function WalkthroughsIndexPage() {
             <Link
               key={category.slug}
               to={`/walkthroughs/${category.slug}`}
-              onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
+              onMouseEnter={() =>
+                void prefetchWalkthroughsByType(category.slug)
+              }
               className="group block"
             >
               <div
