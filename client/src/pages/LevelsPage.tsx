@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useMemo } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
@@ -37,9 +37,17 @@ function LevelPage() {
   const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useState<string>('');
+  const [cycleFilter, setCycleFilter] = useState<string>('All');
   const { prefetchLevel } = usePrefetch()
   const { isCompleted, toggle, completedIds } = useProgress()
   const resetActiveSection = () => setActiveSection('');
+
+  const prevLevelName = useRef(levelName);
+  if (levelName !== prevLevelName.current) {
+    prevLevelName.current = levelName;
+    setActiveSection('');
+    setCycleFilter('All');
+  }
 
   useEffect(() => {
     const observerOptions = {
@@ -117,22 +125,46 @@ function LevelPage() {
     : null;
   const previousLevel = currentIndex > 0 ? allLevels[currentIndex - 1] : null;
 
-  const firstSectionId = locationData.length > 0
-    ? `#${locationData[0].location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`
+  // Count total collectibles
+  const totalCollectibles = locationData.reduce((sum, loc) =>
+    sum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0);
+
+  const availableCycles = useMemo(() => {
+    const cycleOrder = ['Base', 'NG+', 'NG++', 'DLC'];
+    const cycles = new Set<string>();
+    locationData.forEach(loc => loc.collectibles.forEach(c => cycles.add(c.cycle)));
+    return cycleOrder.filter(c => cycles.has(c));
+  }, [locationData]);
+
+  const showCycleFilter = availableCycles.length > 1;
+
+  const filteredLocationData = useMemo(() => {
+    if (cycleFilter === 'All') return locationData;
+    return locationData
+      .map(loc => ({
+        ...loc,
+        collectibles: loc.collectibles.filter(c => c.cycle === cycleFilter)
+      }))
+      .filter(loc => loc.collectibles.length > 0);
+  }, [locationData, cycleFilter]);
+
+  const filteredTotal = useMemo(() =>
+    filteredLocationData.reduce((sum, loc) =>
+      sum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0),
+    [filteredLocationData]);
+
+  const firstSectionId = filteredLocationData.length > 0
+    ? `#${filteredLocationData[0].location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`
     : '#';
 
   const tocLinks = [{
     mainLink: firstSectionId,
     title: displayLevelName,
-    subLinks: locationData.map(loc => ({
+    subLinks: filteredLocationData.map(loc => ({
       href: `#${loc.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`,
       title: loc.location_name
     }))
   }];
-
-  // Count total collectibles
-  const totalCollectibles = locationData.reduce((sum, loc) =>
-    sum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0);
 
   const structuredDataSchemas = useMemo(() => {
     if (locationData.length === 0) return undefined;
@@ -238,20 +270,45 @@ if (isLoading) {
           </aside>
 
           <div className="flex-1 min-w-0">
-            {/* Page header */}
+            {/* Page header + filters */}
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
-              <p className="text-gray-300">
-                {totalCollectibles} collectibles
-                {completedIds.size > 0 && (() => {
-                  const pageCollectibles = locationData.flatMap(loc => loc.collectibles);
-                  const found = pageCollectibles
-                    .filter(c => completedIds.has(c.id))
-                    .reduce((sum, c) => sum + (c.quantity || 1), 0);
-                  if (found === 0) return null;
-                  return <span className="text-cyan-400 ml-2">· {found === totalCollectibles ? `all ${found}` : found} found</span>;
-                })()}
-              </p>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
+                  <p className="text-gray-300">
+                    {cycleFilter !== 'All'
+                      ? `${filteredTotal} of ${totalCollectibles} collectibles (${cycleFilter})`
+                      : `${totalCollectibles} collectibles`
+                    }
+                    {completedIds.size > 0 && (() => {
+                      const pageCollectibles = locationData.flatMap(loc => loc.collectibles);
+                      const found = pageCollectibles
+                        .filter(c => completedIds.has(c.id))
+                        .reduce((sum, c) => sum + (c.quantity || 1), 0);
+                      if (found === 0) return null;
+                      return <span className="text-cyan-400 ml-2">· {found === totalCollectibles ? `all ${found}` : found} found</span>;
+                    })()}
+                  </p>
+                </div>
+
+                {showCycleFilter && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {['All', ...availableCycles].map(cycle => (
+                      <button
+                        key={cycle}
+                        onClick={() => setCycleFilter(cycle)}
+                        title={`Show ${cycle === 'All' ? 'all' : cycle} collectibles`}
+                        className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
+                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                          : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
+                          }`}
+                      >
+                        {cycle}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Mobile TOC */}
@@ -265,7 +322,7 @@ if (isLoading) {
             </div>
 
             {/* Collectible sections */}
-            {locationData.map((location) => {
+            {filteredLocationData.map((location) => {
               const sectionId = location.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
 
               return (
@@ -281,6 +338,12 @@ if (isLoading) {
                 />
               );
             })}
+
+            {filteredLocationData.length === 0 && cycleFilter !== 'All' && (
+              <div className="bg-secondary rounded-lg p-8 border border-zinc-800 text-center">
+                <p className="text-gray-400">No {cycleFilter} collectibles found.</p>
+              </div>
+            )}
 
             {/* Footer navigation */}
             <div className="mt-16 pt-8 border-t border-gray-800">

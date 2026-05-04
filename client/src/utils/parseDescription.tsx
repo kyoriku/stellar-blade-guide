@@ -1,5 +1,4 @@
-// utils/parseDescription.ts
-import PrefetchableLink from '../components/PrefetchableLink'
+import PrefetchableLink from "../components/PrefetchableLink";
 
 export function parseDescription(text: string) {
   const parts = text.split(/(\[\[.*?\]\])/g);
@@ -7,7 +6,11 @@ export function parseDescription(text: string) {
     const match = part.match(/^\[\[(.+?)\|(.+?)\]\]$/);
     if (match) {
       return (
-        <PrefetchableLink key={i} to={`/${match[1]}`} className="text-cyan-400 hover:text-cyan-300 transition-colors">
+        <PrefetchableLink
+          key={i}
+          to={`/${match[1]}`}
+          className="text-cyan-400 hover:text-cyan-300 transition-colors"
+        >
           {match[2]}
         </PrefetchableLink>
       );

@@ -35,12 +35,6 @@ export const UPGRADES = [
   { slug: 'gear', name: 'Gear' },
   { slug: 'tumbler-expansion-modules', name: 'Tumbler Expansion Modules' },
   { slug: 'drone-upgrade-modules', name: 'Drone Upgrade Modules' },
-]
-
-export const MATERIALS = [
-  { slug: 'supply-boxes', name: 'Supply Boxes' },
-  { slug: 'supply-chests', name: 'Supply Chests' },
-  // { slug: 'items', name: 'Items' },
 ] as const;
 
 export const COSMETICS = [
@@ -53,9 +47,15 @@ export const COSMETICS = [
   { slug: 'adam-outfits', name: 'Adam Outfits' },
 ] as const;
 
+export const MATERIALS = [
+  { slug: 'supply-boxes', name: 'Supply Boxes' },
+  { slug: 'supply-chests', name: 'Supply Chests' },
+  // { slug: 'items', name: 'Items' },
+] as const;
+
 export type WalkthroughSlug = typeof WALKTHROUGHS[number]['slug'];
 export type LevelSlug = typeof LEVELS[number]['slug'];
 export type CollectibleSlug = typeof COLLECTIBLES[number]['slug'];
 export type UpgradeSlug = typeof UPGRADES[number]['slug'];
-export type MaterialSlug = typeof MATERIALS[number]['slug'];
 export type CosmeticSlug = typeof COSMETICS[number]['slug'];
+export type MaterialSlug = typeof MATERIALS[number]['slug'];
