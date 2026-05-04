@@ -11,7 +11,7 @@ import ErrorPage from './ErrorPage'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { LEVELS } from '../constants/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
 import SEO from '../components/SEO';
@@ -431,6 +431,9 @@ if (isLoading) {
             backgroundColor: "rgba(0, 0, 0, 0.75)",
             backdropFilter: "blur(5px)"
           }
+        }}
+        render={{
+          iconLoading: () => <Loader2 className="w-10 h-10 text-white animate-spin" />,
         }}
       />
     </div>

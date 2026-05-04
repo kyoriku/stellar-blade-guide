@@ -94,7 +94,7 @@ async def seed_database():
             # 2d️ Fetch Level objects for locations
             level_names = ['Default', 'Eidos 7', 'Xion', 'Wasteland', 'Altess Levoire',
                            'Matrix 11', 'Great Desert', 'Abyss Levoire',
-                           'Eidos 9', 'Spire 4', 'Boss Challenge']
+                           'Eidos 9', 'Spire 4', 'Nest', 'Boss Challenge']
             levels = {}
             for name in level_names:
                 result = await session.execute(select(Level).where(Level.name == name))
