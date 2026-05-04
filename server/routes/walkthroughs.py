@@ -35,7 +35,8 @@ def _serialize_list_item(w) -> dict:
         "level": w.level,
         "mission_type": w.mission_type,
         "display_order": w.display_order,
-        "thumbnail_url": w.thumbnail_url
+        "thumbnail_url": w.thumbnail_url,
+        "available_after": w.available_after
     }
 
 
@@ -45,6 +46,7 @@ def _serialize_full(w) -> dict:
         **_serialize_list_item(w),
         "objectives": w.objectives,
         "content": w.content,
+        "rewards": w.rewards,
     }
 
 
@@ -90,7 +92,8 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
     walkthroughs = result.scalars().all()
 
     if not walkthroughs:
-        raise HTTPException(status_code=404, detail="No walkthroughs found for this type")
+        raise HTTPException(
+            status_code=404, detail="No walkthroughs found for this type")
 
     request.state.db_time = (time.time() - db_start) * 1000
 
