@@ -81,6 +81,8 @@ async def seed_walkthroughs():
                     existing.objectives = item.get("objectives")
                     existing.content = item["content"]
                     existing.display_order = item["display_order"]
+                    existing.rewards = item.get("rewards")
+                    existing.available_after = item.get("available_after")
                     updated += 1
                     print(f"\033[33m↻ Updated: {item['title']}\033[0m")
                 else:
@@ -95,7 +97,9 @@ async def seed_walkthroughs():
                         thumbnail_url=item.get("thumbnail_url"),
                         objectives=item.get("objectives"),
                         content=item["content"],
-                        display_order=item["display_order"]
+                        display_order=item["display_order"],
+                        rewards=item.get("rewards"),
+                        available_after=item.get("available_after")
                     )
                     db.add(new_walkthrough)
                     added += 1
