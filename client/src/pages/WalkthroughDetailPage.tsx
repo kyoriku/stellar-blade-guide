@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
 import { ApiError } from '../services/api'
-import { List, ArrowLeft } from 'lucide-react'
+import { List, ArrowLeft, Clock, Gift, Loader2 } from 'lucide-react'
 import Lightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 import 'yet-another-react-lightbox/styles.css'
@@ -231,11 +231,17 @@ function WalkthroughPage() {
               {walkthrough.subtitle && (
                 <p className="text-gray-300">{walkthrough.subtitle}</p>
               )}
+              {walkthrough.available_after && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-400">{walkthrough.available_after}</span>
+                </div>
+              )}
             </div>
 
             {/* Objectives */}
             {walkthrough.objectives && walkthrough.objectives.length > 0 && (
-              <div id="objectives" className="mb-6 p-4 bg-secondary rounded-lg border border-gray-800">
+              <div id="objectives" className="mb-4 p-4 bg-secondary rounded-lg border border-gray-800">
                 <div className="flex items-center gap-2 mb-3">
                   <List className="w-5 h-5 text-purple-400" />
                   <h2 className="text-lg font-semibold text-gray-100">Objectives</h2>
@@ -247,7 +253,7 @@ function WalkthroughPage() {
                       id={`objective-${idx}`}
                       className="flex gap-2 walkthrough-content scroll-mt-24"
                     >
-                      <span className="text-cyan-400 font-bold">•</span>
+                      <span className="text-purple-400 font-bold">•</span>
                       <span className="text-gray-300">{objective}</span>
                     </li>
                   ))}
@@ -256,16 +262,16 @@ function WalkthroughPage() {
             )}
 
             {/* Mobile TOC */}
-            <div className="lg:hidden mb-8">
-              <FloatingTOC 
-                links={tocLinks} 
-                activeSection={activeSection} 
+            <div className="lg:hidden mb-4">
+              <FloatingTOC
+                links={tocLinks}
+                activeSection={activeSection}
               />
               <MobileBackToTop />
             </div>
 
             {/* Content sections */}
-            <section className="mb-16 space-y-4">
+            <section className="mb-4 space-y-4">
               {walkthrough.content.map((content) => (
                 <div
                   key={content.order}
@@ -279,6 +285,24 @@ function WalkthroughPage() {
                 </div>
               ))}
             </section>
+
+            {/* Rewards */}
+            {walkthrough.rewards && walkthrough.rewards.length > 0 && (
+              <div className="mb-16 p-4 bg-secondary rounded-lg border border-gray-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <Gift className="w-5 h-5 text-emerald-400" />
+                  <h2 className="text-lg font-semibold text-gray-100">Rewards</h2>
+                </div>
+                <ul className="space-y-1.5">
+                  {walkthrough.rewards.map((reward, idx) => (
+                    <li key={idx} className="flex gap-2 text-gray-300">
+                      <span className="text-emerald-400 font-bold">•</span>
+                      <span className="flex-1">{reward}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Footer navigation */}
             <div className="mt-16 pt-8 border-t border-gray-800">
@@ -366,6 +390,9 @@ function WalkthroughPage() {
             backgroundColor: "rgba(0, 0, 0, 0.75)",
             backdropFilter: "blur(5px)"
           }
+        }}
+        render={{
+          iconLoading: () => <Loader2 className="w-10 h-10 text-white animate-spin" />,
         }}
       />
     </div>

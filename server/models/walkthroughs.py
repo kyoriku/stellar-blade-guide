@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 from db.database import Base
@@ -16,3 +15,5 @@ class Walkthrough(Base):
     content = Column(JSONB, nullable=False)  # Array of content blocks
     display_order = Column(Integer, nullable=False)
     thumbnail_url = Column(String(255), nullable=True)
+    rewards = Column(JSONB, nullable=True)  # Array of reward strings
+    available_after = Column(String(255), nullable=True)  # When quest becomes available

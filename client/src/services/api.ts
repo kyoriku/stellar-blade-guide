@@ -93,6 +93,8 @@ export interface Walkthrough {
   objectives: string[] | null;
   content: WalkthroughContent[];
   display_order: number;
+  rewards: string[] | null;
+  available_after: string | null;
 }
 
 export interface WalkthroughListItem {
@@ -104,6 +106,7 @@ export interface WalkthroughListItem {
   mission_type: string;
   display_order: number;
   thumbnail_url: string | null;
+  available_after: string | null;
 }
 
 export interface CommentUser {

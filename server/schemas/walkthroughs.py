@@ -33,6 +33,8 @@ class Walkthrough(BaseModel):
     content: List[WalkthroughContent]
     display_order: int
     thumbnail_url: Optional[str] = None
+    rewards: Optional[List[str]] = None
+    available_after: Optional[str] = None
 
 class WalkthroughListItem(BaseModel):
     id: int
@@ -43,3 +45,4 @@ class WalkthroughListItem(BaseModel):
     mission_type: str
     display_order: int
     thumbnail_url: Optional[str] = None
+    available_after: Optional[str] = None
