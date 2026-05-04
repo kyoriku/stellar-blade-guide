@@ -108,7 +108,7 @@ function WalkthroughPage() {
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
             {/* Skeleton sidebar - exact match */}
-            <aside className="hidden lg:block w-64 flex-shrink-0">
+            <aside className="hidden lg:block w-64 shrink-0">
               <TableOfContentsSkeleton />
             </aside>
 
@@ -210,7 +210,7 @@ function WalkthroughPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           {/* Sidebar */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="sticky top-4 pb-4">
               <TableOfContents
                 links={tocLinks}
@@ -288,9 +288,9 @@ function WalkthroughPage() {
                   <Link
                     to={`/walkthroughs/${type}/${nextWalkthrough.slug}`}
                     className="group w-full sm:w-auto order-1 sm:order-2"
-                    onMouseEnter={() => prefetchWalkthroughBySlug(type!, nextWalkthrough.slug)}
+                    onMouseEnter={() => void prefetchWalkthroughBySlug(type!, nextWalkthrough.slug)}
                   >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-linear-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
                         <div className="text-xs text-cyan-400 mb-0.5">Next</div>
                         <div className="text-sm font-medium text-white truncate">
@@ -307,7 +307,7 @@ function WalkthroughPage() {
                     to="/walkthroughs"
                     className="group w-full sm:w-auto order-1 sm:order-2"
                   >
-                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
+                    <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-linear-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
                         <div className="text-xs text-cyan-400 mb-0.5">Finished</div>
                         <div className="text-sm font-medium text-white">
@@ -326,7 +326,7 @@ function WalkthroughPage() {
                   <Link
                     to={`/walkthroughs/${type}/${previousWalkthrough.slug}`}
                     className="group w-full sm:w-auto order-2 sm:order-1"
-                    onMouseEnter={() => prefetchWalkthroughBySlug(type!, previousWalkthrough.slug)}
+                    onMouseEnter={() => void prefetchWalkthroughBySlug(type!, previousWalkthrough.slug)}
                   >
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200">
                       <div className="p-2 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">
