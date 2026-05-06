@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import { ApiError } from '../services/api'
 import Lightbox from 'yet-another-react-lightbox'
@@ -23,6 +23,7 @@ import MobileBackToTop from '../components/MobileBackToTop'
 
 function LevelPage() {
   const { levelName } = useParams<{ levelName: string }>();
+  const location = useLocation();
 
   // Validate level exists before showing loading state
   const allLevels = LEVELS.map(level => level.name);
@@ -81,16 +82,15 @@ function LevelPage() {
   }, []);
 
   useLayoutEffect(() => {
-    if (locationData.length > 0 && window.location.hash) {
-      const hash = window.location.hash;
-      const el = document.querySelector(hash);
+    if (locationData.length > 0 && location.hash) {
+      const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
       if (el) {
         const offset = 76;
         const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({ top, behavior: 'instant' });
       }
     }
-  }, [locationData]);
+  }, [locationData, location.hash]);
 
   useEffect(() => {
     if (locationData.length > 0) {

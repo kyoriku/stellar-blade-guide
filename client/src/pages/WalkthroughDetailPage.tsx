@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
 import { ApiError } from '../services/api'
 import { List, ArrowLeft, Clock, Gift, Loader2 } from 'lucide-react'
@@ -21,6 +21,7 @@ import MobileBackToTop from '../components/MobileBackToTop'
 
 function WalkthroughPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
+  const location = useLocation();
 
   const { data: walkthrough, isLoading, isError, error } = useWalkthrough(type!, slug!);
   const { data: allWalkthroughs = [] } = useWalkthroughsByType(type!);
@@ -50,18 +51,17 @@ function WalkthroughPage() {
     }
   }, [walkthrough]);
 
-  // Scroll to hash on load
+  // Scroll to hash on load or hash change
   useLayoutEffect(() => {
-    if (walkthrough && window.location.hash) {
-      const hash = decodeURIComponent(window.location.hash);
-      const el = document.getElementById(hash.substring(1));
+    if (walkthrough && location.hash) {
+      const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
       if (el) {
         const offset = 76;
         const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({ top, behavior: 'instant' });
       }
     }
-  }, [walkthrough]);
+  }, [walkthrough, location.hash]);
 
   useEffect(() => {
     const observerOptions = {
@@ -115,22 +115,25 @@ function WalkthroughPage() {
             {/* Skeleton main content */}
             <div className="flex-1 min-w-0">
               {/* Page header skeleton */}
-              <div className="md:mb-8 mb-9">
-                <div className="h-9 md:h-10 w-80 bg-gray-700 rounded-lg animate-pulse" />
-                <div className="h-5 w-64 bg-gray-700/50 rounded mt-2 animate-pulse" />
+              <div className="mb-8">
+                <div className="h-9 md:h-10 w-96 bg-gray-700 rounded-lg animate-pulse" />
+                <div className="h-6 w-80 bg-gray-700 rounded mt-2 animate-pulse" />
+                {type !== 'main-story' && (
+                  <div className="h-5 w-72 bg-gray-700/50 rounded mt-2 animate-pulse" />
+                )}
               </div>
 
               {/* Objectives skeleton */}
-              <div className="mb-6 p-4 bg-secondary rounded-lg border border-gray-800">
+              <div className="mb-4 p-4 bg-secondary rounded-lg border border-gray-800">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-5 h-5 bg-purple-400/50 rounded animate-pulse"></div>
-                  <div className="h-6 w-24 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-7 w-32 bg-gray-700 rounded animate-pulse"></div>
                 </div>
                 <ul className="space-y-2">
                   {[1, 2, 3].map((i) => (
                     <li key={i} className="flex gap-2">
-                      <span className="text-cyan-400 font-bold">•</span>
-                      <div className="h-6 bg-gray-700 rounded animate-pulse flex-1"></div>
+                      <span className="text-purple-400 font-bold">•</span>
+                      <div className="h-6 w-96 bg-gray-700 rounded animate-pulse"></div>
                     </li>
                   ))}
                 </ul>
