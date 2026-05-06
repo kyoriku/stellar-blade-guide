@@ -56,35 +56,33 @@ async def seed_database():
             # Collectible types with categories
             types_data = [
                 # Collectibles category
-                CollectibleType(name='Camp', category_group='collectibles', display_order=1),
-                CollectibleType(name='Can', category_group='collectibles', display_order=2),
-                CollectibleType(name='Document', category_group='collectibles', display_order=3),
-                CollectibleType(name='Memorystick', category_group='collectibles', display_order=4),
-                CollectibleType(name='Passcode', category_group='collectibles', display_order=5),
-                
+                CollectibleType(name='Camp', category_group='collectibles', display_order=1, slug='camps'),
+                CollectibleType(name='Can', category_group='collectibles', display_order=2, slug='cans'),
+                CollectibleType(name='Document', category_group='collectibles', display_order=3, slug='documents'),
+                CollectibleType(name='Memorystick', category_group='collectibles', display_order=4, slug='memorysticks'),
+                CollectibleType(name='Passcode', category_group='collectibles', display_order=5, slug='passcodes'),
+
                 # Upgrades category
-                CollectibleType(name='Beta Core', category_group='upgrades', display_order=1),
-                CollectibleType(name='Body Core', category_group='upgrades', display_order=2),
-                CollectibleType(name='Exospine', category_group='upgrades', display_order=3),
-                CollectibleType(name='Tumbler Expansion Module', category_group='upgrades', display_order=4),
-                CollectibleType(name='Drone Upgrade Module', category_group='upgrades', display_order=5),
-                CollectibleType(name='Weapon Core', category_group='upgrades', display_order=6),
-                CollectibleType(name='Gear', category_group='upgrades', display_order=7),
+                CollectibleType(name='Beta Core', category_group='upgrades', display_order=1, slug='beta-cores'),
+                CollectibleType(name='Body Core', category_group='upgrades', display_order=2, slug='body-cores'),
+                CollectibleType(name='Exospine', category_group='upgrades', display_order=3, slug='exospines'),
+                CollectibleType(name='Tumbler Expansion Module', category_group='upgrades', display_order=4, slug='tumbler-expansion-modules'),
+                CollectibleType(name='Drone Upgrade Module', category_group='upgrades', display_order=5, slug='drone-upgrade-modules'),
+                CollectibleType(name='Weapon Core', category_group='upgrades', display_order=6, slug='weapon-cores'),
+                CollectibleType(name='Gear', category_group='upgrades', display_order=7, slug='gear'),
 
                 # Cosmetics category
-                CollectibleType(name='Earrings', category_group='cosmetics', display_order=1),
-                CollectibleType(name='Glasses', category_group='cosmetics', display_order=2),
-                CollectibleType(name='Nano Suit', category_group='cosmetics', display_order=3),
-                CollectibleType(name='Drone Appearance', category_group='cosmetics', display_order=4),
-                CollectibleType(name='Lily Outfit', category_group='cosmetics', display_order=5),
-                CollectibleType(name='Adam Outfit', category_group='cosmetics', display_order=6),
-                CollectibleType(name='Hairstyle', category_group='cosmetics', display_order=7),
+                CollectibleType(name='Earrings', category_group='cosmetics', display_order=1, slug='earrings'),
+                CollectibleType(name='Glasses', category_group='cosmetics', display_order=2, slug='glasses'),
+                CollectibleType(name='Nano Suit', category_group='cosmetics', display_order=3, slug='nano-suits'),
+                CollectibleType(name='Drone Appearance', category_group='cosmetics', display_order=4, slug='drone-appearances'),
+                CollectibleType(name='Lily Outfit', category_group='cosmetics', display_order=5, slug='lily-outfits'),
+                CollectibleType(name='Adam Outfit', category_group='cosmetics', display_order=6, slug='adam-outfits'),
+                CollectibleType(name='Hairstyle', category_group='cosmetics', display_order=7, slug='hairstyles'),
 
                 # Materials category
-                CollectibleType(name='Supply Box', category_group='materials', display_order=1),
-                CollectibleType(name='Supply Chest', category_group='materials', display_order=2),
-                CollectibleType(name='Item', category_group='materials', display_order=3),
-                
+                CollectibleType(name='Supply Box', category_group='materials', display_order=1, slug='supply-boxes'),
+                CollectibleType(name='Supply Chest', category_group='materials', display_order=2, slug='supply-chests'),
             ]
             session.add_all(types_data)
 

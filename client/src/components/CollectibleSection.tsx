@@ -62,8 +62,7 @@ function CollectibleSection({
               <><span className="text-gray-200">{levelName}</span> <span className="text-cyan-600">·</span> {title}</>
             ) : <span className="text-gray-200">{title}</span>}
           </span>
-          <div className="h-px flex-1 bg-gray-700" />
-        </div>
+          <div className="h-px flex-1 bg-linear-to-r from-gray-700 to-transparent" />        </div>
       )}
 
       <div className="space-y-4">

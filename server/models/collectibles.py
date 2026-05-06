@@ -42,12 +42,13 @@ class Location(Base):
 #     collectibles = relationship('Collectible', secondary=collectible_type_mappings, back_populates='types')
 class CollectibleType(Base):
     __tablename__ = 'collectible_types'
-    
+
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False)
     category_group = Column(String(50), nullable=True)  # nullable during migration
     display_order = Column(Integer, nullable=True)  # nullable during migration
-    
+    slug = Column(String(100), nullable=False)
+
     collectibles = relationship('Collectible', secondary=collectible_type_mappings, back_populates='types')
 
 class Collectible(Base):

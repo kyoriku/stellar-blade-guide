@@ -4,6 +4,9 @@ import { Menu, X, ChevronDown, Book, Map, Package, Zap, Box, Sparkles, Search, C
 import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useAuth } from '../hooks/useAuth'
+import { useSearch } from '../hooks/useSearch'
+import { SearchTrigger } from './SearchTrigger'
+import { SearchResults } from './SearchResults'
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +27,7 @@ function Navbar() {
   // const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch();
+  const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError } = useSearch(searchQuery);
   const handleLogout = async () => {
     setUserDropdownOpen(false)
     await logout()
@@ -76,22 +80,6 @@ function Navbar() {
     }));
   };
 
-  const filterItems = <T extends { name: string }>(items: readonly T[]): T[] => {
-    if (!searchQuery.trim()) return [...items];
-    return items.filter(item =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
-
-  const filteredWalkthroughs = filterItems(WALKTHROUGHS);
-  const filteredLevels = filterItems(LEVELS);
-  const filteredCollectibles = filterItems(COLLECTIBLES);
-  const filteredUpgrades = filterItems(UPGRADES);
-  const filteredMaterials = filterItems(MATERIALS);
-  const filteredCosmetics = filterItems(COSMETICS);
-
-  const totalResults = filteredWalkthroughs.length + filteredLevels.length + filteredCollectibles.length + filteredUpgrades.length + filteredMaterials.length + filteredCosmetics.length;
-
   // Derive which category is active
   const activeCategory = location.pathname.startsWith('/walkthroughs') ? 'walkthroughs'
     : location.pathname.startsWith('/levels') ? 'levels'
@@ -100,19 +88,6 @@ function Navbar() {
           : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
             : location.pathname.startsWith('/materials') ? 'materials'
               : null;
-
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      setOpenSections({
-        walkthroughs: filteredWalkthroughs.length > 0,
-        levels: filteredLevels.length > 0,
-        collectibles: filteredCollectibles.length > 0,
-        upgrades: filteredUpgrades.length > 0,
-        materials: filteredMaterials.length > 0,
-        cosmetics: filteredCosmetics.length > 0,
-      });
-    }
-  }, [searchQuery, filteredWalkthroughs.length, filteredLevels.length, filteredCollectibles.length, filteredUpgrades.length, filteredMaterials.length, filteredCosmetics.length]);
 
   useEffect(() => {
     const handleMobileScroll = () => {
@@ -516,6 +491,7 @@ function Navbar() {
 
             {/* Auth UI */}
             <div className="flex items-center gap-2">
+              <SearchTrigger onExpand={() => setOpenDropdown(null)} />
               {isAuthenticated && user ? (
                 <div className="relative hidden md:block" ref={userDropdownRef}>
                   <button
@@ -638,7 +614,11 @@ function Navbar() {
 
             {searchQuery && (
               <div className="mt-2 text-xs text-gray-400">
-                {totalResults === 0 ? 'No results found' : `${totalResults} result${totalResults !== 1 ? 's' : ''} found`}
+                {mobileSearchData
+                  ? `${mobileSearchData.total} result${mobileSearchData.total !== 1 ? 's' : ''} found`
+                  : searchQuery.length < 2
+                    ? 'Type at least 2 characters...'
+                    : 'Searching...'}
               </div>
             )}
           </div>
@@ -646,331 +626,256 @@ function Navbar() {
           {/* Scrollable Content */}
           <div className="overflow-y-auto mobile-menu-scrollbar flex-1">
             <div className="space-y-1">
-              {/* Walkthroughs Section */}
-              {filteredWalkthroughs.length > 0 && (
-                <div className="border-b border-gray-800/50">
-                  <button
-                    onClick={() => toggleSection('walkthroughs')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-400/10 rounded-lg">
-                        <Book className="w-5 h-5 text-cyan-400" />
+              {searchQuery ? (
+                <div className="px-4 py-2">
+                  <SearchResults
+                    query={searchQuery}
+                    data={mobileSearchData}
+                    isLoading={mobileSearchPending}
+                    isError={mobileSearchError}
+                    onResultClick={() => setIsOpen(false)}
+                  />
+                </div>
+              ) : (
+                <>
+                  {/* Walkthroughs Section */}
+                  <div className="border-b border-gray-800/50">
+                    <button
+                      onClick={() => toggleSection('walkthroughs')}
+                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-400/10 rounded-lg">
+                          <Book className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <span className="font-semibold text-white text-base">Walkthroughs</span>
                       </div>
-                      <div>
-                        <span className="font-semibold text-white text-base block">Walkthroughs</span>
-                        {searchQuery && (
-                          <span className="text-xs text-gray-500">
-                            {filteredWalkthroughs.length} item{filteredWalkthroughs.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.walkthroughs ? 'rotate-90' : ''}`} />
-                  </button>
-
-                  <div className={`section-content overflow-hidden ${openSections.walkthroughs ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="space-y-0.5 pb-2 px-2">
-                      <Link
-                        to="/walkthroughs"
-                        onClick={() => setIsOpen(false)}
-                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                      >
-                        View all Walkthroughs
-                      </Link>
-
-                      {filteredWalkthroughs.map((category, index) => (
-                        <MobileNavLink
-                          key={category.slug}
-                          to={`walkthroughs/${category.slug}`}
+                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.walkthroughs ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className={`section-content overflow-hidden ${openSections.walkthroughs ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="space-y-0.5 pb-2 px-2">
+                        <Link
+                          to="/walkthroughs"
                           onClick={() => setIsOpen(false)}
-                          indent
-                          style={{
-                            animation: openSections.walkthroughs ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
-                          }}
+                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
                         >
-                          {category.name}
-                        </MobileNavLink>
-                      ))}
+                          View all Walkthroughs
+                        </Link>
+                        {WALKTHROUGHS.map((category, index) => (
+                          <MobileNavLink
+                            key={category.slug}
+                            to={`walkthroughs/${category.slug}`}
+                            onClick={() => setIsOpen(false)}
+                            indent
+                            style={{ animation: openSections.walkthroughs ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
+                          >
+                            {category.name}
+                          </MobileNavLink>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Levels Section */}
-              {filteredLevels.length > 0 && (
-                <div className="border-b border-gray-800/50">
-                  <button
-                    onClick={() => toggleSection('levels')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-400/10 rounded-lg">
-                        <Map className="w-5 h-5 text-cyan-400" />
+                  {/* Levels Section */}
+                  <div className="border-b border-gray-800/50">
+                    <button
+                      onClick={() => toggleSection('levels')}
+                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-400/10 rounded-lg">
+                          <Map className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <span className="font-semibold text-white text-base">Levels</span>
                       </div>
-                      <div>
-                        <span className="font-semibold text-white text-base block">Levels</span>
-                        {searchQuery && (
-                          <span className="text-xs text-gray-500">
-                            {filteredLevels.length} item{filteredLevels.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.levels ? 'rotate-90' : ''}`} />
-                  </button>
-
-                  <div className={`section-content overflow-hidden ${openSections.levels ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="space-y-0.5 pb-2 px-2">
-                      <Link
-                        to="/levels"
-                        onClick={() => setIsOpen(false)}
-                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                      >
-                        View all Levels
-                      </Link>
-
-                      {filteredLevels.map((level, index) => (
-                        <MobileNavLink
-                          key={level.slug}
-                          to={`/levels/${level.slug}`}
+                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.levels ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className={`section-content overflow-hidden ${openSections.levels ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="space-y-0.5 pb-2 px-2">
+                        <Link
+                          to="/levels"
                           onClick={() => setIsOpen(false)}
-                          onMouseEnter={() => prefetchLevel(level.slug)}
-                          onTouchStart={() => prefetchLevel(level.slug)}
-                          indent
-                          style={{
-                            animation: openSections.levels ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
-                          }}
+                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
                         >
-                          {level.name}
-                        </MobileNavLink>
-                      ))}
+                          View all Levels
+                        </Link>
+                        {LEVELS.map((level, index) => (
+                          <MobileNavLink
+                            key={level.slug}
+                            to={`/levels/${level.slug}`}
+                            onClick={() => setIsOpen(false)}
+                            onMouseEnter={() => prefetchLevel(level.slug)}
+                            onTouchStart={() => prefetchLevel(level.slug)}
+                            indent
+                            style={{ animation: openSections.levels ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
+                          >
+                            {level.name}
+                          </MobileNavLink>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Collectibles Section */}
-              {filteredCollectibles.length > 0 && (
-                <div className="border-b border-gray-800/50">
-                  <button
-                    onClick={() => toggleSection('collectibles')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-400/10 rounded-lg">
-                        <Package className="w-5 h-5 text-cyan-400" />
+                  {/* Collectibles Section */}
+                  <div className="border-b border-gray-800/50">
+                    <button
+                      onClick={() => toggleSection('collectibles')}
+                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-400/10 rounded-lg">
+                          <Package className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <span className="font-semibold text-white text-base">Collectibles</span>
                       </div>
-                      <div>
-                        <span className="font-semibold text-white text-base block">Collectibles</span>
-                        {searchQuery && (
-                          <span className="text-xs text-gray-500">
-                            {filteredCollectibles.length} item{filteredCollectibles.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.collectibles ? 'rotate-90' : ''}`} />
-                  </button>
-
-                  <div className={`section-content overflow-hidden ${openSections.collectibles ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="space-y-0.5 pb-2 px-2">
-                      <Link
-                        to="/collectibles"
-                        onClick={() => setIsOpen(false)}
-                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                      >
-                        View all Collectibles
-                      </Link>
-
-                      {filteredCollectibles.map((type, index) => (
-                        <MobileNavLink
-                          key={type.slug}
-                          to={`/collectibles/${type.slug}`}
+                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.collectibles ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className={`section-content overflow-hidden ${openSections.collectibles ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="space-y-0.5 pb-2 px-2">
+                        <Link
+                          to="/collectibles"
                           onClick={() => setIsOpen(false)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
-                          onTouchStart={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
-                          indent
-                          style={{
-                            animation: openSections.collectibles ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
-                          }}
+                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
                         >
-                          {type.name}
-                        </MobileNavLink>
-                      ))}
+                          View all Collectibles
+                        </Link>
+                        {COLLECTIBLES.map((type, index) => (
+                          <MobileNavLink
+                            key={type.slug}
+                            to={`/collectibles/${type.slug}`}
+                            onClick={() => setIsOpen(false)}
+                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
+                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
+                            indent
+                            style={{ animation: openSections.collectibles ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
+                          >
+                            {type.name}
+                          </MobileNavLink>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Upgrades Section */}
-              {filteredUpgrades.length > 0 && (
-                <div className="border-b border-gray-800/50">
-                  <button
-                    onClick={() => toggleSection('upgrades')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-400/10 rounded-lg">
-                        <Zap className="w-5 h-5 text-cyan-400" />
+                  {/* Upgrades Section */}
+                  <div className="border-b border-gray-800/50">
+                    <button
+                      onClick={() => toggleSection('upgrades')}
+                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-400/10 rounded-lg">
+                          <Zap className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <span className="font-semibold text-white text-base">Upgrades</span>
                       </div>
-                      <div>
-                        <span className="font-semibold text-white text-base block">Upgrades</span>
-                        {searchQuery && (
-                          <span className="text-xs text-gray-500">
-                            {filteredUpgrades.length} item{filteredUpgrades.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.upgrades ? 'rotate-90' : ''}`} />
-                  </button>
-
-                  <div className={`section-content overflow-hidden ${openSections.upgrades ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="space-y-0.5 pb-2 px-2">
-                      <Link
-                        to="/upgrades"
-                        onClick={() => setIsOpen(false)}
-                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                      >
-                        View all Upgrades
-                      </Link>
-
-                      {filteredUpgrades.map((type, index) => (
-                        <MobileNavLink
-                          key={type.slug}
-                          to={`/upgrades/${type.slug}`}
+                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.upgrades ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className={`section-content overflow-hidden ${openSections.upgrades ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="space-y-0.5 pb-2 px-2">
+                        <Link
+                          to="/upgrades"
                           onClick={() => setIsOpen(false)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
-                          onTouchStart={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
-                          indent
-                          style={{
-                            animation: openSections.upgrades ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
-                          }}
+                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
                         >
-                          {type.name}
-                        </MobileNavLink>
-                      ))}
+                          View all Upgrades
+                        </Link>
+                        {UPGRADES.map((type, index) => (
+                          <MobileNavLink
+                            key={type.slug}
+                            to={`/upgrades/${type.slug}`}
+                            onClick={() => setIsOpen(false)}
+                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
+                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
+                            indent
+                            style={{ animation: openSections.upgrades ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
+                          >
+                            {type.name}
+                          </MobileNavLink>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Cosmetics Section */}
-              {filteredCosmetics.length > 0 && (
-                <div className="border-b border-gray-800/50">
-                  <button
-                    onClick={() => toggleSection('cosmetics')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-400/10 rounded-lg">
-                        <Sparkles className="w-5 h-5 text-cyan-400" />
+                  {/* Cosmetics Section */}
+                  <div className="border-b border-gray-800/50">
+                    <button
+                      onClick={() => toggleSection('cosmetics')}
+                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-400/10 rounded-lg">
+                          <Sparkles className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <span className="font-semibold text-white text-base">Cosmetics</span>
                       </div>
-                      <div>
-                        <span className="font-semibold text-white text-base block">Cosmetics</span>
-                        {searchQuery && (
-                          <span className="text-xs text-gray-500">
-                            {filteredCosmetics.length} item{filteredCosmetics.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.cosmetics ? 'rotate-90' : ''}`} />
-                  </button>
-
-                  <div className={`section-content overflow-hidden ${openSections.cosmetics ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="space-y-0.5 pb-2 px-2">
-                      <Link
-                        to="/cosmetics"
-                        onClick={() => setIsOpen(false)}
-                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                      >
-                        View all Cosmetics
-                      </Link>
-
-                      {filteredCosmetics.map((type, index) => (
-                        <MobileNavLink
-                          key={type.slug}
-                          to={`/cosmetics/${type.slug}`}
+                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.cosmetics ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className={`section-content overflow-hidden ${openSections.cosmetics ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="space-y-0.5 pb-2 px-2">
+                        <Link
+                          to="/cosmetics"
                           onClick={() => setIsOpen(false)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
-                          onTouchStart={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
-                          indent
-                          style={{
-                            animation: openSections.cosmetics ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
-                          }}
+                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
                         >
-                          {type.name}
-                        </MobileNavLink>
-                      ))}
+                          View all Cosmetics
+                        </Link>
+                        {COSMETICS.map((type, index) => (
+                          <MobileNavLink
+                            key={type.slug}
+                            to={`/cosmetics/${type.slug}`}
+                            onClick={() => setIsOpen(false)}
+                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
+                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
+                            indent
+                            style={{ animation: openSections.cosmetics ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
+                          >
+                            {type.name}
+                          </MobileNavLink>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Materials Section */}
-              {filteredMaterials.length > 0 && (
-                <div className="border-b border-gray-800/50">
-                  <button
-                    onClick={() => toggleSection('materials')}
-                    className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-cyan-400/10 rounded-lg">
-                        <Box className="w-5 h-5 text-cyan-400" />
+                  {/* Materials Section */}
+                  <div className="border-b border-gray-800/50">
+                    <button
+                      onClick={() => toggleSection('materials')}
+                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-cyan-400/10 rounded-lg">
+                          <Box className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <span className="font-semibold text-white text-base">Materials</span>
                       </div>
-                      <div>
-                        <span className="font-semibold text-white text-base block">Materials</span>
-                        {searchQuery && (
-                          <span className="text-xs text-gray-500">
-                            {filteredMaterials.length} item{filteredMaterials.length !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.materials ? 'rotate-90' : ''}`} />
-                  </button>
-
-                  <div className={`section-content overflow-hidden ${openSections.materials ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="space-y-0.5 pb-2 px-2">
-                      <Link
-                        to="/materials"
-                        onClick={() => setIsOpen(false)}
-                        className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                      >
-                        View all Materials
-                      </Link>
-
-                      {filteredMaterials.map((type, index) => (
-                        <MobileNavLink
-                          key={type.slug}
-                          to={`/materials/${type.slug}`}
+                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.materials ? 'rotate-90' : ''}`} />
+                    </button>
+                    <div className={`section-content overflow-hidden ${openSections.materials ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                      <div className="space-y-0.5 pb-2 px-2">
+                        <Link
+                          to="/materials"
                           onClick={() => setIsOpen(false)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'materials')}
-                          onTouchStart={() => prefetchCollectiblesByType(type.slug, 'materials')}
-                          indent
-                          style={{
-                            animation: openSections.materials ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none'
-                          }}
+                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
                         >
-                          {type.name}
-                        </MobileNavLink>
-                      ))}
+                          View all Materials
+                        </Link>
+                        {MATERIALS.map((type, index) => (
+                          <MobileNavLink
+                            key={type.slug}
+                            to={`/materials/${type.slug}`}
+                            onClick={() => setIsOpen(false)}
+                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'materials')}
+                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'materials')}
+                            indent
+                            style={{ animation: openSections.materials ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
+                          >
+                            {type.name}
+                          </MobileNavLink>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* No results message */}
-              {searchQuery && totalResults === 0 && (
-                <div className="px-4 py-12 text-center">
-                  <div className="inline-flex p-4 bg-secondary/30 rounded-full mb-4">
-                    <Search className="w-8 h-8 text-gray-600" />
-                  </div>
-                  <p className="text-gray-400 font-medium text-lg mb-1">No results found</p>
-                  <p className="text-gray-500 text-sm">Try searching with different keywords</p>
-                </div>
+                </>
               )}
 
               {/* Mobile Auth Section */}
