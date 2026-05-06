@@ -97,6 +97,21 @@ export interface Walkthrough {
   available_after: string | null;
 }
 
+export interface SearchResult {
+  kind: 'collectible' | 'walkthrough' | 'level'
+  id: number
+  title: string
+  snippet: string | null
+  navigation_url: string
+  score: number
+}
+
+export interface SearchResponse {
+  query: string
+  total: number
+  results: SearchResult[]
+}
+
 export interface WalkthroughListItem {
   id: number;
   slug: string;
@@ -274,5 +289,11 @@ export const api = {
       body: JSON.stringify({ token, new_password: newPassword }),
     })
     if (!response.ok) throw new ApiError(response.status, 'Failed to reset password')
+  },
+
+  searchAll: async (q: string, limit = 20, signal?: AbortSignal): Promise<SearchResponse> => {
+    const params = new URLSearchParams({ q, limit: String(limit) })
+    const response = await fetch(`${API_BASE_URL}/search/?${params}`, { signal })
+    return handleResponse<SearchResponse>(response, 'search')
   },
 };
