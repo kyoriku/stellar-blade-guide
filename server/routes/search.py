@@ -102,15 +102,21 @@ def _slugify_title(title: str) -> str:
     return title.strip("-")
 
 
+def _strip_links(text: str) -> str:
+    return re.sub(r'\[\[[^\]|]+\|([^\]]+)\]\]', r'\1', text)
+
+
 def _extract_snippet(description: dict | None) -> str | None:
     if not description:
         return None
     text_content = description.get("content")
     if text_content:
-        return text_content[:120]
+        cleaned = _strip_links(text_content)
+        return (cleaned[:120] + '...') if len(cleaned) > 120 else cleaned
     items = description.get("items")
     if items:
-        return items[0][:120]
+        cleaned = _strip_links(items[0])
+        return (cleaned[:120] + '...') if len(cleaned) > 120 else cleaned
     return None
 
 
