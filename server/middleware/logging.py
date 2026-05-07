@@ -33,7 +33,7 @@ def color_status(status: int) -> str:
     padded = f'{status}'.ljust(3)
     if status < 300:
         return f'{GREEN}{padded}{RESET}'
-    if status < 400:
+    if status < 500:
         return f'{YELLOW}{padded}{RESET}'
     return f'{RED}{padded}{RESET}'
 
@@ -51,12 +51,29 @@ def color_cache(status: str) -> str:
     padded = status.ljust(4)
     if status == "HIT":
         return f'{GREEN}{padded}{RESET}'
+    if status == "MISS":
+        return f'{YELLOW}{padded}{RESET}'
     return f'{RED}{padded}{RESET}'
 
 
 async def log_requests_middleware(request: Request, call_next):
+    # Skip OPTIONS preflight noise
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     start_time = time.time()
-    response = await call_next(request)
+
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        duration_ms = (time.time() - start_time) * 1000
+        client_ip = get_client_ip(request)
+        logger.error(
+            f'{datetime.now(LOG_TZ).strftime("%m-%d %H:%M:%S")} · {client_ip:<15} → {request.method:<6} '
+            f'{RED}500{RESET} {color_duration(duration_ms)} | {request.url.path} | unhandled exception: {exc}'
+        )
+        raise
+
     duration_ms = (time.time() - start_time) * 1000
 
     # Skip logging for bot/banned requests
@@ -72,23 +89,43 @@ async def log_requests_middleware(request: Request, call_next):
     user_agent = request.headers.get("user-agent", "-")
     cache_status = getattr(request.state, "cache_status", None)
     db_time = getattr(request.state, "db_time", None)
+    has_auth = f'{GREEN}A{RESET}' if request.headers.get("authorization") else f'{GRAY}-{RESET}'
+    sec_ch_ua = request.headers.get("sec-ch-ua", "")
+    ua_is_chromium = 'Chrome/' in user_agent
+    if sec_ch_ua:
+        hint_flag = f'{GREEN}H{RESET}'
+    elif ua_is_chromium:
+        hint_flag = f'{RED}!{RESET}'
+    else:
+        hint_flag = f'{GRAY}-{RESET}'
+    referer = request.headers.get("referer", "")
 
-    # Fixed-width columns 
+    # Fixed-width columns
     log_parts = [
         f'{datetime.now(LOG_TZ).strftime("%m-%d %H:%M:%S")} · {client_ip:<15} → {request.method:<6}',
         color_status(response.status_code),
         color_duration(duration_ms),
+        has_auth,
+        hint_flag,
         color_cache(cache_status) if cache_status else '    ',
         f'DB: {db_time:>3.0f}ms' if db_time else '         ',
     ]
 
     log_line = ' | '.join(log_parts) + f' | {request.url.path}'
 
+    if referer:
+        log_line += f' | {GRAY}Ref: {referer[:60]}{RESET}'
+
     # Only show UA for auth endpoints or non-2xx responses — appended after path
     if request.url.path.startswith("/api/auth") or response.status_code >= 400:
         log_line += f' | {GRAY}UA: {parse_ua(user_agent)}{RESET}'
 
-    logger.info(log_line)
+    if response.status_code >= 500:
+        logger.error(log_line)
+    elif response.status_code >= 400:
+        logger.warning(log_line)
+    else:
+        logger.info(log_line)
 
     response.headers["X-Process-Time"] = str(duration_ms / 1000)
     return response
