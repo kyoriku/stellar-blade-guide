@@ -36,9 +36,7 @@ def upload_images(dry_run=True, content_type='all'):
     
     # Determine target directory
     if content_type == 'collectibles':
-        images_dir = base_images_dir / 'Collectibles'
-        if not images_dir.exists():
-            images_dir = base_images_dir  # Fallback to base if subfolder doesn't exist
+        images_dir = base_images_dir
     elif content_type == 'walkthroughs':
         images_dir = base_images_dir / 'Walkthroughs_1080p'
         if not images_dir.exists():
@@ -58,12 +56,17 @@ def upload_images(dry_run=True, content_type='all'):
     # Find all image files - ONLY from _1080p folders
     image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
     image_files = []
-    
+    _COLLECTIBLE_EXCLUDE = {'Walkthroughs_1080p'}
+
     for ext in image_extensions:
         for img_file in images_dir.rglob(f'*{ext}'):
-            # Only include if path contains _1080p
-            if '_1080p' in str(img_file):
-                image_files.append(img_file)
+            if '_1080p' not in str(img_file):
+                continue
+            if content_type == 'collectibles' and any(
+                excl in img_file.parts for excl in _COLLECTIBLE_EXCLUDE
+            ):
+                continue
+            image_files.append(img_file)
     
     total_images = len(image_files)
     print(f"Found \033[33m{total_images}\033[0m images to upload\n")
@@ -114,8 +117,12 @@ def upload_images(dry_run=True, content_type='all'):
             folder_path = rel_path_clean.parent.as_posix().replace('_', '-').replace(' ', '-').lower()
             filename = rel_path_clean.stem.replace('_', '-').replace(' ', '-').replace('&', 'and').lower()
             
-            public_id = f"stellar-blade/{folder_path}/{filename}"
-            asset_folder = f"stellar-blade/{folder_path}"
+            if content_type == 'collectibles':
+                public_id = f"stellar-blade/collectibles/{folder_path}/{filename}"
+                asset_folder = f"stellar-blade/collectibles/{folder_path}"
+            else:
+                public_id = f"stellar-blade/{folder_path}/{filename}"
+                asset_folder = f"stellar-blade/{folder_path}"
             
             # Old URL format (what's currently in database/JSON)
             old_url = f"/assets/images/{rel_path_clean.as_posix()}"
@@ -274,10 +281,13 @@ if __name__ == "__main__":
             print("Usage: python upload_cloudinary.py [collectibles|walkthroughs|all]")
             sys.exit(1)
     
+    types_to_run = ['collectibles', 'walkthroughs'] if content_type == 'all' else [content_type]
+
     # Run dry run first
-    print(f"\033[33m⚠  Running DRY RUN for: {content_type} (showing first 10 images)\033[0m")
-    upload_images(dry_run=True, content_type=content_type)
-    
+    for ct in types_to_run:
+        print(f"\033[33m⚠  Running DRY RUN for: {ct} (showing first 10 images)\033[0m")
+        upload_images(dry_run=True, content_type=ct)
+
     # Ask user to confirm
     print("\n\033[36m=== Confirmation ===\033[0m")
     print("This will:")
@@ -288,11 +298,12 @@ if __name__ == "__main__":
     print("  5. Update url-mapping.json")
     print("  6. Skip existing images (overwrite=False)")
     print("\n\033[33mType 'yes' to proceed with upload:\033[0m ", end='')
-    
+
     confirm = input().strip().lower()
-    
+
     if confirm == 'yes':
         print()
-        upload_images(dry_run=False, content_type=content_type)
+        for ct in types_to_run:
+            upload_images(dry_run=False, content_type=ct)
     else:
         print("\n\033[90mCancelled - no images uploaded\033[0m")
