@@ -40,9 +40,9 @@ def color_status(status: int) -> str:
 
 def color_duration(ms: float) -> str:
     padded = f'{ms:.0f}ms'.rjust(6)
-    if ms < 50:
+    if ms < 100:
         return f'{GREEN}{padded}{RESET}'
-    if ms < 200:
+    if ms < 300:
         return f'{YELLOW}{padded}{RESET}'
     return f'{RED}{padded}{RESET}'
 
