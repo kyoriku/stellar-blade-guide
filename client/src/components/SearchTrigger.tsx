@@ -103,7 +103,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
       <div className="w-9 h-9" aria-hidden="true" />
       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-88 z-50">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input
             ref={inputRef}
             type="text"
@@ -111,7 +111,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search..."
-            className="w-full pl-9 pr-8 py-1.5 bg-secondary border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition-colors"
+            className="w-full pl-9 pr-8 py-1.5 bg-secondary border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition-colors"
           />
           {query && (
             <button
@@ -124,7 +124,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
           )}
         </div>
       </div>
-      <div className="absolute right-0 mt-2 w-88 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden max-h-96 overflow-y-auto custom-scrollbar">
+      <div className="absolute right-0 mt-2 w-88 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-600 z-50 overflow-hidden max-h-96 overflow-y-auto custom-scrollbar">
         <SearchResults
           query={query}
           data={data}
