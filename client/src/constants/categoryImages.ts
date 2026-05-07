@@ -31,21 +31,21 @@ export const COLLECTIBLE_IMAGES: Record<string, string> = {
 export const UPGRADE_IMAGES: Record<string, string> = {
   'beta-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg',
   'body-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221082/stellar-blade/collectibles/eidos-7/parking-tower/1-body-core-1-2.jpg',
-  'weapon-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1776717957/stellar-blade/eidos-7/crater/stellar-blade-20251205213635.jpg',
-  'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1773965485/stellar-blade/eidos-7/parking-tower/stellar-blade-20260319190946.jpg',
-  'gear': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1776717958/stellar-blade/eidos-7/crater/stellar-blade-20251205213644.jpg',
+  'weapon-cores': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1776717957/stellar-blade/collectibles/eidos-7/crater/stellar-blade-20251205213635.jpg',
+  'exospines': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1773965485/stellar-blade/collectibles/eidos-7/parking-tower/stellar-blade-20260319190946.jpg',
+  'gear': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1776717958/stellar-blade/collectibles/eidos-7/crater/stellar-blade-20251205213644.jpg',
   'tumbler-expansion-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221105/stellar-blade/collectibles/eidos-7/silent-street/3-robot-1.jpg',
   'drone-upgrade-modules': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1765221075/stellar-blade/collectibles/eidos-7/parking-tower/15-robot-2.jpg',
 };
 
 export const COSMETIC_IMAGES: Record<string, string> = {
-  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774063994/stellar-blade/default/default/stellar-blade-20260320183427.jpg',
-  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774065213/stellar-blade/wasteland/scrap-yard/stellar-blade-20260320183820.jpg',
-  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774063997/stellar-blade/eidos-7/construction-zone/stellar-blade-20260320183910.jpg',
-  'hairstyles': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775234963/stellar-blade/default/default/stellar-blade-20260402231657.jpg',
-  'drone-appearances': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187873/stellar-blade/default/default/stellar-blade-20260402231441.jpg',
-  'lily-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187874/stellar-blade/default/default/stellar-blade-20260402231457.jpg',
-  'adam-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187872/stellar-blade/default/default/stellar-blade-20260402231429.jpg',
+  'nano-suits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774063994/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.jpg',
+  'glasses': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774065213/stellar-blade/collectibles/wasteland/scrap-yard/stellar-blade-20260320183820.jpg',
+  'earrings': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1774063997/stellar-blade/collectibles/eidos-7/construction-zone/stellar-blade-20260320183910.jpg',
+  'hairstyles': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775234963/stellar-blade/collectibles/default/default/stellar-blade-20260402231657.jpg',
+  'drone-appearances': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187873/stellar-blade/collectibles/default/default/stellar-blade-20260402231441.jpg',
+  'lily-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187874/stellar-blade/collectibles/default/default/stellar-blade-20260402231457.jpg',
+  'adam-outfits': 'https://res.cloudinary.com/drw9mrozr/image/upload/w_496,h_279/f_webp,q_auto/v1775187872/stellar-blade/collectibles/default/default/stellar-blade-20260402231429.jpg',
 };
 
 export const MATERIAL_IMAGES: Record<string, string> = {
