@@ -40,6 +40,7 @@ export interface Collectible {
   display_order: number;
   cycle: string;
   quantity: number;
+  subtype: string | null;
   types: string[];
   images: CollectibleImage[];
 }
