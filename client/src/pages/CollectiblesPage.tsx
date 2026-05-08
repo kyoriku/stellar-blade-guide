@@ -51,8 +51,7 @@ type LevelItem = {
 type LevelData = LevelItem[];
 
 const SUBTYPE_ORDER = [
-  'Series', 'Promotions', 'Messages', 'Journal', 'Log Data',
-  'Books', 'Information', 'Prayers', 'Announcements',
+  'Log Data', 'Journal', 'Messages', 'Announcements', 'Series', 'Books', 'Information', 'Promotions', 'Prayers', 
 ] as const;
 
 function CollectibleTypePage() {
