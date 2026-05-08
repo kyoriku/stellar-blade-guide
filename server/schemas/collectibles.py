@@ -35,6 +35,7 @@ class CollectibleResponse(BaseModel):
     display_order: int
     cycle: str = "Base"
     quantity: int = 1
+    subtype: Optional[str] = None
     types: List[str]
     images: List[CollectibleImageResponse]
 
