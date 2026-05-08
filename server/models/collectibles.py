@@ -61,6 +61,7 @@ class Collectible(Base):
     display_order = Column(Integer, nullable=False)
     cycle = Column(String(10), nullable=False, server_default='Base')
     quantity = Column(Integer, nullable=False, server_default='1')
+    subtype = Column(String(50), nullable=True)
     
     location = relationship('Location', back_populates='collectibles')
     types = relationship('CollectibleType', secondary=collectible_type_mappings, back_populates='collectibles')

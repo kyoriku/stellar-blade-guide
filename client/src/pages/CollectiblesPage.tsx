@@ -40,6 +40,7 @@ type LevelItem = {
       display_order: number;
       cycle: string;
       quantity: number;
+      subtype: string | null;
       types: string[];
       images: Array<{ id: number; url: string; alt: string; order: number }>;
     }[];
@@ -48,6 +49,11 @@ type LevelItem = {
 
 // Array of levels
 type LevelData = LevelItem[];
+
+const SUBTYPE_ORDER = [
+  'Series', 'Promotions', 'Messages', 'Journal', 'Log Data',
+  'Books', 'Information', 'Prayers', 'Announcements',
+] as const;
 
 function CollectibleTypePage() {
   const { typeName } = useParams<{ typeName: string }>();
@@ -75,7 +81,7 @@ function CollectibleTypePage() {
   );
 
   // Pass category to hook
-const { data: levelData = [] as LevelData, isLoading, isError, error } = useCollectiblesByType(typeName!, category, isValidType);
+  const { data: levelData = [] as LevelData, isLoading, isError, error } = useCollectiblesByType(typeName!, category, isValidType);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -83,6 +89,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useState<string>('');
   const [cycleFilter, setCycleFilter] = useState<string>('All');
+  const [subtypeFilter, setSubtypeFilter] = useState<string>('All');
   const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
   const { prefetchCollectiblesByType } = usePrefetch()
   const { isCompleted, toggle, completedIds } = useProgress()
@@ -93,6 +100,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
     prevTypeName.current = typeName;
     setActiveSection('');
     setCycleFilter('All');
+    setSubtypeFilter('All');
     setSortMode('default');
   }
 
@@ -127,6 +135,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
   }, [levelData]);
 
   const showCycleFilter = availableCycles.length > 1;
+  const showSubtypeFilter = typeName === 'documents';
 
   // Filter data by cycle
   const filteredLevelData = useMemo(() => {
@@ -145,17 +154,50 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
       .filter(level => level.locations.length > 0);
   }, [levelData, cycleFilter]);
 
+  // Count collectibles per subtype from cycle-filtered data (Documents only)
+  const subtypeCounts = useMemo(() => {
+    if (!showSubtypeFilter) return { counts: new Map<string, number>(), total: 0 };
+    const counts = new Map<string, number>();
+    let total = 0;
+    filteredLevelData.forEach(level =>
+      level.locations.forEach(loc =>
+        loc.collectibles.forEach(c => {
+          const qty = c.quantity || 1;
+          total += qty;
+          if (c.subtype) counts.set(c.subtype, (counts.get(c.subtype) ?? 0) + qty);
+        })
+      )
+    );
+    return { counts, total };
+  }, [filteredLevelData, showSubtypeFilter]);
+
+  // Filter data by subtype (Documents only)
+  const filteredBySubtype = useMemo(() => {
+    if (!showSubtypeFilter || subtypeFilter === 'All') return filteredLevelData;
+    return filteredLevelData
+      .map(level => ({
+        ...level,
+        locations: level.locations
+          .map(loc => ({
+            ...loc,
+            collectibles: loc.collectibles.filter(c => c.subtype === subtypeFilter)
+          }))
+          .filter(loc => loc.collectibles.length > 0)
+      }))
+      .filter(level => level.locations.length > 0);
+  }, [filteredLevelData, subtypeFilter, showSubtypeFilter]);
+
   // Sort data alphabetically (wraps filtered data in a fake single-level structure)
   const sortedLevelData = useMemo(() => {
     // Generate unique slugs for ALL collectibles (both modes)
-    const allCollectibles = filteredLevelData.flatMap(level =>
+    const allCollectibles = filteredBySubtype.flatMap(level =>
       level.locations.flatMap(loc => loc.collectibles)
     );
 
     const slugMap = buildSlugMap(allCollectibles);
 
     // Apply slugs to all collectibles
-    const dataWithSlugs = filteredLevelData.map(level => ({
+    const dataWithSlugs = filteredBySubtype.map(level => ({
       ...level,
       locations: level.locations.map(loc => ({
         ...loc,
@@ -194,7 +236,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
         collectibles: sorted
       }]
     }];
-  }, [filteredLevelData, sortMode]);
+  }, [filteredBySubtype, sortMode]);
 
   // Scroll to hash on load once data is ready
   useLayoutEffect(() => {
@@ -274,7 +316,7 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
   );
   const totalLevels = levelData.length;
 
-  const filteredTotal = filteredLevelData.reduce((sum, level) =>
+  const filteredTotal = filteredBySubtype.reduce((sum, level) =>
     sum + level.locations.reduce((locSum, loc) =>
       locSum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0), 0
   );
@@ -479,8 +521,8 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
                 <div>
                   <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayTypeName}</h1>
                   <p className="text-gray-300">
-                    {cycleFilter !== 'All'
-                      ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName} (${cycleFilter})`
+                    {(cycleFilter !== 'All' || subtypeFilter !== 'All')
+                      ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName}${cycleFilter !== 'All' ? ` (${cycleFilter})` : ''}${subtypeFilter !== 'All' ? ` — ${subtypeFilter}` : ''}`
                       : `${totalCollectibles} ${displayTypeName}`
                     }
                     {completedIds.size > 0 && (() => {
@@ -529,7 +571,28 @@ const { data: levelData = [] as LevelData, isLoading, isError, error } = useColl
                 )}
 
                 {!showCycleFilter && (
-                  <div className="flex justify-end sm:justify-start order-3 sm:order-none">
+                  <div className="flex items-center justify-end sm:justify-start gap-2 order-3 sm:order-0">
+                    {showSubtypeFilter && (
+                      <>
+                        <select
+                          value={subtypeFilter}
+                          onChange={(e) => setSubtypeFilter(e.target.value)}
+                          title={`Show ${displayTypeName} of a specific subtype`}
+                          className="bg-gray-800/50 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+                        >
+                          <option value="All">All ({subtypeCounts.total})</option>
+                          {SUBTYPE_ORDER
+                            .filter(s => subtypeCounts.counts.has(s))
+                            .map(s => (
+                              <option key={s} value={s}>
+                                {s} ({subtypeCounts.counts.get(s)})
+                              </option>
+                            ))
+                          }
+                        </select>
+                        <div className="w-px h-6 bg-gray-700 mx-2" />
+                      </>
+                    )}
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
                       title="Sort alphabetically"

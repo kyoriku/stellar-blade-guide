@@ -186,6 +186,7 @@ async def seed_database():
                         existing.display_order = item.get("display_order", 0)
                         existing.quantity = item.get("quantity", 1)
                         existing.cycle = cycle
+                        existing.subtype = item.get("subtype")
                         existing.types = collectible_types
                         collectible_instance = existing
                         updated += 1
@@ -198,6 +199,7 @@ async def seed_database():
                             display_order=item.get("display_order", 0),
                             quantity=item.get("quantity", 1),
                             cycle=cycle,
+                            subtype=item.get("subtype"),
                             types=collectible_types
                         )
                         db.add(new_collectible)
