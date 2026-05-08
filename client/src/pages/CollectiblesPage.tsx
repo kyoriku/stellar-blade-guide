@@ -522,7 +522,7 @@ function CollectibleTypePage() {
                   <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayTypeName}</h1>
                   <p className="text-gray-300">
                     {(cycleFilter !== 'All' || subtypeFilter !== 'All')
-                      ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName}${cycleFilter !== 'All' ? ` (${cycleFilter})` : ''}${subtypeFilter !== 'All' ? ` — ${subtypeFilter}` : ''}`
+                      ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName}${cycleFilter !== 'All' ? ` (${cycleFilter})` : ''}${subtypeFilter !== 'All' ? ` (${subtypeFilter})` : ''}`
                       : `${totalCollectibles} ${displayTypeName}`
                     }
                     {completedIds.size > 0 && (() => {
