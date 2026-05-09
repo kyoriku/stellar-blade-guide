@@ -17,7 +17,7 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
   }));
 
   return (
-    <article className="relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 ">
+    <article className="relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800">
       <div className="relative">
         {content.section_title && (
           <h3 className="text-xl font-semibold mb-3 flex items-center gap-2 text-gray-100">
