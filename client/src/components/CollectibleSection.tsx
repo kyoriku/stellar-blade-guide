@@ -70,7 +70,7 @@ function CollectibleSection({
           <article
             key={collectible.id}
             id={'_slug' in collectible ? (collectible as any)._slug : `collectible-${collectible.id}`}
-            className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/50"
+            className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800"
           >
             <div className="relative">
               <div className="flex flex-col mb-4">
