@@ -97,6 +97,7 @@ def _level_slug(name: str) -> str:
 
 def _slugify_title(title: str) -> str:
     title = title.lower()
+    title = re.sub(r"★+", lambda m: f" {len(m.group())} ", title)
     title = re.sub(r"'", "", title)
     title = re.sub(r"[^a-z0-9Ͱ-Ͽ]+", "-", title)
     return title.strip("-")

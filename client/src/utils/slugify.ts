@@ -1,6 +1,7 @@
 export function slugifyTitle(title: string): string {
   return title
     .toLowerCase()
+    .replace(/★+/g, (m) => ` ${m.length} `)
     .replace(/'/g, "")
     .replace(/[^a-z0-9\u0370-\u03ff]+/g, "-")
     .replace(/(^-|-$)/g, "");
