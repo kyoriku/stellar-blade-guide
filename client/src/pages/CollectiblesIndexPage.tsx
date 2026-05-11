@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import { Compass } from "lucide-react";
+import CategoryCard from "../components/CategoryCard";
 import { COLLECTIBLES } from "../constants/navigation";
 import { COLLECTIBLE_IMAGES } from "../constants/categoryImages";
 import { usePrefetch } from "../hooks/usePrefetch";
@@ -53,35 +53,14 @@ function CollectiblesIndexPage() {
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
           {COLLECTIBLES.map((type) => (
-            <Link
+            <CategoryCard
               key={type.slug}
               to={`/collectibles/${type.slug}`}
+              imageUrl={COLLECTIBLE_IMAGES[type.slug]}
+              name={type.name}
+              FallbackIcon={Compass}
               onMouseEnter={() => void prefetchCollectiblesByType(type.slug)}
-              className="group block"
-            >
-              <div
-                className="relative aspect-4/3 sm:aspect-video rounded-lg overflow-hidden border border-zinc-800
-                            hover:border-zinc-600 transition-all duration-200
-                            hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
-              >
-                {COLLECTIBLE_IMAGES[type.slug] ? (
-                  <img
-                    src={COLLECTIBLE_IMAGES[type.slug]}
-                    alt={type.name}
-                    className="w-full h-full object-cover"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-tertiary flex items-center justify-center">
-                    <Compass className="w-12 h-12 text-zinc-700" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
-                <span className="absolute bottom-3 left-4 text-lg font-semibold text-white drop-shadow-lg">
-                  {type.name}
-                </span>
-              </div>
-            </Link>
+            />
           ))}
         </div>
       </div>
