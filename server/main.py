@@ -16,6 +16,7 @@ from middleware.error_handler import add_error_handler_middleware
 from middleware.security_headers import add_security_headers_middleware
 from middleware.bot_filter import add_bot_filter_middleware
 from middleware.etag import ETagMiddleware
+from middleware.origin_check import add_origin_check_middleware
 from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, progress, search
 setup_logging()
 
@@ -56,6 +57,7 @@ add_logging_middleware(app)
 add_error_handler_middleware(app)
 add_security_headers_middleware(app)
 add_bot_filter_middleware(app)
+add_origin_check_middleware(app)
 app.add_middleware(ETagMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
