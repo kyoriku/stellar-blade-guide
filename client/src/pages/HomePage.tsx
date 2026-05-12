@@ -2,9 +2,16 @@ import { Link } from 'react-router-dom'
 import { Book, Layers, Compass, Zap, Box, Sparkles, ChevronRight, ArrowRight } from 'lucide-react'
 import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
 import { LEVEL_IMAGES } from '../constants/categoryImages'
+import { buildSrcSet, thumbnailUrl } from '../utils/cloudinary'
 import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
+
+const HERO_IMAGE = "https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1771136778/stellar_blade2_c9qinq.jpg";
+const HERO_SRCSET = [400, 640, 960, 1200, 1600, 1920, 2560]
+  .map(w => `${HERO_IMAGE.replace('/upload/f_webp,q_auto/', `/upload/f_webp,q_auto,w_${w}/`)} ${w}w`)
+  .join(', ');
+
 
 const SITE_STATS = {
   collectibles: 1000,
@@ -29,7 +36,9 @@ function HomePage() {
       {/* Hero */}
       <div className="relative h-[40vh] sm:h-[60vh] md:h-[70vh] overflow-hidden">
         <img
-          src="https://res.cloudinary.com/drw9mrozr/image/upload/w_1920/f_webp,q_auto/v1771136778/stellar_blade2_c9qinq.jpg"
+          src={HERO_IMAGE.replace('/upload/f_webp,q_auto/', '/upload/f_webp,q_auto,w_1920/')}
+          srcSet={HERO_SRCSET}
+          sizes="100vw"
           alt="Stellar Blade"
           className="absolute inset-0 w-full h-full object-cover object-[center_40%] scale-125 md:scale-100"
           loading="eager"
@@ -109,7 +118,9 @@ function HomePage() {
                               hover:border-zinc-600 transition-all duration-200">
                   {LEVEL_IMAGES[level.slug] ? (
                     <img
-                      src={LEVEL_IMAGES[level.slug]}
+                      src={thumbnailUrl(LEVEL_IMAGES[level.slug])}
+                      srcSet={buildSrcSet(LEVEL_IMAGES[level.slug])}
+                      sizes="(min-width: 768px) 200px, 160px"
                       alt={level.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
@@ -183,7 +194,7 @@ function HomePage() {
                 icon={<Compass size={18} />}
                 to="/collectibles"
                 count={COLLECTIBLES.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270/f_webp,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg"
+                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg"
               />
               <CategoryCard
                 title="Upgrades"
@@ -191,7 +202,7 @@ function HomePage() {
                 icon={<Zap size={18} />}
                 to="/upgrades"
                 count={UPGRADES.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg"
+                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg"
               />
               <CategoryCard
                 title="Cosmetics"
@@ -199,7 +210,7 @@ function HomePage() {
                 icon={<Sparkles size={18} />}
                 to="/cosmetics"
                 count={COSMETICS.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270/f_webp,q_auto/v1774063994/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.jpg"
+                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1774063994/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.jpg"
               />
               <CategoryCard
                 title="Materials"
@@ -207,7 +218,7 @@ function HomePage() {
                 icon={<Box size={18} />}
                 to="/materials"
                 count={MATERIALS.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/w_480,h_270/f_webp,q_auto/v1765220998/stellar-blade/collectibles/eidos-7/construction-zone/1-crate-16.jpg"
+                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765220998/stellar-blade/collectibles/eidos-7/construction-zone/1-crate-16.jpg"
               />
             </div>
           </div>
@@ -239,7 +250,9 @@ function CategoryCard({ title, description, icon, to, count, imageUrl }: Categor
         {/* Image */}
         <div className="aspect-[4/3] sm:aspect-[16/9] relative overflow-hidden">
           <img
-            src={imageUrl}
+            src={thumbnailUrl(imageUrl)}
+            srcSet={buildSrcSet(imageUrl)}
+            sizes="(min-width: 1024px) calc((100vw - 62px) / 3), calc(50vw - 18px)"
             alt={title}
             className="w-full h-full object-cover"
             loading="lazy"
