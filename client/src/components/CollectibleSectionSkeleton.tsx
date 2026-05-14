@@ -21,7 +21,7 @@ function CollectibleSectionSkeleton({
         ) : (
           <div className="h-7 w-48 bg-gray-700 rounded animate-pulse" />
         )}
-        <div className="h-px flex-1 bg-gray-700" />
+        <div className="h-px flex-1 bg-gradient-to-r from-gray-700 to-transparent" />
       </div>
 
       <div className="space-y-4">
