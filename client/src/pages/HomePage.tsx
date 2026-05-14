@@ -44,8 +44,8 @@ function HomePage() {
           loading="eager"
           fetchPriority="high"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0d1117]/20 via-[#0d1117]/10 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d1117] to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-b from-[#0d1117]/20 via-[#0d1117]/10 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-[#0d1117] to-transparent" />
 
         {/* Desktop only overlay */}
         <div className="hidden md:flex absolute inset-0 items-center">
@@ -55,7 +55,7 @@ function HomePage() {
                 Stellar Blade Guide
               </h1>
               <p className="text-gray-300 text-lg max-w-lg mb-4">
-                Every collectible, walkthrough, and secret - with detailed screenshots and locations.
+                Every collectible, walkthrough, and secret — with detailed screenshots and locations.
               </p>
               <div className="flex gap-5 text-base">
                 <span className="text-gray-300">
@@ -79,7 +79,7 @@ function HomePage() {
           Stellar Blade Guide
         </h1>
         <p className="text-gray-300 mb-3">
-          Every collectible, walkthrough, and secret - with detailed screenshots and locations.
+          Every collectible, walkthrough, and secret — with detailed screenshots and locations.
         </p>
         <div className="flex gap-4 text-sm">
           <span className="text-gray-300">
@@ -111,10 +111,10 @@ function HomePage() {
               <Link
                 key={level.slug}
                 to={`/levels/${level.slug}`}
-                onMouseEnter={() => prefetchLevel(level.slug)}
-                className="group flex-shrink-0"
+                onMouseEnter={() => void prefetchLevel(level.slug)}
+                className="group shrink-0"
               >
-                <div className="relative w-40 md:w-50 aspect-[4/3] sm:aspect-[16/10] rounded-lg overflow-hidden border border-zinc-800 
+                <div className="relative w-40 md:w-50 aspect-4/3 sm:aspect-16/10 rounded-lg overflow-hidden border border-zinc-800 
                               hover:border-zinc-600 transition-all duration-200">
                   {LEVEL_IMAGES[level.slug] ? (
                     <img
@@ -128,7 +128,7 @@ function HomePage() {
                   ) : (
                     <div className="w-full h-full bg-tertiary" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
                   <span className="absolute bottom-2 left-2.5 text-sm font-medium text-white drop-shadow-lg">
                     {level.name}
                   </span>
@@ -248,7 +248,7 @@ function CategoryCard({ title, description, icon, to, count, imageUrl }: Categor
                     hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
 
         {/* Image */}
-        <div className="aspect-[4/3] sm:aspect-[16/9] relative overflow-hidden">
+        <div className="aspect-4/3 sm:aspect-video relative overflow-hidden">
           <img
             src={thumbnailUrl(imageUrl)}
             srcSet={buildSrcSet(imageUrl)}
@@ -257,7 +257,7 @@ function CategoryCard({ title, description, icon, to, count, imageUrl }: Categor
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-lineart-to-t from-black/80 via-black/20 to-transparent" />
           <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between">
             <div className="flex items-center gap-1.5 drop-shadow-lg">
               <span className="text-cyan-400">{icon}</span>
