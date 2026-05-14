@@ -97,6 +97,12 @@ def is_localhost(ip: str) -> bool:
 
 
 def get_client_ip(request: Request) -> str:
+    # Cloudflare's header — set by CF, stripped from client-supplied versions
+    cf_ip = request.headers.get("cf-connecting-ip")
+    if cf_ip:
+        return cf_ip.strip()
+
+    # Fastly (Railway's CDN) — now unreliable with CF in front but kept as fallback
     fastly_ip = request.headers.get("fastly-client-ip")
     if fastly_ip:
         return fastly_ip.strip()
@@ -107,7 +113,8 @@ def get_client_ip(request: Request) -> str:
 
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
-        return forwarded_for.split(",")[-1].strip()
+        # FIRST IP = real client, not last
+        return forwarded_for.split(",")[0].strip()
 
     return request.client.host
 
