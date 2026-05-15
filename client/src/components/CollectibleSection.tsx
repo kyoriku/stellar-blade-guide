@@ -56,7 +56,7 @@ function CollectibleSection({
   return (
     <section id={id} className="mb-16 scroll-mt-4">
       {title && (
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-4">
           <span className="text-lg text-gray-300 whitespace-nowrap">
             {levelName && levelName !== title ? (
               <><span className="text-gray-200">{levelName}</span> <span className="text-cyan-600">·</span> {title}</>
