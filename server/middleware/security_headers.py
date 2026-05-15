@@ -41,6 +41,10 @@ def add_security_headers_middleware(app: FastAPI):
         if not settings.DEBUG:
             response.headers["Content-Security-Policy"] = CSP
 
+        # Tell bots not to index /api/ responses
+        if request.url.path.startswith("/api/"):
+            response.headers["X-Robots-Tag"] = "noindex"
+
         # Cache-Control
         if request.method in ("GET", "HEAD") and response.status_code == 200:
             if request.url.path.startswith("/assets/"):
