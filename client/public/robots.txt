@@ -9,21 +9,21 @@
 # API responses should also send X-Robots-Tag: noindex so the
 # JSON endpoints themselves don't appear in search results.
 
-# Search engines — full access including /api/ for SPA rendering
+# Search engines — full access for SPA rendering, but skip auth flows
 User-agent: Googlebot
-Disallow:
+Disallow: /api/auth/
 
 User-agent: Bingbot
-Disallow:
+Disallow: /api/auth/
 
 User-agent: DuckDuckBot
-Disallow:
+Disallow: /api/auth/
 
 User-agent: YandexBot
-Disallow:
+Disallow: /api/auth/
 
 User-agent: Baiduspider
-Disallow:
+Disallow: /api/auth/
 
 # AI training scrapers — blocked (Cloudflare also blocks at edge)
 User-agent: GPTBot
