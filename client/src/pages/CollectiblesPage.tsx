@@ -242,7 +242,7 @@ function CollectibleTypePage() {
     if (levelData.length > 0 && location.hash) {
       const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
       if (el) {
-        const offset = 76;
+        const offset = 80;
         const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({ top, behavior: 'instant' });
       }
