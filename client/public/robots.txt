@@ -1,32 +1,46 @@
-# Allow good bots
+# Note: ChatGPT-User (user-initiated URL fetches), Slackbot, Discordbot,
+# Twitterbot, facebookexternalhit, PerplexityBot, OAI-SearchBot etc.
+# all fall through to the wildcard rule below and are allowed.
+# Link previews and search citations matter — don't tighten the
+# wildcard without considering this.
+#
+# Search engines need /api/ access to render the SPA properly
+# (React fetches collectibles/walkthroughs data client-side).
+# API responses should also send X-Robots-Tag: noindex so the
+# JSON endpoints themselves don't appear in search results.
+
+# Search engines — full access including /api/ for SPA rendering
 User-agent: Googlebot
-Allow: /
+Disallow:
 
 User-agent: Bingbot
-Allow: /
+Disallow:
 
-User-agent: Slackbot
-Allow: /
+User-agent: DuckDuckBot
+Disallow:
 
-User-agent: Discordbot
-Allow: /
-
+# AI training scrapers — blocked (Cloudflare also blocks at edge)
 User-agent: GPTBot
-Allow: /
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: CCBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bytespider
+User-agent: Meta-ExternalAgent
+User-agent: Amazonbot
+User-agent: cohere-ai
+Disallow: /
 
-User-agent: OAI-SearchBot
-Allow: /
-
-# Block aggressive crawlers
+# SEO data harvesters — blocked
 User-agent: AhrefsBot
-Disallow: /
-
 User-agent: SemrushBot
+User-agent: MJ12bot
+User-agent: DotBot
 Disallow: /
 
-# Block generic scrapers
+# Everyone else — public pages OK, /api/ off-limits
 User-agent: *
 Disallow: /api/
-Allow: /
 
 Sitemap: https://stellarbladeguide.com/sitemap.xml
