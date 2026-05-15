@@ -19,6 +19,12 @@ Disallow:
 User-agent: DuckDuckBot
 Disallow:
 
+User-agent: YandexBot
+Disallow:
+
+User-agent: Baiduspider
+Disallow:
+
 # AI training scrapers — blocked (Cloudflare also blocks at edge)
 User-agent: GPTBot
 User-agent: ClaudeBot
