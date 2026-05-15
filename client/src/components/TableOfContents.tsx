@@ -29,7 +29,7 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
   const scrollToSection = (href: string) => {
     const element = document.getElementById(href.substring(1));
     if (element) {
-      const offset = 76;
+      const offset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
 

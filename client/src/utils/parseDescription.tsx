@@ -9,7 +9,7 @@ export function parseDescription(text: string) {
         <PrefetchableLink
           key={i}
           to={`/${match[1]}`}
-          className="text-cyan-400 hover:text-cyan-300 transition-colors"
+          className="text-cyan-400 underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 transition-colors"
         >
           {match[2]}
         </PrefetchableLink>
