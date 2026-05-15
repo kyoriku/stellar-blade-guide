@@ -29,7 +29,7 @@ class ETagMiddleware(BaseHTTPMiddleware):
 
         # Check if client already has this version
         if request.headers.get("if-none-match") == etag:
-            return StarletteResponse(status_code=304, headers={"ETag": etag})
+            return StarletteResponse(status_code=304, headers=dict(response.headers) | {"ETag": etag})
 
         # Otherwise return full response with ETag header
         return Response(
