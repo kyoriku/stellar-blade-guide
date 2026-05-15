@@ -3,6 +3,10 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
 
+EXCLUDED_304_HEADERS = frozenset({
+    "content-length", "content-encoding", "transfer-encoding"
+})
+
 class ETagMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
@@ -29,7 +33,13 @@ class ETagMiddleware(BaseHTTPMiddleware):
 
         # Check if client already has this version
         if request.headers.get("if-none-match") == etag:
-            return StarletteResponse(status_code=304, headers={"ETag": etag})
+            return StarletteResponse(
+                status_code=304,
+                headers={
+                    k: v for k, v in response.headers.items()
+                    if k.lower() not in EXCLUDED_304_HEADERS
+                } | {"ETag": etag},
+            )
 
         # Otherwise return full response with ETag header
         return Response(
