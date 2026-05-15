@@ -15,12 +15,13 @@ def add_security_headers_middleware(app: FastAPI):
         allowed_hosts=allowed_hosts
     )
 
+
     CSP = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https://res.cloudinary.com https://lh3.googleusercontent.com https://cdn.discordapp.com; "
-        "connect-src 'self'; "
+        "connect-src 'self' https://cloudflareinsights.com; "
         "font-src 'self'; "
         "frame-src 'none'; "
         "frame-ancestors 'none'; "

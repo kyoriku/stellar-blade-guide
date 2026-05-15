@@ -15,7 +15,7 @@ function CollectibleSectionSkeleton({
 }: CollectibleSectionSkeletonProps) {
   return (
     <section id={id} className="mb-16 scroll-mt-4">
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-4">
         {locationName ? (
           <span className="text-lg text-gray-400 whitespace-nowrap">{locationName}</span>
         ) : (
