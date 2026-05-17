@@ -9,7 +9,11 @@ logger = logging.getLogger(__name__)
 # Async Redis client
 redis_client = redis.Redis.from_url(
     settings.REDIS_URL,
-    decode_responses=True
+    decode_responses=True,
+    socket_timeout=5,
+    socket_connect_timeout=5,
+    retry_on_timeout=False,
+    health_check_interval=30,
 )
 
 async def get_cache(key: str) -> Optional[dict]:
