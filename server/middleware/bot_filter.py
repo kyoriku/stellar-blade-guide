@@ -20,6 +20,10 @@ REFERER_EXEMPT_PATHS = {
     "/api/health",
 }
 
+REFERER_EXEMPT_PREFIXES = (
+    "/api/auth/",
+)
+
 ALLOWED_PREFIXES = (
     '/api/',
     '/assets/',
@@ -147,12 +151,17 @@ async def bot_filter_middleware(request: Request, call_next):
         return await call_next(request)
 
     # Block /api/* requests with a Referer from an unrecognised domain
-    if original_path.startswith("/api/") and original_path not in REFERER_EXEMPT_PATHS:
+    if (
+        original_path.startswith("/api/")
+        and original_path not in REFERER_EXEMPT_PATHS
+        and not original_path.startswith(REFERER_EXEMPT_PREFIXES)
+    ):
         referer = request.headers.get("referer")
         if referer:
             hostname = urlparse(referer).hostname or ""
             if hostname not in REFERER_ALLOWED_HOSTS:
-                logger.warning("Blocked referer %s on %s", referer, original_path)
+                logger.warning("Blocked referer %s on %s",
+                               referer, original_path)
                 request.state.bot_blocked = True
                 return JSONResponse(status_code=404, content={"error": "Not Found"})
 
