@@ -1,9 +1,24 @@
+import logging
 import re
+from urllib.parse import urlparse
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from config.settings import settings
 
+logger = logging.getLogger("api")
+
 LOCALHOST_IPS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
+
+REFERER_ALLOWED_HOSTS = {
+    "stellarbladeguide.com",
+    "www.stellarbladeguide.com",
+    "localhost",
+    "127.0.0.1",
+}
+
+REFERER_EXEMPT_PATHS = {
+    "/api/health",
+}
 
 ALLOWED_PREFIXES = (
     '/api/',
@@ -130,6 +145,16 @@ async def bot_filter_middleware(request: Request, call_next):
     # Skip in dev
     if is_localhost(get_client_ip(request)):
         return await call_next(request)
+
+    # Block /api/* requests with a Referer from an unrecognised domain
+    if original_path.startswith("/api/") and original_path not in REFERER_EXEMPT_PATHS:
+        referer = request.headers.get("referer")
+        if referer:
+            hostname = urlparse(referer).hostname or ""
+            if hostname not in REFERER_ALLOWED_HOSTS:
+                logger.warning("Blocked referer %s on %s", referer, original_path)
+                request.state.bot_blocked = True
+                return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow API, static assets, and SEO files (case-sensitive)
     if original_path.startswith(ALLOWED_PREFIXES) or original_path in ALLOWED_EXACT:
