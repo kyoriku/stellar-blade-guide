@@ -20,10 +20,20 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
     <article className="relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800">
       <div className="relative">
         {content.section_title && (
-          <h3 className="text-xl font-semibold mb-3 flex items-center gap-2 text-gray-100">
-            {content.is_boss && <Skull className="w-5 h-5 text-red-400" />}
-            {content.section_title}
-          </h3>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <h3 className="text-xl font-semibold text-gray-100 leading-tight flex items-center gap-2">
+              {content.is_boss && <Skull className="w-5 h-5 text-red-400" />}
+              {content.section_title}
+            </h3>
+            {content.level && (
+              <p className="w-full sm:w-auto text-sm text-gray-300 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
+                <span className="text-gray-200">{content.level}</span>
+                {content.location && content.location !== content.level && (
+                  <> <span className="text-cyan-600">·</span> {content.location}</>
+                )}
+              </p>
+            )}
+          </div>
         )}
 
         <div className="space-y-4 mb-4">
@@ -66,14 +76,14 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
                       {lines.map((line, lineIdx) => (
                         <li key={lineIdx} className="flex gap-2">
                           <span className="text-blue-400 font-bold">•</span>
-                          <span className="flex-1">{line.slice(2)}</span>
+                          <span className="flex-1">{parseDescription(line.slice(2))}</span>
                         </li>
                       ))}
                     </ul>
                   );
                 }
 
-                return <p key={idx}>{block}</p>;
+                return <p key={idx}>{parseDescription(block)}</p>;
               })}
             </div>
           </div>
@@ -93,14 +103,14 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
                       {lines.map((line, lineIdx) => (
                         <li key={lineIdx} className="flex gap-2">
                           <span className="text-orange-400 font-bold">•</span>
-                          <span className="flex-1">{line.slice(2)}</span>
+                          <span className="flex-1">{parseDescription(line.slice(2))}</span>
                         </li>
                       ))}
                     </ul>
                   );
                 }
 
-                return <p key={idx}>{block}</p>;
+                return <p key={idx}>{parseDescription(block)}</p>;
               })}
             </div>
           </div>
