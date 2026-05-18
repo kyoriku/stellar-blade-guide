@@ -76,6 +76,8 @@ export interface BossInfo {
 export interface WalkthroughContent {
   order: number;
   section_title?: string;
+  level?: string | null;
+  location?: string | null;
   text: string;
   tip?: string;
   warning?: string;
