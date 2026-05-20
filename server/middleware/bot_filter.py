@@ -1,12 +1,14 @@
 import asyncio
 import logging
+import random
 import re
 from urllib.parse import urlparse
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from config.settings import settings
 
-TARPIT_SECONDS = 10
+TARPIT_MIN_SECONDS = 5
+TARPIT_MAX_SECONDS = 15
 
 logger = logging.getLogger("api")
 
@@ -165,7 +167,7 @@ async def bot_filter_middleware(request: Request, call_next):
             request.headers.get("referer", ""),
         )
         request.state.bot_blocked = True
-        await asyncio.sleep(TARPIT_SECONDS)
+        await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
         return JSONResponse(status_code=403, content={"error": "Forbidden"})
 
     # Block /api/* requests with a Referer from an unrecognised domain
@@ -181,7 +183,7 @@ async def bot_filter_middleware(request: Request, call_next):
                 logger.warning("Blocked referer %s on %s",
                                referer, original_path)
                 request.state.bot_blocked = True
-                await asyncio.sleep(TARPIT_SECONDS)
+                await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
                 return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow API, static assets, and SEO files (case-sensitive)
@@ -191,7 +193,7 @@ async def bot_filter_middleware(request: Request, call_next):
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
         request.state.bot_blocked = True
-        await asyncio.sleep(TARPIT_SECONDS)
+        await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
         return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow normal-shaped URLs through to React Router
@@ -200,7 +202,7 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Everything else (file extensions, weird chars) = probe
     request.state.bot_blocked = True
-    await asyncio.sleep(TARPIT_SECONDS)
+    await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
     return JSONResponse(status_code=404, content={"error": "Not Found"})
 
 
