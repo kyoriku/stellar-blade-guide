@@ -15,6 +15,8 @@ class BossInfo(BaseModel):
 class WalkthroughContent(BaseModel):
     order: int
     section_title: Optional[str] = None
+    level: Optional[str] = None
+    location: Optional[str] = None
     text: str
     tip: Optional[str] = None
     warning: Optional[str] = None
