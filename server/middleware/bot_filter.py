@@ -9,6 +9,8 @@ logger = logging.getLogger("api")
 
 LOCALHOST_IPS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 
+HONEYPOT_PATHS = {"/collectibles/hidden-archive-mk2"}
+
 REFERER_ALLOWED_HOSTS = {
     "stellarbladeguide.com",
     "www.stellarbladeguide.com",
@@ -149,6 +151,18 @@ async def bot_filter_middleware(request: Request, call_next):
     # Skip in dev
     if is_localhost(get_client_ip(request)):
         return await call_next(request)
+
+    # Honeypot: any hit here is a bot that walked the sitemap
+    if normalized in HONEYPOT_PATHS:
+        logger.warning(
+            "HONEYPOT HIT path=%s ip=%s ua=%s referer=%s",
+            original_path,
+            get_client_ip(request),
+            request.headers.get("user-agent", ""),
+            request.headers.get("referer", ""),
+        )
+        request.state.bot_blocked = True
+        return JSONResponse(status_code=403, content={"error": "Forbidden"})
 
     # Block /api/* requests with a Referer from an unrecognised domain
     if (
