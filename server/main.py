@@ -78,6 +78,10 @@ app.include_router(comments.router, prefix=settings.API_PREFIX)
 app.include_router(progress.router, prefix=settings.API_PREFIX)
 app.include_router(search.router, prefix=settings.API_PREFIX)
 
+@app.get("/.well-known/traffic-advice", include_in_schema=False)
+async def traffic_advice():
+    return [{"user_agent": "prefetch-proxy", "fraction": 1.0}]
+
 # Static file serving
 CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
 
