@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from config.settings import settings
+from core.colours import RED, RESET
 
 TARPIT_MIN_SECONDS = 5
 TARPIT_MAX_SECONDS = 15
@@ -34,6 +35,7 @@ REFERER_EXEMPT_PREFIXES = (
 ALLOWED_PREFIXES = (
     '/api/',
     '/assets/',
+    '/.well-known/',
 )
 
 ALLOWED_EXACT = {
@@ -160,11 +162,13 @@ async def bot_filter_middleware(request: Request, call_next):
     # Honeypot: any hit here is a bot that walked the sitemap
     if normalized in HONEYPOT_PATHS:
         logger.warning(
-            "HONEYPOT HIT path=%s ip=%s ua=%s referer=%s",
+            "%sHONEYPOT HIT path=%s ip=%s ua=%s referer=%s%s",
+            RED,
             original_path,
             get_client_ip(request),
             request.headers.get("user-agent", ""),
             request.headers.get("referer", ""),
+            RESET,
         )
         request.state.bot_blocked = True
         await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
@@ -180,8 +184,8 @@ async def bot_filter_middleware(request: Request, call_next):
         if referer:
             hostname = urlparse(referer).hostname or ""
             if hostname not in REFERER_ALLOWED_HOSTS:
-                logger.warning("Blocked referer %s on %s",
-                               referer, original_path)
+                logger.warning("%sBlocked referer %s on %s%s",
+                               RED, referer, original_path, RESET)
                 request.state.bot_blocked = True
                 await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
                 return JSONResponse(status_code=404, content={"error": "Not Found"})
