@@ -171,7 +171,7 @@ async def bot_filter_middleware(request: Request, call_next):
             RESET,
         )
         request.state.bot_blocked = True
-        await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
+        # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
         return JSONResponse(status_code=403, content={"error": "Forbidden"})
 
     # Block /api/* requests with a Referer from an unrecognised domain
@@ -187,7 +187,7 @@ async def bot_filter_middleware(request: Request, call_next):
                 logger.warning("%sBlocked referer %s on %s%s",
                                RED, referer, original_path, RESET)
                 request.state.bot_blocked = True
-                await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
+                # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
                 return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow API, static assets, and SEO files (case-sensitive)
@@ -197,7 +197,7 @@ async def bot_filter_middleware(request: Request, call_next):
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
         request.state.bot_blocked = True
-        await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
+        # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
         return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow normal-shaped URLs through to React Router
@@ -206,7 +206,7 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Everything else (file extensions, weird chars) = probe
     request.state.bot_blocked = True
-    await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
+    # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
     return JSONResponse(status_code=404, content={"error": "Not Found"})
 
 
