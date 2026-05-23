@@ -8,9 +8,9 @@ export const WALKTHROUGH_IMAGES: Record<string, string> = {
 
 export const LEVEL_IMAGES: Record<string, string> = {
   'eidos-7': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1769735055/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221942.jpg',
-  'xion': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765222145/stellar-blade/collectibles/xion/xion/1-supply-camp-1.jpg',
-  'wasteland': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221844/stellar-blade/collectibles/wasteland/barren-lands/1-supply-camp-hidden-path-1.jpg',
-  'altess-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765220963/stellar-blade/collectibles/altess-levoire/research-lab-entrance/1-document-messages-you-are-fake.jpg',
+  'xion': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1776998448/stellar-blade/walkthroughs/main-story/xion-the-last-remaining-city/stellar-blade-20251205214421.jpg',
+  'wasteland': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1779236813/stellar-blade/walkthroughs/main-story/altess-levoire/stellar-blade-20260411002007.jpg',
+  'altess-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1779398227/stellar-blade/walkthroughs/main-story/altess-levoire/stellar-blade-20260520202629.jpg',
   'matrix-11': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221567/stellar-blade/collectibles/matrix-11/closed-off-platform/1-supply-camp.jpg',
   'great-desert': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221519/stellar-blade/collectibles/great-desert/solar-tower/1-supply-camp-great-desert-1.jpg',
   'abyss-levoire': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765220924/stellar-blade/collectibles/abyss-levoire/emergency-exit/1-supply-camp.jpg',
