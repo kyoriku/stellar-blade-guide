@@ -23,11 +23,11 @@ const KIND_ICONS = {
 
 function parsePrefetchTarget(result: { kind: string; navigation_url: string }) {
   try {
-    const url = result.navigation_url.split('#')[0]
-    const parts = url.split('/').filter(Boolean)
+    const [urlPart, anchor] = result.navigation_url.split('#')
+    const parts = urlPart.split('/').filter(Boolean)
     const isCollectibleKind = ['collectibles', 'upgrades', 'cosmetics', 'materials'].includes(result.kind)
     if (isCollectibleKind && parts.length >= 2)
-      return { kind: 'collectible' as const, category: parts[0], typeSlug: parts[1] }
+      return { kind: 'collectible' as const, category: parts[0], typeSlug: parts[1], anchor }
     if (result.kind === 'walkthrough' && parts.length >= 3)
       return { kind: 'walkthrough' as const, type: parts[1], slug: parts[2] }
     if (result.kind === 'level' && parts.length >= 2)
@@ -52,7 +52,7 @@ export function SearchResults({
     const target = parsePrefetchTarget(result)
     if (!target) return
     if (target.kind === 'collectible')
-      void prefetchCollectiblesByType(target.typeSlug, target.category)
+      void prefetchCollectiblesByType(target.typeSlug, target.category, target.anchor)
     else if (target.kind === 'walkthrough')
       void prefetchWalkthroughBySlug(target.type, target.slug)
     else if (target.kind === 'level')
