@@ -7,6 +7,8 @@ import glob
 import re
 from pathlib import Path
 
+TRANSFORMATION_MARKER = "/upload/f_webp,q_auto/"
+
 
 def add_transformations_to_url(cloudinary_url):
     """
@@ -22,7 +24,7 @@ def add_transformations_to_url(cloudinary_url):
     transformations = "f_webp,q_auto"
 
     # If transformations already exist, do nothing (prevents double runs)
-    if f"/upload/{transformations}/" in cloudinary_url:
+    if TRANSFORMATION_MARKER in cloudinary_url:
         return cloudinary_url
 
     # Insert transformations after /upload/
@@ -92,6 +94,7 @@ def update_urls(dry_run=True, add_transformations=True, content_type='all'):
     updated_files = 0
     updated_urls = 0
     not_found = []
+    already_transformed = 0
 
     for json_file in json_files:
         with open(json_file, 'r', encoding='utf-8') as f:
@@ -122,9 +125,11 @@ def update_urls(dry_run=True, add_transformations=True, content_type='all'):
                             file_url_count += 1
                             file_changed = True
                     else:
-                        if old_url not in not_found:
+                        if TRANSFORMATION_MARKER in old_url:
+                            already_transformed += 1
+                        elif old_url not in not_found:
                             not_found.append(old_url)
-        
+
         # Handle walkthrough JSON (single object with content array)
         elif isinstance(data, dict):
             # Update thumbnail_url if exists
@@ -141,9 +146,11 @@ def update_urls(dry_run=True, add_transformations=True, content_type='all'):
                         updated_urls += 1
                         file_url_count += 1
                         file_changed = True
+                elif TRANSFORMATION_MARKER in old_url:
+                    already_transformed += 1
                 elif old_url not in not_found:
                     not_found.append(old_url)
-            
+
             # Update content images
             for content_block in data.get('content', []):
                 for img in content_block.get('images', []):
@@ -163,7 +170,9 @@ def update_urls(dry_run=True, add_transformations=True, content_type='all'):
                             file_url_count += 1
                             file_changed = True
                     else:
-                        if old_url not in not_found:
+                        if TRANSFORMATION_MARKER in old_url:
+                            already_transformed += 1
+                        elif old_url not in not_found:
                             not_found.append(old_url)
 
         # Write back if changed (and not dry run)
@@ -188,6 +197,9 @@ def update_urls(dry_run=True, add_transformations=True, content_type='all'):
     else:
         print(f"\033[32m✓ Updated {updated_files} files\033[0m")
         print(f"\033[32m✓ Updated {updated_urls} URLs\033[0m")
+
+    if already_transformed:
+        print(f"\033[36m{already_transformed} URLs already in final form (skipped)\033[0m")
 
     if not_found:
         print(f"\n\033[31m⚠  {len(not_found)} URLs not found in mapping:\033[0m")
