@@ -24,7 +24,7 @@ export function useComments(contentType: string, contentId: number) {
     },
     enabled: !!contentType && !!contentId,
     staleTime: 5 * 60 * 1000,   // serve from cache for 5 min on SPA navigation
-    gcTime: 30 * 60 * 1000,     // keep in memory for 30 min — shows cached data instantly while refetching after staleTime expires
+    gcTime: 60 * 60 * 1000,     // keep in memory for 1 hour — shows cached data instantly while refetching after staleTime expires
     // refetchInterval: 60 * 1000, // poll every 60s while on the page (consider enabling once we have more engagement to keep comment threads up-to-date)
   })
 
