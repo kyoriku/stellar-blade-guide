@@ -11,8 +11,8 @@ import { AuthProvider } from './context/AuthContext.tsx'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000, // 10 minutes - data stays fresh for 10 minutes - increase to 30 minutes once content is done
-      gcTime: 60 * 60 * 1000, // 1 hour - cache persists for 1 hour
+      staleTime: 30 * 60 * 1000, // 30 minutes - data stays fresh for 30 minutes - increase to 1 hour once content is done
+      gcTime: 60 * 60 * 1000, // 1 hour - cache persists for 1 hour - increase to 24 hours once content is done
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
       retry: (failureCount, error) => {
         // Check if it's an ApiError and don't retry 4xx client errors

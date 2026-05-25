@@ -36,7 +36,7 @@ export function useProgress() {
     },
     enabled: isAuthenticated && !authLoading,
     staleTime: 5 * 60 * 1000,       // 5 minutes before refetch
-    gcTime: 10 * 60 * 1000,          // keep in cache 10 minutes
+    gcTime: 60 * 60 * 1000,          // keep in cache for 1 hour
   })
 
   const completedIds = isAuthenticated
