@@ -18,7 +18,8 @@ class Settings:
     REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379')
     
     # Cache TTL (in seconds)
-    CACHE_TTL: int = int(os.getenv('CACHE_TTL', 86400))  # 24 hours
+    CACHE_TTL: int = int(os.getenv('CACHE_TTL', 2592000))  # 30 days — Redis + CDN s-maxage
+    SWR_TTL: int = 604800  # 7 days — CDN stale-while-revalidate
     
     # CORS
     CORS_ORIGINS: list = os.getenv(
