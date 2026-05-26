@@ -1,0 +1,103 @@
+# .devcontainer/docker-compose.yml
+#
+# Orchestrates four services for local development:
+#   - volume-init: Runs once at startup, fixes ownership on the named volumes
+#                  so the non-root vscode user can write to them. Exits when done.
+#   - dev:        The container Claude Code runs in (Python + Node + uv + claude CLI)
+#   - postgres:   Database, isolated to this project, data persisted in a named volume
+#   - redis:      Cache, persisted in a named volume
+#
+# Why volume-init exists:
+#   Docker creates named volumes with root:root ownership by default. The dev
+#   container runs as `vscode` (UID 1000) and can't write into them. The init
+#   service mounts the volumes as root, chowns them to vscode (UID 1000), and
+#   exits. The dev service waits for it via depends_on, so by the time dev
+#   starts, the volumes are owned correctly.
+#
+# Why named volumes for .venv and node_modules (instead of letting them live
+# on the bind-mount):
+#   Keeping container-managed artifacts (Linux binaries, native modules) in
+#   isolated volumes prevents them from being written back to your Mac's
+#   filesystem through the bind-mount. Cleaner host/container separation.
+
+services:
+  # Init service. Runs once, fixes permissions on named volumes, exits.
+  volume-init:
+    image: alpine:3.20
+    command: >
+      sh -c "chown -R 1000:1000 /init/venv /init/node_modules && echo 'volume permissions set'"
+    volumes:
+      - server-venv:/init/venv
+      - client-node-modules:/init/node_modules
+
+  dev:
+    image: mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
+
+    volumes:
+      # Bind-mount the entire repo. `cached` is a macOS optimization — host is
+      # the source of truth, container reads are cached. Big perf win for
+      # Vite/FastAPI hot reload.
+      - ..:/workspaces/stellar-blade-guide:cached
+
+      # Named volumes for container-managed artifacts. Permissions fixed by
+      # the volume-init service before this container starts.
+      - server-venv:/workspaces/stellar-blade-guide/server/.venv
+      - client-node-modules:/workspaces/stellar-blade-guide/client/node_modules
+
+    command: sleep infinity
+
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/stellarblade
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: http://localhost:3000
+      DEBUG: "true"
+
+    depends_on:
+      volume-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stellarblade
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Exposed to host so you can connect with TablePlus/psql from your Mac.
+    # Format: "host:container". If 5432 is taken, change host side e.g. "5433:5432".
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stellarblade"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  redis-data:
+  server-venv:
+  client-node-modules:

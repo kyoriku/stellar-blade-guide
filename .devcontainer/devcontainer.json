@@ -1,0 +1,88 @@
+// .devcontainer/devcontainer.json
+//
+// VS Code reads this file when you run "Dev Containers: Reopen in Container".
+// It also configures the dev environment when accessed via pure terminal —
+// the `features` and `postCreateCommand` run regardless of which editor you use.
+//
+// Schema reference: https://containers.dev/implementors/json_reference/
+{
+  "name": "stellar-blade-guide-dev",
+  // Use docker-compose to orchestrate dev + postgres + redis.
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "dev",
+  "workspaceFolder": "/workspaces/stellar-blade-guide",
+  // Layer additional tooling onto the base Python image. Features are
+  // pre-built scriptlets maintained by the devcontainers community.
+  "features": {
+    // Node.js for the React frontend AND for installing Claude Code globally.
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    },
+    // Astral's uv (Python package manager) per your project conventions.
+    "ghcr.io/va-h/devcontainers-features/uv:1": {
+      "version": "latest"
+    },
+    // Common shell utilities (zsh, oh-my-zsh, etc.) — quality of life inside the container.
+    // "ghcr.io/devcontainers/features/common-utils:2": {
+    //   "configureZshAsDefaultShell": true,
+    //   "username": "vscode"
+    // }
+  },
+  // Run AFTER the container is built, ONCE. Installs Claude Code globally
+  // and the project's Python and JS dependencies.
+  //
+  // The `|| true` on the dependency installs is intentional — if your repo
+  // is missing a server/ or client/ at any point, container creation still
+  // succeeds and you can debug from inside.
+  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && (cd server && uv sync || true) && (cd client && npm install || true)",
+  // Forward these ports from the container to your Mac. Open localhost:3000
+  // in Safari/Chrome and you're hitting Vite running inside the container.
+  "forwardPorts": [
+    3000,
+    8000,
+    5432,
+    6379
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "Vite (frontend)",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "FastAPI (backend)",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "Postgres",
+      "onAutoForward": "silent"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "silent"
+    }
+  },
+  "otherPortsAttributes": {
+  "onAutoForward": "ignore"
+ },
+  // VS Code-specific settings. Ignored when using pure terminal workflow.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspaces/stellar-blade-guide/server/.venv/bin/python",
+        // "terminal.integrated.defaultProfile.linux": "zsh"
+      }
+    }
+  },
+  // Run as the non-root `vscode` user that the base image provides.
+  // Avoids file ownership headaches when the bind-mount writes back to your Mac.
+  "remoteUser": "vscode"
+}
