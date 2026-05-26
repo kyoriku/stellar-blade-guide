@@ -78,7 +78,7 @@ server/scripts/generate_sitemap.py
 server/scripts/update_category_images.py
 !server/scripts/renumber_ids.py
 server/services
-server/tests
+server/scripts/prod_seed.py
 
 # Documentation
 docs/
@@ -86,3 +86,7 @@ docs/
 # TypeScript incremental build info
 node_modules/.tmp/
 *.tsbuildinfo
+
+# CC files
+.claude/
+CLAUDE.md
