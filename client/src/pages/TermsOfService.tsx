@@ -1,4 +1,4 @@
-import { FileText, User, MessageSquare, ListChecks, Copyright, AlertTriangle, Link as LinkIcon, RefreshCw, Scale, Mail } from 'lucide-react'
+import { FileText, User, MessageSquare, ListChecks, Copyright, AlertTriangle, Link as LinkIcon, RefreshCw, Scale, Mail, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
 
@@ -62,6 +62,19 @@ export default function TermsOfService() {
           </section>
 
           <section>
+            <SectionHeader icon={Heart}>Optional Support Contributions</SectionHeader>
+            <p>This site offers an optional way to support its operation through voluntary tips via third-party platforms (currently Ko-fi). By making a contribution, you agree to the following:</p>
+            <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
+              <li>Contributions are voluntary gifts intended to support site operation and do not entitle you to any goods, services, or special access</li>
+              <li>All site content remains freely accessible regardless of whether you contribute</li>
+              <li>Contributions are <strong>non-refundable</strong> as they are gifts rather than purchases of goods or services</li>
+              <li>Payment processing is handled entirely by Ko-fi and Stripe, subject to their respective terms of service</li>
+              <li>We are not responsible for issues arising from the third-party payment process</li>
+            </ul>
+            <p className="mt-2">If you have an issue with a contribution (incorrect amount, accidental tip, etc.), please contact Ko-fi or Stripe directly for refund or dispute resolution.</p>
+          </section>
+
+          <section>
             <SectionHeader icon={AlertTriangle}>Disclaimers & Liability</SectionHeader>
             <p>This website is provided "as is" without warranties of any kind. We make no guarantees about accuracy, completeness, or availability.</p>
             <p className="mt-2"><strong>Important:</strong> Game content changes with patches and updates. Guide information may become outdated. Always verify critical information in-game before making irreversible decisions (selling rare items, choosing permanent upgrades, etc.).</p>
@@ -92,7 +105,7 @@ export default function TermsOfService() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: March 9, 2026
+            Last Updated: May 27, 2026
           </div>
         </div>
       </div>
