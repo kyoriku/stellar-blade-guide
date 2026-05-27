@@ -15,7 +15,7 @@ export default function Footer() {
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
             <a
-              href="https://ko-fi.com/kyoriku"
+              href="https://ko-fi.com/stellarbladeguide"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-cyan-400 transition-colors"
