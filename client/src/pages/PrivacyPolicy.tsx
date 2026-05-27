@@ -1,4 +1,4 @@
-import { Database, FileText, Bot, BarChart3, Cookie, Globe, Shield, UserCheck, Users, RefreshCw } from 'lucide-react'
+import { Database, FileText, Bot, BarChart3, Cookie, Globe, Shield, UserCheck, Users, RefreshCw, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
 
@@ -8,6 +8,7 @@ const sections = [
   { id: 'ai-moderation', label: 'AI comment moderation' },
   { id: 'analytics', label: 'Web analytics' },
   { id: 'cookies', label: 'Cookies & local storage' },
+  { id: 'support', label: 'Support contributions' },
   { id: 'third-party', label: 'Third-party services' },
   { id: 'security', label: 'Data security & retention' },
   { id: 'rights', label: 'Your rights' },
@@ -76,6 +77,11 @@ export default function PrivacyPolicy() {
           </section>
 
           <section>
+            <SectionHeader icon={Heart} id="support">Support Contributions</SectionHeader>
+            <p>If you choose to support the site via Ko-fi, all payment processing is handled entirely by Ko-fi and Stripe. We never receive or store your payment details, including credit card numbers, billing addresses, or any other sensitive financial information. We may receive limited information about contributions (amount, optional supporter display name, and optional message) for accounting purposes. Payment processing is subject to <a href="https://more.ko-fi.com/privacy" target="_blank" rel="noopener noreferrer" className={linkClass}>Ko-fi's privacy policy</a> and <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className={linkClass}>Stripe's privacy policy</a>.</p>
+          </section>
+
+          <section>
             <SectionHeader icon={Globe} id="third-party">Third-Party Services</SectionHeader>
             <p>We use the following third-party services, each with their own privacy policies:</p>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
@@ -84,6 +90,7 @@ export default function PrivacyPolicy() {
               <li><strong>Cloudinary</strong> - image delivery and storage</li>
               <li><strong>OpenAI</strong> - automated comment moderation (comment text only)</li>
               <li><strong>Resend</strong> - transactional email delivery (email address only)</li>
+              <li><strong>Ko-fi & Stripe</strong> - voluntary tip processing (we never see your payment details)</li>
             </ul>
           </section>
 
@@ -111,7 +118,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: May 12, 2026
+            Last Updated: May 27, 2026
           </div>
         </div>
       </div>
