@@ -13,7 +13,15 @@ export default function Footer() {
               Not affiliated with Shift Up Corporation or Sony Interactive Entertainment
             </p>
           </div>
-          <div className="flex gap-6 text-sm text-gray-400">
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
+            <a
+              href="https://ko-fi.com/kyoriku"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-cyan-400 transition-colors"
+            >
+              Support ☕
+            </a>
             <Link to="/disclaimer" className="hover:text-cyan-400 transition-colors">
               Disclaimer
             </Link>
@@ -31,7 +39,7 @@ export default function Footer() {
             </a>
           </div>
         </div>
-      </div>
-    </footer>
+      </div >
+    </footer >
   )
 }
