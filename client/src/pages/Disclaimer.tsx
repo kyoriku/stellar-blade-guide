@@ -1,4 +1,4 @@
-import { Copyright, AlertTriangle, Mail, Sparkles, Info } from 'lucide-react'
+import { Copyright, AlertTriangle, Mail, Sparkles, Info, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
 import Callout from '../components/Callout'
@@ -12,7 +12,7 @@ export default function Disclaimer() {
         <Callout variant="warning">
           <p><strong>Unofficial fan-made guide.</strong> This website is not affiliated with, endorsed by, or connected to Shift Up Corporation or Sony Interactive Entertainment.</p>
         </Callout>
-        
+
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
           <section>
             <SectionHeader icon={Info}>Unofficial Fan-Made Guide</SectionHeader>
@@ -30,6 +30,11 @@ export default function Disclaimer() {
           </section>
 
           <section>
+            <SectionHeader icon={Heart}>Optional Support</SectionHeader>
+            <p>Visitors may optionally support this site through voluntary contributions via third-party platforms (currently Ko-fi). These contributions are entirely optional and do not grant access to any restricted content, services, or benefits. All guide content remains freely available regardless of whether you choose to support the site. Tips received help offset operational costs (hosting, infrastructure, domain) and do not change the unofficial, fan-made nature of this project.</p>
+          </section>
+
+          <section>
             <SectionHeader icon={AlertTriangle}>Accuracy & Liability</SectionHeader>
             <p>Game content may change with patches and updates. Information may become outdated. Users access this site <strong>at their own risk</strong>. We are not responsible for issues arising from using this guide, including loss of game progress, corrupted save data, or in-game decisions based on outdated information.</p>
           </section>
@@ -43,7 +48,7 @@ export default function Disclaimer() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: March 9, 2026
+            Last Updated: May 27, 2026
           </div>
         </div>
       </div>
