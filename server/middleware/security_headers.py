@@ -3,18 +3,18 @@ from fastapi import FastAPI, Request, Response
 import os
 from config.settings import settings
 
+
 def add_security_headers_middleware(app: FastAPI):
     allowed_hosts_str = os.getenv(
         'ALLOWED_HOSTS',
         'localhost,127.0.0.1'
     )
     allowed_hosts = [host.strip() for host in allowed_hosts_str.split(',')]
-    
+
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=allowed_hosts
     )
-
 
     CSP = (
         "default-src 'self'; "
@@ -23,6 +23,8 @@ def add_security_headers_middleware(app: FastAPI):
         "img-src 'self' data: https://res.cloudinary.com https://lh3.googleusercontent.com https://cdn.discordapp.com; "
         "connect-src 'self' https://cloudflareinsights.com; "
         "font-src 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
         "frame-src 'none'; "
         "frame-ancestors 'none'; "
         "object-src 'none';"
@@ -38,7 +40,7 @@ def add_security_headers_middleware(app: FastAPI):
         response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=()"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=()"
         if not settings.DEBUG:
             response.headers["Content-Security-Policy"] = CSP
 
@@ -50,11 +52,15 @@ def add_security_headers_middleware(app: FastAPI):
         if request.method in ("GET", "HEAD") and response.status_code == 200:
             if request.url.path.startswith("/assets/"):
                 response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            elif request.url.path in ("/robots.txt", "/sitemap.xml"):
+                # 6 hours
+                response.headers["Cache-Control"] = "public, max-age=21600"
             elif request.url.path.startswith("/api/"):
                 if request.url.path.startswith(("/api/progress", "/api/auth", "/api/comments")):
                     response.headers["Cache-Control"] = "no-store"
                 else:
-                    response.headers["Cache-Control"] = f"public, max-age=3600, s-maxage={settings.CACHE_TTL}, stale-while-revalidate={settings.SWR_TTL}"
+                    response.headers[
+                        "Cache-Control"] = f"public, max-age=3600, s-maxage={settings.CACHE_TTL}, stale-while-revalidate={settings.SWR_TTL}"
             else:
                 response.headers["Cache-Control"] = "no-cache"
         else:
