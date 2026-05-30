@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { api, type LevelWithLocations, type LocationWithCollectibles, type Walkthrough } from '../services/api'
 import { buildSlugMap } from '../utils/slugify'
-import { buildSrcSet, thumbnailUrl, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES, GALLERY_WIDTHS } from '../utils/cloudinary'
+import { buildSrcSet, thumbnailUrl, SINGLE_SIZES, GRID_SIZES, GALLERY_WIDTHS } from '../utils/cloudinary'
 import { loadedUrlCache } from '../utils/imageCache'
 
 const ABOVE_FOLD_PREFETCH_COUNT = 3;
