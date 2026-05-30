@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { api, type LevelWithLocations, type LocationWithCollectibles, type Walkthrough } from '../services/api'
 import { buildSlugMap } from '../utils/slugify'
-import { buildSrcSet, thumbnailUrl, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES } from '../utils/cloudinary'
+import { buildSrcSet, thumbnailUrl, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES, GALLERY_WIDTHS } from '../utils/cloudinary'
 import { loadedUrlCache } from '../utils/imageCache'
 
 const ABOVE_FOLD_PREFETCH_COUNT = 3;
@@ -22,14 +22,11 @@ function prefetchImage(anchor: string | undefined, collectibles: { id: number; t
   for (const collectible of targets) {
     const imageCount = collectible.images.length;
     if (!imageCount) continue;
-    const predictedWidth = predictRenderedWidth(imageCount, window.innerWidth, window.devicePixelRatio);
     const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
     for (const image of collectible.images) {
       if (prefetchedImageUrls.has(image.url)) continue;
       prefetchedImageUrls.add(image.url);
-      const predictedUrl = thumbnailUrl(image.url, predictedWidth);
-      loadedUrlCache.add(predictedUrl);
-      new Image().src = predictedUrl;
+      GALLERY_WIDTHS.forEach(w => loadedUrlCache.add(thumbnailUrl(image.url, w)));
       const link = document.createElement('link');
       link.rel = 'preload';
       link.as = 'image';
@@ -47,14 +44,11 @@ function prefetchWalkthroughImages(walkthrough: Walkthrough) {
     const sectionImages = section.images ?? [];
     if (!sectionImages.length) continue;
     const imageCount = sectionImages.length;
-    const predictedWidth = predictRenderedWidth(imageCount, window.innerWidth, window.devicePixelRatio);
     const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
     for (const image of sectionImages) {
       if (prefetchedImageUrls.has(image.url)) continue;
       prefetchedImageUrls.add(image.url);
-      const predictedUrl = thumbnailUrl(image.url, predictedWidth);
-      loadedUrlCache.add(predictedUrl);
-      new Image().src = predictedUrl;
+      GALLERY_WIDTHS.forEach(w => loadedUrlCache.add(thumbnailUrl(image.url, w)));
       const link = document.createElement('link');
       link.rel = 'preload';
       link.as = 'image';
@@ -63,6 +57,25 @@ function prefetchWalkthroughImages(walkthrough: Walkthrough) {
       document.head.appendChild(link);
     }
     sectionCount++;
+  }
+}
+
+// Module-level (not inside usePrefetch) so it shares the prefetchedImageUrls dedup Set
+// with prefetchImage and prefetchWalkthroughImages. Search results supply plain URL strings
+// rather than typed image objects, so the existing helpers can't be reused directly.
+export function prefetchImageUrls(urls: string[]) {
+  if (!urls.length) return;
+  const sizes = urls.length === 1 ? SINGLE_SIZES : GRID_SIZES;
+  for (const url of urls) {
+    if (prefetchedImageUrls.has(url)) continue;
+    prefetchedImageUrls.add(url);
+    GALLERY_WIDTHS.forEach(w => loadedUrlCache.add(thumbnailUrl(url, w)));
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.imageSrcset = buildSrcSet(url);
+    link.imageSizes = sizes;
+    document.head.appendChild(link);
   }
 }
 

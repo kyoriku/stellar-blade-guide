@@ -9,13 +9,16 @@ type Category = typeof PREFETCHABLE_CATEGORIES[number];
 function parsePrefetchTarget(to: string) {
   const withoutSlash = to.startsWith('/') ? to.slice(1) : to;
   const [pathPart, anchor] = withoutSlash.split('#');
-  const [category, name] = pathPart.split('/');
+  const [category, name, slug] = pathPart.split('/');
   if (!name) return null;
   if ((PREFETCHABLE_CATEGORIES as readonly string[]).includes(category)) {
     return { kind: 'type' as const, category: category as Category, typeName: name, anchor };
   }
   if (category === 'levels') {
     return { kind: 'level' as const, levelName: name, anchor };
+  }
+  if (category === 'walkthroughs' && slug) {
+    return { kind: 'walkthrough' as const, walkthroughType: name, slug };
   }
   return null;
 }
@@ -27,13 +30,14 @@ interface Props {
 }
 
 function PrefetchableLink({ to, className, children }: Props) {
-  const { prefetchCollectiblesByType, prefetchLevel } = usePrefetch();
+  const { prefetchCollectiblesByType, prefetchLevel, prefetchWalkthroughBySlug } = usePrefetch();
 
   const handleIntent = () => {
     const target = parsePrefetchTarget(to);
     if (!target) return;
     if (target.kind === 'type') prefetchCollectiblesByType(target.typeName, target.category, target.anchor);
-    else prefetchLevel(target.levelName, target.anchor);
+    else if (target.kind === 'level') prefetchLevel(target.levelName, target.anchor);
+    else prefetchWalkthroughBySlug(target.walkthroughType, target.slug);
   };
 
   return (

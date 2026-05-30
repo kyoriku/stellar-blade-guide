@@ -1,7 +1,9 @@
 export const WALKTHROUGHS = [
   { slug: 'main-story', name: 'Main Story' },
-  // { slug: 'side-quests', name: 'Side Quests' },
-  // { slug: 'bulletin-board-requests', name: 'Bulletin Board Requests' },
+  { slug: 'side-quests', name: 'Side Quests' },
+  { slug: 'bulletin-board-requests', name: 'Bulletin Board Requests' },
+  // { slug: 'nier-dlc', name: 'NieR: Automata DLC' },
+  // { slug: 'nikke-dlc', name: 'Goddess of Victory: Nikke DLC' },
   // { slug: 'bosses', name: 'Bosses' },
   // { slug: 'fishing', name: 'Fishing' },
 ] as const;
