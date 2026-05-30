@@ -1,10 +1,10 @@
 # Stellar Blade Guide
 
-An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stack web application managing 900+ database records and 1500+ images via Cloudinary CDN.
+An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, side quests, bulletin board requests, and more) and 1000+ collectibles. Full-stack web application managing 1500+ images via Cloudinary CDN.
 
 **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
-**Key Features:** Progress tracking (guest + authenticated) • User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Redis caching • Cloudinary CDN • Image galleries • Responsive design
+**Key Features:** Progress tracking (guest + authenticated) • Walkthroughs • Full-text search • User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Redis caching • Cloudinary CDN • Image galleries • Responsive design
 
 ![Home Page](client/public/assets/screenshots/homepage.png)
 
@@ -57,9 +57,9 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 - Pydantic for request/response validation
 - Role-based access control (user, moderator, admin)
 - Rate limiting (slowapi) and custom honeypot middleware for bot detection
-- CORS configuration
 - AI-powered comment moderation via OpenAI Moderation API
 - Progress tracking with guest-to-authenticated sync on login
+- Single-process production deployment: FastAPI serves the built React SPA as a catch-all, with no separate static server
 
 **Database**
 - PostgreSQL with relational schema
@@ -68,7 +68,7 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 - Indexed queries for performance
 
 **Performance & Caching**
-- Multi-tier caching: Redis (server-side, 7-day TTL) + ETag/304 responses + TanStack Query (client-side)
+- Multi-tier caching: Redis (server-side, 30-day TTL) + ETag/304 responses + TanStack Query (client-side)
 - Cache-Control exclusions for mutable per-user data (progress tracking)
 - Cloudinary CDN for image delivery and optimisation
 - 60–70ms average API response times
@@ -86,6 +86,11 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 - AI moderation via OpenAI flags inappropriate content before it's saved
 - Soft delete preserves thread context when a parent comment is removed
 
+**Search**
+- Full-text search across collectibles, walkthroughs, and levels
+- PostgreSQL `pg_trgm` trigram similarity + `tsvector` FTS; scores merged and ranked
+- Rate-limited to 30 req/min; results cached in Redis for 1 hour
+
 ## Screenshots
 <details>
 <summary><b>View More Screenshots</b></summary>
@@ -98,56 +103,40 @@ An unofficial game guide and collectibles tracker for *Stellar Blade*. Full-stac
 
 ## Installation
 
-### Prerequisites
+### Dev Container (recommended)
 
-- Node.js 22+
-- Python 3.13+
-- PostgreSQL 17+
-- Redis 8+
+Requires [VS Code](https://code.visualstudio.com/), the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension, and [Docker](https://www.docker.com/products/docker-desktop/).
 
-### Setup
+1. Clone the repository and open the folder in VS Code
+2. Click **Reopen in Container** when prompted — or press `F1` → *Dev Containers: Reopen in Container*
+3. Dependencies install automatically (`uv sync` + `npm install`)
+4. Create `server/.env` — see **Environment Variables** below
+5. Start both servers:
 
-#### 1. Install dependencies
-
-Root (concurrently):
 ```bash
-npm install
+npm run dev
 ```
 
-Client:
-```bash
-cd client && npm install
-```
+Frontend: http://localhost:3000 · API: http://localhost:8000
 
-Server - using [uv](https://github.com/astral-sh/uv) (recommended):
-```bash
-cd server && uv sync
-```
+PostgreSQL and Redis are provided by the container — no local installs needed.
 
-Or with standard Python venv:
-```bash
-cd server
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+### Environment Variables
 
-#### 2. Environment Variables
+Create `server/.env`:
 
-Create a `.env` file in `server/`:
 ```bash
 ENVIRONMENT=development
 DATABASE_URL=postgresql+asyncpg://localhost:5432/stellarblade
 REDIS_URL=redis://localhost:6379
-CORS_ORIGINS=http://localhost:3000,https://stellarbladeguide.com
-
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+
 CACHE_TTL=300
 
-JWT_SECRET_KEY=your_jwt_secret # Generate using: openssl rand -hex 32
-ADMIN_SECRET=your_admin_secret # Generate using: openssl rand -hex 32
+JWT_SECRET_KEY=your_jwt_secret  # openssl rand -hex 32
+ADMIN_SECRET=your_admin_secret  # openssl rand -hex 32
 FRONTEND_URL=http://localhost:3000
 
 OPENAI_API_KEY=your_openai_api_key
@@ -162,21 +151,23 @@ LOG_LEVEL=INFO
 DEBUG=True
 ```
 
-#### 3. Database
+<details>
+<summary>Manual setup (without Dev Container)</summary>
+
+**Prerequisites:** Node.js 22+, Python 3.13+, PostgreSQL, Redis, [uv](https://github.com/astral-sh/uv)
+
 ```bash
-psql postgres
-CREATE DATABASE stellarblade;
-\q
+cd client && npm install
+cd server && uv sync
 ```
 
-Seed scripts are available in `server/scripts/db/` for reference, though seed data files are not included in this repository.
+Create a PostgreSQL database, configure `server/.env` (see Environment Variables above), then run:
 
-#### 4. Run
-
-From the root directory, this starts both the FastAPI server (port 8000) and Vite dev server (port 3000) concurrently:
 ```bash
 npm run dev
 ```
+
+</details>
 
 ## License & Legal
 
