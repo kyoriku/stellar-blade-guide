@@ -1,7 +1,7 @@
 export const WALKTHROUGH_IMAGES: Record<string, string> = {
   'main-story': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765223101/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.jpg',
   'side-quests': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221620/stellar-blade/collectibles/matrix-11/rotten-labyrinth/20-document-prayers-chapter-of-trial-1-b.jpg',
-  'bulletin-board-requests': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1776998458/stellar-blade/walkthroughs/main-story/xion-the-last-remaining-city/stellar-blade-20260410230830.jpg',
+  'bulletin-board-requests': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1780002210/stellar-blade/walkthroughs/main-story/xion-the-last-remaining-city/stellar-blade-20260104000910.jpg',
   'bosses': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
   'fishing': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
 };
