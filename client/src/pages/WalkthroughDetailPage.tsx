@@ -7,6 +7,7 @@ import Lightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 import 'yet-another-react-lightbox/styles.css'
 import WalkthroughContent from '../components/WalkthroughContent'
+import { parseDescription } from '../utils/parseDescription'
 import WalkthroughContentSkeleton from '../components/WalkthroughContentSkeleton'
 import ErrorPage from './ErrorPage'
 import TableOfContents from '../components/TableOfContents'
@@ -277,7 +278,7 @@ function WalkthroughPage() {
             <section className="mb-4 space-y-4">
               {walkthrough.content.map((content) => (
                 <div
-                  key={content.order}
+                  key={`${walkthrough.slug}-${content.order}`}
                   id={content.section_title ? slugifySection(content.section_title) : `section-${content.order}`}
                   className="walkthrough-content scroll-mt-24"
                 >
@@ -300,7 +301,7 @@ function WalkthroughPage() {
                   {walkthrough.rewards.map((reward, idx) => (
                     <li key={idx} className="flex gap-2 text-gray-300">
                       <span className="text-emerald-400 font-bold">•</span>
-                      <span className="flex-1">{reward}</span>
+                      <span className="flex-1">{parseDescription(reward)}</span>
                     </li>
                   ))}
                 </ul>
