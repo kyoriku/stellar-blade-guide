@@ -21,12 +21,6 @@ class Settings:
     CACHE_TTL: int = int(os.getenv('CACHE_TTL', 2592000))  # 30 days — Redis + CDN s-maxage
     SWR_TTL: int = 604800  # 7 days — CDN stale-while-revalidate
     
-    # CORS
-    CORS_ORIGINS: list = os.getenv(
-        'CORS_ORIGINS',
-        'http://localhost:3000,https://stellarbladeguide.com'
-    ).split(',')
-    
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: str = "100/minute"
     
