@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import random
 import re
 from urllib.parse import urlparse
 from fastapi import Request
@@ -8,14 +6,9 @@ from fastapi.responses import JSONResponse
 from config.settings import settings
 from core.colours import RED, RESET
 
-TARPIT_MIN_SECONDS = 5
-TARPIT_MAX_SECONDS = 15
-
 logger = logging.getLogger("api")
 
 LOCALHOST_IPS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
-
-HONEYPOT_PATHS = {"/collectibles/hidden-archive-mk2"}
 
 REFERER_ALLOWED_HOSTS = {
     "stellarbladeguide.com",
@@ -159,21 +152,6 @@ async def bot_filter_middleware(request: Request, call_next):
     if is_localhost(get_client_ip(request)):
         return await call_next(request)
 
-    # Honeypot: any hit here is a bot that walked the sitemap
-    if normalized in HONEYPOT_PATHS:
-        logger.warning(
-            "%sHONEYPOT HIT path=%s ip=%s ua=%s referer=%s%s",
-            RED,
-            original_path,
-            get_client_ip(request),
-            request.headers.get("user-agent", ""),
-            request.headers.get("referer", ""),
-            RESET,
-        )
-        request.state.bot_blocked = True
-        # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
-        return JSONResponse(status_code=403, content={"error": "Forbidden"})
-
     # Block /api/* requests with a Referer from an unrecognised domain
     if (
         original_path.startswith("/api/")
@@ -187,7 +165,6 @@ async def bot_filter_middleware(request: Request, call_next):
                 logger.warning("%sBlocked referer %s on %s%s",
                                RED, referer, original_path, RESET)
                 request.state.bot_blocked = True
-                # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
                 return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow API, static assets, and SEO files (case-sensitive)
@@ -197,7 +174,6 @@ async def bot_filter_middleware(request: Request, call_next):
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
         request.state.bot_blocked = True
-        # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
         return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow normal-shaped URLs through to React Router
@@ -206,7 +182,6 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Everything else (file extensions, weird chars) = probe
     request.state.bot_blocked = True
-    # await asyncio.sleep(random.uniform(TARPIT_MIN_SECONDS, TARPIT_MAX_SECONDS))
     return JSONResponse(status_code=404, content={"error": "Not Found"})
 
 
