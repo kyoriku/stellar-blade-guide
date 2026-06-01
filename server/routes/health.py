@@ -3,7 +3,7 @@ from core.cache import redis_client
 
 router = APIRouter()
 
-@router.get("/health")
+@router.api_route("/health", methods=["GET", "HEAD"])
 async def health_check(request: Request):
     redis_status = "connected"
     try:
