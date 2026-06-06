@@ -94,7 +94,7 @@ function CollectibleSection({
                         ))
                       ) : collectible.title}
                       {collectible.quantity > 1 && (
-                        <span className="ml-2 text-base font-medium text-cyan-400">x{collectible.quantity}</span>
+                        <span className="ml-2 text-base font-medium text-gray-100">x{collectible.quantity}</span>
                       )}
                     </h2>
                     {'_levelName' in collectible && (
