@@ -172,7 +172,7 @@ export default function BloodRainPage() {
                           href={item.linkHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-cyan-400 hover:underline"
+                          className="text-cyan-400 underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 transition-colors"
                         >
                           {item.linkText}
                         </a>
