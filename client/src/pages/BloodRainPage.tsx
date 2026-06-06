@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Info, CheckSquare, HelpCircle, BookOpen, ExternalLink, Book, Compass, ArrowRight } from 'lucide-react'
+import { buildSrcSet, thumbnailUrl } from '../utils/cloudinary'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
 
@@ -12,6 +13,8 @@ const LAST_UPDATED = 'June 5, 2026'
 
 // Official Shift Up reveal trailer (Summer Game Fest 2026)
 const TRAILER_URL = 'https://www.youtube.com/watch?v=zhdh_LspRHk'
+
+const HERO_IMAGE = 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1780723056/Stellar_Blade_Blood_Rain_xipufx.jpg'
 
 const KEY_FACTS: { label: string; value: string; confirmed: boolean }[] = [
   { label: 'Title', value: 'Stellar Blade: Blood Rain', confirmed: true },
@@ -98,7 +101,9 @@ export default function BloodRainPage() {
         {/* Hero image */}
         <div className="mb-8 rounded-lg overflow-hidden border border-gray-800">
           <img
-            src="https://res.cloudinary.com/drw9mrozr/image/upload/v1780723056/Stellar_Blade_Blood_Rain_xipufx.jpg"
+            src={thumbnailUrl(HERO_IMAGE, 960)}
+            srcSet={buildSrcSet(HERO_IMAGE)}
+            sizes="(min-width: 896px) 872px, calc(100vw - 24px)"
             alt="Stellar Blade: Blood Rain"
             className="w-full aspect-video object-cover"
             loading="eager"
