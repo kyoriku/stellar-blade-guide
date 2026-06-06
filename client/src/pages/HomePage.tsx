@@ -94,6 +94,25 @@ function HomePage() {
         </div>
       </div>
 
+      {/* Blood Rain Announcement — remove this block when hype dies down */}
+      <div className="border-b border-cyan-900/50 bg-linear-to-r from-cyan-600/10 to-secondary/60">
+        <div className="container mx-auto px-3 py-4">
+          <Link
+            to="/blood-rain"
+            className="group flex items-center gap-3"
+          >
+            <span className="shrink-0 px-2.5 py-0.5 bg-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-wide rounded border border-cyan-500/40">
+              New
+            </span>
+            <span className="flex flex-col sm:flex-row sm:items-center sm:gap-1 font-medium">
+              <span className="text-gray-200 group-hover:text-white transition-colors">Sequel announced:</span>
+              <span className="text-cyan-400 font-semibold">Stellar Blade: Blood Rain</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors ml-auto shrink-0" />
+          </Link>
+        </div>
+      </div>
+
       {/* Level Strip */}
       <div className="border-b border-zinc-800 bg-secondary/50">
         <div className="container mx-auto px-3 py-5">
@@ -257,7 +276,7 @@ function CategoryCard({ title, description, icon, to, count, imageUrl }: Categor
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-lineart-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
           <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between">
             <div className="flex items-center gap-1.5 drop-shadow-lg">
               <span className="text-cyan-400">{icon}</span>
