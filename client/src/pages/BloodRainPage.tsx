@@ -9,7 +9,7 @@ import SectionHeader from '../components/SectionHeader'
 // Sony. The page renders unconfirmed items with a muted "Rumored" tag so you
 // never accidentally present speculation as fact.
 
-const LAST_UPDATED = 'June 5, 2026'
+const LAST_UPDATED = 'June 6, 2026'
 
 // Official Shift Up reveal trailer (Summer Game Fest 2026)
 const TRAILER_URL = 'https://www.youtube.com/watch?v=zhdh_LspRHk'
@@ -23,20 +23,27 @@ const KEY_FACTS: { label: string; value: string; confirmed: boolean }[] = [
   { label: 'Protagonist', value: 'Evie', confirmed: true },
   { label: 'Release date', value: 'TBA', confirmed: true },
   { label: 'Platforms', value: 'TBA', confirmed: true },
-  { label: 'Development status', value: 'Early development', confirmed: true },
+  { label: 'Development status', value: 'In development', confirmed: true },
 ]
 
-const WHAT_WE_KNOW: { text: string; confirmed: boolean }[] = [
+type KnownItem = {
+  text: string
+  confirmed: boolean
+  linkBefore?: string
+  linkText?: string
+  linkHref?: string
+}
+
+const INTERVIEW_URL =
+  'https://www.invenglobal.com/articles/22543/ceo-kim-hyung-tae-i-will-strive-to-make-blood-rain-a-title-we-can-be-proud-of'
+
+const WHAT_WE_KNOW: KnownItem[] = [
   {
     text: 'Revealed via a debut trailer at Summer Game Fest 2026.',
     confirmed: true,
   },
   {
-    text: 'Targeting a 2027 launch, per Shift Up — no specific date announced yet.',
-    confirmed: true,
-  },
-  {
-    text: 'A direct sequel that continues the story from the first game’s ending.',
+    text: 'A direct sequel that continues the story from the first game’s ending, but built to stand alone so newcomers can follow it without playing the original.',
     confirmed: true,
   },
   {
@@ -44,24 +51,34 @@ const WHAT_WE_KNOW: { text: string; confirmed: boolean }[] = [
     confirmed: true,
   },
   {
-    text: 'Combat leans on gauntlet-based brawling rather than Eve’s sword focus, with what appears to be a reverse-grip blade shown later in the trailer.',
+    text: 'Combat centers on close-quarters fighting — Shift Up says the game can be cleared with CQC alone, with additional weapons (including a reverse-blade sword) and stance/combo depth layered on top.',
     confirmed: true,
   },
   {
-    text: 'Trailer opens on a rain-slicked city with a steam locomotive, before citizens transform into monsters and combat begins.',
+    linkBefore: 'Set in a dense Asian-inspired city blending Hong Kong, Korean, and Japanese influences, which ',
+    linkText: 'the director calls',
+    linkHref: INTERVIEW_URL,
+    text: ' "another protagonist" of the game.',
     confirmed: true,
   },
   {
-    text: 'Unlike the PS5-exclusive first game, Blood Rain will not be a PlayStation exclusive.',
+    text: 'Won’t be easier than the first game, but an easy mode is planned from the start this time.',
+    confirmed: true,
+  },
+  {
+    text: 'Self-published by Shift Up (not Sony), so it won’t be a PS5 exclusive like the first game.',
+    confirmed: true,
+  },
+  {
+    text: 'About a year into development as of the June 2026 reveal, with most of the first game’s team retained.',
     confirmed: true,
   },
 ]
 
 const OPEN_QUESTIONS = [
-  'Specific release date within 2027',
-  'Which platforms (beyond “not PS5-exclusive”)',
+  'Release date — a 2027 target was mentioned but Shift Up now says it may need more time',
+  'Release platforms (only "not a PS5 exclusive" is confirmed)',
   'How Evie connects to Eve and the first game’s ending',
-  'Whether the gauntlet/blade weapon swap is a core mechanic or situational',
   'Price, editions, and pre-order details',
 ]
 // ──────────────────────────────────────────────────────────────────────────
@@ -127,22 +144,6 @@ export default function BloodRainPage() {
                 </div>
               ))}
             </dl>
-          </section>
-
-          {/* What We Know */}
-          <section>
-            <SectionHeader icon={CheckSquare}>What We Know</SectionHeader>
-            <ul className="mt-4 space-y-3">
-              {WHAT_WE_KNOW.map((item, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-cyan-400 shrink-0 font-bold">&bull;</span>
-                  <span>
-                    {item.text}
-                    <StatusTag confirmed={item.confirmed} />
-                  </span>
-                </li>
-              ))}
-            </ul>
             <div className="mt-5">
               <a
                 href={TRAILER_URL}
@@ -154,6 +155,37 @@ export default function BloodRainPage() {
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
+          </section>
+
+          {/* What We Know */}
+          <section>
+            <SectionHeader icon={CheckSquare}>What We Know</SectionHeader>
+            <ul className="mt-4 space-y-3">
+              {WHAT_WE_KNOW.map((item, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="text-cyan-400 shrink-0 font-bold">&bull;</span>
+                  <span>
+                    {item.linkHref ? (
+                      <>
+                        {item.linkBefore}
+                        <a
+                          href={item.linkHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan-400 hover:underline"
+                        >
+                          {item.linkText}
+                        </a>
+                        {item.text}
+                      </>
+                    ) : (
+                      item.text
+                    )}
+                    <StatusTag confirmed={item.confirmed} />
+                  </span>
+                </li>
+              ))}
+            </ul>
           </section>
 
           {/* Still Unknown */}
