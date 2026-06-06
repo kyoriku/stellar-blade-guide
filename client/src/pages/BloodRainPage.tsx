@@ -64,13 +64,7 @@ const OPEN_QUESTIONS = [
 // ──────────────────────────────────────────────────────────────────────────
 
 function StatusTag({ confirmed }: { confirmed: boolean }) {
-  if (confirmed) {
-    return (
-      <span className="inline-block text-xs font-semibold uppercase tracking-wide text-green-400 border border-green-700 rounded px-2 py-0.5 ml-2 align-middle">
-        Confirmed
-      </span>
-    )
-  }
+  if (confirmed) return null
   return (
     <span className="inline-block text-xs font-semibold uppercase tracking-wide text-yellow-400 border border-yellow-700 rounded px-2 py-0.5 ml-2 align-middle">
       Rumored
@@ -99,6 +93,17 @@ export default function BloodRainPage() {
             The announced sequel to Stellar Blade. This page tracks everything
             officially confirmed and is updated as Shift Up shares more.
           </p>
+        </div>
+
+        {/* Hero image */}
+        <div className="mb-8 rounded-lg overflow-hidden border border-gray-800">
+          <img
+            src="https://res.cloudinary.com/drw9mrozr/image/upload/v1780721878/Stellar-Blade-Blood-Rain_liy07s.png"
+            alt="Stellar Blade: Blood Rain"
+            className="w-full aspect-video object-cover"
+            loading="eager"
+            fetchPriority="high"
+          />
         </div>
 
         {/* Content card */}
