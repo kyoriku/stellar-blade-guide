@@ -30,6 +30,9 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import SettingsPage from './pages/SettingsPage'
 
+// Other pages
+import BloodRainPage from './pages/BloodRainPage'
+
 // Components
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -75,6 +78,9 @@ function App() {
           <Route path="/disclaimer" element={<Disclaimer />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+
+          {/* Blood Rain Announcement Page */}
+          <Route path="/blood-rain" element={<BloodRainPage />} />
 
           {/* Fallback for unmatched routes */}
           <Route path="*" element={<ErrorPage />} />
