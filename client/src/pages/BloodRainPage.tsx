@@ -98,7 +98,7 @@ export default function BloodRainPage() {
         {/* Hero image */}
         <div className="mb-8 rounded-lg overflow-hidden border border-gray-800">
           <img
-            src="https://res.cloudinary.com/drw9mrozr/image/upload/v1780721878/Stellar-Blade-Blood-Rain_liy07s.png"
+            src="https://res.cloudinary.com/drw9mrozr/image/upload/v1780721321/Stellar_Blade_Blood_Rain_ti7ow0.jpg"
             alt="Stellar Blade: Blood Rain"
             className="w-full aspect-video object-cover"
             loading="eager"
