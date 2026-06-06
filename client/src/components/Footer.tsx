@@ -22,6 +22,9 @@ export default function Footer() {
             >
               Support ☕
             </a>
+            <Link to="/blood-rain" className="hover:text-cyan-400 transition-colors">
+              Blood Rain
+            </Link>
             <Link to="/disclaimer" className="hover:text-cyan-400 transition-colors">
               Disclaimer
             </Link>
