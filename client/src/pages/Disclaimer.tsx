@@ -1,7 +1,6 @@
 import { Copyright, AlertTriangle, Mail, Sparkles, Info, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
-import Callout from '../components/Callout'
 
 export default function Disclaimer() {
   return (
@@ -9,9 +8,6 @@ export default function Disclaimer() {
       <SEO title="Disclaimer" description="Disclaimer for Stellar Blade Guide — an unofficial fan-made guide not affiliated with Shift Up Corporation or Sony Interactive Entertainment." />
       <div className="container mx-auto px-3 py-8 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Disclaimer</h1>
-        <Callout variant="warning">
-          <p><strong>Unofficial fan-made guide.</strong> This website is not affiliated with, endorsed by, or connected to Shift Up Corporation or Sony Interactive Entertainment.</p>
-        </Callout>
 
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
           <section>
