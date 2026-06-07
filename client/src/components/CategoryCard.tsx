@@ -34,8 +34,8 @@ export default function CategoryCard({ to, imageUrl, name, FallbackIcon, onMouse
             <FallbackIcon className="w-12 h-12 text-zinc-700" />
           </div>
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
-        <span className="absolute bottom-3 left-4 text-lg font-semibold text-white drop-shadow-lg">
+        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent" />
+        <span className="absolute bottom-3 left-4 text-lg font-semibold text-gray-100 drop-shadow-lg">
           {name}
         </span>
       </div>
