@@ -44,7 +44,7 @@
   </url>
   <url>
     <loc>https://stellarbladeguide.com/blood-rain</loc>
-    <lastmod>2026-06-05</lastmod>
+    <lastmod>2026-06-06</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -333,6 +333,42 @@
   <url>
     <loc>https://stellarbladeguide.com/walkthroughs/side-quests/incarceration</loc>
     <lastmod>2026-06-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/an-unknown-present</loc>
+    <lastmod>2026-06-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/angel-of-death</loc>
+    <lastmod>2026-06-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/lost-ark</loc>
+    <lastmod>2026-06-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/keeping-secrets</loc>
+    <lastmod>2026-06-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/stolen-treasure</loc>
+    <lastmod>2026-06-06</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/life-of-the-scavengers</loc>
+    <lastmod>2026-06-06</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
