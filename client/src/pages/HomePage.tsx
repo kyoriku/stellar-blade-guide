@@ -147,8 +147,8 @@ function HomePage() {
                   ) : (
                     <div className="w-full h-full bg-tertiary" />
                   )}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
-                  <span className="absolute bottom-2 left-2.5 text-sm font-medium text-white drop-shadow-lg">
+                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent" />
+                  <span className="absolute bottom-2 left-2.5 text-sm font-medium text-gray-100 drop-shadow-lg">
                     {level.name}
                   </span>
                 </div>
@@ -276,11 +276,11 @@ function CategoryCard({ title, description, icon, to, count, imageUrl }: Categor
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent" />
           <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between">
             <div className="flex items-center gap-1.5 drop-shadow-lg">
               <span className="text-cyan-400">{icon}</span>
-              <span className="text-sm font-semibold text-white">{title}</span>
+              <span className="text-sm font-semibold text-gray-100">{title}</span>
             </div>
             <span className="text-xs text-gray-200 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
               {count} types

@@ -16,7 +16,13 @@ export default function WalkthroughsListPage() {
   const isValidType = WALKTHROUGHS.some(w => w.slug === type);
   const { data: walkthroughs, isLoading, isError, error } = useWalkthroughsByType(type!);
 
-  const displayType = type?.replace(/-/g, ' ')
+  const DISPLAY_NAME_OVERRIDES: Record<string, string> = {
+    'nier-dlc': 'NieR: Automata DLC',
+    'nikke-dlc': 'Goddess of Victory: Nikke DLC',
+    // 'bulletin-board-requests': 'Bulletin Board Requests',
+  };
+
+  const displayType = DISPLAY_NAME_OVERRIDES[type!] ?? type?.replace(/-/g, ' ')
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
@@ -126,8 +132,8 @@ export default function WalkthroughsListPage() {
                       <BookOpen className="w-12 h-12 text-zinc-700" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-linear-to-t from-[#151b23]/80 via-[#151b23]/20 to-transparent" />
-                  <span className="absolute bottom-3 left-4 text-lg font-semibold text-white drop-shadow-lg">
+                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent" />
+                  <span className="absolute bottom-3 left-4 text-lg font-semibold text-gray-100 drop-shadow-lg">
                     {walkthrough.title}
                   </span>
                 </div>
@@ -181,10 +187,10 @@ export default function WalkthroughsListPage() {
                     {walkthrough.title}
                   </h3>
                   {walkthrough.subtitle && (
-                    <p className="text-sm text-gray-400 line-clamp-1 mt-0.5">{walkthrough.subtitle}</p>
+                    <p className="text-sm text-gray-300 line-clamp-1 mt-0.5">{walkthrough.subtitle}</p>
                   )}
                   {walkthrough.level && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500 mt-1.5">
+                    <div className="flex items-center gap-1 text-xs text-gray-400 mt-1.5">
                       <MapPin className="w-3 h-3" />
                       <span className="truncate">{walkthrough.level}</span>
                     </div>
