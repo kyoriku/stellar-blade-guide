@@ -9,7 +9,7 @@ import SectionHeader from '../components/SectionHeader'
 // Sony. The page renders unconfirmed items with a muted "Rumored" tag so you
 // never accidentally present speculation as fact.
 
-const LAST_UPDATED = 'June 6, 2026'
+const LAST_UPDATED = 'June 7, 2026'
 
 // Official Shift Up reveal trailer (Summer Game Fest 2026)
 const TRAILER_URL = 'https://www.youtube.com/watch?v=zhdh_LspRHk'
@@ -34,8 +34,9 @@ type KnownItem = {
   linkHref?: string
 }
 
-const INTERVIEW_URL =
-  'https://www.invenglobal.com/articles/22543/ceo-kim-hyung-tae-i-will-strive-to-make-blood-rain-a-title-we-can-be-proud-of'
+const INVEN_URL = 'https://www.inven.co.kr/webzine/news/?news=317188'
+const FAMITSU_URL = 'https://www.famitsu.com/article/202606/77389'
+const RULIWEB_URL = 'https://bbs.ruliweb.com/news/529/read/225463'
 
 const WHAT_WE_KNOW: KnownItem[] = [
   {
@@ -57,7 +58,7 @@ const WHAT_WE_KNOW: KnownItem[] = [
   {
     linkBefore: 'Set in a dense Asian-inspired city blending Hong Kong, Korean, and Japanese influences, which ',
     linkText: 'the director calls',
-    linkHref: INTERVIEW_URL,
+    linkHref: INVEN_URL,
     text: ' "another protagonist" of the game.',
     confirmed: true,
   },
@@ -73,12 +74,39 @@ const WHAT_WE_KNOW: KnownItem[] = [
     text: 'About a year into development as of the June 2026 reveal, with most of the first game’s team retained.',
     confirmed: true,
   },
+  {
+    text: 'Evie is part of a special forces unit hunting the group behind a major terrorist attack in the city; the man she chases in the trailer appears to lead them.',
+    confirmed: true,
+  },
+  {
+    linkBefore: 'The city is ',
+    linkText: 'not Xion from the first game',
+    linkHref: FAMITSU_URL,
+    text: ' — Shift Up says enough in-world time has passed for humanity to build new cities beyond it.',
+    confirmed: true,
+  },
+  {
+    text: 'A sword returns: though not shown in the trailer, Evie will wield one, with more weapons unlocking as the story progresses.',
+    confirmed: true,
+  },
+  {
+    text: 'Side content returns, with Shift Up aiming to make it more substantial than the first game’s.',
+    confirmed: true,
+  },
+  {
+    linkBefore: 'Enemies are designed to fit the urban setting in a more realistic style, ',
+    linkText: 'per Shift Up',
+    linkHref: RULIWEB_URL,
+    text: ' — though giant boss monsters like the first game’s are still present.',
+    confirmed: true,
+  },
 ]
 
 const OPEN_QUESTIONS = [
   'Release date — a 2027 target was mentioned but Shift Up now says it may need more time',
   'Release platforms (only "not a PS5 exclusive" is confirmed)',
-  'How Evie connects to Eve and the first game’s ending',
+  'The exact relationship between Evie and Eve (confirmed related, but Shift Up is keeping details secret)',
+  'What "CDDP" on Evie’s back stands for (Shift Up calls it a spoiler)',
   'Price, editions, and pre-order details',
 ]
 // ──────────────────────────────────────────────────────────────────────────
