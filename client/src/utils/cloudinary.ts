@@ -23,6 +23,10 @@ export function thumbnailUrl(url: string, width = 1200): string {
   return url.replace('/upload/f_webp,q_auto/', `/upload/f_webp,q_auto,w_${width}/`);
 }
 
+export function ogImageUrl(url: string): string {
+  return url.replace('/upload/f_webp,q_auto/', '/upload/t_og_card/');
+}
+
 export function buildSrcSet(url: string): string {
   return GALLERY_WIDTHS.map(w => `${thumbnailUrl(url, w)} ${w}w`).join(', ');
 }

@@ -96,6 +96,7 @@ export interface Walkthrough {
   objectives: string[] | null;
   content: WalkthroughContent[];
   display_order: number;
+  thumbnail_url: string | null;
   rewards: string[] | null;
   available_after: string | null;
 }
