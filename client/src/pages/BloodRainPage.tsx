@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Info, CheckSquare, HelpCircle, BookOpen, ExternalLink, Book, Compass, ArrowRight } from 'lucide-react'
-import { buildSrcSet, thumbnailUrl } from '../utils/cloudinary'
+import { buildSrcSet, thumbnailUrl, ogImageUrl } from '../utils/cloudinary'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
 
@@ -128,6 +128,7 @@ export default function BloodRainPage() {
         description="Everything confirmed about Stellar Blade: Blood Rain, the sequel revealed at Summer Game Fest 2026 — new protagonist Evie, combat, platforms, and release info. Updated as news breaks."
         canonical="/blood-rain"
         ogType="article"
+        ogImage={ogImageUrl(HERO_IMAGE)}
       />
 
       <div className="container mx-auto px-3 py-8 max-w-4xl">

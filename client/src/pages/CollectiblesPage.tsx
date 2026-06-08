@@ -11,9 +11,11 @@ import ErrorPage from './ErrorPage'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
+import { COLLECTIBLE_IMAGES, UPGRADE_IMAGES, COSMETIC_IMAGES, MATERIAL_IMAGES } from '../constants/categoryImages'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
+import { ogImageUrl } from '../utils/cloudinary'
 import { useProgress } from '../hooks/useProgress'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -320,6 +322,14 @@ function CollectibleTypePage() {
       locSum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0), 0
   );
 
+  const categoryImageMap = category === 'upgrades' ? UPGRADE_IMAGES
+    : category === 'materials' ? MATERIAL_IMAGES
+    : category === 'cosmetics' ? COSMETIC_IMAGES
+    : COLLECTIBLE_IMAGES;
+  const collectibleOgImage = typeName && categoryImageMap[typeName]
+    ? ogImageUrl(categoryImageMap[typeName])
+    : undefined;
+
   const structuredDataSchemas = useMemo(() => {
     if (levelData.length === 0) return undefined;
 
@@ -489,6 +499,7 @@ function CollectibleTypePage() {
             : `Complete guide to all ${totalCollectibles} ${displayTypeName} in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.`
         }
         canonical={`/${category}/${typeName}`}
+        ogImage={collectibleOgImage}
       />
       <StructuredData
         type="CollectionPage"
