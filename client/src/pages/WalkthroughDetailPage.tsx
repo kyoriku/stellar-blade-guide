@@ -13,6 +13,7 @@ import ErrorPage from './ErrorPage'
 import TableOfContents from '../components/TableOfContents'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
+import { ogImageUrl } from '../utils/cloudinary'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -183,6 +184,11 @@ function WalkthroughPage() {
         title={walkthrough.title}
         description={`${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`}
         canonical={`/walkthroughs/${type}/${slug}`}
+        ogImage={(() => {
+          const src = walkthrough.thumbnail_url
+            ?? walkthrough.content.find(c => c.images?.length > 0)?.images[0]?.url;
+          return src ? ogImageUrl(src) : undefined;
+        })()}
       />
       <StructuredData
         type="WebPage"

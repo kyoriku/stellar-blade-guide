@@ -11,9 +11,11 @@ import ErrorPage from './ErrorPage'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { LEVELS } from '../constants/navigation'
+import { LEVEL_IMAGES } from '../constants/categoryImages'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
+import { ogImageUrl } from '../utils/cloudinary'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -240,12 +242,17 @@ if (isLoading) {
     return <ErrorPage code={404} />;
   }
 
+  const levelOgImage = levelName && LEVEL_IMAGES[levelName]
+    ? ogImageUrl(LEVEL_IMAGES[levelName])
+    : undefined;
+
   return (
     <div className="min-h-main bg-primary">
       <SEO
         title={displayLevelName}
         description={`All ${totalCollectibles} collectibles in ${displayLevelName} — Nano Suits, documents, cans, and more. Screenshots and guides for every location.`}
         canonical={`/levels/${levelName}`}
+        ogImage={levelOgImage}
       />
       <StructuredData
         type="CollectionPage"
