@@ -290,7 +290,7 @@
   </url>
   <url>
     <loc>https://stellarbladeguide.com/walkthroughs/side-quests</loc>
-    <lastmod>2026-06-05</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -373,8 +373,26 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/the-words-of-mother-sphere</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/taboo</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/side-quests/oblivion</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests</loc>
-    <lastmod>2026-06-05</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -428,13 +446,43 @@
   </url>
   <url>
     <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests/valuable-cargo</loc>
-    <lastmod>2026-06-05</lastmod>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests/wisdom-puzzle</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests/legions-secret-stash</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests/generous-drop-pod</loc>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests/photography-club</loc>
     <lastmod>2026-06-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests/cat-photo-exhibition</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://stellarbladeguide.com/walkthroughs/bulletin-board-requests/like-butterflies</loc>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
