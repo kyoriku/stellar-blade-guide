@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Book, Layers, Compass, Zap, Box, Sparkles, ChevronRight, ArrowRight } from 'lucide-react'
+import { Book, Layers, Compass, Zap, Box, Sparkles, ChevronRight, ArrowRight, Map } from 'lucide-react'
 import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
 import { LEVEL_IMAGES } from '../constants/categoryImages'
 import { buildSrcSet, thumbnailUrl } from '../utils/cloudinary'
@@ -108,7 +108,7 @@ function HomePage() {
               <span className="text-gray-200 group-hover:text-white transition-colors">Sequel announced:</span>
               <span className="text-cyan-400 font-semibold">Stellar Blade: Blood Rain</span>
             </span>
-            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 transition-colors ml-auto shrink-0" />
+            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all ml-auto shrink-0" />
           </Link>
         </div>
       </div>
@@ -117,12 +117,15 @@ function HomePage() {
       <div className="border-b border-zinc-800 bg-secondary/50">
         <div className="container mx-auto px-3 py-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-200 uppercase tracking-wider">Browse by Level</h2>
+            <div className="flex items-center gap-2.5">
+              <Map className="w-5 h-5 text-cyan-400" />
+              <h2 className="text-lg font-bold text-gray-100">Browse by Level</h2>
+            </div>
             <Link
               to="/levels"
-              className="text-sm text-gray-300 hover:text-gray-200 transition-colors flex items-center gap-1"
+              className="group text-sm text-gray-300 hover:text-cyan-400 transition-colors flex items-center gap-1"
             >
-              View all <ChevronRight className="w-3.5 h-3.5" />
+              View all <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:text-cyan-400 transition-all" />
             </Link>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-1 -mx-3 px-3 scrollbar-hide">
@@ -171,9 +174,9 @@ function HomePage() {
               </div>
               <Link
                 to="/walkthroughs"
-                className="text-sm text-gray-300 hover:text-gray-200 transition-colors flex items-center gap-1"
+                className="group text-sm text-gray-300 hover:text-cyan-400 transition-colors flex items-center gap-1"
               >
-                View all <ChevronRight className="w-3.5 h-3.5" />
+                View all <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:text-cyan-400 transition-all" />
               </Link>
             </div>
 
@@ -186,10 +189,10 @@ function HomePage() {
                   className="group flex items-center justify-between p-3.5 bg-secondary rounded-lg border border-zinc-800
                            hover:border-zinc-700 hover:bg-secondary/80 transition-all duration-200"
                 >
-                  <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                  <span className="text-sm font-medium text-gray-300 group-hover:text-gray-100 transition-colors">
                     {category.name}
                   </span>
-                  <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all" />
                 </Link>
               ))}
             </div>
