@@ -1,9 +1,9 @@
 import os
 import cloudinary
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse
 from starlette.middleware.gzip import GZipMiddleware
 
 from config.settings import settings
@@ -88,12 +88,14 @@ CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
 if os.path.exists(CLIENT_DIST):
     app.mount('/assets', StaticFiles(directory=f'{CLIENT_DIST}/assets'), name='assets')
 
+    real_dist = os.path.realpath(CLIENT_DIST)
+
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(full_path: str):
         # Unknown API paths should 404 instead of falling through to the SPA
-        if full_path.startswith('api/'):
-            return Response(status_code=404)
-        file_path = os.path.join(CLIENT_DIST, full_path)
-        if os.path.isfile(file_path):
+        if full_path == 'api' or full_path.startswith('api/'):
+            raise HTTPException(status_code=404)
+        file_path = os.path.realpath(os.path.join(CLIENT_DIST, full_path))
+        if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(os.path.join(CLIENT_DIST, 'index.html'))
