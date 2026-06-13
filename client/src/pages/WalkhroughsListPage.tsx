@@ -74,7 +74,7 @@ export default function WalkthroughsListPage() {
   return (
     <div className="min-h-main bg-primary">
       <SEO
-        title={displayType!}
+        title={displayType}
         description={`Complete ${displayType} walkthroughs for Stellar Blade. ${walkthroughs.length} detailed guides with step-by-step instructions and screenshots.`}
         canonical={`/walkthroughs/${type}`}
       />
@@ -101,7 +101,7 @@ export default function WalkthroughsListPage() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayType}</h1>
           <p className="text-gray-300 mt-2 max-w-3xl">
-            {walkthroughs.length} {displayType?.toLowerCase()} {walkthroughs.length === 1 ? 'walkthrough' : 'walkthroughs'} for Stellar Blade with step-by-step instructions, screenshots, and boss strategies.
+            {walkthroughs.length} {displayType} {walkthroughs.length === 1 ? 'walkthrough' : 'walkthroughs'} for Stellar Blade with step-by-step instructions, screenshots, and boss strategies.
           </p>
         </div>
 
