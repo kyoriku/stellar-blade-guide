@@ -227,7 +227,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                   <div className="py-2">
                     {WALKTHROUGHS.map((category, index) => {
                       const isActive = location.pathname.startsWith(`/walkthroughs/${category.slug}`);
@@ -275,7 +275,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'levels' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'levels' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                   <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     {LEVELS.map((level, index) => {
                       const isActive = location.pathname === `/levels/${level.slug}`;
@@ -322,7 +322,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'collectibles' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'collectibles' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                   <div className="py-2">
                     {COLLECTIBLES.map((type, index) => {
                       const isActive = location.pathname === `/collectibles/${type.slug}`;
@@ -369,7 +369,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'upgrades' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'upgrades' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                   <div className="py-2">
                     {UPGRADES.map((type, index) => {
                       const isActive = location.pathname === `/upgrades/${type.slug}`;
@@ -416,7 +416,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'cosmetics' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'cosmetics' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                   <div className="py-2">
                     {COSMETICS.map((type, index) => {
                       const isActive = location.pathname === `/cosmetics/${type.slug}`;
@@ -463,7 +463,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'materials' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'materials' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                   <div className="py-2">
                     {MATERIALS.map((type, index) => {
                       const isActive = location.pathname === `/materials/${type.slug}`;

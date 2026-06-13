@@ -70,10 +70,10 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
               <div>
                 <div className={`absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`}>
                   <div className="absolute top-3 right-3">
-                    <ZoomIn className={`w-5 h-5 text-white drop-shadow-lg transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`} />
+                    <ZoomIn className={`w-5 h-5 text-gray-100 drop-shadow-lg transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`} />
                   </div>
                   <div className={`absolute bottom-0 left-0 right-0 p-4 transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`}>
-                    <p className="text-white text-sm font-medium drop-shadow-lg">
+                    <p className="text-gray-100 text-sm font-medium drop-shadow-lg">
                       {image.alt}
                     </p>
                   </div>
