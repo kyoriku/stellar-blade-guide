@@ -25,7 +25,7 @@ function WalkthroughPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
   const location = useLocation();
 
-  const { data: walkthrough, isLoading, isError, error } = useWalkthrough(type!, slug!);
+  const { data: walkthrough, isLoading, isError, error, refetch } = useWalkthrough(type!, slug!);
   const { data: allWalkthroughs = [] } = useWalkthroughsByType(type!);
   const { prefetchWalkthroughBySlug } = usePrefetch();
   const [activeSection, setActiveSection] = useState<string>('');
@@ -156,7 +156,7 @@ function WalkthroughPage() {
 
   if (isError) {
     const apiError = error as ApiError;
-    return <ErrorPage code={apiError?.status || 500} />;
+    return <ErrorPage code={apiError?.status || 500} onRetry={refetch} />;
   }
 
   if (!walkthrough) {

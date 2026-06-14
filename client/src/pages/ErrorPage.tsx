@@ -1,17 +1,19 @@
 import { Link } from 'react-router-dom'
-import { Home, AlertCircle, Clock, ServerCrash } from 'lucide-react'
+import { Home, AlertCircle, Clock, ServerCrash, RefreshCw } from 'lucide-react'
 import SEO from '../components/SEO'
 
 interface ErrorPageProps {
   code?: number;
   title?: string;
   message?: string;
+  onRetry?: () => void;
 }
 
 function ErrorPage({
   code = 404,
   title,
-  message
+  message,
+  onRetry,
 }: ErrorPageProps) {
 
   const getDefaults = () => {
@@ -71,13 +73,24 @@ function ErrorPage({
           {message || defaults.message}
         </p>
 
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200"
-        >
-          <Home className="w-4 h-4" />
-          Back to Home
-        </Link>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          {onRetry && code !== 404 && (
+            <button
+              onClick={onRetry}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-gray-100 font-semibold text-sm transition-all duration-200 cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+          )}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200"
+          >
+            <Home className="w-4 h-4" />
+            Back to Home
+          </Link>
+        </div>
       </div>
     </div>
   );

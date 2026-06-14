@@ -14,7 +14,7 @@ export default function WalkthroughsListPage() {
   const { prefetchWalkthroughBySlug } = usePrefetch();
 
   const isValidType = WALKTHROUGHS.some(w => w.slug === type);
-  const { data: walkthroughs, isLoading, isError, error } = useWalkthroughsByType(type!);
+  const { data: walkthroughs, isLoading, isError, error, refetch } = useWalkthroughsByType(type!);
 
   const DISPLAY_NAME_OVERRIDES: Record<string, string> = {
     'nier-dlc': 'NieR: Automata DLC',
@@ -64,7 +64,7 @@ export default function WalkthroughsListPage() {
 
   if (isError) {
     const apiError = error as ApiError;
-    return <ErrorPage code={apiError?.status || 500} />;
+    return <ErrorPage code={apiError?.status || 500} onRetry={refetch} />;
   }
 
   if (!walkthroughs || walkthroughs.length === 0) {
