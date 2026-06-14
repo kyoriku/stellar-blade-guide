@@ -82,7 +82,7 @@ function CollectibleTypePage() {
   );
 
   // Pass category to hook
-  const { data: levelData = [] as LevelData, isLoading, isError, error } = useCollectiblesByType(typeName!, category, isValidType);
+  const { data: levelData = [] as LevelData, isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -482,7 +482,7 @@ function CollectibleTypePage() {
   // Show error page with appropriate code
   if (isError) {
     const apiError = error as ApiError;
-    return <ErrorPage code={apiError?.status || 500} />;
+    return <ErrorPage code={apiError?.status || 500} onRetry={refetch} />;
   }
 
   if (levelData.length === 0) {

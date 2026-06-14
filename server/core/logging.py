@@ -7,8 +7,7 @@ def setup_logging(log_level: Optional[str] = None) -> None:
     level = log_level or settings.LOG_LEVEL
     
     formatter = logging.Formatter(
-        fmt='%(message)s',
-        # datefmt='%Y-%m-%d %H:%M:%S'
+        fmt='%(levelname)s: %(name)s: %(message)s',
     )
     
     console_handler = logging.StreamHandler(sys.stdout)
