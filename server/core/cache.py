@@ -19,14 +19,28 @@ redis_client = redis.Redis.from_url(
 async def get_cache(key: str) -> Optional[dict]:
     try:
         data = await redis_client.get(key)
-        return json.loads(data) if data else None
+        if not data:
+            return None
+        return json.loads(data)
+    except json.JSONDecodeError:
+        logger.warning(f"Corrupted cache entry for '{key}' — deleting and treating as miss")
+        try:
+            await redis_client.delete(key)
+        except redis.RedisError as e:
+            logger.error(f"Failed to delete corrupted key '{key}': {e}")
+        return None
     except redis.RedisError as e:
         logger.error(f"Redis error on GET {key}: {e}")
         return None
 
 async def set_cache(key: str, data: Any, ttl: int = settings.CACHE_TTL) -> bool:
     try:
-        await redis_client.setex(key, ttl, json.dumps(data))
+        serialized = json.dumps(data)
+    except (TypeError, ValueError) as e:
+        logger.error(f"Cache serialization error for '{key}': {e}")
+        return False
+    try:
+        await redis_client.setex(key, ttl, serialized)
         return True
     except redis.RedisError as e:
         logger.error(f"Redis error on SET {key}: {e}")
