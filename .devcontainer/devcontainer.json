@@ -16,7 +16,7 @@
   "features": {
     // Node.js for the React frontend AND for installing Claude Code globally.
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
+      "version": "22"
     },
     // Astral's uv (Python package manager) per your project conventions.
     "ghcr.io/va-h/devcontainers-features/uv:1": {
