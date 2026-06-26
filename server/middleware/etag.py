@@ -23,6 +23,12 @@ class ETagMiddleware(BaseHTTPMiddleware):
         if request.method != "GET" or response.status_code != 200:
             return response
 
+        # Only hash JSON API bodies. Files (StaticFiles/FileResponse) carry their own
+        # stat-based validators; the SPA shell streams through BaseHTTPMiddleware as a
+        # _StreamingResponse, where the etag-present guard above isn't guaranteed to fire.
+        if not response.headers.get("content-type", "").startswith("application/json"):
+            return response
+
         # Buffer the response body
         body = b""
         async for chunk in response.body_iterator:

@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi import Request
-from middleware.bot_filter import get_client_ip
+from core.security import get_client_ip
 from core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
 
 logger = logging.getLogger("api")
@@ -75,10 +75,6 @@ async def log_requests_middleware(request: Request, call_next):
         raise
 
     duration_ms = (time.time() - start_time) * 1000
-
-    # Skip logging for bot/banned requests
-    if getattr(request.state, "bot_blocked", False):
-        return response
 
     # Only log API routes
     if not request.url.path.startswith("/api/"):
