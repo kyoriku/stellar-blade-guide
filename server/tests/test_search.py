@@ -22,7 +22,7 @@ from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
 
 from db.database import get_db
-from middleware.rate_limit import add_rate_limit_middleware
+from middleware.rate_limit import setup_rate_limiter
 from routes import search as search_route
 from schemas.search import SearchResult
 
@@ -30,7 +30,7 @@ from schemas.search import SearchResult
 @pytest_asyncio.fixture
 async def search_client():
     app = FastAPI()
-    add_rate_limit_middleware(app)
+    setup_rate_limiter(app)
     app.include_router(search_route.router, prefix="/api")
 
     mock_db = AsyncMock()

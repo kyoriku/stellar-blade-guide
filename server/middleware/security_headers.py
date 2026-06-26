@@ -1,21 +1,17 @@
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi import FastAPI, Request, Response
-import os
 from config.settings import settings
 
 
-def add_security_headers_middleware(app: FastAPI):
-    allowed_hosts_str = os.getenv(
-        'ALLOWED_HOSTS',
-        'localhost,127.0.0.1'
-    )
-    allowed_hosts = [host.strip() for host in allowed_hosts_str.split(',')]
-
+def add_trusted_host_middleware(app: FastAPI):
+    """Validate the Host header against settings.ALLOWED_HOSTS (anti-spoofing)."""
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=allowed_hosts
+        allowed_hosts=settings.ALLOWED_HOSTS,
     )
 
+
+def add_security_headers_middleware(app: FastAPI):
     CSP = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; "
@@ -48,8 +44,8 @@ def add_security_headers_middleware(app: FastAPI):
         if request.url.path.startswith("/api/"):
             response.headers["X-Robots-Tag"] = "noindex"
 
-        # Cache-Control
-        if request.method in ("GET", "HEAD") and response.status_code == 200:
+        # Cache-Control — treat 304 like its 200 so conditional GETs stay cacheable
+        if request.method in ("GET", "HEAD") and response.status_code in (200, 304):
             if request.url.path.startswith("/assets/"):
                 response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
             elif request.url.path in ("/robots.txt", "/sitemap.xml"):

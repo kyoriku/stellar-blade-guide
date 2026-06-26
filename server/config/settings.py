@@ -27,6 +27,16 @@ class Settings:
     # API
     API_PREFIX: str = "/api"
     PROJECT_NAME: str = "Stellar Blade Guide API"
+
+    # Trusted hosts (TrustedHostMiddleware). Defaults to the production hosts so a
+    # missing env var fails to a working config; override via ALLOWED_HOSTS.
+    # healthcheck.railway.app is included so Railway health checks pass host validation.
+    ALLOWED_HOSTS: list[str] = [
+        h.strip() for h in os.getenv(
+            'ALLOWED_HOSTS',
+            'stellarbladeguide.com,www.stellarbladeguide.com,healthcheck.railway.app,localhost,127.0.0.1'
+        ).split(',') if h.strip()
+    ]
     
     # Logging
     LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')

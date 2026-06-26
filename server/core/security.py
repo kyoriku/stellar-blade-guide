@@ -3,8 +3,11 @@ from fastapi import Request
 from config.settings import settings
 
 
-def get_client_ip_for_limiter(request: Request) -> str:
-    """Get real client IP from proxy headers for rate limiting."""
+def get_client_ip(request: Request) -> str:
+    """Resolve the real client IP from proxy headers.
+
+    Canonical implementation, shared by the rate limiter, bot filter, and logging.
+    """
     # Cloudflare sets this — strips any client-supplied version
     cf_ip = request.headers.get("cf-connecting-ip")
     if cf_ip:
@@ -29,6 +32,6 @@ def get_client_ip_for_limiter(request: Request) -> str:
 
 
 limiter = Limiter(
-    key_func=get_client_ip_for_limiter,
+    key_func=get_client_ip,
     storage_uri=settings.REDIS_URL
 )

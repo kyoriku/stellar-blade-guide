@@ -5,6 +5,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from config.settings import settings
 from core.colours import RED, RESET
+from core.security import get_client_ip
 
 logger = logging.getLogger("api")
 
@@ -117,29 +118,6 @@ def is_localhost(ip: str) -> bool:
     return settings.DEBUG and ip in LOCALHOST_IPS
 
 
-def get_client_ip(request: Request) -> str:
-    # Cloudflare's header — set by CF, stripped from client-supplied versions
-    cf_ip = request.headers.get("cf-connecting-ip")
-    if cf_ip:
-        return cf_ip.strip()
-
-    # Fastly (Railway's CDN) — now unreliable with CF in front but kept as fallback
-    fastly_ip = request.headers.get("fastly-client-ip")
-    if fastly_ip:
-        return fastly_ip.strip()
-
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
-
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        # FIRST IP = real client, not last
-        return forwarded_for.split(",")[0].strip()
-
-    return request.client.host
-
-
 # Paths that look like normal URL segments (letters, digits, hyphens, slashes — no empty segments)
 SPA_SAFE_PATH = re.compile(r'^/(?:[a-z0-9\-]+/?)*$')
 
@@ -164,7 +142,6 @@ async def bot_filter_middleware(request: Request, call_next):
             if hostname not in REFERER_ALLOWED_HOSTS:
                 logger.warning("%sBlocked referer %s on %s%s",
                                RED, referer, original_path, RESET)
-                request.state.bot_blocked = True
                 return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow API, static assets, and SEO files (case-sensitive)
@@ -173,7 +150,6 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
-        request.state.bot_blocked = True
         return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow normal-shaped URLs through to React Router
@@ -181,7 +157,6 @@ async def bot_filter_middleware(request: Request, call_next):
         return await call_next(request)
 
     # Everything else (file extensions, weird chars) = probe
-    request.state.bot_blocked = True
     return JSONResponse(status_code=404, content={"error": "Not Found"})
 
 

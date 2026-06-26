@@ -39,7 +39,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 import core.cache
 from db.database import Base, get_db
 from models.collectibles import Level, Location  # noqa: F401 — registers tables with Base
-from middleware.rate_limit import add_rate_limit_middleware
+from middleware.rate_limit import setup_rate_limiter
 from routes import levels as levels_route
 
 
@@ -77,7 +77,7 @@ async def db_session(db_engine):
 @pytest_asyncio.fixture
 async def client(db_session):
     app = FastAPI()
-    add_rate_limit_middleware(app)
+    setup_rate_limiter(app)
     app.include_router(levels_route.router, prefix="/api")
 
     async def override_get_db():
