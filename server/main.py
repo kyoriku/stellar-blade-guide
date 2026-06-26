@@ -10,10 +10,10 @@ from config.settings import settings
 from core.logging import setup_logging
 from core.cache import redis_client
 from core.colours import GREEN, RED, RESET
-from middleware.rate_limit import add_rate_limit_middleware
+from middleware.rate_limit import setup_rate_limiter
 from middleware.logging import add_logging_middleware
 from middleware.error_handler import add_error_handler_middleware
-from middleware.security_headers import add_security_headers_middleware
+from middleware.security_headers import add_security_headers_middleware, add_trusted_host_middleware
 from middleware.bot_filter import add_bot_filter_middleware
 from middleware.etag import ETagMiddleware
 from middleware.origin_check import add_origin_check_middleware
@@ -51,15 +51,23 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
-# Middleware
-add_rate_limit_middleware(app)
-add_logging_middleware(app)
-add_error_handler_middleware(app)
-add_security_headers_middleware(app)
-add_bot_filter_middleware(app)
+# Middleware — registered inner→outer. Starlette PREPENDS each layer, so the
+# LAST registered runs FIRST on a request. Resulting request order (outer→inner):
+#   logging → security_headers → TrustedHost → error_handler
+#     → GZip → ETag → origin_check → bot_filter → route
+# logging outermost: times + logs everything, including rejections.
+# security_headers + TrustedHost outer to error_handler: even 500s/400s get
+# security headers + Cache-Control: no-store.
+setup_rate_limiter(app)              # not a request-chain layer: limiter + exception handler only
+
+add_bot_filter_middleware(app)       # innermost (closest to route)
 add_origin_check_middleware(app)
 app.add_middleware(ETagMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+add_error_handler_middleware(app)
+add_trusted_host_middleware(app)
+add_security_headers_middleware(app)
+add_logging_middleware(app)          # outermost (runs first)
 
 # Routes
 app.include_router(health.router, prefix=settings.API_PREFIX)
