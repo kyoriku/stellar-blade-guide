@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from typing import List
 
 from db.database import get_db
@@ -59,8 +60,20 @@ async def sync_progress(
 
     new_ids = [cid for cid in body.collectible_ids if cid in valid_ids and cid not in existing_ids]
 
-    for cid in new_ids:
-        db.add(UserProgress(user_id=current_user.id, collectible_id=cid))
+    # Route the insert through an upsert as a safety net: a concurrent sync (or a
+    # toggle racing this) could re-add a cid that passed the existing_ids dedup
+    # above, violating uq_user_collectible -> IntegrityError -> 500. ON CONFLICT
+    # DO NOTHING absorbs that. The "added" count stays based on new_ids (accurate
+    # fast-path; best-effort under a concurrent race).
+    if new_ids:
+        await db.execute(
+            pg_insert(UserProgress)
+            .values([
+                {"user_id": current_user.id, "collectible_id": cid}
+                for cid in new_ids
+            ])
+            .on_conflict_do_nothing(constraint="uq_user_collectible")
+        )
 
     await db.commit()
     return {"status": "ok", "added": len(new_ids)}
@@ -96,7 +109,16 @@ async def toggle_progress(
         await db.commit()
         return {"status": "removed", "collectible_id": collectible_id}
 
-    entry = UserProgress(user_id=current_user.id, collectible_id=collectible_id)
-    db.add(entry)
+    # Upsert rather than a bare INSERT: two concurrent toggles for the same
+    # (user_id, collectible_id) can both pass the SELECT above, and the loser's
+    # INSERT would otherwise violate uq_user_collectible -> IntegrityError -> 500.
+    # ON CONFLICT DO NOTHING makes the loser a silent no-op, and "added" is still
+    # the correct converged state. (Under SQLite in tests this compiles to a bare
+    # ON CONFLICT DO NOTHING, which behaves identically.)
+    await db.execute(
+        pg_insert(UserProgress)
+        .values(user_id=current_user.id, collectible_id=collectible_id)
+        .on_conflict_do_nothing(constraint="uq_user_collectible")
+    )
     await db.commit()
     return {"status": "added", "collectible_id": collectible_id}

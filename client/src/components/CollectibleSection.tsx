@@ -14,6 +14,7 @@ interface CollectibleSectionProps {
   hideTypeBadge?: boolean;
   itemLabel?: string;
   isCompleted?: (id: number) => boolean;
+  isToggling?: (id: number) => boolean;
   onToggleProgress?: (id: number) => void;
 }
 
@@ -31,6 +32,7 @@ function CollectibleSection({
   onImageClick,
   hideTypeBadge = false,
   isCompleted,
+  isToggling,
   onToggleProgress,
 }: CollectibleSectionProps) {
   if (!collectibles || collectibles.length === 0) {
@@ -109,7 +111,8 @@ function CollectibleSection({
                   {onToggleProgress && (
                     <button
                       onClick={() => onToggleProgress(collectible.id)}
-                      className="flex-shrink-0 cursor-pointer"
+                      disabled={isToggling?.(collectible.id)}
+                      className="flex-shrink-0 cursor-pointer disabled:cursor-default disabled:opacity-60"
                       title={isCompleted?.(collectible.id) ? 'Mark as not found' : 'Mark as found'}
                       aria-label={isCompleted?.(collectible.id) ? 'Mark as not found' : 'Mark as found'}
                     >

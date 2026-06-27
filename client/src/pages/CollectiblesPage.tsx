@@ -93,7 +93,7 @@ function CollectibleTypePage() {
   const [subtypeFilter, setSubtypeFilter] = useState<string>('All');
   const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
   const { prefetchCollectiblesByType } = usePrefetch()
-  const { isCompleted, toggle, completedIds } = useProgress()
+  const { isCompleted, isToggling, toggle, completedIds } = useProgress()
   const resetActiveSection = () => setActiveSection('');
 
   const prevTypeName = useRef(typeName);
@@ -649,6 +649,7 @@ function CollectibleTypePage() {
                       hideTypeBadge
                       itemLabel={displayTypeName}
                       isCompleted={isCompleted}
+                      isToggling={isToggling}
                       onToggleProgress={toggle}
                     />
                   );
