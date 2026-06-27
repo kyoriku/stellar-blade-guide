@@ -8,8 +8,13 @@ class UserProgress(Base):
     __tablename__ = 'user_progress'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
-    collectible_id = Column(Integer, ForeignKey('collectibles.id', ondelete='CASCADE'), nullable=False)
+    # No standalone index on user_id: the uq_user_collectible composite (user_id
+    # leading) already serves every user_id-filtered read + the user-delete cascade.
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    # Indexed: collectible_id has an ON DELETE CASCADE FK, and the composite cannot
+    # serve a collectible_id-leading lookup, so the collectible-delete cascade would
+    # otherwise sequentially scan this table.
+    collectible_id = Column(Integer, ForeignKey('collectibles.id', ondelete='CASCADE'), nullable=False, index=True)
     completed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (

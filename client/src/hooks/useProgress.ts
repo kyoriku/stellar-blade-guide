@@ -25,6 +25,10 @@ export function useProgress() {
   // Guest state
   const [guestIds, setGuestIds] = useState<Set<number>>(() => getLocalProgress())
 
+  // Per-collectible in-flight tracking for authenticated toggles, so the UI can
+  // disable a single checkbox while its POST is pending without disabling the rest.
+  const [pendingIds, setPendingIds] = useState<Set<number>>(() => new Set())
+
   // Authenticated state via TanStack Query
   const { data: serverIds, isLoading: queryLoading } = useQuery({
     queryKey: ['progress'],
@@ -73,7 +77,16 @@ export function useProgress() {
 
   const toggle = useCallback(async (collectibleId: number) => {
     if (isAuthenticated) {
-      toggleMutation.mutate(collectibleId)
+      setPendingIds(prev => new Set(prev).add(collectibleId))
+      toggleMutation.mutate(collectibleId, {
+        onSettled: () => {
+          setPendingIds(prev => {
+            const next = new Set(prev)
+            next.delete(collectibleId)
+            return next
+          })
+        },
+      })
     } else {
       setGuestIds(prev => {
         const next = new Set(prev)
@@ -89,10 +102,12 @@ export function useProgress() {
   }, [isAuthenticated, toggleMutation])
 
   const isCompleted = useCallback((id: number) => completedIds.has(id), [completedIds])
+  const isToggling = useCallback((id: number) => pendingIds.has(id), [pendingIds])
 
   return {
     completedIds,
     isCompleted,
+    isToggling,
     toggle,
     isLoading,
   }
