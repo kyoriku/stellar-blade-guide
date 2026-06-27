@@ -42,7 +42,7 @@ function LevelPage() {
   const [activeSection, setActiveSection] = useState<string>('');
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const { prefetchLevel } = usePrefetch()
-  const { isCompleted, toggle, completedIds } = useProgress()
+  const { isCompleted, isToggling, toggle, completedIds } = useProgress()
   const resetActiveSection = () => setActiveSection('');
 
   const prevLevelName = useRef(levelName);
@@ -341,6 +341,7 @@ if (isLoading) {
                   collectibles={location.collectibles}
                   onImageClick={handleImageClick}
                   isCompleted={isCompleted}
+                  isToggling={isToggling}
                   onToggleProgress={toggle}
                 />
               );
