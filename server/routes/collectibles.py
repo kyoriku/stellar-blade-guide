@@ -44,10 +44,10 @@ def _serialize_collectible(c) -> dict:
 
 def _normalize_slug(slug: str) -> str:
     """Convert a URL slug to a DB-friendly name for fuzzy matching.
-    e.g. 'beta-cores' -> 'Beta Core', 'documents' -> 'Document'
+    e.g. 'beta-cores' -> 'Beta Core', 'passes' -> 'Pass', 'documents' -> 'Document'
     """
     formatted = slug.replace('-', ' ').title()
-    if formatted.endswith('es'):
+    if formatted.endswith(('sses', 'shes', 'ches', 'xes', 'zes')):
         formatted = formatted[:-2]
     elif formatted.endswith('s'):
         formatted = formatted[:-1]
