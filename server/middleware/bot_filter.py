@@ -118,8 +118,13 @@ def is_localhost(ip: str) -> bool:
     return settings.DEBUG and ip in LOCALHOST_IPS
 
 
-# Paths that look like normal URL segments (letters, digits, hyphens, slashes — no empty segments)
-SPA_SAFE_PATH = re.compile(r'^/(?:[a-z0-9\-]+/?)*$')
+# Paths that look like normal URL segments (letters, digits, hyphens, slashes — no empty segments).
+# Each '/' is a mandatory delimiter between segments so a slash-free run has exactly one
+# decomposition — this keeps matching LINEAR. Do NOT rewrite as `(?:[a-z0-9\-]+/?)*`: that
+# nested-quantifier form backtracks catastrophically (ReDoS) on inputs like a long alnum run
+# followed by a '.' (e.g. a hashed `*.webp`), which pins the GIL and gets the worker SIGKILLed
+# by uvicorn's health-check.
+SPA_SAFE_PATH = re.compile(r'^/([a-z0-9\-]+(?:/[a-z0-9\-]+)*/?)?$')
 
 
 async def bot_filter_middleware(request: Request, call_next):
@@ -150,6 +155,13 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
+        return JSONResponse(status_code=404, content={"error": "Not Found"})
+
+    # Length-guard backstop before the regex (the linear pattern above already prevents
+    # ReDoS). The deepest SPA route is `walkthroughs/:type/:slug`; the longest real path
+    # in the sitemap is 60 chars and the structural worst case is ~150, so 512 only ever
+    # rejects absurd probe paths — it never clips a legitimate route.
+    if len(normalized) > 512:
         return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     # Allow normal-shaped URLs through to React Router
