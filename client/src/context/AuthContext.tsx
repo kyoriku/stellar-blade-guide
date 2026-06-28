@@ -8,6 +8,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 // 401 on next load, which then clears the flag and never happens again.
 export const SESSION_FLAG = 'sb_has_session'
 
+// Refresh on tab focus only if the token is at least this stale, so rapid
+// tab-switching doesn't hammer /auth/refresh. Comfortably below the 15-min
+// access-token TTL so any real idle period refreshes while the cookie is valid.
+const REFRESH_ON_FOCUS_STALE_MS = 10 * 60 * 1000 // 10 minutes
+
 // Types
 export interface AuthUser {
   id: number
@@ -38,29 +43,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true) // true until initial refresh resolves
 
-  // Attempt to restore session from the HttpOnly refresh cookie on mount
-  const refreshToken = useCallback(async (): Promise<string | null> => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include', // send the HttpOnly cookie
-      })
-      if (!res.ok) {
+  // Single-flight guard: concurrent refreshes would race the server's token
+  // rotation (the first call revokes the cookie the second still holds → 401 →
+  // silent logout). Reuse the in-flight promise instead of issuing a second call.
+  const refreshInFlightRef = useRef<Promise<string | null> | null>(null)
+  // Timestamp of the last successful token acquisition; drives the focus check.
+  const lastRefreshRef = useRef(0)
+
+  // Restore the session from the HttpOnly refresh cookie. This is the single
+  // refresh code path — mount restore, the 14-min interval, the focus handler,
+  // the reactive 401 retry in useAuth, and the OAuth callback all go through
+  // here, so every refreshed token is stamped in exactly one place.
+  const refreshToken = useCallback((): Promise<string | null> => {
+    // Single-flight: if a refresh is already running, reuse it.
+    if (refreshInFlightRef.current) return refreshInFlightRef.current
+
+    const run = async (): Promise<string | null> => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include', // send the HttpOnly cookie
+        })
+        if (!res.ok) {
+          setUser(null)
+          setAccessToken(null)
+          localStorage.removeItem(SESSION_FLAG)
+          return null
+        }
+        const data = await res.json()
+        setUser(data.user)
+        setAccessToken(data.access_token)
+        lastRefreshRef.current = Date.now()
+        return data.access_token
+      } catch {
         setUser(null)
         setAccessToken(null)
         localStorage.removeItem(SESSION_FLAG)
         return null
+      } finally {
+        refreshInFlightRef.current = null
       }
-      const data = await res.json()
-      setUser(data.user)
-      setAccessToken(data.access_token)
-      return data.access_token
-    } catch {
-      setUser(null)
-      setAccessToken(null)
-      localStorage.removeItem(SESSION_FLAG)
-      return null
     }
+
+    const p = run()
+    refreshInFlightRef.current = p
+    return p
   }, [])
 
   // Silent refresh on mount — skip entirely if no session flag is set,
@@ -80,6 +107,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshToken()
     }, 14 * 60 * 1000) // every 14 minutes
     return () => clearInterval(interval)
+  }, [accessToken, refreshToken])
+
+  // Background tabs throttle/freeze the interval above (and timers don't advance
+  // during system sleep), so a token can silently expire while hidden. When the
+  // tab becomes visible again, refresh if the token is stale — single-flight in
+  // refreshToken collapses the visibilitychange + focus pair into one network call.
+  useEffect(() => {
+    if (!accessToken) return
+    const refreshIfStale = () => {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - lastRefreshRef.current > REFRESH_ON_FOCUS_STALE_MS) {
+        void refreshToken()
+      }
+    }
+    document.addEventListener('visibilitychange', refreshIfStale)
+    window.addEventListener('focus', refreshIfStale)
+    return () => {
+      document.removeEventListener('visibilitychange', refreshIfStale)
+      window.removeEventListener('focus', refreshIfStale)
+    }
   }, [accessToken, refreshToken])
 
   const prevAuthRef = useRef(false)
@@ -125,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await res.json()
     setUser(data.user)
     setAccessToken(data.access_token)
+    lastRefreshRef.current = Date.now()
     localStorage.setItem(SESSION_FLAG, '1')
   }, [])
 
@@ -145,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await res.json()
     setUser(data.user)
     setAccessToken(data.access_token)
+    lastRefreshRef.current = Date.now()
     localStorage.setItem(SESSION_FLAG, '1')
   }, [])
 
