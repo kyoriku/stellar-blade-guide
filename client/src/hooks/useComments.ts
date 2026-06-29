@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
+import { readError } from '../services/api'
 import type { CommentData } from '../components/comments/Comment'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -19,7 +20,7 @@ export function useComments(contentType: string, contentId: number) {
       const res = await fetch(`${API_BASE_URL}/comments/${contentType}/${contentId}`, {
         cache: 'no-store',
       })
-      if (!res.ok) throw new Error('Failed to load comments')
+      if (!res.ok) throw new Error(await readError(res, 'Failed to load comments'))
       return res.json()
     },
     enabled: !!contentType && !!contentId,
@@ -44,8 +45,7 @@ export function useComments(contentType: string, contentId: number) {
       body: JSON.stringify({ content_type: contentType, content_id: contentId, body }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || 'Failed to post comment')
+      throw new Error(await readError(res, 'Failed to post comment'))
     }
     const newComment: CommentData = await res.json()
     setComments(prev => [...prev, { ...newComment, replies: [] }])
@@ -60,8 +60,7 @@ export function useComments(contentType: string, contentId: number) {
       body: JSON.stringify({ content_type: contentType, content_id: contentId, parent_id: parentId, body }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || 'Failed to post reply')
+      throw new Error(await readError(res, 'Failed to post reply'))
     }
     const reply: CommentData = await res.json()
     setComments(prev =>
@@ -79,8 +78,7 @@ export function useComments(contentType: string, contentId: number) {
       body: JSON.stringify({ body }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || 'Failed to edit comment')
+      throw new Error(await readError(res, 'Failed to edit comment'))
     }
     const updated: CommentData = await res.json()
     setComments(prev =>
@@ -99,7 +97,7 @@ export function useComments(contentType: string, contentId: number) {
    */
   const deleteComment = async (commentId: number): Promise<void> => {
     const res = await authFetch(`${API_BASE_URL}/comments/${commentId}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error('Failed to delete')
+    if (!res.ok) throw new Error(await readError(res, 'Failed to delete comment'))
     setComments(prev => processDeleted(prev, commentId))
   }
 

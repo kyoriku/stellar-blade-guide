@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
-import { ApiError } from '../services/api'
+import QueryError from '../components/QueryError'
 import Lightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 import 'yet-another-react-lightbox/styles.css'
@@ -33,7 +33,7 @@ function LevelPage() {
     level.toLowerCase().replace(/\s+/g, '-') === levelName
   );
 
-  const { data: locationData = [], isLoading, isError, error } = useLevelCollectibles(levelName!);
+  const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -234,8 +234,7 @@ if (isLoading) {
 
   // Show error page with appropriate code
   if (isError) {
-    const apiError = error as ApiError;
-    return <ErrorPage code={apiError?.status || 500} />;
+    return <QueryError error={error} onRetry={() => void refetch()} />;
   }
 
   if (locationData.length === 0) {

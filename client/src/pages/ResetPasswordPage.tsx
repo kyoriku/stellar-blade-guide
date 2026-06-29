@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
+import { readError, errorMessage } from '../services/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -40,13 +41,12 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ token, new_password: password }),
       })
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to reset password')
+        throw new Error(await readError(res, 'Failed to reset password'))
       }
       setSuccess(true)
       setTimeout(() => navigate('/login', { replace: true }), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset password')
+      setError(errorMessage(err, 'Failed to reset password'))
     } finally {
       setIsSubmitting(false)
     }
@@ -98,6 +98,7 @@ export default function ResetPasswordPage() {
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
+                    minLength={8}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"

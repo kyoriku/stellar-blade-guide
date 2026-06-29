@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
+import { useToast } from '../context/ToastContext'
+import { readError, errorMessage } from '../services/api'
 
 const STORAGE_KEY = 'sb_progress'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -21,6 +23,7 @@ function setLocalProgress(ids: Set<number>) {
 export function useProgress() {
   const { isAuthenticated, isLoading: authLoading, authFetch } = useAuth()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
 
   // Guest state
   const [guestIds, setGuestIds] = useState<Set<number>>(() => getLocalProgress())
@@ -30,11 +33,11 @@ export function useProgress() {
   const [pendingIds, setPendingIds] = useState<Set<number>>(() => new Set())
 
   // Authenticated state via TanStack Query
-  const { data: serverIds, isLoading: queryLoading } = useQuery({
+  const { data: serverIds, isLoading: queryLoading, isError: loadFailed, error: loadErr } = useQuery({
     queryKey: ['progress'],
     queryFn: async () => {
       const res = await authFetch(`${API_BASE_URL}/progress`)
-      if (!res.ok) return []
+      if (!res.ok) throw new Error(await readError(res, 'Failed to load progress'))
       const ids: number[] = await res.json()
       return ids
     },
@@ -42,6 +45,11 @@ export function useProgress() {
     staleTime: 5 * 60 * 1000,       // 5 minutes before refetch
     gcTime: 60 * 60 * 1000,          // keep in cache for 1 hour
   })
+
+  // Surface a load failure instead of silently showing zero progress.
+  useEffect(() => {
+    if (loadFailed) showToast(errorMessage(loadErr, "Couldn't load your saved progress."))
+  }, [loadFailed, loadErr, showToast])
 
   const completedIds = isAuthenticated
     ? new Set(serverIds ?? [])
@@ -55,7 +63,7 @@ export function useProgress() {
       const res = await authFetch(`${API_BASE_URL}/progress/${collectibleId}`, {
         method: 'POST',
       })
-      if (!res.ok) throw new Error('Toggle failed')
+      if (!res.ok) throw new Error(await readError(res, 'Failed to save progress'))
     },
     onMutate: async (collectibleId: number) => {
       await queryClient.cancelQueries({ queryKey: ['progress'] })
@@ -68,10 +76,11 @@ export function useProgress() {
       queryClient.setQueryData(['progress'], next)
       return { previous }
     },
-    onError: (_err, _id, context) => {
+    onError: (err, _id, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['progress'], context.previous)
       }
+      showToast(errorMessage(err, "Couldn't save your progress. Please try again."))
     },
   })
 

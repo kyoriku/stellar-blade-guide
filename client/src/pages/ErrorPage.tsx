@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
-import { Home, AlertCircle, Clock, ServerCrash, RefreshCw } from 'lucide-react'
+import { Home, AlertCircle, Clock, ServerCrash, RefreshCw, WifiOff } from 'lucide-react'
 import SEO from '../components/SEO'
+import { NETWORK_ERROR_MESSAGE } from '../services/api'
 
 interface ErrorPageProps {
   code?: number;
   title?: string;
   message?: string;
   onRetry?: () => void;
+  offline?: boolean;
 }
 
 function ErrorPage({
@@ -14,9 +16,17 @@ function ErrorPage({
   title,
   message,
   onRetry,
+  offline = false,
 }: ErrorPageProps) {
 
   const getDefaults = () => {
+    if (offline) {
+      return {
+        title: 'Connection problem',
+        message: NETWORK_ERROR_MESSAGE,
+        icon: WifiOff,
+      };
+    }
     switch (code) {
       case 404:
         return {
@@ -50,10 +60,10 @@ function ErrorPage({
 
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4">
-      <SEO 
-        title={`${code} ${title || defaults.title}`} 
-        description={message || defaults.message} 
-        noindex 
+      <SEO
+        title={offline ? (title || defaults.title) : `${code} ${title || defaults.title}`}
+        description={message || defaults.message}
+        noindex
       />
       <div className="text-center max-w-md">
         <div className="mb-8 flex justify-center">
@@ -65,7 +75,7 @@ function ErrorPage({
           </div>
         </div>
 
-        <h1 className="text-6xl font-bold text-gray-100 mb-4">{code}</h1>
+        {!offline && <h1 className="text-6xl font-bold text-gray-100 mb-4">{code}</h1>}
         <h2 className="text-2xl font-semibold text-gray-300 mb-4">
           {title || defaults.title}
         </h2>
@@ -74,7 +84,7 @@ function ErrorPage({
         </p>
 
         <div className="flex items-center justify-center gap-3 flex-wrap">
-          {onRetry && code !== 404 && (
+          {onRetry && (offline || code !== 404) && (
             <button
               onClick={onRetry}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-gray-100 font-semibold text-sm transition-all duration-200 cursor-pointer"
