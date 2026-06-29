@@ -9,6 +9,7 @@ interface ConfirmModalProps {
   onConfirm: () => void
   onCancel: () => void
   isLoading?: boolean
+  error?: string | null
 }
 
 export default function ConfirmModal({
@@ -19,6 +20,7 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
   isLoading = false,
+  error = null,
 }: ConfirmModalProps) {
   // Close on Escape
   useEffect(() => {
@@ -65,6 +67,12 @@ export default function ConfirmModal({
         {/* Content */}
         <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
         <p className="text-sm text-gray-400 mb-6">{message}</p>
+
+        {error && (
+          <div className="mb-4 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3 justify-end">

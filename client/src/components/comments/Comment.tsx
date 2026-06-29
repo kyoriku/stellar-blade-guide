@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MessageSquare, Pencil, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { errorMessage } from '../../services/api'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
 
@@ -56,6 +57,7 @@ export default function Comment({
   const [showReplies, setShowReplies] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   const isOwner = user?.id === comment.user?.id
@@ -77,16 +79,19 @@ export default function Comment({
       await onEdit(comment.id, trimmed)
       setIsEditing(false)
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Failed to edit comment')
+      setEditError(errorMessage(err, 'Failed to edit comment'))
     } finally {
       setIsSaving(false)
     }
   }
   const handleDelete = async () => {
+    setDeleteError(null)
     setIsDeleting(true)
     try {
       await onDelete(comment.id)
       setShowDeleteModal(false)
+    } catch (err) {
+      setDeleteError(errorMessage(err, 'Failed to delete comment'))
     } finally {
       setIsDeleting(false)
     }
@@ -177,7 +182,7 @@ export default function Comment({
                   </button>
                 )}
                 <button
-                  onClick={() => setShowDeleteModal(true)}
+                  onClick={() => { setShowDeleteModal(true); setDeleteError(null) }}
                   title="Delete comment"
                   className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
                 >
@@ -238,8 +243,9 @@ export default function Comment({
         message="This comment will be removed. This action cannot be undone."
         confirmLabel="Delete"
         onConfirm={handleDelete}
-        onCancel={() => setShowDeleteModal(false)}
+        onCancel={() => { setShowDeleteModal(false); setDeleteError(null) }}
         isLoading={isDeleting}
+        error={deleteError}
       />
     </div>
   )

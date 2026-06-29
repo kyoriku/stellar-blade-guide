@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
+import { readError } from '../services/api'
+import { useToast } from './ToastContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true) // true until initial refresh resolves
+  const { showToast } = useToast()
 
   // Single-flight guard: concurrent refreshes would race the server's token
   // rotation (the first call revokes the cookie the second still holds → 401 →
@@ -147,13 +150,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               body: JSON.stringify({ collectible_ids: ids }),
             }).then(res => {
               if (res.ok) localStorage.removeItem('sb_progress')
-            }).catch(() => { })
+              else showToast("Couldn't sync your saved progress — it's still saved on this device.")
+            }).catch(() => showToast("Couldn't sync your saved progress — it's still saved on this device."))
           }
         } catch { }
       }
     }
     prevAuthRef.current = !!user
-  }, [user, isLoading, accessToken])
+  }, [user, isLoading, accessToken, showToast])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -163,11 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      const detail = Array.isArray(err.detail)
-        ? err.detail.map((e: any) => e.msg.replace('Value error, ', '')).join(', ')
-        : err.detail || 'Login failed'
-      throw new Error(detail)
+      throw new Error(await readError(res, 'Login failed'))
     }
     const data = await res.json()
     setUser(data.user)
@@ -184,11 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, username, password }),
     })
     if (!res.ok) {
-      const err = await res.json()
-      const detail = Array.isArray(err.detail)
-        ? err.detail.map((e: any) => e.msg.replace('Value error, ', '')).join(', ')
-        : err.detail || 'Registration failed'
-      throw new Error(detail)
+      throw new Error(await readError(res, 'Registration failed'))
     }
     const data = await res.json()
     setUser(data.user)

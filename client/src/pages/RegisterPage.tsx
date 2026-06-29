@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { errorMessage } from '../services/api'
 import SEO from '../components/SEO'
 
 export default function RegisterPage() {
@@ -23,7 +24,7 @@ export default function RegisterPage() {
       await register(email, username, password)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
+      setError(errorMessage(err, 'Registration failed'))
     } finally {
       setIsSubmitting(false)
     }

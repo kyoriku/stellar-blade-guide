@@ -27,7 +27,7 @@ function Navbar() {
   // const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch();
-  const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError } = useSearch(searchQuery);
+  const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError, error: mobileSearchErrorObj } = useSearch(searchQuery);
   const handleLogout = async () => {
     setUserDropdownOpen(false)
     await logout()
@@ -636,6 +636,7 @@ function Navbar() {
                     data={mobileSearchData}
                     isLoading={mobileSearchPending}
                     isError={mobileSearchError}
+                    error={mobileSearchErrorObj}
                     onResultClick={() => setIsOpen(false)}
                   />
                 </div>

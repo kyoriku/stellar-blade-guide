@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Compass, Zap, Sparkles, Box, BookOpen, Map } from 'lucide-react'
 import type { SearchResponse } from '../services/api'
+import { errorMessage } from '../services/api'
 import { usePrefetch } from '../hooks/usePrefetch'
 
 interface SearchResultsProps {
@@ -8,6 +9,7 @@ interface SearchResultsProps {
   data?: SearchResponse
   isLoading: boolean
   isError: boolean
+  error?: unknown
   onResultClick: () => void
   activeIndex?: number
 }
@@ -43,6 +45,7 @@ export function SearchResults({
   data,
   isLoading,
   isError,
+  error,
   onResultClick,
   activeIndex = -1,
 }: SearchResultsProps) {
@@ -86,7 +89,7 @@ export function SearchResults({
   if (isError) {
     return (
       <div className="px-4 py-6 text-sm text-gray-400 text-center">
-        Search is unavailable. Try again later.
+        {errorMessage(error, 'Search is unavailable. Try again later.')}
       </div>
     )
   }

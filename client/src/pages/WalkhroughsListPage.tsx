@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useWalkthroughsByType } from '../hooks/useWalkthroughs';
-import { ApiError } from '../services/api';
+import QueryError from '../components/QueryError';
 import { MapPin, BookOpen } from 'lucide-react';
 import ErrorPage from './ErrorPage';
 import { WALKTHROUGHS } from '../constants/navigation';
@@ -63,8 +63,7 @@ export default function WalkthroughsListPage() {
   }
 
   if (isError) {
-    const apiError = error as ApiError;
-    return <ErrorPage code={apiError?.status || 500} onRetry={refetch} />;
+    return <QueryError error={error} onRetry={() => void refetch()} />;
   }
 
   if (!walkthroughs || walkthroughs.length === 0) {

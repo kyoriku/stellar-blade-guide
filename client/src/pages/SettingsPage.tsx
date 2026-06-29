@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, KeyRound, Trash2, Save, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { readError, errorMessage } from '../services/api'
+import { isValidUsername, USERNAME_RULE } from '../utils/validateUsername'
 import SEO from '../components/SEO'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -10,9 +12,8 @@ export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()
   const navigate = useNavigate()
 
-  if (!user) return null // this should never happen since the route is protected, but just in case
-
   // ── Profile ────────────────────────────────────────────────────────────────
+  // Note: this runs before the `if (!user)` guard below, so it must be null-safe.
   const [username, setUsername] = useState(user?.username ?? '')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
@@ -37,10 +38,28 @@ export default function SettingsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  // if (!user) {
-  //   navigate('/login', { state: { from: '/settings' } })
-  //   return null
-  // }
+  // Guard goes here, AFTER every hook above — early-returning before the
+  // useState calls would call hooks conditionally (Rules of Hooks violation).
+  // Route is protected, so user is normally set; this is a defensive fallback.
+  // Below this point TypeScript narrows `user` to non-null (it's a const, so the
+  // narrowing carries into the handler closures and JSX).
+  if (!user) return null
+
+  // Profile dirty-check — shared by the Save button (disabled state) and the
+  // save handler, so the button enables only when a save would actually change
+  // something. An empty Avatar URL field means "no change" (use Remove to clear);
+  // comparing it against the current avatar would otherwise wipe it on every save.
+  const trimmedUsername = username.trim()
+  const trimmedAvatarUrl = avatarUrl.trim()
+  const usernameChanged = trimmedUsername !== user.username
+  const avatarChanged = trimmedAvatarUrl !== '' && trimmedAvatarUrl !== (user.avatar_url ?? '')
+  const hasProfileChanges = usernameChanged || avatarChanged
+  // Mirror the server's username rule (see utils/validateUsername) so the button
+  // reflects true validity. The save is one combined PATCH, so an invalid username
+  // must block it even when only the avatar changed (else the request 422s and
+  // nothing saves). The server stays the final authority (e.g. uniqueness).
+  const usernameValid = isValidUsername(username)
+  const canSaveProfile = hasProfileChanges && (!usernameChanged || usernameValid)
 
   const handleRemoveAvatar = async () => {
     setProfileError(null)
@@ -52,14 +71,13 @@ export default function SettingsPage() {
         body: JSON.stringify({ avatar_url: '' }),
       })
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to remove avatar')
+        throw new Error(await readError(res, 'Failed to remove avatar'))
       }
       await refreshToken()
       setProfileSuccess(true)
       setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Failed to remove avatar')
+      setProfileError(errorMessage(err, 'Failed to remove avatar'))
     } finally {
       setProfileLoading(false)
     }
@@ -72,8 +90,8 @@ export default function SettingsPage() {
     setProfileLoading(true)
     try {
       const body: Record<string, string> = {}
-      if (username.trim() !== user.username) body.username = username.trim()
-      if (avatarUrl.trim() !== (user.avatar_url ?? '')) body.avatar_url = avatarUrl.trim()
+      if (usernameChanged) body.username = trimmedUsername
+      if (avatarChanged) body.avatar_url = trimmedAvatarUrl
 
       if (Object.keys(body).length === 0) {
         setProfileSuccess(true)
@@ -86,8 +104,7 @@ export default function SettingsPage() {
       })
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to update profile')
+        throw new Error(await readError(res, 'Failed to update profile'))
       }
 
       await res.json()  // consume response but don't need the data
@@ -96,7 +113,7 @@ export default function SettingsPage() {
       setProfileSuccess(true)
       setTimeout(() => setProfileSuccess(false), 3000)
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Failed to update profile')
+      setProfileError(errorMessage(err, 'Failed to update profile'))
     } finally {
       setProfileLoading(false)
     }
@@ -114,8 +131,7 @@ export default function SettingsPage() {
       })
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to change password')
+        throw new Error(await readError(res, 'Failed to change password'))
       }
 
       setPasswordSuccess(true)
@@ -127,7 +143,7 @@ export default function SettingsPage() {
         navigate('/login')
       }, 2000)
     } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : 'Failed to change password')
+      setPasswordError(errorMessage(err, 'Failed to change password'))
     } finally {
       setPasswordLoading(false)
     }
@@ -138,11 +154,11 @@ export default function SettingsPage() {
     setLogoutAllLoading(true)
     try {
       const res = await authFetch(`${API_BASE_URL}/auth/logout-all`, { method: 'POST' })
-      if (!res.ok) throw new Error('Failed to sign out of all devices')
+      if (!res.ok) throw new Error(await readError(res, 'Failed to sign out of all devices'))
       logout()
       navigate('/login')
     } catch (err) {
-      setLogoutAllError(err instanceof Error ? err.message : 'Failed to sign out of all devices')
+      setLogoutAllError(errorMessage(err, 'Failed to sign out of all devices'))
     } finally {
       setLogoutAllLoading(false)
     }
@@ -153,11 +169,11 @@ export default function SettingsPage() {
     setDeleteLoading(true)
     try {
       const res = await authFetch(`${API_BASE_URL}/users/me`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to delete account')
+      if (!res.ok) throw new Error(await readError(res, 'Failed to delete account'))
       await logout()
       navigate('/')
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete account')
+      setDeleteError(errorMessage(err, 'Failed to delete account'))
     } finally {
       setDeleteLoading(false)
     }
@@ -204,8 +220,8 @@ export default function SettingsPage() {
                 className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
                 placeholder="yourname"
               />
-              <p className="mt-1.5 text-xs text-gray-400">
-                Letters, numbers, hyphens and underscores only. 3–50 characters.
+              <p className={`mt-1.5 text-xs ${usernameChanged && !usernameValid ? 'text-red-400' : 'text-gray-400'}`}>
+                {USERNAME_RULE}
               </p>
             </div>
 
@@ -244,7 +260,7 @@ export default function SettingsPage() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={profileLoading}
+                disabled={profileLoading || !canSaveProfile}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
