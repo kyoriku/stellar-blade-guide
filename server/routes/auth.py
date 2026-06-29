@@ -6,11 +6,13 @@ Save as: routes/auth.py
 import os
 import logging
 from datetime import datetime, timezone
+from typing import Annotated
 
 import httpx
+from email_validator import validate_email, EmailNotValidError
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import AfterValidator, BaseModel, field_validator
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -77,8 +79,22 @@ def clear_refresh_cookie(response: Response) -> None:
 
 # Schemas
 
+# Validated email type used by all auth request models. Mirrors what Pydantic's
+# EmailStr did (strip + email-validator + normalized form, so stored/looked-up
+# values are byte-for-byte unchanged) but raises a friendly message instead of
+# the library's technical default. The server stays the authority on validity.
+def _validate_email(v: str) -> str:
+    try:
+        return validate_email(v.strip(), check_deliverability=False).normalized
+    except EmailNotValidError:
+        raise ValueError("Please enter a valid email address")
+
+
+FriendlyEmail = Annotated[str, AfterValidator(_validate_email)]
+
+
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    email: FriendlyEmail
     username: str
     password: str
 
@@ -101,7 +117,7 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: FriendlyEmail
     password: str
 
 
@@ -204,7 +220,7 @@ async def refresh(
         user_id_str, refresh_token = token.split(":", 1)
         user_id = int(user_id_str)
     except (ValueError, AttributeError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token format")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Your session is invalid. Please sign in again.")
 
     if not await validate_refresh_token(user_id, refresh_token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalid or expired")
@@ -340,7 +356,7 @@ async def _send_reset_email(email: str, token: str) -> None:
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: FriendlyEmail
 
 
 class ResetPasswordRequest(BaseModel):
@@ -533,7 +549,7 @@ async def google_callback(
             },
         )
         if token_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to exchange Google code")
+            raise HTTPException(status_code=400, detail="We couldn't complete Google sign-in. Please try again.")
 
         google_token = token_resp.json().get("access_token")
 
@@ -543,7 +559,7 @@ async def google_callback(
             headers={"Authorization": f"Bearer {google_token}"},
         )
         if userinfo_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch Google user info")
+            raise HTTPException(status_code=400, detail="We couldn't complete Google sign-in. Please try again.")
 
         info = userinfo_resp.json()
 
@@ -610,7 +626,7 @@ async def discord_callback(
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         if token_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to exchange Discord code")
+            raise HTTPException(status_code=400, detail="We couldn't complete Discord sign-in. Please try again.")
 
         discord_token = token_resp.json().get("access_token")
 
@@ -620,7 +636,7 @@ async def discord_callback(
             headers={"Authorization": f"Bearer {discord_token}"},
         )
         if userinfo_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch Discord user info")
+            raise HTTPException(status_code=400, detail="We couldn't complete Discord sign-in. Please try again.")
 
         info = userinfo_resp.json()
 

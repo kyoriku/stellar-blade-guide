@@ -26,6 +26,7 @@ import core.auth as core_auth
 from db.database import Base, get_db
 from models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
 from middleware.rate_limit import setup_rate_limiter
+from middleware.exception_handlers import add_exception_handlers
 from routes.auth import router as auth_router, hash_password
 from core.auth import get_current_user, SECRET_KEY, ALGORITHM
 
@@ -33,6 +34,7 @@ from core.auth import get_current_user, SECRET_KEY, ALGORITHM
 def _make_auth_app(db_session: AsyncSession) -> FastAPI:
     app = FastAPI()
     setup_rate_limiter(app)
+    add_exception_handlers(app)
 
     async def override_get_db():
         yield db_session
@@ -139,6 +141,30 @@ async def test_register_invalid_password_returns_422(auth_client):
         "password": "abc",
     })
     assert r.status_code == 422
+
+
+async def test_register_invalid_email_returns_friendly_message(auth_client):
+    r = await auth_client.post("/api/auth/register", json={
+        "email": "not-an-email",
+        "username": "bademail",
+        "password": "password123",
+    })
+    assert r.status_code == 422
+    # Custom message instead of the email-validator library default. The app's
+    # RequestValidationError handler flattens 422s to a single string detail.
+    assert "Please enter a valid email address" in r.json()["detail"]
+
+
+async def test_register_normalizes_email_domain(auth_client):
+    # FriendlyEmail must preserve EmailStr's normalization (lowercased domain,
+    # stripped) so uniqueness lookups keep working.
+    r = await auth_client.post("/api/auth/register", json={
+        "email": "  Mixed@EXAMPLE.COM  ",
+        "username": "mixedcase",
+        "password": "password123",
+    })
+    assert r.status_code == 201
+    assert r.json()["user"]["email"] == "Mixed@example.com"
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────

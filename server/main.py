@@ -13,6 +13,7 @@ from core.colours import GREEN, RED, RESET
 from middleware.rate_limit import setup_rate_limiter
 from middleware.logging import add_logging_middleware
 from middleware.error_handler import add_error_handler_middleware
+from middleware.exception_handlers import add_exception_handlers
 from middleware.security_headers import add_security_headers_middleware, add_trusted_host_middleware
 from middleware.bot_filter import add_bot_filter_middleware
 from middleware.etag import ETagMiddleware
@@ -50,6 +51,8 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
     openapi_url="/openapi.json" if settings.DEBUG else None,
 )
+
+add_exception_handlers(app)
 
 # Middleware — registered inner→outer. Starlette PREPENDS each layer, so the
 # LAST registered runs FIRST on a request. Resulting request order (outer→inner):
