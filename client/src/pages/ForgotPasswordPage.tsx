@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
+import { errorMessage } from '../services/api'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -23,8 +24,8 @@ export default function ForgotPasswordPage() {
       })
       // Always show success — never reveal whether email exists
       setSubmitted(true)
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      setError(errorMessage(err, 'Something went wrong. Please try again.'))
     } finally {
       setIsSubmitting(false)
     }

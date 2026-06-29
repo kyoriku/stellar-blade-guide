@@ -18,7 +18,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
   const onExpandRef = useRef(onExpand)
   onExpandRef.current = onExpand
   const navigate = useNavigate()
-  const { data, isLoading, isError } = useSearch(query)
+  const { data, isLoading, isError, error } = useSearch(query)
 
   // Reset activeIndex when query changes
   useEffect(() => {
@@ -130,6 +130,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
           data={data}
           isLoading={isLoading}
           isError={isError}
+          error={error}
           onResultClick={collapse}
           activeIndex={activeIndex}
         />

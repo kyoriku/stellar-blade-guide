@@ -1,3 +1,6 @@
+# renumber_ids.py is now incompatible with progress tracking. Once users have saved progress, collectible IDs are permanent — you can't shift them.
+# Going forward: stop using renumber_ids.py. Assign new collectibles IDs that come after your current max ID instead of renumbering everything. Gaps in IDs are fine — they're internal identifiers, not display values. Nobody sees them.
+
 import json
 import glob
 from pathlib import Path

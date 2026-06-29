@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { errorMessage } from '../services/api'
 import SEO from '../components/SEO'
 
 export default function LoginPage() {
@@ -26,7 +27,7 @@ export default function LoginPage() {
       await login(email, password)
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(errorMessage(err, 'Login failed'))
     } finally {
       setIsSubmitting(false)
     }

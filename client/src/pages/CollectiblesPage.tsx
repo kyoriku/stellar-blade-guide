@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
-import { ApiError } from '../services/api'
+import QueryError from '../components/QueryError'
 import Lightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 import 'yet-another-react-lightbox/styles.css'
@@ -481,8 +481,7 @@ function CollectibleTypePage() {
 
   // Show error page with appropriate code
   if (isError) {
-    const apiError = error as ApiError;
-    return <ErrorPage code={apiError?.status || 500} onRetry={refetch} />;
+    return <QueryError error={error} onRetry={() => void refetch()} />;
   }
 
   if (levelData.length === 0) {

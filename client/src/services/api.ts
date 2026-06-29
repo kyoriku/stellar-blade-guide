@@ -10,6 +10,50 @@ export class ApiError extends Error {
   }
 }
 
+/** Shown for failures the server can't describe specifically. */
+export const NETWORK_ERROR_MESSAGE = 'You appear to be offline. Check your connection and try again.';
+const RATE_LIMIT_MESSAGE = "You're doing that too fast. Please wait a moment and try again.";
+const SERVER_ERROR_MESSAGE = 'Something went wrong on our end. Please try again later.';
+
+/**
+ * Normalize a backend error body to a single display string. This API uses two
+ * envelopes: FastAPI's { detail: "msg" } / { detail: [{ msg }] } (validation),
+ * and a custom { error, message } (global 500 + slowapi 429 + bot/origin 404s).
+ * Pydantic prefixes custom ValueError messages with "Value error, " — stripped.
+ * Falls back when nothing usable is present.
+ */
+export function getApiErrorMessage(body: unknown, fallback: string): string {
+  if (body && typeof body === 'object') {
+    const b = body as { detail?: unknown; message?: unknown; error?: unknown };
+    if (Array.isArray(b.detail)) {
+      const messages = b.detail
+        .map((item) =>
+          item && typeof item === 'object' && 'msg' in item
+            ? String((item as { msg: unknown }).msg).replace('Value error, ', '')
+            : ''
+        )
+        .filter(Boolean);
+      if (messages.length > 0) return messages.join(', ');
+    }
+    if (typeof b.detail === 'string' && b.detail) return b.detail;
+    if (typeof b.message === 'string' && b.message) return b.message;
+    if (typeof b.error === 'string' && b.error) return b.error;
+  }
+  return fallback;
+}
+
+/**
+ * Best display string for any caught client error: a server-provided ApiError
+ * message, an offline notice for network (fetch) failures, a plain Error
+ * message, or the fallback. Use in catch blocks that show errors to users.
+ */
+export function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) return err.message;
+  if (err instanceof TypeError) return NETWORK_ERROR_MESSAGE; // fetch rejects (offline/DNS/CORS)
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
+
 export interface Level {
   id: number;
   name: string;
@@ -157,14 +201,22 @@ export interface AuthUser {
   created_at: string
 }
 
+/**
+ * Read a non-OK Response into a friendly display message: fixed copy for 429 and
+ * 5xx (never leak internals or rate-limit jargon), otherwise the server's own
+ * message. Use wherever you fetch() directly instead of the api.* methods.
+ */
+export async function readError(response: Response, fallback: string): Promise<string> {
+  if (response.status === 429) return RATE_LIMIT_MESSAGE;
+  if (response.status >= 500) return SERVER_ERROR_MESSAGE; // never surface raw internals
+  const body: unknown = await response.json().catch(() => null);
+  return getApiErrorMessage(body, fallback);
+}
+
 const handleResponse = async <T>(response: Response, context: string): Promise<T> => {
   if (!response.ok) {
-    if (import.meta.env.DEV && response.status === 429) {
-      console.warn(`Rate limit hit on ${context}`);
-      console.warn('This shouldn\'t happen in normal usage - check for bugs or infinite loops!');
-    }
-
-    throw new ApiError(response.status, `Failed to fetch ${context}`);
+    if (import.meta.env.DEV && response.status === 429) console.warn(`Rate limit hit on ${context}`);
+    throw new ApiError(response.status, await readError(response, `Failed to load ${context}`));
   }
   return response.json();
 };

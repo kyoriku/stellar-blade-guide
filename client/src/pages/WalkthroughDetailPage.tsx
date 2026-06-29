@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
-import { ApiError } from '../services/api'
+import QueryError from '../components/QueryError'
+import { useToast } from '../context/ToastContext'
 import { List, ArrowLeft, Clock, Gift, Loader2 } from 'lucide-react'
 import Lightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
@@ -26,8 +27,9 @@ function WalkthroughPage() {
   const location = useLocation();
 
   const { data: walkthrough, isLoading, isError, error, refetch } = useWalkthrough(type!, slug!);
-  const { data: allWalkthroughs = [] } = useWalkthroughsByType(type!);
+  const { data: allWalkthroughs = [], isError: navError } = useWalkthroughsByType(type!);
   const { prefetchWalkthroughBySlug } = usePrefetch();
+  const { showToast } = useToast();
   const [activeSection, setActiveSection] = useState<string>('');
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -39,6 +41,13 @@ function WalkthroughPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Prev/next nav is secondary content — surface its load failure as a toast,
+  // but only when the page itself loaded (a failed main query already shows the
+  // full-page QueryError, so a toast on top would be redundant).
+  useEffect(() => {
+    if (navError && !isError) showToast("Couldn't load previous/next walkthroughs.");
+  }, [navError, isError, showToast]);
 
   // Collect all images when walkthrough loads
   useEffect(() => {
@@ -155,8 +164,7 @@ function WalkthroughPage() {
   }
 
   if (isError) {
-    const apiError = error as ApiError;
-    return <ErrorPage code={apiError?.status || 500} onRetry={refetch} />;
+    return <QueryError error={error} onRetry={() => void refetch()} />;
   }
 
   if (!walkthrough) {

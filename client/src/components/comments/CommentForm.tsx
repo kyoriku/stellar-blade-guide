@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Send } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { errorMessage } from '../../services/api'
 
 interface CommentFormProps {
   onSubmit: (body: string) => Promise<void>
@@ -55,7 +56,7 @@ export default function CommentForm({
       await onSubmit(trimmed)
       setBody('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to post comment')
+      setError(errorMessage(err, 'Failed to post comment'))
     } finally {
       setIsSubmitting(false)
     }
