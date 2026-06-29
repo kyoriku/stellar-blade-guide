@@ -1,3 +1,8 @@
+"""
+Usage: 
+  uv run scripts/db/seed_walkthroughs.py
+"""
+
 import sys
 from pathlib import Path
 import json
@@ -23,7 +28,7 @@ def load_all_walkthrough_files():
         return []
 
     all_data = []
-    json_files = sorted(glob.glob(str(seed_dir / '*' / '*.json')))
+    json_files = sorted(glob.glob(str(seed_dir / '**' / '*.json'), recursive=True))
     
     print(f"\033[96m━━━ STEP 1: Loading Data ━━━\033[0m")
     print(f"Found {len(json_files)} walkthrough files\n")

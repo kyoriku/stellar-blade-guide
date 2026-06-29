@@ -79,8 +79,8 @@
 """
 Automated workflow script for adding content
 Usage:
-  uv run python scripts/dev_workflow.py collectibles
-  uv run python scripts/dev_workflow.py walkthroughs
+  uv run scripts/dev_workflow.py collectibles
+  uv run scripts/dev_workflow.py walkthroughs
 """
 
 import subprocess
