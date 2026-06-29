@@ -227,7 +227,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                   <div className="py-2">
                     {WALKTHROUGHS.map((category, index) => {
                       const isActive = location.pathname.startsWith(`/walkthroughs/${category.slug}`);
@@ -237,9 +237,9 @@ function Navbar() {
                           to={`/walkthroughs/${category.slug}`}
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
-                          className={`block px-4 py-2.5 text-sm transition-all duration-100 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
-                            : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
+                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-100 ${isActive
+                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -275,7 +275,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'levels' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'levels' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                   <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     {LEVELS.map((level, index) => {
                       const isActive = location.pathname === `/levels/${level.slug}`;
@@ -285,9 +285,9 @@ function Navbar() {
                           to={`/levels/${level.slug}`}
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchLevel(level.slug)}
-                          className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
-                            : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
+                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
+                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -322,7 +322,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'collectibles' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'collectibles' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                   <div className="py-2">
                     {COLLECTIBLES.map((type, index) => {
                       const isActive = location.pathname === `/collectibles/${type.slug}`;
@@ -332,9 +332,9 @@ function Navbar() {
                           to={`/collectibles/${type.slug}`}
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
-                          className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
-                            : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
+                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
+                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -369,7 +369,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'upgrades' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'upgrades' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                   <div className="py-2">
                     {UPGRADES.map((type, index) => {
                       const isActive = location.pathname === `/upgrades/${type.slug}`;
@@ -379,9 +379,9 @@ function Navbar() {
                           to={`/upgrades/${type.slug}`}
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
-                          className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
-                            : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
+                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
+                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -416,7 +416,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'cosmetics' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'cosmetics' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                   <div className="py-2">
                     {COSMETICS.map((type, index) => {
                       const isActive = location.pathname === `/cosmetics/${type.slug}`;
@@ -426,9 +426,9 @@ function Navbar() {
                           to={`/cosmetics/${type.slug}`}
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
-                          className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
-                            : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
+                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
+                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -463,7 +463,7 @@ function Navbar() {
 
                 <div className="absolute left-0 top-full h-2 w-full"></div>
 
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'materials' ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'materials' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                   <div className="py-2">
                     {MATERIALS.map((type, index) => {
                       const isActive = location.pathname === `/materials/${type.slug}`;
@@ -473,9 +473,9 @@ function Navbar() {
                           to={`/materials/${type.slug}`}
                           onClick={() => setOpenDropdown(null)}
                           onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'materials')}
-                          className={`block px-4 py-2.5 text-sm transition-all duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-l-2 border-cyan-400 font-medium'
-                            : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:border-l-2 hover:border-gray-400'
+                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
+                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
                             }`}
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -509,7 +509,7 @@ function Navbar() {
                   </button>
 
                   {/* User dropdown */}
-                  <div className={`absolute right-0 mt-2 w-48 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${userDropdownOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+                  <div className={`absolute right-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${userDropdownOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                     <div className="px-4 py-3 border-b border-gray-700/50 ">
                       <p className="text-sm font-medium text-white truncate">{user.username}</p>
                       <p className="text-xs text-gray-400 truncate">{user.email}</p>
@@ -518,14 +518,17 @@ function Navbar() {
                       <Link
                         to="/settings"
                         onClick={() => setUserDropdownOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200"
+                        className={`flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${location.pathname === '/settings'
+                          ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                          : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400'
+                          }`}
                       >
                         <Settings className="w-4 h-4" />
                         Settings
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 border-transparent text-gray-300 transition-[color,background-color] duration-200 cursor-pointer hover:text-white hover:bg-gray-800/50 hover:border-gray-400"
                       >
                         <LogOut className="w-4 h-4" />
                         Sign out
@@ -905,7 +908,7 @@ function Navbar() {
                       </Link>
                       <button
                         onClick={() => { setIsOpen(false); handleLogout(); }}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40 transition-all duration-200 text-sm font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
                       >
                         <LogOut className="w-4 h-4" />
                         Sign out
