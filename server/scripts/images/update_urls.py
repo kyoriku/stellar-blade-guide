@@ -81,7 +81,8 @@ def update_urls(dry_run=True, add_transformations=True, content_type='all'):
     if content_type in ['walkthroughs', 'all']:
         walkthroughs_dir = seed_base / 'walkthroughs'
         if walkthroughs_dir.exists():
-            walkthroughs_files = sorted(glob.glob(str(walkthroughs_dir / '*' / '*.json')))
+            walkthroughs_files = sorted(
+                glob.glob(str(walkthroughs_dir / '**' / '*.json'), recursive=True))
             json_files.extend(walkthroughs_files)
             print(f"\033[90mFound {len(walkthroughs_files)} walkthrough JSON files\033[0m")
 
@@ -279,7 +280,8 @@ def reverse_urls(dry_run=True, content_type='all'):
     if content_type in ['walkthroughs', 'all']:
         walkthroughs_dir = seed_base / 'walkthroughs'
         if walkthroughs_dir.exists():
-            walkthroughs_files = sorted(glob.glob(str(walkthroughs_dir / '*' / '*.json')))
+            walkthroughs_files = sorted(
+                glob.glob(str(walkthroughs_dir / '**' / '*.json'), recursive=True))
             json_files.extend(walkthroughs_files)
             print(f"\033[90mFound {len(walkthroughs_files)} walkthrough JSON files\033[0m")
 
