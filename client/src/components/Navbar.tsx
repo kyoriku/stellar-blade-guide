@@ -243,7 +243,7 @@ function Navbar() {
                   <button
                     onClick={() => setUserDropdownOpen(p => !p)}
                     aria-label="Account menu"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-cyan-400 cursor-pointer"
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-cyan-400 cursor-pointer"
                   >
                     <div className="w-7 h-7 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden">
                       {user.avatar_url
