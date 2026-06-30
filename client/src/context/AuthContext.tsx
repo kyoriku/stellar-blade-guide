@@ -25,6 +25,26 @@ export interface AuthUser {
   created_at: string
 }
 
+// Cached *display* user so the navbar avatar + bell render instantly on reload,
+// before the silent /auth/refresh resolves. Only the fields needed to paint —
+// no email (PII) or created_at, which the refresh fills a moment later. The
+// access token is NEVER stored here; it stays in memory only.
+const USER_CACHE = 'sb_user'
+
+type CachedUser = Pick<AuthUser, 'id' | 'username' | 'avatar_url' | 'role'>
+
+function readCachedUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_CACHE)
+    if (!raw) return null
+    const d = JSON.parse(raw) as CachedUser
+    // email/created_at aren't cached; the refresh overwrites the whole user.
+    return { ...d, email: '', created_at: '' }
+  } catch {
+    return null
+  }
+}
+
 interface AuthContextValue {
   user: AuthUser | null
   accessToken: string | null
@@ -41,7 +61,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 // Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(() => readCachedUser())
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true) // true until initial refresh resolves
   const { showToast } = useToast()
@@ -92,6 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshInFlightRef.current = p
     return p
   }, [])
+
+  // Mirror only the display fields into localStorage on every change, so the
+  // next reload hydrates the avatar/bell instantly (the refresh reconciles it).
+  useEffect(() => {
+    try {
+      if (user) {
+        const { id, username, avatar_url, role } = user
+        localStorage.setItem(USER_CACHE, JSON.stringify({ id, username, avatar_url, role }))
+      } else {
+        localStorage.removeItem(USER_CACHE)
+      }
+    } catch { /* localStorage unavailable / quota — non-fatal */ }
+  }, [user])
 
   // Silent refresh on mount — skip entirely if no session flag is set,
   // meaning this visitor has never logged in (or has since logged out).
