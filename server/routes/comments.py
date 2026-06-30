@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload, aliased
 
 from db.database import get_db
 from models.comments import Comment
+from models.notifications import Notification
 from models.users import User
 from core.auth import get_current_user
 from core.security import limiter
@@ -206,7 +207,29 @@ async def create_comment(
         f"{CYAN}User {current_user.username} commented on "
         f"{body.content_type} {body.content_id}{RESET}"
     )
-    return comment_to_dict(comment)
+
+    # Build the response BEFORE the notification commit (a commit would expire the
+    # ORM instance, breaking attribute access in an async context).
+    response = comment_to_dict(comment)
+
+    # Notify the parent comment's author of the reply — best-effort: a failure here
+    # must never roll back or 500 the reply (which is already committed above).
+    if body.parent_id is not None and parent.user_id is not None and parent.user_id != current_user.id:
+        try:
+            db.add(Notification(
+                user_id=parent.user_id,
+                actor_id=current_user.id,
+                type="comment_reply",
+                comment_id=comment.id,
+                content_type=body.content_type,
+                content_id=body.content_id,
+            ))
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"{YELLOW}Failed to create reply notification: {e}{RESET}")
+            await db.rollback()
+
+    return response
 
 
 # Update

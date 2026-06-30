@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { MessageSquare } from 'lucide-react'
 import Comment from './Comment'
 import CommentForm from './CommentForm'
@@ -18,6 +20,37 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
     editComment,
     deleteComment,
   } = useComments(contentType, contentId)
+
+  const location = useLocation()
+  const [highlightId, setHighlightId] = useState<number | null>(null)
+  // The navigation we've already highlighted for. location.key is unique per
+  // navigation, so this lets comment mutations (which change `comments` and
+  // re-run the effect) bail out — only a real navigation re-fires the highlight.
+  const highlightedKey = useRef<string | null>(null)
+
+  // Highlight on navigation to a #comment-<id> anchor — from the notification
+  // bell/toast, or a directly-shared link. Waits for comments to render (the
+  // `comments` dep) then scrolls + highlights once per navigation. No-op if the
+  // target isn't present (deleted/collapsed) — you just land on the page.
+  useEffect(() => {
+    if (isLoading) return
+    if (location.key === highlightedKey.current) return
+    const m = location.hash.match(/^#comment-(\d+)$/)
+    if (!m) return
+    const el = document.getElementById(`comment-${m[1]}`)
+    if (!el) return // not rendered yet; re-runs when `comments` updates
+    highlightedKey.current = location.key
+    el.scrollIntoView({ behavior: 'instant', block: 'center' })
+    setHighlightId(Number(m[1]))
+  }, [isLoading, comments, location.key, location.hash])
+
+  // Clear the highlight a moment later — decoupled from the nav effect so a
+  // comment mutation mid-highlight can't cancel or restart the timer.
+  useEffect(() => {
+    if (highlightId === null) return
+    const t = setTimeout(() => setHighlightId(null), 2000)
+    return () => clearTimeout(t)
+  }, [highlightId])
 
   const totalCount = comments.reduce((sum, c) => sum + 1 + (c.replies?.length ?? 0), 0)
 
@@ -69,6 +102,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
               onReply={postReply}
               onEdit={editComment}
               onDelete={deleteComment}
+              highlightId={highlightId}
             />
           ))}
         </div>
