@@ -243,7 +243,7 @@ function Navbar() {
                   <button
                     onClick={() => setUserDropdownOpen(p => !p)}
                     aria-label="Account menu"
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-cyan-400 cursor-pointer"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-cyan-400 cursor-pointer"
                   >
                     <div className="w-7 h-7 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden">
                       {user.avatar_url
@@ -286,7 +286,7 @@ function Navbar() {
                 <Link
                   to="/login"
                   state={{ from: location.pathname }}
-                  className="hidden lg:flex items-center justify-center gap-1.5 lg:w-[114px] px-4 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all duration-200 cursor-pointer"
+                  className="hidden lg:flex items-center justify-center gap-1.5 lg:w-[106px] px-4 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all duration-200 cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
                   Sign in
