@@ -59,3 +59,20 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Entrance for mount/unmount panels (e.g. the expanded search results), matching
+   the opacity + translate-y fade the toggle-based nav dropdowns use. */
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-drop-in {
+  animation: dropIn 0.2s ease-out;
+}

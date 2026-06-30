@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, ChevronDown, Book, Map, Package, Zap, Box, Sparkles, Search, ChevronRight, LogIn, User, LogOut, Settings } from 'lucide-react'
-import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
+import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useAuth } from '../hooks/useAuth'
 import { useSearch } from '../hooks/useSearch'
 import { SearchTrigger } from './SearchTrigger'
 import { SearchResults } from './SearchResults'
+import NotificationBell from './NotificationBell'
+import { NAV_SECTIONS } from './navbar/navSections'
+import type { NavSection } from './navbar/navSections'
+import DesktopDropdown from './navbar/DesktopDropdown'
+import MobileAccordionSection from './navbar/MobileAccordionSection'
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,10 +57,6 @@ function Navbar() {
     setOpenDropdown(menu);
   };
 
-  const handleMouseLeave = () => {
-    setOpenDropdown(null);
-  };
-
   const getActiveSectionFromPath = (pathname: string) => {
     if (pathname.startsWith('/levels/')) {
       return { walkthroughs: false, levels: true, collectibles: false, upgrades: false, materials: false, cosmetics: false };
@@ -88,6 +88,21 @@ function Navbar() {
           : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
             : location.pathname.startsWith('/materials') ? 'materials'
               : null;
+
+  // Resolve the prefetch function for a section from its discriminated config.
+  const prefetchFor = (s: NavSection) => (slug: string) => {
+    switch (s.prefetch.kind) {
+      case 'walkthrough':
+        prefetchWalkthroughsByType(slug);
+        break;
+      case 'level':
+        void prefetchLevel(slug);
+        break;
+      case 'type':
+        void prefetchCollectiblesByType(slug, s.prefetch.category);
+        break;
+    }
+  };
 
   useEffect(() => {
     const handleMobileScroll = () => {
@@ -181,7 +196,7 @@ function Navbar() {
         }
       `}</style>
 
-      <nav className={`sticky top-0 z-50 transition-all duration-300 px-3 md:px-0 ${scrolled
+      <nav className={`sticky top-0 z-50 transition-all duration-300 px-3 lg:px-0 ${scrolled
         ? 'bg-[rgba(1,4,9,0.9)] backdrop-blur-xl shadow-lg shadow-black/20 border-b border-gray-800'
         : 'bg-nav backdrop-blur-md border-b border-gray-800/50'
         }`}>
@@ -197,306 +212,38 @@ function Navbar() {
                 alt="Stellar Blade Guide Logo"
                 className="w-8 h-8"
               />
-              <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent group-hover:from-cyan-400 group-hover:to-cyan-300 transition-all duration-300">
+              <span className="lg:hidden xl:inline bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent group-hover:from-cyan-400 group-hover:to-cyan-300 transition-all duration-300">
                 Stellar Blade Guide
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-1">
-              {/* Walkthroughs Dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => handleMouseEnter('walkthroughs')}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => setOpenDropdown(null)}
-              >
-                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'walkthroughs' ? 'text-cyan-400' : 'text-gray-300'
-                  }`}>
-                  <Link to="/walkthroughs" className="hover:text-cyan-400 transition-colors">
-                    Walkthroughs
-                  </Link>
-                  <button
-                    onClick={() => setOpenDropdown(prev => (prev === 'walkthroughs' ? null : 'walkthroughs'))}
-                    className="cursor-pointer p-1 -mr-1"
-                    aria-label="Toggle walkthroughs menu"
-                  >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'walkthroughs' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                <div className="absolute left-0 top-full h-2 w-full"></div>
-
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'walkthroughs' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
-                  <div className="py-2">
-                    {WALKTHROUGHS.map((category, index) => {
-                      const isActive = location.pathname.startsWith(`/walkthroughs/${category.slug}`);
-                      return (
-                        <Link
-                          key={category.slug}
-                          to={`/walkthroughs/${category.slug}`}
-                          onClick={() => setOpenDropdown(null)}
-                          onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
-                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-100 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
-                            }`}
-                          style={{ animationDelay: `${index * 30}ms` }}
-                        >
-                          {category.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Levels Dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => handleMouseEnter('levels')}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => setOpenDropdown(null)}
-              >
-                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'levels' ? 'text-cyan-400' : 'text-gray-300'
-                  }`}>
-                  <Link to="/levels" className="hover:text-cyan-400 transition-colors">
-                    Levels
-                  </Link>
-                  <button
-                    onClick={() => setOpenDropdown(prev => (prev === 'levels' ? null : 'levels'))}
-                    className="cursor-pointer p-1 -mr-1"
-                    aria-label="Toggle levels menu"
-
-                  >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'levels' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                <div className="absolute left-0 top-full h-2 w-full"></div>
-
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'levels' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
-                  <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    {LEVELS.map((level, index) => {
-                      const isActive = location.pathname === `/levels/${level.slug}`;
-                      return (
-                        <Link
-                          key={level.slug}
-                          to={`/levels/${level.slug}`}
-                          onClick={() => setOpenDropdown(null)}
-                          onMouseEnter={() => prefetchLevel(level.slug)}
-                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
-                            }`}
-                          style={{ animationDelay: `${index * 30}ms` }}
-                        >
-                          {level.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Collectibles Dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => handleMouseEnter('collectibles')}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => setOpenDropdown(null)}
-              >
-                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'collectibles' ? 'text-cyan-400' : 'text-gray-300'
-                  }`}>
-                  <Link to="/collectibles" className="hover:text-cyan-400 transition-colors">
-                    Collectibles
-                  </Link>
-                  <button
-                    onClick={() => setOpenDropdown(prev => (prev === 'collectibles' ? null : 'collectibles'))}
-                    className="cursor-pointer p-1 -mr-1"
-                    aria-label="Toggle collectibles menu"
-                  >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'collectibles' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                <div className="absolute left-0 top-full h-2 w-full"></div>
-
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'collectibles' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
-                  <div className="py-2">
-                    {COLLECTIBLES.map((type, index) => {
-                      const isActive = location.pathname === `/collectibles/${type.slug}`;
-                      return (
-                        <Link
-                          key={type.slug}
-                          to={`/collectibles/${type.slug}`}
-                          onClick={() => setOpenDropdown(null)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
-                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
-                            }`}
-                          style={{ animationDelay: `${index * 30}ms` }}
-                        >
-                          {type.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Upgrades Dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => handleMouseEnter('upgrades')}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => setOpenDropdown(null)}
-              >
-                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'upgrades' ? 'text-cyan-400' : 'text-gray-300'
-                  }`}>
-                  <Link to="/upgrades" className="hover:text-cyan-400 transition-colors">
-                    Upgrades
-                  </Link>
-                  <button
-                    onClick={() => setOpenDropdown(prev => (prev === 'upgrades' ? null : 'upgrades'))}
-                    className="cursor-pointer p-1 -mr-1"
-                    aria-label="Toggle upgrades menu"
-                  >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'upgrades' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                <div className="absolute left-0 top-full h-2 w-full"></div>
-
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'upgrades' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
-                  <div className="py-2">
-                    {UPGRADES.map((type, index) => {
-                      const isActive = location.pathname === `/upgrades/${type.slug}`;
-                      return (
-                        <Link
-                          key={type.slug}
-                          to={`/upgrades/${type.slug}`}
-                          onClick={() => setOpenDropdown(null)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
-                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
-                            }`}
-                          style={{ animationDelay: `${index * 30}ms` }}
-                        >
-                          {type.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cosmetics Dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => handleMouseEnter('cosmetics')}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => setOpenDropdown(null)}
-              >
-                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'cosmetics' ? 'text-cyan-400' : 'text-gray-300'
-                  }`}>
-                  <Link to="/cosmetics" className="hover:text-cyan-400 transition-colors">
-                    Cosmetics
-                  </Link>
-                  <button
-                    onClick={() => setOpenDropdown(prev => (prev === 'cosmetics' ? null : 'cosmetics'))}
-                    className="cursor-pointer p-1 -mr-1"
-                    aria-label="Toggle cosmetics menu"
-                  >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'cosmetics' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                <div className="absolute left-0 top-full h-2 w-full"></div>
-
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'cosmetics' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
-                  <div className="py-2">
-                    {COSMETICS.map((type, index) => {
-                      const isActive = location.pathname === `/cosmetics/${type.slug}`;
-                      return (
-                        <Link
-                          key={type.slug}
-                          to={`/cosmetics/${type.slug}`}
-                          onClick={() => setOpenDropdown(null)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
-                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
-                            }`}
-                          style={{ animationDelay: `${index * 30}ms` }}
-                        >
-                          {type.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Materials Dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => handleMouseEnter('materials')}
-                onMouseLeave={handleMouseLeave}
-                onClick={() => setOpenDropdown(null)}
-              >
-                <div className={`flex items-center gap-1 px-4 py-2 rounded-lg hover:text-cyan-400 hover:bg-gray-800/50 ${activeCategory === 'materials' ? 'text-cyan-400' : 'text-gray-300'
-                  }`}>
-                  <Link to="/materials" className="hover:text-cyan-400 transition-colors">
-                    Materials
-                  </Link>
-                  <button
-                    onClick={() => setOpenDropdown(prev => (prev === 'materials' ? null : 'materials'))}
-                    className="cursor-pointer p-1 -mr-1"
-                    aria-label="Toggle materials menu"
-                  >
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${openDropdown === 'materials' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
-
-                <div className="absolute left-0 top-full h-2 w-full"></div>
-
-                <div className={`absolute left-0 mt-2 w-60 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${openDropdown === 'materials' ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
-                  <div className="py-2">
-                    {MATERIALS.map((type, index) => {
-                      const isActive = location.pathname === `/materials/${type.slug}`;
-                      return (
-                        <Link
-                          key={type.slug}
-                          to={`/materials/${type.slug}`}
-                          onClick={() => setOpenDropdown(null)}
-                          onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'materials')}
-                          className={`block px-4 py-2.5 text-sm border-l-2 transition-[color,background-color] duration-200 ${isActive
-                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                            : 'text-gray-300 border-transparent hover:bg-gray-800/50 hover:text-white hover:border-gray-400'
-                            }`}
-                          style={{ animationDelay: `${index * 30}ms` }}
-                        >
-                          {type.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
+            <div className="hidden lg:flex items-center space-x-1">
+              {NAV_SECTIONS.map((s) => (
+                <DesktopDropdown
+                  key={s.key}
+                  section={s}
+                  isOpen={openDropdown === s.key}
+                  isActiveCategory={activeCategory === s.key}
+                  pathname={location.pathname}
+                  onOpen={() => handleMouseEnter(s.key)}
+                  onClose={() => setOpenDropdown(null)}
+                  onToggle={() => setOpenDropdown(prev => (prev === s.key ? null : s.key))}
+                  prefetchItem={prefetchFor(s)}
+                />
+              ))}
             </div>
 
             {/* Auth UI */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <SearchTrigger onExpand={() => setOpenDropdown(null)} />
+              {isAuthenticated && user && <NotificationBell />}
               {isAuthenticated && user ? (
-                <div className="relative hidden md:block" ref={userDropdownRef}>
+                <div className="relative hidden lg:block" ref={userDropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(p => !p)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-white cursor-pointer"
+                    aria-label="Account menu"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-cyan-400 cursor-pointer"
                   >
                     <div className="w-7 h-7 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden">
                       {user.avatar_url
@@ -504,7 +251,6 @@ function Navbar() {
                         : <User className="w-4 h-4 text-cyan-400" />
                       }
                     </div>
-                    <span className="text-sm font-medium max-w-[120px] truncate">{user.username}</span>
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${userDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -540,7 +286,7 @@ function Navbar() {
                 <Link
                   to="/login"
                   state={{ from: location.pathname }}
-                  className="hidden md:flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all duration-200 cursor-pointer"
+                  className="hidden lg:flex items-center justify-center gap-1.5 lg:w-[114px] px-4 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all duration-200 cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
                   Sign in
@@ -550,7 +296,7 @@ function Navbar() {
               {/* Mobile menu button */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="md:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
+                className="lg:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
                 aria-label="Toggle menu"
               >
                 <div className="relative w-6 h-6">
@@ -572,7 +318,7 @@ function Navbar() {
       {/* Backdrop Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
           style={{
             top: '64px',
@@ -584,7 +330,7 @@ function Navbar() {
       {/* Mobile Navigation */}
       <div
         ref={mobileMenuRef}
-        className={`md:hidden fixed left-0 right-0 bottom-0 bg-primary transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
+        className={`lg:hidden fixed left-0 right-0 bottom-0 bg-primary transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
         style={{ top: '64px' }}
       >
         <div className="h-full flex flex-col">
@@ -642,243 +388,16 @@ function Navbar() {
                 </div>
               ) : (
                 <>
-                  {/* Walkthroughs Section */}
-                  <div className="border-b border-gray-800/50">
-                    <button
-                      onClick={() => toggleSection('walkthroughs')}
-                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-cyan-400/10 rounded-lg">
-                          <Book className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <span className="font-semibold text-white text-base">Walkthroughs</span>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.walkthroughs ? 'rotate-90' : ''}`} />
-                    </button>
-                    <div className={`section-content overflow-hidden ${openSections.walkthroughs ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="space-y-0.5 pb-2 px-2">
-                        <Link
-                          to="/walkthroughs"
-                          onClick={() => setIsOpen(false)}
-                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                        >
-                          View all Walkthroughs
-                        </Link>
-                        {WALKTHROUGHS.map((category, index) => (
-                          <MobileNavLink
-                            key={category.slug}
-                            to={`walkthroughs/${category.slug}`}
-                            onClick={() => setIsOpen(false)}
-                            indent
-                            style={{ animation: openSections.walkthroughs ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
-                          >
-                            {category.name}
-                          </MobileNavLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Levels Section */}
-                  <div className="border-b border-gray-800/50">
-                    <button
-                      onClick={() => toggleSection('levels')}
-                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-cyan-400/10 rounded-lg">
-                          <Map className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <span className="font-semibold text-white text-base">Levels</span>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.levels ? 'rotate-90' : ''}`} />
-                    </button>
-                    <div className={`section-content overflow-hidden ${openSections.levels ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="space-y-0.5 pb-2 px-2">
-                        <Link
-                          to="/levels"
-                          onClick={() => setIsOpen(false)}
-                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                        >
-                          View all Levels
-                        </Link>
-                        {LEVELS.map((level, index) => (
-                          <MobileNavLink
-                            key={level.slug}
-                            to={`/levels/${level.slug}`}
-                            onClick={() => setIsOpen(false)}
-                            onMouseEnter={() => prefetchLevel(level.slug)}
-                            onTouchStart={() => prefetchLevel(level.slug)}
-                            indent
-                            style={{ animation: openSections.levels ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
-                          >
-                            {level.name}
-                          </MobileNavLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Collectibles Section */}
-                  <div className="border-b border-gray-800/50">
-                    <button
-                      onClick={() => toggleSection('collectibles')}
-                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-cyan-400/10 rounded-lg">
-                          <Package className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <span className="font-semibold text-white text-base">Collectibles</span>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.collectibles ? 'rotate-90' : ''}`} />
-                    </button>
-                    <div className={`section-content overflow-hidden ${openSections.collectibles ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="space-y-0.5 pb-2 px-2">
-                        <Link
-                          to="/collectibles"
-                          onClick={() => setIsOpen(false)}
-                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                        >
-                          View all Collectibles
-                        </Link>
-                        {COLLECTIBLES.map((type, index) => (
-                          <MobileNavLink
-                            key={type.slug}
-                            to={`/collectibles/${type.slug}`}
-                            onClick={() => setIsOpen(false)}
-                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
-                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'collectibles')}
-                            indent
-                            style={{ animation: openSections.collectibles ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
-                          >
-                            {type.name}
-                          </MobileNavLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Upgrades Section */}
-                  <div className="border-b border-gray-800/50">
-                    <button
-                      onClick={() => toggleSection('upgrades')}
-                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-cyan-400/10 rounded-lg">
-                          <Zap className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <span className="font-semibold text-white text-base">Upgrades</span>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.upgrades ? 'rotate-90' : ''}`} />
-                    </button>
-                    <div className={`section-content overflow-hidden ${openSections.upgrades ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="space-y-0.5 pb-2 px-2">
-                        <Link
-                          to="/upgrades"
-                          onClick={() => setIsOpen(false)}
-                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                        >
-                          View all Upgrades
-                        </Link>
-                        {UPGRADES.map((type, index) => (
-                          <MobileNavLink
-                            key={type.slug}
-                            to={`/upgrades/${type.slug}`}
-                            onClick={() => setIsOpen(false)}
-                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
-                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'upgrades')}
-                            indent
-                            style={{ animation: openSections.upgrades ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
-                          >
-                            {type.name}
-                          </MobileNavLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cosmetics Section */}
-                  <div className="border-b border-gray-800/50">
-                    <button
-                      onClick={() => toggleSection('cosmetics')}
-                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-cyan-400/10 rounded-lg">
-                          <Sparkles className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <span className="font-semibold text-white text-base">Cosmetics</span>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.cosmetics ? 'rotate-90' : ''}`} />
-                    </button>
-                    <div className={`section-content overflow-hidden ${openSections.cosmetics ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="space-y-0.5 pb-2 px-2">
-                        <Link
-                          to="/cosmetics"
-                          onClick={() => setIsOpen(false)}
-                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                        >
-                          View all Cosmetics
-                        </Link>
-                        {COSMETICS.map((type, index) => (
-                          <MobileNavLink
-                            key={type.slug}
-                            to={`/cosmetics/${type.slug}`}
-                            onClick={() => setIsOpen(false)}
-                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
-                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'cosmetics')}
-                            indent
-                            style={{ animation: openSections.cosmetics ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
-                          >
-                            {type.name}
-                          </MobileNavLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Materials Section */}
-                  <div className="border-b border-gray-800/50">
-                    <button
-                      onClick={() => toggleSection('materials')}
-                      className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-cyan-400/10 rounded-lg">
-                          <Box className="w-5 h-5 text-cyan-400" />
-                        </div>
-                        <span className="font-semibold text-white text-base">Materials</span>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${openSections.materials ? 'rotate-90' : ''}`} />
-                    </button>
-                    <div className={`section-content overflow-hidden ${openSections.materials ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                      <div className="space-y-0.5 pb-2 px-2">
-                        <Link
-                          to="/materials"
-                          onClick={() => setIsOpen(false)}
-                          className="block py-3.5 px-8 rounded-lg font-semibold text-[15px] transition-all duration-200 min-h-[52px] flex items-center text-cyan-400 hover:bg-gray-800/40 hover:text-cyan-300 border-l-4 border-cyan-400/30 hover:border-cyan-400 bg-gray-800/20"
-                        >
-                          View all Materials
-                        </Link>
-                        {MATERIALS.map((type, index) => (
-                          <MobileNavLink
-                            key={type.slug}
-                            to={`/materials/${type.slug}`}
-                            onClick={() => setIsOpen(false)}
-                            onMouseEnter={() => prefetchCollectiblesByType(type.slug, 'materials')}
-                            onTouchStart={() => prefetchCollectiblesByType(type.slug, 'materials')}
-                            indent
-                            style={{ animation: openSections.materials ? `slideIn 0.2s ease-out ${index * 0.05}s both` : 'none' }}
-                          >
-                            {type.name}
-                          </MobileNavLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                  {NAV_SECTIONS.map((s) => (
+                    <MobileAccordionSection
+                      key={s.key}
+                      section={s}
+                      isOpen={openSections[s.key]}
+                      onToggle={() => toggleSection(s.key)}
+                      onNavigate={() => setIsOpen(false)}
+                      prefetchItem={prefetchFor(s)}
+                    />
+                  ))}
                 </>
               )}
 
@@ -942,38 +461,6 @@ function Navbar() {
         </div>
       </div>
     </>
-  );
-}
-
-interface MobileNavLinkProps {
-  to: string;
-  onClick: () => void;
-  children: React.ReactNode;
-  indent?: boolean;
-  onMouseEnter?: () => void;
-  onTouchStart?: () => void;
-  style?: React.CSSProperties;
-}
-
-function MobileNavLink({ to, onClick, children, indent = false, onMouseEnter, onTouchStart, style }: MobileNavLinkProps) {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-
-  return (
-    <Link
-      to={to}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onTouchStart={onTouchStart}
-      style={style}
-      className={`block py-3.5 rounded-lg font-medium transition-all duration-100 min-h-[52px] flex items-center ${indent ? 'px-8 text-[15px]' : 'px-4'
-        } ${isActive
-          ? 'text-cyan-400 bg-cyan-500/10 border-l-4 border-cyan-400 shadow-sm'
-          : 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-gray-500 active:bg-gray-800/60'
-        }`}
-    >
-      {children}
-    </Link>
   );
 }
 

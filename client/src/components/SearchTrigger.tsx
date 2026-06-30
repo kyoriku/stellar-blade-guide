@@ -91,7 +91,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
         ref={triggerRef}
         onClick={expand}
         aria-label="Search (Ctrl+K)"
-        className="hidden md:flex p-2 text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 cursor-pointer"
+        className="hidden lg:flex p-2 text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 rounded-lg transition-all duration-200 cursor-pointer"
       >
         <Search className="w-5 h-5" />
       </button>
@@ -99,7 +99,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
   }
 
   return (
-    <div ref={containerRef} className="hidden md:block relative">
+    <div ref={containerRef} className="hidden lg:block relative">
       <div className="w-9 h-9" aria-hidden="true" />
       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-88 z-50">
         <div className="relative">
@@ -113,18 +113,16 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
             placeholder="Search..."
             className="w-full pl-9 pr-8 py-1.5 bg-secondary border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition-colors"
           />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-500 hover:text-gray-300 transition-colors"
-              aria-label="Clear search"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => (query ? setQuery('') : collapse())}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+            aria-label={query ? 'Clear search' : 'Close search'}
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
-      <div className="absolute right-0 mt-2 w-88 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-600 z-50 overflow-hidden max-h-96 overflow-y-auto custom-scrollbar">
+      <div className="animate-drop-in absolute right-0 mt-2 w-88 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden max-h-96 overflow-y-auto custom-scrollbar">
         <SearchResults
           query={query}
           data={data}
