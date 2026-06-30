@@ -26,6 +26,7 @@ interface CommentProps {
   onEdit: (commentId: number, body: string) => Promise<void>
   onDelete: (commentId: number) => Promise<void>
   depth?: number
+  highlightId?: number | null
 }
 
 function timeAgo(dateStr: string): string {
@@ -48,6 +49,7 @@ export default function Comment({
   onEdit,
   onDelete,
   depth = 0,
+  highlightId = null,
 }: CommentProps) {
   const { user } = useAuth()
   const [showReplyForm, setShowReplyForm] = useState(false)
@@ -98,7 +100,10 @@ export default function Comment({
   }
 
   return (
-    <div className={depth > 0 ? 'pl-4 border-l border-gray-800' : ''}>
+    <div
+      id={`comment-${comment.id}`}
+      className={`scroll-mt-24 transition-[box-shadow,background-color,border-radius] duration-700 ${depth > 0 ? 'pl-4 border-l border-gray-800' : ''} ${comment.id === highlightId ? 'rounded-lg ring-2 ring-cyan-400/60 bg-cyan-500/5' : ''}`}
+    >
       <div className="py-4">
         {/* Author row */}
         <div className="flex items-center gap-2 mb-2">
@@ -116,7 +121,7 @@ export default function Comment({
               {comment.user.role}
             </span>
           )}
-          <span className="text-xs text-gray-400 ml-auto">{timeAgo(comment.created_at)}</span>
+          <span className="text-xs text-gray-400 ml-auto mr-4">{timeAgo(comment.created_at)}</span>
         </div>
 
         {/* Body */}
@@ -158,9 +163,9 @@ export default function Comment({
         {/* Actions */}
         {!comment.is_deleted && !isEditing && (
           <div className="flex items-center gap-3 mt-2">
-            {depth === 0 && user && (
+            {depth === 0 && user && !showReplyForm && (
               <button
-                onClick={() => setShowReplyForm(p => !p)}
+                onClick={() => setShowReplyForm(true)}
                 title="Reply to comment"
                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer"
               >
@@ -169,7 +174,7 @@ export default function Comment({
               </button>
             )}
 
-            {canModify && (
+            {canModify && !showReplyForm && (
               <>
                 {isOwner && (
                   <button
@@ -195,7 +200,7 @@ export default function Comment({
             {hasReplies && (
               <button
                 onClick={() => setShowReplies(p => !p)}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors ml-auto cursor-pointer"
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors ml-auto mr-4 cursor-pointer"
               >
                 {showReplies ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 {comment.replies!.length} {comment.replies!.length === 1 ? 'reply' : 'replies'}
@@ -231,6 +236,7 @@ export default function Comment({
               onEdit={onEdit}
               onDelete={onDelete}
               depth={depth + 1}
+              highlightId={highlightId}
             />
           ))}
         </div>
