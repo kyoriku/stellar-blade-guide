@@ -100,7 +100,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
 
   return (
     <div ref={containerRef} className="hidden lg:block relative">
-      <div className="w-9 h-9" aria-hidden="true" />
+      <div className="w-9 h-10" aria-hidden="true" />
       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-88 z-50">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />

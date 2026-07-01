@@ -33,7 +33,7 @@ export default function NotificationBell() {
   }, [open])
 
   return (
-    <div className="relative hidden lg:block" ref={ref}>
+    <div className="relative hidden lg:flex h-10 items-center" ref={ref}>
       <button
         onClick={() => setOpen(p => !p)}
         className="relative flex items-center p-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-colors cursor-pointer"
@@ -47,7 +47,7 @@ export default function NotificationBell() {
         )}
       </button>
 
-      <div className={`absolute right-0 mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${open ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
+      <div className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${open ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
           <p className="text-sm font-medium text-white">Notifications</p>
           {unreadCount > 0 && (
@@ -75,7 +75,7 @@ export default function NotificationBell() {
                   setOpen(false)
                 }}
                 className={`block px-4 py-3 text-sm border-l-2 transition-[color,background-color] duration-150 ${n.is_read
-                  ? 'border-transparent text-gray-400 hover:bg-gray-800/50'
+                  ? 'border-transparent text-gray-400 hover:bg-gray-800/50 hover:border-gray-400'
                   : 'border-cyan-400 bg-cyan-500/5 text-gray-200 hover:bg-gray-800/50'
                   }`}
               >
