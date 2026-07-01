@@ -24,10 +24,10 @@ function MobileNavLink({ to, onClick, children, indent = false, onMouseEnter, on
       onMouseEnter={onMouseEnter}
       onTouchStart={onTouchStart}
       style={style}
-      className={`block py-3.5 rounded-lg font-medium transition-all duration-100 min-h-[52px] flex items-center ${indent ? 'px-8 text-[15px]' : 'px-4'
+      className={`block py-3.5 rounded-lg transition-all duration-100 min-h-[52px] flex items-center ${indent ? 'px-8 text-[15px]' : 'px-4'
         } ${isActive
-          ? 'text-cyan-400 bg-cyan-500/10 border-l-4 border-cyan-400 shadow-sm'
-          : 'text-gray-300 hover:bg-gray-800/40 hover:text-white border-l-4 border-transparent hover:border-gray-500 active:bg-gray-800/60'
+          ? 'text-cyan-400 bg-cyan-500/10 border-l-4 border-cyan-400 font-medium'
+          : 'text-gray-300 hover:bg-gray-800/50 hover:text-white border-l-4 border-transparent hover:border-gray-400 active:bg-gray-800/60'
         }`}
     >
       {children}

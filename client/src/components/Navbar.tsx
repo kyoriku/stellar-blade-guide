@@ -17,7 +17,7 @@ function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [searchScrolled, setSearchScrolled] = useState(false);
   const [openSections, setOpenSections] = useState({
-    walkthroughs: true,
+    walkthroughs: false,
     levels: false,
     collectibles: false,
     upgrades: false,
@@ -57,26 +57,32 @@ function Navbar() {
     setOpenDropdown(menu);
   };
 
+  // Mobile accordion opens collapsed everywhere; only the category you're
+  // currently browsing auto-expands (for sibling nav). Home, index pages, and
+  // any non-category route leave every section closed — no arbitrary default.
   const getActiveSectionFromPath = (pathname: string) => {
-    if (pathname.startsWith('/levels/')) {
-      return { walkthroughs: false, levels: true, collectibles: false, upgrades: false, materials: false, cosmetics: false };
-    } else if (pathname.startsWith('/collectibles/')) {
-      return { walkthroughs: false, levels: false, collectibles: true, upgrades: false, materials: false, cosmetics: false };
-    } else if (pathname.startsWith('/upgrades/')) {
-      return { walkthroughs: false, levels: false, collectibles: false, upgrades: true, materials: false, cosmetics: false };
-    } else if (pathname.startsWith('/materials/')) {
-      return { walkthroughs: false, levels: false, collectibles: false, upgrades: false, materials: true, cosmetics: false };
-    } else if (pathname.startsWith('/cosmetics/')) {
-      return { walkthroughs: false, levels: false, collectibles: false, upgrades: false, materials: false, cosmetics: true };
-    } else {
-      return { walkthroughs: true, levels: false, collectibles: false, upgrades: false, materials: false, cosmetics: false };
-    }
+    const closed = { walkthroughs: false, levels: false, collectibles: false, upgrades: false, materials: false, cosmetics: false };
+    if (pathname.startsWith('/walkthroughs/')) return { ...closed, walkthroughs: true };
+    if (pathname.startsWith('/levels/')) return { ...closed, levels: true };
+    if (pathname.startsWith('/collectibles/')) return { ...closed, collectibles: true };
+    if (pathname.startsWith('/upgrades/')) return { ...closed, upgrades: true };
+    if (pathname.startsWith('/materials/')) return { ...closed, materials: true };
+    if (pathname.startsWith('/cosmetics/')) return { ...closed, cosmetics: true };
+    return closed;
   };
 
+  // Single-open accordion: opening a section collapses any other (mirrors the
+  // desktop dropdowns, where only one menu is open at a time). Tapping the
+  // already-open section closes it.
   const toggleSection = (section: 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'materials' | 'cosmetics') => {
     setOpenSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
+      walkthroughs: false,
+      levels: false,
+      collectibles: false,
+      upgrades: false,
+      materials: false,
+      cosmetics: false,
+      [section]: !prev[section],
     }));
   };
 
