@@ -21,6 +21,7 @@ _COLLECTIBLES_SQL = text("""
     WITH primary_type AS (
         SELECT DISTINCT ON (ctm.collectible_id)
             ctm.collectible_id,
+            ctm.type_id,
             ct.slug,
             ct.category_group
         FROM collectible_type_mappings ctm
@@ -31,6 +32,7 @@ _COLLECTIBLES_SQL = text("""
         c.id,
         c.title,
         c.description,
+        pt.type_id      AS type_id,
         pt.slug         AS type_slug,
         pt.category_group,
         GREATEST(
@@ -44,6 +46,20 @@ _COLLECTIBLES_SQL = text("""
         OR similarity(c.title, :q) > :threshold
     ORDER BY score DESC
     LIMIT :limit
+""")
+
+# All collectibles mapped to the given types, ordered exactly as the type page
+# flattens them (level -> location -> collectible display_order, per
+# collectibles._group_by_level). Feeds _build_slug_map so search anchors match
+# the page's positional slug suffixes.
+_TYPE_COLLECTIBLES_SQL = text("""
+    SELECT ctm.type_id AS type_id, c.id AS id, c.title AS title
+    FROM collectibles c
+    JOIN collectible_type_mappings ctm ON ctm.collectible_id = c.id
+    JOIN locations loc ON c.location_id = loc.id
+    JOIN levels    lv  ON loc.level_id = lv.id
+    WHERE ctm.type_id = ANY(:type_ids)
+    ORDER BY ctm.type_id, lv.display_order, loc.display_order, c.display_order
 """)
 
 _WALKTHROUGHS_SQL = text("""
@@ -103,6 +119,27 @@ def _slugify_title(title: str) -> str:
     return title.strip("-")
 
 
+def _build_slug_map(collectibles: list[tuple[int, str]]) -> dict[int, str]:
+    """Server mirror of client buildSlugMap (slugify.ts): collectibles sharing a
+    base slug get positional -1/-2 suffixes in the given order; unique slugs stay
+    bare. `collectibles` must be ordered exactly as the type page flattens them
+    (level -> location -> collectible display_order)."""
+    counts: dict[str, int] = {}
+    for _id, title in collectibles:
+        base = _slugify_title(title)
+        counts[base] = counts.get(base, 0) + 1
+    used: dict[str, int] = {}
+    out: dict[int, str] = {}
+    for _id, title in collectibles:
+        base = _slugify_title(title)
+        if counts[base] > 1:
+            used[base] = used.get(base, 0) + 1
+            out[_id] = f"{base}-{used[base]}"
+        else:
+            out[_id] = base
+    return out
+
+
 def _strip_links(text: str) -> str:
     return re.sub(r'\[\[[^\]|]+\|([^\]]+)\]\]', r'\1', text)
 
@@ -132,8 +169,27 @@ async def _execute_search(db: AsyncSession, q: str, limit: int) -> list[SearchRe
 
     try:
         rows = (await db.execute(_COLLECTIBLES_SQL, params)).mappings().all()
+
+        # Duplicate-title collectibles (e.g. "Body Core") render on the type page
+        # with positional slug suffixes (#body-core-1, -2, …). Reproduce that
+        # dedup so search anchors scroll to the right card. One slug map per
+        # matched primary type, in the page's flatten order.
+        type_ids = {row["type_id"] for row in rows}
+        slug_maps: dict[int, dict[int, str]] = {}
+        if type_ids:
+            try:
+                type_rows = (await db.execute(
+                    _TYPE_COLLECTIBLES_SQL, {"type_ids": list(type_ids)}
+                )).mappings().all()
+                grouped: dict[int, list[tuple[int, str]]] = {}
+                for tr in type_rows:
+                    grouped.setdefault(tr["type_id"], []).append((tr["id"], tr["title"]))
+                slug_maps = {tid: _build_slug_map(items) for tid, items in grouped.items()}
+            except Exception as e:
+                logger.error("Search slug-map build failed: %s", e)  # fall back to bare slugs
+
         for row in rows:
-            collectible_slug = _slugify_title(row["title"])
+            collectible_slug = slug_maps.get(row["type_id"], {}).get(row["id"]) or _slugify_title(row["title"])
             results.append(SearchResult(
                 kind=row["category_group"],
                 id=row["id"],
