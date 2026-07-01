@@ -32,10 +32,12 @@ def parse_ua(ua: str) -> str:
 def color_status(status: int) -> str:
     padded = f'{status}'.ljust(3)
     if status < 300:
-        return f'{GREEN}{padded}{RESET}'
+        return f'{GREEN}{padded}{RESET}'   # 2xx success
+    if status < 400:
+        return f'{CYAN}{padded}{RESET}'    # 3xx redirect / 304 cache hit
     if status < 500:
-        return f'{YELLOW}{padded}{RESET}'
-    return f'{RED}{padded}{RESET}'
+        return f'{YELLOW}{padded}{RESET}'  # 4xx client error
+    return f'{RED}{padded}{RESET}'         # 5xx server fault
 
 
 def color_duration(ms: float) -> str:
