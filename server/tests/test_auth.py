@@ -225,11 +225,16 @@ async def test_refresh_revoked_token_returns_401(auth_client, test_user):
     # Logout revokes the token in Redis and clears it from auth_client.cookies
     await auth_client.post("/api/auth/logout")
 
-    # Re-inject the revoked cookie — proves Redis revocation, not just cookie absence
-    auth_client.cookies.set("refresh_token", saved_value, domain="test", path="/api/auth")
-
-    r = await auth_client.post("/api/auth/refresh")
+    # Re-send the revoked cookie as a raw header — cookies added to httpx's jar
+    # via cookies.set(domain="test") are silently never sent to the dotless
+    # "test" host, so the jar route would pass via the no-cookie branch instead.
+    r = await auth_client.post(
+        "/api/auth/refresh",
+        headers={"Cookie": f"refresh_token={saved_value}"},
+    )
     assert r.status_code == 401
+    # Pin the branch: revoked-in-Redis, not missing/malformed cookie
+    assert r.json()["detail"] == "Refresh token invalid or expired"
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
