@@ -156,7 +156,7 @@ async def _issue_tokens(user: User, response: Response) -> dict:
 # Email / Password routes
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("10/minute")
+@limiter.limit("5/minute")
 async def register(
     request: Request,
     response: Response,
@@ -187,7 +187,7 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("20/minute")
+@limiter.limit("10/minute")
 async def login(
     request: Request,
     response: Response,
@@ -372,7 +372,7 @@ class ResetPasswordRequest(BaseModel):
 
 
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("5/minute")
+@limiter.limit("3/minute")
 async def forgot_password(
     request: Request,
     body: ForgotPasswordRequest,
