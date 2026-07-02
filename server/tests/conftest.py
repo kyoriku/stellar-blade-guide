@@ -16,6 +16,17 @@ REDIS — fakeredis.aioredis.FakeRedis, one fresh instance per test:
     production client). Each test gets an empty cache, making cache-miss and
     cache-hit scenarios trivially controllable without needing a real Redis.
 
+RATE LIMITER — disabled for the whole suite (autouse disable_rate_limits):
+    The slowapi limiter's storage is real Redis with fixed 60-second windows
+    keyed by IP + URL path, and every test shares client IP 127.0.0.1 (the
+    httpx ASGITransport default). Counts therefore accumulate ACROSS suite
+    runs: two back-to-back `pytest` runs inside one minute would 429 on the
+    tighter auth limits (register 5/min, login 10/min) and fail spuriously.
+    No test asserts 429 behavior, so we flip slowapi's public `enabled` flag
+    off per test. setup_rate_limiter(app) is still required — the
+    @limiter.limit decorators read request.app.state.limiter either way —
+    and with the limiter disabled the suite needs no real Redis at all.
+
 HTTP CLIENT — minimal FastAPI app, not main.app:
     main.app carries bot-filter middleware, a Redis lifespan ping, Cloudinary
     config, ETag, gzip, and eleven routers. All irrelevant here and some (the
@@ -23,9 +34,7 @@ HTTP CLIENT — minimal FastAPI app, not main.app:
     build a bare FastAPI app per test that includes only the levels router and
     the rate-limit setup (required because @limiter.limit() reads
     request.app.state.limiter). The `get_db` dependency is overridden to yield
-    the test session. The rate limiter uses real Redis (available in the
-    devcontainer at redis://redis:6379) — 5 test requests won't approach the
-    100/minute ceiling.
+    the test session.
 """
 
 import json
@@ -37,10 +46,18 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 import core.cache
+from core.security import limiter
 from db.database import Base, get_db
 from models.collectibles import Level, Location  # noqa: F401 — registers tables with Base
 from middleware.rate_limit import setup_rate_limiter
 from routes import levels as levels_route
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limits():
+    limiter.enabled = False
+    yield
+    limiter.enabled = True
 
 
 @pytest_asyncio.fixture
