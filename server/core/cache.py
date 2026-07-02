@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 redis_client = redis.Redis.from_url(
     settings.REDIS_URL,
     decode_responses=True,
-    socket_timeout=5,
-    socket_connect_timeout=5,
+    socket_timeout=2,
+    socket_connect_timeout=2,
     retry_on_timeout=False,
     health_check_interval=30,
 )
