@@ -31,7 +31,13 @@ def get_client_ip(request: Request) -> str:
     return request.client.host
 
 
+# Redis failures must never take routes down: bound socket waits to 2s, fall
+# back to per-process in-memory limits while Redis is unreachable (slowapi
+# rechecks the backend with exponential backoff), and swallow anything else.
 limiter = Limiter(
     key_func=get_client_ip,
-    storage_uri=settings.REDIS_URL
+    storage_uri=settings.REDIS_URL,
+    storage_options={"socket_connect_timeout": 2, "socket_timeout": 2},
+    swallow_errors=True,
+    in_memory_fallback_enabled=True,
 )
