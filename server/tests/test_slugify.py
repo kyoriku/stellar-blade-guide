@@ -1,4 +1,4 @@
-from app.routers.search import _slugify_title, _build_slug_map
+from app.services.search import _slugify_title, _build_slug_map
 
 
 def test_single_star_becomes_1():
