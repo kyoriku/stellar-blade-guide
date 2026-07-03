@@ -29,7 +29,7 @@ from app.db.database import Base, get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.progress import UserProgress  # noqa: F401 — registers table with Base
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
-from app.routers.auth import hash_password
+from app.services.auth import hash_password
 from app.routers.progress import router as progress_router
 
 

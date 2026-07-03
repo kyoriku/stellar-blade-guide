@@ -6,14 +6,10 @@ Save as: routes/auth.py
 import os
 import logging
 from datetime import datetime, timezone
-from typing import Annotated
 
 import httpx
-from email_validator import validate_email, EmailNotValidError
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
-from pydantic import AfterValidator, BaseModel, field_validator
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -26,132 +22,33 @@ from app.core.auth import (
     validate_refresh_token,
     revoke_refresh_token,
     revoke_all_refresh_tokens,
-    REFRESH_TOKEN_EXPIRE_DAYS,
     get_current_user,
 )
 from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RED, RESET
-from app.config.settings import settings
+from app.services.auth import (
+    hash_password,
+    verify_password,
+    COOKIE_NAME,
+    set_refresh_cookie,
+    clear_refresh_cookie,
+    _issue_tokens,
+    RESET_TOKEN_TTL,
+    _send_reset_email,
+)
+from app.schemas.auth import (
+    RegisterRequest,
+    LoginRequest,
+    TokenResponse,
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-# Password hashing─
-
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-
-
-# Cookie helper
-
-COOKIE_NAME = "refresh_token"
-
-
-def set_refresh_cookie(response: Response, token: str) -> None:
-    is_prod = settings.ENVIRONMENT == "production"
-    response.set_cookie(
-        key=COOKIE_NAME,
-        value=token,
-        httponly=True,
-        secure=is_prod,
-        samesite="lax",
-        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        domain=".stellarbladeguide.com" if is_prod else None,
-        path="/api/auth",
-    )
-
-def clear_refresh_cookie(response: Response) -> None:
-    is_prod = settings.ENVIRONMENT == "production"
-    response.delete_cookie(
-        key=COOKIE_NAME,
-        domain=".stellarbladeguide.com" if is_prod else None,
-        path="/api/auth",
-    )
-
-# Schemas
-
-# Validated email type used by all auth request models. Mirrors what Pydantic's
-# EmailStr did (strip + email-validator + normalized form, so stored/looked-up
-# values are byte-for-byte unchanged) but raises a friendly message instead of
-# the library's technical default. The server stays the authority on validity.
-def _validate_email(v: str) -> str:
-    try:
-        return validate_email(v.strip(), check_deliverability=False).normalized
-    except EmailNotValidError:
-        raise ValueError("Please enter a valid email address")
-
-
-FriendlyEmail = Annotated[str, AfterValidator(_validate_email)]
-
-
-class RegisterRequest(BaseModel):
-    email: FriendlyEmail
-    username: str
-    password: str
-
-    @field_validator("username")
-    @classmethod
-    def username_valid(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 3 or len(v) > 50:
-            raise ValueError("Username must be between 3 and 50 characters")
-        if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError("Username may only contain letters, numbers, hyphens, and underscores")
-        return v
-
-    @field_validator("password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
-
-class LoginRequest(BaseModel):
-    email: FriendlyEmail
-    password: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: dict
-
-
-# Helper
-
-def user_to_dict(user: User) -> dict:
-    return {
-        "id": user.id,
-        "email": user.email,
-        "username": user.username,
-        "avatar_url": user.avatar_url,
-        "role": user.role,
-        "created_at": user.created_at.isoformat(),
-    }
-
-
-async def _issue_tokens(user: User, response: Response) -> dict:
-    """Create access + refresh tokens, set cookie, return response body."""
-    access_token = create_access_token(user.id, user.role)
-    refresh_token = create_refresh_token()
-    await store_refresh_token(user.id, refresh_token)
-    set_refresh_cookie(response, f"{user.id}:{refresh_token}")
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user_to_dict(user),
-    }
-
 
 # Email / Password routes
 
@@ -261,18 +158,6 @@ async def logout_all(
     logger.info(f"{CYAN}User {current_user.username} logged out of all devices{RESET}")
 
 
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
-
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("10/minute")
 async def change_password(
@@ -314,61 +199,6 @@ async def change_password(
 # Password reset
 
 import uuid
-import resend
-
-RESET_TOKEN_TTL = 60 * 60  # 1 hour
-
-
-async def _send_reset_email(email: str, token: str) -> None:
-    """Send password reset email via Resend."""
-    frontend_url = os.getenv("FRONTEND_URL", "https://stellarbladeguide.com")
-    reset_url = f"{frontend_url}/reset-password?token={token}"
-
-    resend.api_key = settings.RESEND_API_KEY
-
-    resend.Emails.send({
-        "from": "Stellar Blade Guide <noreply@stellarbladeguide.com>",
-        "to": email,
-        "subject": "Reset your password",
-        "html": f"""
-            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-                <p>We received a request to reset your password. Click the link below to choose a new one.</p>
-                <p>
-                    <a href="{reset_url}" style="
-                        display: inline-block;
-                        padding: 12px 24px;
-                        background: #3b82f6;
-                        color: white;
-                        text-decoration: none;
-                        border-radius: 6px;
-                        font-weight: bold;
-                    ">Reset Password</a>
-                </p>
-                <p style="color: #6b7280; font-size: 14px;">
-                    This link expires in 1 hour. If you didn't request this, you can safely ignore this email.
-                </p>
-                <p style="color: #6b7280; font-size: 12px;">
-                    Or copy this link: {reset_url}
-                </p>
-            </div>
-        """,
-    })
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: FriendlyEmail
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
 
 
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)

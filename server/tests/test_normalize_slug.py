@@ -1,5 +1,5 @@
 import pytest
-from app.routers.collectibles import _normalize_slug
+from app.services.collectibles import _normalize_slug
 
 
 @pytest.mark.parametrize("slug,expected", [

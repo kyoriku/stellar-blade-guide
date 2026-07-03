@@ -29,7 +29,7 @@ from app.models.comments import Comment
 from app.models.notifications import Notification
 from app.models.collectibles import Level, CollectibleType
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
-from app.routers.auth import hash_password
+from app.services.auth import hash_password
 from app.routers.comments import router as comments_router
 from app.routers.notifications import router as notifications_router
 
