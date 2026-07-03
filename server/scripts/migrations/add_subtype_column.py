@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from db.database import engine
+from app.db.database import engine
 
 
 async def add_subtype_column():

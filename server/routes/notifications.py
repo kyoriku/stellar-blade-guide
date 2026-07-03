@@ -4,15 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.database import get_db
-from models.notifications import Notification
-from models.users import User
-from models.comments import Comment  # noqa: F401 — FK target, keep mapper happy
-from models.collectibles import CollectibleType, Level
-from models.walkthroughs import Walkthrough
-from core.auth import get_current_user
-from core.security import limiter
-from config.settings import settings
+from app.db.database import get_db
+from app.models.notifications import Notification
+from app.models.users import User
+from app.models.comments import Comment  # noqa: F401 — FK target, keep mapper happy
+from app.models.collectibles import CollectibleType, Level
+from app.models.walkthroughs import Walkthrough
+from app.core.auth import get_current_user
+from app.core.security import limiter
+from app.config.settings import settings
 from schemas.notifications import NotificationItem, NotificationList
 
 logger = logging.getLogger(__name__)

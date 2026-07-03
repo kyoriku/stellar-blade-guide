@@ -15,7 +15,7 @@ quirk, not a bug — both paths work correctly.
 import json
 from urllib.parse import quote
 import pytest
-from models.collectibles import Level, Location
+from app.models.collectibles import Level, Location
 
 
 async def test_get_locations_empty(client, db_session):

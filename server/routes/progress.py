@@ -5,14 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from typing import List
 
-from db.database import get_db
-from models.users import User
-from models.progress import UserProgress
-from models.collectibles import Collectible
+from app.db.database import get_db
+from app.models.users import User
+from app.models.progress import UserProgress
+from app.models.collectibles import Collectible
 from schemas.progress import SyncRequest, SyncResponse, ToggleResponse
-from core.auth import get_current_user
-from core.security import limiter
-from config.settings import settings
+from app.core.auth import get_current_user
+from app.core.security import limiter
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/progress", tags=["progress"])

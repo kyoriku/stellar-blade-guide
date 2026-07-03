@@ -9,14 +9,14 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy import exists as sa_exists
 from sqlalchemy.orm import selectinload, aliased
 
-from db.database import get_db
-from models.comments import Comment
-from models.notifications import Notification
-from models.users import User
-from core.auth import get_current_user
-from core.security import limiter
-from core.colours import CYAN, YELLOW, RESET
-from config.settings import settings
+from app.db.database import get_db
+from app.models.comments import Comment
+from app.models.notifications import Notification
+from app.models.users import User
+from app.core.auth import get_current_user
+from app.core.security import limiter
+from app.core.colours import CYAN, YELLOW, RESET
+from app.config.settings import settings
 from openai import AsyncOpenAI
 
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))

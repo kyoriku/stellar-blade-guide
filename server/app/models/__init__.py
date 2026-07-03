@@ -1,4 +1,4 @@
 # Import all models here so SQLAlchemy can resolve relationships between them before mapper configuration runs.
-from models.users import User, OAuthAccount
-from models.comments import Comment
-from models.notifications import Notification
+from app.models.users import User, OAuthAccount
+from app.models.comments import Comment
+from app.models.notifications import Notification

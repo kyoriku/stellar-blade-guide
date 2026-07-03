@@ -31,11 +31,11 @@ from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from core.auth import create_access_token
-from db.database import Base, get_db
+from app.core.auth import create_access_token
+from app.db.database import Base, get_db
 from middleware.rate_limit import setup_rate_limiter
-from models.comments import Comment
-from models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
+from app.models.comments import Comment
+from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
 from routes.auth import hash_password
 from routes.comments import router as comments_router
 

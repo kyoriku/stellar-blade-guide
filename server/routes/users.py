@@ -10,12 +10,12 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from db.database import get_db
-from models.users import User
-from core.auth import get_current_user, require_role
-from core.security import limiter
-from core.colours import CYAN, YELLOW, RED, RESET
-from config.settings import settings
+from app.db.database import get_db
+from app.models.users import User
+from app.core.auth import get_current_user, require_role
+from app.core.security import limiter
+from app.core.colours import CYAN, YELLOW, RED, RESET
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +177,7 @@ async def delete_me(
     db: AsyncSession = Depends(get_db),
 ):
     """Permanently delete the authenticated user's account and all their data."""
-    from core.auth import revoke_all_refresh_tokens
+    from app.core.auth import revoke_all_refresh_tokens
     await revoke_all_refresh_tokens(current_user.id)
     await db.delete(current_user)
     await db.commit()

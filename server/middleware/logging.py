@@ -3,8 +3,8 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi import Request
-from core.security import get_client_ip
-from core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
+from app.core.security import get_client_ip
+from app.core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
 
 logger = logging.getLogger("api")
 

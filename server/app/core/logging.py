@@ -1,7 +1,7 @@
 import logging
 import sys
 from typing import Optional
-from config.settings import settings
+from app.config.settings import settings
 
 def setup_logging(log_level: Optional[str] = None) -> None:
     level = log_level or settings.LOG_LEVEL

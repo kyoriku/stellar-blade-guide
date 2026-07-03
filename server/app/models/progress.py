@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
-from db.database import Base
+from app.db.database import Base
 
 class UserProgress(Base):
     __tablename__ = 'user_progress'

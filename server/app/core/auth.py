@@ -12,8 +12,8 @@ from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from db.database import get_db
-from core.cache import redis_client
+from app.db.database import get_db
+from app.core.cache import redis_client
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ async def get_current_user(
     user_id = int(payload["sub"])
 
     # Lazy import to avoid circular dependency
-    from models.users import User
+    from app.models.users import User
 
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
     user = result.scalar_one_or_none()

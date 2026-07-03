@@ -1,7 +1,7 @@
 import os
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from config.settings import settings
+from app.config.settings import settings
 
 ORIGIN_SECRET = os.getenv("ORIGIN_SECRET", "")
 

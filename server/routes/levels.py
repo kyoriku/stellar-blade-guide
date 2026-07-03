@@ -3,12 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
-from db.database import get_db
-from models.collectibles import Level, Location
+from app.db.database import get_db
+from app.models.collectibles import Level, Location
 from schemas.collectibles import LevelResponse, LocationResponse
-from core.cache import get_cache, set_cache
-from core.security import limiter
-from config.settings import settings
+from app.core.cache import get_cache, set_cache
+from app.core.security import limiter
+from app.config.settings import settings
 
 router = APIRouter(prefix="/levels", tags=["levels"])
 

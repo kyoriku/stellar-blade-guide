@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.database import get_db
+from app.db.database import get_db
 from schemas.search import SearchResult, SearchResponse
-from core.cache import get_cache, set_cache
-from core.security import limiter
+from app.core.cache import get_cache, set_cache
+from app.core.security import limiter
 
 logger = logging.getLogger(__name__)
 
