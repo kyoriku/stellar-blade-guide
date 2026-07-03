@@ -25,8 +25,8 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, ASGITransport
 
-from config.settings import settings
-from middleware.bot_filter import SPA_SAFE_PATH, add_bot_filter_middleware
+from app.config.settings import settings
+from app.middleware.bot_filter import SPA_SAFE_PATH, add_bot_filter_middleware
 
 # The exact production trigger shape: a long alphanumeric run + '.' (from `.webp`).
 REDOS_PATH = "/" + ("a" * 64) + ".webp"

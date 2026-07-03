@@ -25,10 +25,10 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from db.database import get_db
-from middleware.rate_limit import setup_rate_limiter
-from models.walkthroughs import Walkthrough as WalkthroughModel  # noqa: F401 — needed for ORM inserts/selects
-from routes.walkthroughs import router as walkthroughs_router
+from app.db.database import get_db
+from app.middleware.rate_limit import setup_rate_limiter
+from app.models.walkthroughs import Walkthrough as WalkthroughModel  # noqa: F401 — needed for ORM inserts/selects
+from app.routers.walkthroughs import router as walkthroughs_router
 
 MINIMAL_CONTENT = [{"order": 1, "text": "Test step", "is_boss": False, "images": []}]
 

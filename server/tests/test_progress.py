@@ -24,13 +24,13 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from core.auth import create_access_token
-from db.database import Base, get_db
-from middleware.rate_limit import setup_rate_limiter
-from models.progress import UserProgress  # noqa: F401 — registers table with Base
-from models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
-from routes.auth import hash_password
-from routes.progress import router as progress_router
+from app.core.auth import create_access_token
+from app.db.database import Base, get_db
+from app.middleware.rate_limit import setup_rate_limiter
+from app.models.progress import UserProgress  # noqa: F401 — registers table with Base
+from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
+from app.routers.auth import hash_password
+from app.routers.progress import router as progress_router
 
 
 def _make_progress_app(db_session: AsyncSession) -> FastAPI:

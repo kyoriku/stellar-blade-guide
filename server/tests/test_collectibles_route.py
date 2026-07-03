@@ -23,13 +23,13 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from db.database import Base, get_db
-from middleware.rate_limit import setup_rate_limiter
-from models.collectibles import (
+from app.db.database import Base, get_db
+from app.middleware.rate_limit import setup_rate_limiter
+from app.models.collectibles import (
     Level, Location, CollectibleType, Collectible, CollectibleImage,  # noqa: F401
     collectible_type_mappings,  # noqa: F401 — registers junction table with Base metadata
 )
-from routes.collectibles import (
+from app.routers.collectibles import (
     collectibles_router, upgrades_router, cosmetics_router,
     materials_router, levels_router,
 )

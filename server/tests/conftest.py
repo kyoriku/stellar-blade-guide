@@ -45,12 +45,12 @@ from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-import core.cache
-from core.security import limiter
-from db.database import Base, get_db
-from models.collectibles import Level, Location  # noqa: F401 — registers tables with Base
-from middleware.rate_limit import setup_rate_limiter
-from routes import levels as levels_route
+import app.core.cache
+from app.core.security import limiter
+from app.db.database import Base, get_db
+from app.models.collectibles import Level, Location  # noqa: F401 — registers tables with Base
+from app.middleware.rate_limit import setup_rate_limiter
+from app.routers import levels as levels_route
 
 
 @pytest.fixture(autouse=True)
@@ -69,7 +69,7 @@ async def fake_redis():
 
 @pytest_asyncio.fixture(autouse=True)
 async def patch_redis(fake_redis, monkeypatch):
-    monkeypatch.setattr(core.cache, "redis_client", fake_redis)
+    monkeypatch.setattr(app.core.cache, "redis_client", fake_redis)
 
 
 @pytest_asyncio.fixture

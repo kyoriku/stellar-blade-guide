@@ -7,8 +7,8 @@ from sqlalchemy import select, delete, update, text
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from db.database import engine, AsyncSessionLocal
-from models.collectibles import Location, Level
+from app.db.database import engine, AsyncSessionLocal
+from app.models.collectibles import Location, Level
 
 
 # (continued) locations to remove, and display_order fixes needed after removal

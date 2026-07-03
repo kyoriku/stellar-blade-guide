@@ -26,13 +26,13 @@ from httpx import AsyncClient, ASGITransport
 from redis.exceptions import TimeoutError as RedisTimeoutError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-import core.auth as core_auth
-from core.security import limiter
-from db.database import Base, get_db
-from models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
-from middleware.error_handler import add_error_handler_middleware
-from middleware.rate_limit import setup_rate_limiter
-from routes.auth import router as auth_router
+import app.core.auth as core_auth
+from app.core.security import limiter
+from app.db.database import Base, get_db
+from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
+from app.middleware.error_handler import add_error_handler_middleware
+from app.middleware.rate_limit import setup_rate_limiter
+from app.routers.auth import router as auth_router
 
 
 def _make_app(db_session: AsyncSession) -> FastAPI:
