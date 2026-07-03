@@ -77,7 +77,6 @@ server/scripts/images/*
 server/scripts/generate_sitemap.py
 server/scripts/update_category_images.py
 !server/scripts/renumber_ids.py
-server/services
 server/scripts/prod_seed.py
 
 # Documentation
