@@ -1,9 +1,7 @@
 import logging
 import os
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 from sqlalchemy import exists as sa_exists
@@ -17,6 +15,7 @@ from app.core.auth import get_current_user
 from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RESET
 from app.config.settings import settings
+from app.schemas.comments import CreateCommentRequest, UpdateCommentRequest
 from openai import AsyncOpenAI
 
 openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -33,47 +32,6 @@ async def _moderate_content(text: str) -> bool:
     except Exception:
         logger.warning(f"{YELLOW}OpenAI moderation check failed, failing open{RESET}")
         return True  # fail open — don't break comments if OpenAI is down
-
-
-# Schemas
-
-class CreateCommentRequest(BaseModel):
-    content_type: str
-    content_id: int
-    body: str
-    parent_id: Optional[int] = None
-
-    @field_validator("content_type")
-    @classmethod
-    def content_type_valid(cls, v: str) -> str:
-        allowed = {"walkthrough", "collectible", "level"}
-        if v not in allowed:
-            raise ValueError(f"content_type must be one of: {', '.join(allowed)}")
-        return v
-
-    @field_validator("body")
-    @classmethod
-    def body_not_empty(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 1:
-            raise ValueError("Comment body cannot be empty")
-        if len(v) > 2000:
-            raise ValueError("Comment body cannot exceed 2000 characters")
-        return v
-
-
-class UpdateCommentRequest(BaseModel):
-    body: str
-
-    @field_validator("body")
-    @classmethod
-    def body_not_empty(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 1:
-            raise ValueError("Comment body cannot be empty")
-        if len(v) > 2000:
-            raise ValueError("Comment body cannot exceed 2000 characters")
-        return v
 
 
 # Helpers
