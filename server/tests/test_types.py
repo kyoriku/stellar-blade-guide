@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from app.db.database import Base, get_db
 from app.models.collectibles import CollectibleType  # noqa: F401 — registers table with Base
-from middleware.rate_limit import setup_rate_limiter
+from app.middleware.rate_limit import setup_rate_limiter
 from routes import types as types_route
 
 

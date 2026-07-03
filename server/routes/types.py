@@ -5,7 +5,7 @@ from typing import List
 
 from app.db.database import get_db
 from app.models.collectibles import CollectibleType
-from schemas.collectibles import TypeResponse
+from app.schemas.collectibles import TypeResponse
 from app.core.cache import get_cache, set_cache
 from app.core.security import limiter
 from app.config.settings import settings

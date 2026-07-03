@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
-from schemas.search import SearchResult, SearchResponse
+from app.schemas.search import SearchResult, SearchResponse
 from app.core.cache import get_cache, set_cache
 from app.core.security import limiter
 

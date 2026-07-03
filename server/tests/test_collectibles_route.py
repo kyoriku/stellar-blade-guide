@@ -24,7 +24,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.db.database import Base, get_db
-from middleware.rate_limit import setup_rate_limiter
+from app.middleware.rate_limit import setup_rate_limiter
 from app.models.collectibles import (
     Level, Location, CollectibleType, Collectible, CollectibleImage,  # noqa: F401
     collectible_type_mappings,  # noqa: F401 — registers junction table with Base metadata

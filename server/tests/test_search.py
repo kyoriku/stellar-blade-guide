@@ -22,9 +22,9 @@ from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
 
 from app.db.database import get_db
-from middleware.rate_limit import setup_rate_limiter
+from app.middleware.rate_limit import setup_rate_limiter
 from routes import search as search_route
-from schemas.search import SearchResult
+from app.schemas.search import SearchResult
 
 
 @pytest_asyncio.fixture

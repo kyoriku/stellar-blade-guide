@@ -1,4 +1,4 @@
-from schemas.collectibles import CollectibleResponse
+from app.schemas.collectibles import CollectibleResponse
 
 
 def test_collectible_response_subtype_defaults_to_none():

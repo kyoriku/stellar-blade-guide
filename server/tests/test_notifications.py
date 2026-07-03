@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 from app.core.auth import create_access_token
 from app.db.database import Base, get_db
-from middleware.rate_limit import setup_rate_limiter
+from app.middleware.rate_limit import setup_rate_limiter
 from app.models.comments import Comment
 from app.models.notifications import Notification
 from app.models.collectibles import Level, CollectibleType

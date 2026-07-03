@@ -1,11 +1,11 @@
 import pytest_asyncio
-import middleware.origin_check as origin_check_module
+import app.middleware.origin_check as origin_check_module
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, ASGITransport
 
 from app.config.settings import settings
-from middleware.origin_check import add_origin_check_middleware
+from app.middleware.origin_check import add_origin_check_middleware
 
 
 def make_origin_check_app() -> FastAPI:

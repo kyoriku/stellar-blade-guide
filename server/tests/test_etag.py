@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.requests import Request
 from starlette.middleware.gzip import GZipMiddleware
 
-from middleware.etag import ETagMiddleware, EXCLUDED_304_HEADERS
+from app.middleware.etag import ETagMiddleware, EXCLUDED_304_HEADERS
 
 
 def make_etag_app(path: str = "/api/test/") -> FastAPI:
