@@ -95,7 +95,7 @@ async def traffic_advice():
     return [{"user_agent": "prefetch-proxy", "fraction": 1.0}]
 
 # Static file serving
-CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../client/dist')
+CLIENT_DIST = os.path.join(os.path.dirname(__file__), '../../client/dist')
 
 if os.path.exists(CLIENT_DIST):
     app.mount('/assets', StaticFiles(directory=f'{CLIENT_DIST}/assets'), name='assets')
