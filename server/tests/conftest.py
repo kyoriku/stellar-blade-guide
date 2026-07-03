@@ -50,7 +50,7 @@ from app.core.security import limiter
 from app.db.database import Base, get_db
 from app.models.collectibles import Level, Location  # noqa: F401 — registers tables with Base
 from app.middleware.rate_limit import setup_rate_limiter
-from routes import levels as levels_route
+from app.routers import levels as levels_route
 
 
 @pytest.fixture(autouse=True)

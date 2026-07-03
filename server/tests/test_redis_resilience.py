@@ -32,7 +32,7 @@ from app.db.database import Base, get_db
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
 from app.middleware.error_handler import add_error_handler_middleware
 from app.middleware.rate_limit import setup_rate_limiter
-from routes.auth import router as auth_router
+from app.routers.auth import router as auth_router
 
 
 def _make_app(db_session: AsyncSession) -> FastAPI:

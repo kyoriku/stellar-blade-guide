@@ -25,7 +25,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 
 import pytest_asyncio
-import routes.comments as comments_module
+import app.routers.comments as comments_module
 
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
@@ -36,8 +36,8 @@ from app.db.database import Base, get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.comments import Comment
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
-from routes.auth import hash_password
-from routes.comments import router as comments_router
+from app.routers.auth import hash_password
+from app.routers.comments import router as comments_router
 
 
 def _make_comments_app(db_session: AsyncSession) -> FastAPI:

@@ -18,7 +18,7 @@ from app.middleware.security_headers import add_security_headers_middleware, add
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.origin_check import add_origin_check_middleware
-from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, progress, search, notifications
+from app.routers import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, progress, search, notifications
 setup_logging()
 
 cloudinary.config(
