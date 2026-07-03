@@ -29,7 +29,7 @@ from app.models.collectibles import (
     Level, Location, CollectibleType, Collectible, CollectibleImage,  # noqa: F401
     collectible_type_mappings,  # noqa: F401 — registers junction table with Base metadata
 )
-from routes.collectibles import (
+from app.routers.collectibles import (
     collectibles_router, upgrades_router, cosmetics_router,
     materials_router, levels_router,
 )

@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from app.db.database import get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.walkthroughs import Walkthrough as WalkthroughModel  # noqa: F401 — needed for ORM inserts/selects
-from routes.walkthroughs import router as walkthroughs_router
+from app.routers.walkthroughs import router as walkthroughs_router
 
 MINIMAL_CONTENT = [{"order": 1, "text": "Test step", "is_boss": False, "images": []}]
 

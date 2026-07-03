@@ -23,7 +23,7 @@ from fastapi import FastAPI
 
 from app.db.database import get_db
 from app.middleware.rate_limit import setup_rate_limiter
-from routes import search as search_route
+from app.routers import search as search_route
 from app.schemas.search import SearchResult
 
 
