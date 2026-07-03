@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -23,13 +22,21 @@ from app.core.auth import (
     validate_refresh_token,
     revoke_refresh_token,
     revoke_all_refresh_tokens,
-    REFRESH_TOKEN_EXPIRE_DAYS,
     get_current_user,
 )
 from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RED, RESET
-from app.config.settings import settings
+from app.services.auth import (
+    hash_password,
+    verify_password,
+    COOKIE_NAME,
+    set_refresh_cookie,
+    clear_refresh_cookie,
+    _issue_tokens,
+    RESET_TOKEN_TTL,
+    _send_reset_email,
+)
 from app.schemas.auth import (
     RegisterRequest,
     LoginRequest,
@@ -42,71 +49,6 @@ from app.schemas.auth import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-# Password hashing─
-
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-
-
-# Cookie helper
-
-COOKIE_NAME = "refresh_token"
-
-
-def set_refresh_cookie(response: Response, token: str) -> None:
-    is_prod = settings.ENVIRONMENT == "production"
-    response.set_cookie(
-        key=COOKIE_NAME,
-        value=token,
-        httponly=True,
-        secure=is_prod,
-        samesite="lax",
-        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        domain=".stellarbladeguide.com" if is_prod else None,
-        path="/api/auth",
-    )
-
-def clear_refresh_cookie(response: Response) -> None:
-    is_prod = settings.ENVIRONMENT == "production"
-    response.delete_cookie(
-        key=COOKIE_NAME,
-        domain=".stellarbladeguide.com" if is_prod else None,
-        path="/api/auth",
-    )
-
-# Helper
-
-def user_to_dict(user: User) -> dict:
-    return {
-        "id": user.id,
-        "email": user.email,
-        "username": user.username,
-        "avatar_url": user.avatar_url,
-        "role": user.role,
-        "created_at": user.created_at.isoformat(),
-    }
-
-
-async def _issue_tokens(user: User, response: Response) -> dict:
-    """Create access + refresh tokens, set cookie, return response body."""
-    access_token = create_access_token(user.id, user.role)
-    refresh_token = create_refresh_token()
-    await store_refresh_token(user.id, refresh_token)
-    set_refresh_cookie(response, f"{user.id}:{refresh_token}")
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": user_to_dict(user),
-    }
-
 
 # Email / Password routes
 
@@ -257,45 +199,6 @@ async def change_password(
 # Password reset
 
 import uuid
-import resend
-
-RESET_TOKEN_TTL = 60 * 60  # 1 hour
-
-
-async def _send_reset_email(email: str, token: str) -> None:
-    """Send password reset email via Resend."""
-    frontend_url = os.getenv("FRONTEND_URL", "https://stellarbladeguide.com")
-    reset_url = f"{frontend_url}/reset-password?token={token}"
-
-    resend.api_key = settings.RESEND_API_KEY
-
-    resend.Emails.send({
-        "from": "Stellar Blade Guide <noreply@stellarbladeguide.com>",
-        "to": email,
-        "subject": "Reset your password",
-        "html": f"""
-            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-                <p>We received a request to reset your password. Click the link below to choose a new one.</p>
-                <p>
-                    <a href="{reset_url}" style="
-                        display: inline-block;
-                        padding: 12px 24px;
-                        background: #3b82f6;
-                        color: white;
-                        text-decoration: none;
-                        border-radius: 6px;
-                        font-weight: bold;
-                    ">Reset Password</a>
-                </p>
-                <p style="color: #6b7280; font-size: 14px;">
-                    This link expires in 1 hour. If you didn't request this, you can safely ignore this email.
-                </p>
-                <p style="color: #6b7280; font-size: 12px;">
-                    Or copy this link: {reset_url}
-                </p>
-            </div>
-        """,
-    })
 
 
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
