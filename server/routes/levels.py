@@ -5,7 +5,7 @@ from typing import List
 
 from app.db.database import get_db
 from app.models.collectibles import Level, Location
-from schemas.collectibles import LevelResponse, LocationResponse
+from app.schemas.collectibles import LevelResponse, LocationResponse
 from app.core.cache import get_cache, set_cache
 from app.core.security import limiter
 from app.config.settings import settings

@@ -8,7 +8,7 @@ from typing import List
 
 from app.db.database import get_db
 from app.models.collectibles import Level, Location, CollectibleType, Collectible
-from schemas.collectibles import (
+from app.schemas.collectibles import (
     CollectibleResponse,
     CollectibleWithLocationResponse,
 )

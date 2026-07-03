@@ -10,14 +10,14 @@ from app.config.settings import settings
 from app.core.logging import setup_logging
 from app.core.cache import redis_client
 from app.core.colours import GREEN, RED, RESET
-from middleware.rate_limit import setup_rate_limiter
-from middleware.logging import add_logging_middleware
-from middleware.error_handler import add_error_handler_middleware
-from middleware.exception_handlers import add_exception_handlers
-from middleware.security_headers import add_security_headers_middleware, add_trusted_host_middleware
-from middleware.bot_filter import add_bot_filter_middleware
-from middleware.etag import ETagMiddleware
-from middleware.origin_check import add_origin_check_middleware
+from app.middleware.rate_limit import setup_rate_limiter
+from app.middleware.logging import add_logging_middleware
+from app.middleware.error_handler import add_error_handler_middleware
+from app.middleware.exception_handlers import add_exception_handlers
+from app.middleware.security_headers import add_security_headers_middleware, add_trusted_host_middleware
+from app.middleware.bot_filter import add_bot_filter_middleware
+from app.middleware.etag import ETagMiddleware
+from app.middleware.origin_check import add_origin_check_middleware
 from routes import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, progress, search, notifications
 setup_logging()
 

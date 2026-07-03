@@ -13,7 +13,7 @@ from app.models.walkthroughs import Walkthrough
 from app.core.auth import get_current_user
 from app.core.security import limiter
 from app.config.settings import settings
-from schemas.notifications import NotificationItem, NotificationList
+from app.schemas.notifications import NotificationItem, NotificationList
 
 logger = logging.getLogger(__name__)
 

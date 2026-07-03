@@ -25,8 +25,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 import app.core.auth as core_auth
 from app.db.database import Base, get_db
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
-from middleware.rate_limit import setup_rate_limiter
-from middleware.exception_handlers import add_exception_handlers
+from app.middleware.rate_limit import setup_rate_limiter
+from app.middleware.exception_handlers import add_exception_handlers
 from routes.auth import router as auth_router, hash_password
 from app.core.auth import get_current_user, SECRET_KEY, ALGORITHM
 

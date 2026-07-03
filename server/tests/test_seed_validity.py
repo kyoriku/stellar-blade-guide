@@ -7,7 +7,7 @@ from typing import List, Literal, Optional, Union
 import pytest
 from pydantic import BaseModel
 
-from schemas.walkthroughs import Walkthrough
+from app.schemas.walkthroughs import Walkthrough
 
 SEED_DATA_DIR = Path(__file__).parent.parent / "seed-data"
 WALKTHROUGHS_DIR = SEED_DATA_DIR / "walkthroughs"
