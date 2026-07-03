@@ -4,13 +4,13 @@ Tests for the comments CRUD endpoints: GET, POST, PATCH, DELETE.
 Uses the same SQLite-in-memory strategy as test_auth.py, with its own
 fixture chain because the Comment table isn't in conftest's create_all.
 
-Moderation is monkeypatched at the routes.comments._moderate_content boundary
+Moderation is monkeypatched at the app.routers.comments._moderate_content boundary
 so no OpenAI calls are made. The default fixture mock passes all content;
 individual tests override it to return False when testing moderation rejection.
 
 Rate limit testing is intentionally omitted: slowapi's Limiter is created at
 module-import time using storage_uri=settings.REDIS_URL, which is a separate
-Redis connection from the core.cache.redis_client that the autouse patch_redis
+Redis connection from the app.core.cache.redis_client that the autouse patch_redis
 fixture covers. Reliably testing rate limits would require patching slowapi's
 internal storage — additional infrastructure for marginal value.
 

@@ -4,10 +4,10 @@ Tests for auth flow: register, login, token refresh, logout, and protected route
 Uses the same SQLite-in-memory strategy as other test files, with its own fixture
 chain because the User/OAuthAccount tables aren't in conftest's create_all.
 
-fakeredis: conftest.py's autouse patch_redis patches core.cache.redis_client.
-core/auth.py's token helpers (store_refresh_token, validate_refresh_token,
-revoke_refresh_token) import redis_client directly from core.cache, giving
-core.auth its own binding. The auth_client fixture patches that binding too so
+fakeredis: conftest.py's autouse patch_redis patches app.core.cache.redis_client.
+app/core/auth.py's token helpers (store_refresh_token, validate_refresh_token,
+revoke_refresh_token) import redis_client directly from app.core.cache, giving
+app.core.auth its own binding. The auth_client fixture patches that binding too so
 all token operations hit the same in-memory FakeRedis.
 """
 

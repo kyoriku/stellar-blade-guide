@@ -7,7 +7,7 @@ conftest fixtures are coupled to the levels router and Level/Location tables.
 
 fakeredis infrastructure comes from conftest.py — fake_redis and the autouse
 patch_redis fixture apply here automatically, so each test starts with an
-empty cache and core.cache.redis_client points at the FakeRedis instance.
+empty cache and app.core.cache.redis_client points at the FakeRedis instance.
 """
 
 import json
