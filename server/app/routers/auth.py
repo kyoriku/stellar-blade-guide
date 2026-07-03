@@ -6,13 +6,10 @@ Save as: routes/auth.py
 import os
 import logging
 from datetime import datetime, timezone
-from typing import Annotated
 
 import httpx
-from email_validator import validate_email, EmailNotValidError
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
-from pydantic import AfterValidator, BaseModel, field_validator
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -33,6 +30,14 @@ from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RED, RESET
 from app.config.settings import settings
+from app.schemas.auth import (
+    RegisterRequest,
+    LoginRequest,
+    TokenResponse,
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,56 +81,6 @@ def clear_refresh_cookie(response: Response) -> None:
         domain=".stellarbladeguide.com" if is_prod else None,
         path="/api/auth",
     )
-
-# Schemas
-
-# Validated email type used by all auth request models. Mirrors what Pydantic's
-# EmailStr did (strip + email-validator + normalized form, so stored/looked-up
-# values are byte-for-byte unchanged) but raises a friendly message instead of
-# the library's technical default. The server stays the authority on validity.
-def _validate_email(v: str) -> str:
-    try:
-        return validate_email(v.strip(), check_deliverability=False).normalized
-    except EmailNotValidError:
-        raise ValueError("Please enter a valid email address")
-
-
-FriendlyEmail = Annotated[str, AfterValidator(_validate_email)]
-
-
-class RegisterRequest(BaseModel):
-    email: FriendlyEmail
-    username: str
-    password: str
-
-    @field_validator("username")
-    @classmethod
-    def username_valid(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 3 or len(v) > 50:
-            raise ValueError("Username must be between 3 and 50 characters")
-        if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError("Username may only contain letters, numbers, hyphens, and underscores")
-        return v
-
-    @field_validator("password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
-
-class LoginRequest(BaseModel):
-    email: FriendlyEmail
-    password: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: dict
-
 
 # Helper
 
@@ -261,18 +216,6 @@ async def logout_all(
     logger.info(f"{CYAN}User {current_user.username} logged out of all devices{RESET}")
 
 
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
-
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("10/minute")
 async def change_password(
@@ -353,22 +296,6 @@ async def _send_reset_email(email: str, token: str) -> None:
             </div>
         """,
     })
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: FriendlyEmail
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
 
 
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)

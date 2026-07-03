@@ -6,13 +6,13 @@ import os
 import sys
 from pathlib import Path
 from fastapi import APIRouter, Request, HTTPException
-from pydantic import BaseModel
 
 project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from app.core.cache import invalidate_cache_pattern, get_cache_stats, redis_client
+from app.schemas.admin import SeedResponse
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -23,11 +23,6 @@ def check_secret(request: Request):
     secret = request.headers.get("X-ADMIN-SECRET")
     if not secret or secret != ADMIN_SECRET:
         raise HTTPException(status_code=401, detail="Unauthorized")
-
-class SeedResponse(BaseModel):
-    status: str
-    message: str
-    details: dict = {}
 
 # ============================================
 # Stats Endpoints
