@@ -1,5 +1,5 @@
 """
-Regression tests for the bot-filter SPA path matcher (middleware/bot_filter.py).
+Regression tests for the bot-filter SPA path matcher (app/middleware/bot_filter.py).
 
 SPA_SAFE_PATH runs on the raw, attacker-controlled URL path. A prior version,
 `^/(?:[a-z0-9\\-]+/?)*$`, backtracked catastrophically (ReDoS) on a long slash-free

@@ -12,7 +12,7 @@ DDL strategy:
     columns. JSONB type processors (inherited from JSON) still handle Python ↔ JSON conversion
     for DML. SQLite ignores FK constraints by default, so creation order doesn't matter.
 
-conftest's autouse patch_redis covers core.cache.redis_client — no extra patching needed.
+conftest's autouse patch_redis covers app.core.cache.redis_client — no extra patching needed.
 """
 
 from __future__ import annotations

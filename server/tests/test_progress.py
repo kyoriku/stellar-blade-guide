@@ -12,7 +12,7 @@ DDL strategy:
     test_collectibles_route.py). Progress routes only SELECT Collectible.id
     (no relationship traversal), so Level/Location/type tables are not needed.
 
-conftest's autouse patch_redis covers core.cache.redis_client.
+conftest's autouse patch_redis covers app.core.cache.redis_client.
 get_current_user() only decodes the JWT — no Redis lookup for access tokens.
 """
 

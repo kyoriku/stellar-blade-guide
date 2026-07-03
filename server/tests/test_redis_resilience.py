@@ -4,7 +4,7 @@ Tests for Redis-outage resilience.
 Two layers keep a Redis outage from taking the site down (cause of the
 2026-07-02 incident, where a hung Redis socket 500'd every rate-limited route):
 
-1. The slowapi Limiter (core/security.py) bounds socket waits to 2s and falls
+1. The slowapi Limiter (app/core/security.py) bounds socket waits to 2s and falls
    back to per-process in-memory limits (swallow_errors=True,
    in_memory_fallback_enabled=True) instead of raising into every decorated
    route.
@@ -15,7 +15,7 @@ Two layers keep a Redis outage from taking the site down (cause of the
    unhandled 500 with a traceback per request.
 
 Same strategy as test_auth.py: own fixture chain with the User tables in
-SQLite, and core.auth's redis_client binding patched to the shared FakeRedis.
+SQLite, and app.core.auth's redis_client binding patched to the shared FakeRedis.
 """
 
 from __future__ import annotations
