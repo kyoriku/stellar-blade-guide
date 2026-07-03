@@ -20,7 +20,7 @@ import { useProgress } from '../hooks/useProgress'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
-import FloatingTOC from '../components/Floatingtoc'
+import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
