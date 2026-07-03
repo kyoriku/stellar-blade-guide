@@ -15,9 +15,9 @@ from sqlalchemy.orm import selectinload
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from db.database import get_db, AsyncSessionLocal
-from models.collectibles import Level, Location, CollectibleType, Collectible, CollectibleImage
-from core.cache import invalidate_cache_pattern
+from app.db.database import get_db, AsyncSessionLocal
+from app.models.collectibles import Level, Location, CollectibleType, Collectible, CollectibleImage
+from app.core.cache import invalidate_cache_pattern
 
 
 def load_all_seed_files():

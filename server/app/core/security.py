@@ -1,6 +1,6 @@
 from slowapi import Limiter
 from fastapi import Request
-from config.settings import settings
+from app.config.settings import settings
 
 
 def get_client_ip(request: Request) -> str:

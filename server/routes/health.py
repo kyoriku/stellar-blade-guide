@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from core.cache import redis_client
+from app.core.cache import redis_client
 
 router = APIRouter()
 

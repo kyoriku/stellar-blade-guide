@@ -3,9 +3,9 @@ import re
 from urllib.parse import urlparse
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from config.settings import settings
-from core.colours import RED, RESET
-from core.security import get_client_ip
+from app.config.settings import settings
+from app.core.colours import RED, RESET
+from app.core.security import get_client_ip
 
 logger = logging.getLogger("api")
 

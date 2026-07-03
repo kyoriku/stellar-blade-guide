@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
-from db.database import Base
+from app.db.database import Base
 
 class Walkthrough(Base):
     __tablename__ = 'walkthroughs'

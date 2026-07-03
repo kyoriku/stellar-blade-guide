@@ -6,15 +6,15 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import joinedload
 from typing import List
 
-from db.database import get_db
-from models.collectibles import Level, Location, CollectibleType, Collectible
+from app.db.database import get_db
+from app.models.collectibles import Level, Location, CollectibleType, Collectible
 from schemas.collectibles import (
     CollectibleResponse,
     CollectibleWithLocationResponse,
 )
-from core.cache import get_cache, set_cache
-from core.security import limiter
-from config.settings import settings
+from app.core.cache import get_cache, set_cache
+from app.core.security import limiter
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 collectibles_router = APIRouter(prefix="/collectibles", tags=["collectibles"])

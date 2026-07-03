@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, ASGITransport
 
-from config.settings import settings
+from app.config.settings import settings
 from middleware.origin_check import add_origin_check_middleware
 
 

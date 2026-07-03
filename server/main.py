@@ -6,10 +6,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from starlette.middleware.gzip import GZipMiddleware
 
-from config.settings import settings
-from core.logging import setup_logging
-from core.cache import redis_client
-from core.colours import GREEN, RED, RESET
+from app.config.settings import settings
+from app.core.logging import setup_logging
+from app.core.cache import redis_client
+from app.core.colours import GREEN, RED, RESET
 from middleware.rate_limit import setup_rate_limiter
 from middleware.logging import add_logging_middleware
 from middleware.error_handler import add_error_handler_middleware

@@ -15,9 +15,9 @@ from sqlalchemy import select, delete
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from db.database import get_db
-from models.walkthroughs import Walkthrough
-from core.cache import invalidate_cache_pattern
+from app.db.database import get_db
+from app.models.walkthroughs import Walkthrough
+from app.core.cache import invalidate_cache_pattern
 
 
 def load_all_walkthrough_files():

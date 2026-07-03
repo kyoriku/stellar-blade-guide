@@ -26,7 +26,7 @@ from sqlalchemy import text
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from db.database import engine
+from app.db.database import engine
 
 INDEX_NAME = "ix_user_progress_user_id"
 DDL = f"DROP INDEX CONCURRENTLY IF EXISTS {INDEX_NAME}"

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
-from db.database import Base
+from app.db.database import Base
 
 # Junction table for many-to-many relationship
 collectible_type_mappings = Table(

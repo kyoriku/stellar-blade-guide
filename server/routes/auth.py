@@ -17,9 +17,9 @@ from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from db.database import get_db
-from models.users import User, OAuthAccount
-from core.auth import (
+from app.db.database import get_db
+from app.models.users import User, OAuthAccount
+from app.core.auth import (
     create_access_token,
     create_refresh_token,
     store_refresh_token,
@@ -29,10 +29,10 @@ from core.auth import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     get_current_user,
 )
-from core.cache import redis_client
-from core.security import limiter
-from core.colours import CYAN, YELLOW, RED, RESET
-from config.settings import settings
+from app.core.cache import redis_client
+from app.core.security import limiter
+from app.core.colours import CYAN, YELLOW, RED, RESET
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ the SQLite-in-memory + fakeredis pattern used across the test suite.
 
 import json
 import pytest
-from models.collectibles import Level
+from app.models.collectibles import Level
 
 
 async def test_get_all_levels_empty(client):
