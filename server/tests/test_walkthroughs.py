@@ -9,12 +9,12 @@ Walkthrough.content uses sqlalchemy.dialects.postgresql.JSONB. SQLAlchemy 2.0
 maps JSONB to JSON for non-Postgres backends, storing as TEXT in SQLite. Seeds
 pass Python lists/dicts; SQLAlchemy serializes/deserializes them automatically.
 
-conftest's autouse patch_redis covers core.cache.redis_client, so walkthroughs
+conftest's autouse patch_redis covers app.core.cache.redis_client, so walkthroughs
 caching goes through FakeRedis with no extra patching needed here.
 
 Rate limit testing is intentionally omitted: slowapi's Limiter is created at
 module-import time using storage_uri=settings.REDIS_URL, separate from the
-core.cache.redis_client the autouse patch_redis fixture covers.
+app.core.cache.redis_client the autouse patch_redis fixture covers.
 """
 
 from __future__ import annotations

@@ -1,11 +1,9 @@
 """
 Authentication routes - register, login, refresh, logout, OAuth.
-Save as: routes/auth.py
 """
 
 import os
 import logging
-from datetime import datetime, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -26,7 +24,7 @@ from app.core.auth import (
 )
 from app.core.cache import redis_client
 from app.core.security import limiter
-from app.core.colours import CYAN, YELLOW, RED, RESET
+from app.core.colours import CYAN, RED, RESET
 from app.services.auth import (
     hash_password,
     verify_password,

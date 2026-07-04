@@ -10,7 +10,7 @@ DATABASE — SQLite in-memory via aiosqlite, one fresh engine per test:
     so we restrict `create_all` to only the two tables the levels route needs.
 
 REDIS — fakeredis.aioredis.FakeRedis, one fresh instance per test:
-    core/cache.py holds a module-level `redis_client` that `get_cache` and
+    app/core/cache.py holds a module-level `redis_client` that `get_cache` and
     `set_cache` use directly. We monkeypatch that attribute before each test
     with a FakeRedis instance (decode_responses=True so it behaves like the
     production client). Each test gets an empty cache, making cache-miss and
@@ -27,8 +27,8 @@ RATE LIMITER — disabled for the whole suite (autouse disable_rate_limits):
     @limiter.limit decorators read request.app.state.limiter either way —
     and with the limiter disabled the suite needs no real Redis at all.
 
-HTTP CLIENT — minimal FastAPI app, not main.app:
-    main.app carries bot-filter middleware, a Redis lifespan ping, Cloudinary
+HTTP CLIENT — minimal FastAPI app, not app.main.app:
+    app.main.app carries bot-filter middleware, a Redis lifespan ping, Cloudinary
     config, ETag, gzip, and eleven routers. All irrelevant here and some (the
     bot filter in particular) could silently reject test requests. Instead we
     build a bare FastAPI app per test that includes only the levels router and

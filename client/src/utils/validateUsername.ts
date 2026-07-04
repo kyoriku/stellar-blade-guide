@@ -1,5 +1,5 @@
 // Mirrors the server-side username rule (`username_valid` in
-// server/routes/users.py, duplicated in server/routes/auth.py): 3–50 characters,
+// server/app/schemas/users.py, duplicated in server/app/schemas/auth.py): 3–50 characters,
 // only letters / numbers / hyphens / underscores, with at least one alphanumeric.
 //
 // Uses Unicode property escapes (\p{L}, \p{N}) to match Python's str.isalnum(),

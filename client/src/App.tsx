@@ -11,7 +11,7 @@ import MaterialsIndexPage from './pages/MaterialsIndexPage'
 import CosmeticsIndexPage from './pages/CosmeticsIndexPage'
 
 // Detail pages
-import WalkthroughsListPage from './pages/WalkhroughsListPage'
+import WalkthroughsListPage from './pages/WalkthroughsListPage'
 import WalkthroughDetailPage from './pages/WalkthroughDetailPage'
 import LevelPage from './pages/LevelsPage'
 import CollectibleTypePage from './pages/CollectiblesPage'
