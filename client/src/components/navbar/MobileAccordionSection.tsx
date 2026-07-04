@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import MobileNavLink from './MobileNavLink';
@@ -13,9 +14,20 @@ interface MobileAccordionSectionProps {
 
 function MobileAccordionSection({ section, isOpen, onToggle, onNavigate, prefetchItem }: MobileAccordionSectionProps) {
   const { icon: Icon, label, basePath, items, itemActiveMatch, mobileMaxH } = section;
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // Sibling sections collapse over 0.2s (.section-content transition);
+    // wait for layout to settle so the header's final position is correct.
+    const id = setTimeout(() => {
+      sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+    return () => clearTimeout(id);
+  }, [isOpen]);
 
   return (
-    <div className="border-b border-gray-800/50">
+    <div ref={sectionRef} className="border-b border-gray-800/50">
       <button
         onClick={onToggle}
         className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
