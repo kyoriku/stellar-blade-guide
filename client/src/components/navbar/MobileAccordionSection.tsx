@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import MobileNavLink from './MobileNavLink';
