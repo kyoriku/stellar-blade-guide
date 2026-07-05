@@ -14,6 +14,7 @@ import ErrorPage from './ErrorPage'
 import TableOfContents from '../components/TableOfContents'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
+import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/cloudinary'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -30,7 +31,7 @@ function WalkthroughDetailPage() {
   const { data: allWalkthroughs = [], isError: navError } = useWalkthroughsByType(type!);
   const { prefetchWalkthroughBySlug } = usePrefetch();
   const { showToast } = useToast();
-  const [activeSection, setActiveSection] = useState<string>('');
+  const [activeSection] = useActiveSection('.walkthrough-content', [walkthrough]);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
@@ -73,30 +74,6 @@ function WalkthroughDetailPage() {
       }
     }
   }, [walkthrough, location.hash]);
-
-  useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '-80px 0px -80% 0px',
-      threshold: 0
-    };
-
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-    const sections = document.querySelectorAll('.walkthrough-content');
-    sections.forEach((section) => observer.observe(section));
-
-    return () => {
-      sections.forEach((section) => observer.unobserve(section));
-    };
-  }, [walkthrough]);
 
   const handleImageClick = (imageUrl: string) => {
     const index = allImages.findIndex(img => img.src === imageUrl);
