@@ -15,6 +15,7 @@ import { LEVEL_IMAGES } from '../constants/categoryImages'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
+import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/cloudinary'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -39,7 +40,7 @@ function LevelDetailPage() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [activeSection, setActiveSection] = useState<string>('');
+  const [activeSection, setActiveSection] = useActiveSection('section[id]', [locationData]);
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const { prefetchLevel } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
@@ -51,31 +52,6 @@ function LevelDetailPage() {
     setActiveSection('');
     setCycleFilter('All');
   }
-
-  useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '-80px 0px -80% 0px',
-      threshold: 0
-    };
-
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    const sections = document.querySelectorAll('section[id]');
-    sections.forEach((section) => observer.observe(section));
-
-    return () => {
-      sections.forEach((section) => observer.unobserve(section));
-    };
-  }, [locationData]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
