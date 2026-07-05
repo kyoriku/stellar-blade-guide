@@ -56,7 +56,7 @@ const SUBTYPE_ORDER = [
   'Log Data', 'Journal', 'Messages', 'Announcements', 'Series', 'Books', 'Information', 'Promotions', 'Prayers', 
 ] as const;
 
-function CollectibleTypePage() {
+function CollectibleTypeDetailPage() {
   const { typeName } = useParams<{ typeName: string }>();
   const location = useLocation();
 
@@ -758,4 +758,4 @@ function CollectibleTypePage() {
   );
 }
 
-export default CollectibleTypePage;
+export default CollectibleTypeDetailPage;

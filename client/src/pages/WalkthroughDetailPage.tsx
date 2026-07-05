@@ -22,7 +22,7 @@ import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 
-function WalkthroughPage() {
+function WalkthroughDetailPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
   const location = useLocation();
 
@@ -417,4 +417,4 @@ function WalkthroughPage() {
   );
 }
 
-export default WalkthroughPage;
+export default WalkthroughDetailPage;
