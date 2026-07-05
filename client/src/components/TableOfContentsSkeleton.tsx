@@ -1,24 +1,6 @@
-import { List, ChevronDown } from 'lucide-react';
+import { List } from 'lucide-react';
 
-interface TableOfContentsSkeletonProps {
-  collapsible?: boolean;
-}
-
-function TableOfContentsSkeleton({ collapsible = false }: TableOfContentsSkeletonProps) {
-  if (collapsible) {
-    return (
-      <nav className="bg-secondary rounded-lg border border-gray-800 shadow-xl">
-        <div className="flex items-center gap-3 w-full p-3">
-          <div className="p-2 bg-cyan-500/10 rounded-lg">
-            <List className="w-5 h-5 text-cyan-400" />
-          </div>
-          <h4 className="text-xl font-bold text-white flex-1">Contents</h4>
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        </div>
-      </nav>
-    );
-  }
-
+function TableOfContentsSkeleton() {
   return (
     <nav className="sticky top-4 bg-secondary rounded-lg p-3 max-h-[calc(100vh-2rem)] overflow-hidden border border-gray-800 shadow-xl">
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">

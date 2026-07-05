@@ -1,34 +1,27 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { List, ChevronRight, ChevronDown } from 'lucide-react'
+import { List, ChevronRight } from 'lucide-react'
 import { scrollToSection, type TocLink } from '../utils/toc'
 
 interface TableOfContentsProps {
   links: TocLink[];
   currentLevel?: string;
-  showSubLinkCount?: boolean;
   activeSection?: string;
-  collapsible?: boolean;
   onNavigate?: (href: string) => void;
 }
 
-function TableOfContents({ links, currentLevel, showSubLinkCount = false, activeSection, collapsible = false, onNavigate }: TableOfContentsProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
+function TableOfContents({ links, currentLevel, activeSection, onNavigate }: TableOfContentsProps) {
   const handleSubLinkClick = (href: string) => {
-    if (collapsible) setIsOpen(false);
     onNavigate?.(href);
     scrollToSection(href);
   };
 
   const handleMainLinkClick = (href: string) => {
-    if (collapsible) setIsOpen(false);
     onNavigate?.(href);
     scrollToSection(href);
   };
 
   const linksContent = (
-    <div className={collapsible ? 'max-h-[60vh] overflow-y-auto custom-scrollbar pr-2' : 'overflow-y-auto max-h-[calc(100vh-12rem)] custom-scrollbar pr-2 pb-3'}>
+    <div className="overflow-y-auto max-h-[calc(100vh-12rem)] custom-scrollbar pr-2 pb-3">
       <ul className="space-y-1">
         {links.map((linkGroup, index) => {
           const isCurrentLevel = currentLevel === linkGroup.title;
@@ -50,11 +43,6 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                   <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
                     }`} />
                   <span className="flex-1">{linkGroup.title}</span>
-                  {showSubLinkCount && linkGroup.subLinks && (
-                    <span className="text-xs bg-cyan-500/20 px-2 py-0.5 rounded-full">
-                      {linkGroup.subLinks.length}
-                    </span>
-                  )}
                 </a>
               ) : (
                 <Link
@@ -65,17 +53,11 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
                     }`}
                   onClick={() => {
                     window.scrollTo({ top: 0, behavior: 'instant' });
-                    if (collapsible) setIsOpen(false);
                   }}
                 >
                   <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
                     }`} />
                   <span className="flex-1">{linkGroup.title}</span>
-                  {showSubLinkCount && isCurrentLevel && linkGroup.subLinks && (
-                    <span className="text-xs bg-cyan-500/20 px-2 py-0.5 rounded-full">
-                      {linkGroup.subLinks.length}
-                    </span>
-                  )}
                 </Link>
               )}
 
@@ -121,30 +103,6 @@ function TableOfContents({ links, currentLevel, showSubLinkCount = false, active
       </ul>
     </div>
   );
-
-  if (collapsible) {
-    return (
-      <nav className="bg-secondary rounded-lg border border-gray-800 shadow-xl">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 w-full p-3 text-left"
-        >
-          <div className="p-2 bg-cyan-500/10 rounded-lg">
-            <List className="w-5 h-5 text-cyan-400" />
-          </div>
-          <h4 className="text-xl font-bold text-gray-100 flex-1">Contents</h4>
-          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-        {isOpen && (
-          <div className="px-3 pb-3 border-t border-gray-700">
-            <div className="pt-3">
-              {linksContent}
-            </div>
-          </div>
-        )}
-      </nav>
-    );
-  }
 
   return (
     <nav className="bg-secondary rounded-lg p-3 max-h-[calc(100vh-6rem)] overflow-hidden border border-gray-800 shadow-xl">
