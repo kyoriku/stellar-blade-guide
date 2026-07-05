@@ -1,9 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
-import { readError } from '../services/api'
+import { API_BASE_URL, readError } from '../services/api'
 import { useToast } from './ToastContext'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
 // for unauthenticated visitors. Worst case: cleared localStorage causes one

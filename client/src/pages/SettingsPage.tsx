@@ -2,11 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, KeyRound, Trash2, Save, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { readError, errorMessage } from '../services/api'
+import { API_BASE_URL, readError, errorMessage } from '../services/api'
 import { isValidUsername, USERNAME_RULE } from '../utils/validateUsername'
 import SEO from '../components/SEO'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()

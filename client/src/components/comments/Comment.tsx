@@ -1,22 +1,10 @@
 import { useState } from 'react'
 import { MessageSquare, Pencil, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import type { CommentData } from '../../hooks/useComments'
 import { errorMessage } from '../../services/api'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
-
-export interface CommentData {
-  id: number
-  content_type: string
-  content_id: number
-  parent_id: number | null
-  body: string
-  is_deleted: boolean
-  created_at: string
-  updated_at: string
-  user: { id: number; username: string; avatar_url: string | null; role: string } | null
-  replies?: CommentData[]
-}
 
 interface CommentProps {
   comment: CommentData

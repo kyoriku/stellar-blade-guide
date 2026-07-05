@@ -1,12 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
-import { readError } from '../services/api'
-import type { CommentData } from '../components/comments/Comment'
+import { API_BASE_URL, readError } from '../services/api'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
-
-// Exported so CommentSection can pass it to Comment as-is
-export type CommentMutations = ReturnType<typeof useComments>
+export interface CommentData {
+  id: number
+  content_type: string
+  content_id: number
+  parent_id: number | null
+  body: string
+  is_deleted: boolean
+  created_at: string
+  updated_at: string
+  user: { id: number; username: string; avatar_url: string | null; role: string } | null
+  replies?: CommentData[]
+}
 
 export function useComments(contentType: string, contentId: number) {
   const { authFetch } = useAuth()

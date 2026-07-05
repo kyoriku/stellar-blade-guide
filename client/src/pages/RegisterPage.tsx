@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { errorMessage } from '../services/api'
+import { API_BASE_URL, errorMessage } from '../services/api'
 import SEO from '../components/SEO'
 
 export default function RegisterPage() {
@@ -54,7 +54,7 @@ export default function RegisterPage() {
           {/* OAuth buttons */}
           <div className="space-y-3 mb-6">
             <a
-              href={`${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/google`}
+              href={`${API_BASE_URL}/auth/google`}
               className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-lg border border-gray-700 bg-primary hover:bg-gray-800/60 hover:border-gray-600 transition-all duration-200 text-gray-300 hover:text-white text-sm font-medium"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -67,7 +67,7 @@ export default function RegisterPage() {
             </a>
 
             <a
-              href={`${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/discord`}
+              href={`${API_BASE_URL}/auth/discord`}
               className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-lg border border-gray-700 bg-primary hover:bg-gray-800/60 hover:border-gray-600 transition-all duration-200 text-gray-300 hover:text-white text-sm font-medium"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#5865F2">

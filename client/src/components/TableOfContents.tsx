@@ -1,18 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { List, ChevronRight, ChevronDown } from 'lucide-react'
-
-interface SubLink {
-  href: string;
-  title: string;
-  id?: number;
-}
-
-interface TocLink {
-  mainLink: string;
-  title: string;
-  subLinks?: SubLink[];
-}
+import { scrollToSection, type TocLink } from '../utils/toc'
 
 interface TableOfContentsProps {
   links: TocLink[];
@@ -25,22 +14,6 @@ interface TableOfContentsProps {
 
 function TableOfContents({ links, currentLevel, showSubLinkCount = false, activeSection, collapsible = false, onNavigate }: TableOfContentsProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  const scrollToSection = (href: string) => {
-    const element = document.getElementById(href.substring(1));
-    if (element) {
-      const offset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'instant'
-      });
-
-      history.replaceState(null, '', href);
-    }
-  };
 
   const handleSubLinkClick = (href: string) => {
     if (collapsible) setIsOpen(false);

@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
-import { readError, errorMessage } from '../services/api'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+import { API_BASE_URL, readError, errorMessage } from '../services/api'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
