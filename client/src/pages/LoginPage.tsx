@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { errorMessage } from '../services/api'
+import { API_BASE_URL, errorMessage } from '../services/api'
 import SEO from '../components/SEO'
 
 export default function LoginPage() {
@@ -35,7 +35,7 @@ export default function LoginPage() {
 
   const handleOAuthLogin = (provider: 'google' | 'discord') => {
     localStorage.setItem('oauth_redirect', from)
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL || '/api'}/auth/${provider}`
+    window.location.href = `${API_BASE_URL}/auth/${provider}`
   }
 
   return (

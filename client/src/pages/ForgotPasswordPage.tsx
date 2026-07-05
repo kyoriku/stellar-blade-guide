@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
-import { errorMessage } from '../services/api'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+import { API_BASE_URL, errorMessage } from '../services/api'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')

@@ -2,10 +2,9 @@ import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
-import { readError, errorMessage } from '../services/api'
+import { API_BASE_URL, readError, errorMessage } from '../services/api'
 
 const STORAGE_KEY = 'sb_progress'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 function getLocalProgress(): Set<number> {
   try {
