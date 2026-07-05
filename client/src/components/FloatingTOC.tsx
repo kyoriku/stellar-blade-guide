@@ -1,18 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { List, ChevronRight, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
-
-interface SubLink {
-  href: string
-  title: string
-  id?: number
-}
-
-interface TocLink {
-  mainLink: string
-  title: string
-  subLinks?: SubLink[]
-}
+import { scrollToSection, type TocLink } from '../utils/toc'
 
 interface FloatingTOCProps {
   links: TocLink[]
@@ -62,16 +51,6 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
   useEffect(() => {
     return () => { if (isOpen) unlockScroll() }
   }, [isOpen])
-
-  const scrollToSection = (href: string) => {
-    const element = document.getElementById(href.substring(1));
-    if (element) {
-      const offset = 80
-      const top = element.getBoundingClientRect().top + window.pageYOffset - offset
-      window.scrollTo({ top, behavior: 'instant' })
-      history.replaceState(null, '', href)
-    }
-  }
 
   const handleLinkClick = (href: string) => {
     onNavigate?.(href)
