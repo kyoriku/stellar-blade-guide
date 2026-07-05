@@ -23,7 +23,7 @@ import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 
-function LevelPage() {
+function LevelDetailPage() {
   const { levelName } = useParams<{ levelName: string }>();
   const location = useLocation();
 
@@ -447,4 +447,4 @@ if (isLoading) {
   );
 }
 
-export default LevelPage;
+export default LevelDetailPage;

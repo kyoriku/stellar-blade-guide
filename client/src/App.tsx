@@ -13,8 +13,8 @@ import CosmeticsIndexPage from './pages/CosmeticsIndexPage'
 // Detail pages
 import WalkthroughsListPage from './pages/WalkthroughsListPage'
 import WalkthroughDetailPage from './pages/WalkthroughDetailPage'
-import LevelPage from './pages/LevelsPage'
-import CollectibleTypePage from './pages/CollectiblesPage'
+import LevelDetailPage from './pages/LevelDetailPage'
+import CollectibleTypeDetailPage from './pages/CollectibleTypeDetailPage'
 
 // Legal pages
 import Disclaimer from './pages/Disclaimer'
@@ -50,17 +50,17 @@ function App() {
 
           {/* Levels */}
           <Route path="levels" element={<LevelsIndexPage />} />
-          <Route path="levels/:levelName" element={<LevelPage />} />
+          <Route path="levels/:levelName" element={<LevelDetailPage />} />
 
           {/* Collectibles */}
           <Route path="collectibles" element={<CollectiblesIndexPage />} />
-          <Route path="collectibles/:typeName" element={<CollectibleTypePage />} />
+          <Route path="collectibles/:typeName" element={<CollectibleTypeDetailPage />} />
           <Route path="upgrades" element={<UpgradesIndexPage />} />
-          <Route path="upgrades/:typeName" element={<CollectibleTypePage />} />
+          <Route path="upgrades/:typeName" element={<CollectibleTypeDetailPage />} />
           <Route path="materials" element={<MaterialsIndexPage />} />
-          <Route path="materials/:typeName" element={<CollectibleTypePage />} />
+          <Route path="materials/:typeName" element={<CollectibleTypeDetailPage />} />
           <Route path="cosmetics" element={<CosmeticsIndexPage />} />
-          <Route path="cosmetics/:typeName" element={<CollectibleTypePage />} />
+          <Route path="cosmetics/:typeName" element={<CollectibleTypeDetailPage />} />
 
           {/* Auth Pages */}
           <Route path="/login" element={<LoginPage />} />
