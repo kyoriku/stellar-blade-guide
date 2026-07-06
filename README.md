@@ -1,6 +1,6 @@
 # Stellar Blade Guide
 
-An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, side quests, bulletin board requests, and more) and 1000+ collectibles. Full-stack web application managing 1500+ images via Cloudinary CDN.
+An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, side quests, bulletin board requests, and more) and 1000+ collectibles. Full-stack web application managing 2000+ images via Cloudinary CDN.
 
 **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
@@ -31,6 +31,7 @@ An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, 
 
 ## Table of Contents
 - [Technical Details](#technical-details)
+- [Repository Layout](#repository-layout)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [License](#license--legal)
@@ -68,10 +69,12 @@ An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, 
 - Indexed queries for performance
 
 **Performance & Caching**
+- Server-measured p50 API response time of 16ms (p95: 59ms) across a 24-hour production sample of 1,000+ requests; cached content reads at p50 10ms with a >99% Redis hit rate
 - Multi-tier caching: Redis (server-side, 30-day TTL) + ETag/304 responses + TanStack Query (client-side)
+- Redis outages degrade gracefully: cached reads fail open to PostgreSQL, rate limiting falls back to in-memory counters, and auth endpoints fail closed with a 503 + Retry-After
 - Cache-Control exclusions for mutable per-user data (progress tracking)
 - Cloudinary CDN for image delivery and optimisation
-- 60–70ms average API response times
+- Every API response carries an X-Process-Time timing header
 
 **Auth & User System**
 - Email/password registration and login
@@ -91,6 +94,19 @@ An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, 
 - PostgreSQL `pg_trgm` trigram similarity + `tsvector` FTS; scores merged and ranked
 - Rate-limited to 30 req/min; results cached in Redis for 1 hour
 
+## Repository Layout
+
+```
+client/            React SPA (see client/README.md)
+server/            FastAPI backend (see server/README.md)
+server/seed-data/  JSON source data for all guide content (untracked; conventions documented in server/README.md)
+.devcontainer/     Docker Compose dev environment (app container + PostgreSQL + Redis)
+Dockerfile         multi-stage production build (Node builds the SPA, Python serves it)
+package.json       root scripts that orchestrate client + server
+```
+
+Each app documents its own structure, commands, and internals: [client/README.md](client/README.md) and [server/README.md](server/README.md).
+
 ## Screenshots
 <details>
 <summary><b>View More Screenshots</b></summary>
@@ -108,9 +124,9 @@ An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, 
 Requires [VS Code](https://code.visualstudio.com/), the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension, and [Docker](https://www.docker.com/products/docker-desktop/).
 
 1. Clone the repository and open the folder in VS Code
-2. Click **Reopen in Container** when prompted — or press `F1` → *Dev Containers: Reopen in Container*
+2. Click **Reopen in Container** when prompted, or press `F1` → *Dev Containers: Reopen in Container*
 3. Dependencies install automatically (`uv sync` + `npm install`)
-4. Create `server/.env` — see **Environment Variables** below
+4. Create `server/.env` (see **Environment Variables** below)
 5. Start both servers:
 
 ```bash
@@ -119,37 +135,11 @@ npm run dev
 
 Frontend: http://localhost:3000 · API: http://localhost:8000
 
-PostgreSQL and Redis are provided by the container — no local installs needed.
+PostgreSQL and Redis are provided by the container; no local installs needed.
 
 ### Environment Variables
 
-Create `server/.env`:
-
-```bash
-ENVIRONMENT=development
-DATABASE_URL=postgresql+asyncpg://localhost:5432/stellarblade
-REDIS_URL=redis://localhost:6379
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-CACHE_TTL=300
-
-JWT_SECRET_KEY=your_jwt_secret  # openssl rand -hex 32
-ADMIN_SECRET=your_admin_secret  # openssl rand -hex 32
-FRONTEND_URL=http://localhost:3000
-
-OPENAI_API_KEY=your_openai_api_key
-RESEND_API_KEY=your_resend_api_key
-
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-DISCORD_CLIENT_ID=your_discord_client_id
-DISCORD_CLIENT_SECRET=your_discord_client_secret
-
-LOG_LEVEL=INFO
-DEBUG=True
-```
+Create `server/.env` before starting the servers. The full variable table (every variable with its purpose) lives in [server/README.md](server/README.md#environment-variables).
 
 <details>
 <summary>Manual setup (without Dev Container)</summary>
