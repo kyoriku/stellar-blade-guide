@@ -1,0 +1,5 @@
+# Gitignored screenshot sources — never served; deploys build from git
+# where these don't exist, this keeps local docker builds from ingesting them.
+client/public/assets/images
+# Keep Finder junk out of the build context (and therefore out of dist/).
+**/.DS_Store
