@@ -17,6 +17,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { ogImageUrl } from '../utils/cloudinary'
 import { useProgress } from '../hooks/useProgress'
+import { useActiveSection } from '../hooks/useActiveSection'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -56,7 +57,7 @@ const SUBTYPE_ORDER = [
   'Log Data', 'Journal', 'Messages', 'Announcements', 'Series', 'Books', 'Information', 'Promotions', 'Prayers', 
 ] as const;
 
-function CollectibleTypePage() {
+function CollectibleTypeDetailPage() {
   const { typeName } = useParams<{ typeName: string }>();
   const location = useLocation();
 
@@ -88,22 +89,11 @@ function CollectibleTypePage() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [activeSection, setActiveSection] = useState<string>('');
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const [subtypeFilter, setSubtypeFilter] = useState<string>('All');
   const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
   const { prefetchCollectiblesByType } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
-  const resetActiveSection = () => setActiveSection('');
-
-  const prevTypeName = useRef(typeName);
-  if (typeName !== prevTypeName.current) {
-    prevTypeName.current = typeName;
-    setActiveSection('');
-    setCycleFilter('All');
-    setSubtypeFilter('All');
-    setSortMode('default');
-  }
 
   // Find current and next type - use the appropriate array based on category
   const typeArray = category === 'upgrades' ? upgradeTypes
@@ -239,6 +229,25 @@ function CollectibleTypePage() {
     }];
   }, [filteredBySubtype, sortMode]);
 
+  // In A-Z mode the flat article cards drive the highlight as well as the
+  // section wrappers; selector order preserves the original observe order.
+  const [activeSection, setActiveSection] = useActiveSection(
+    sortMode === 'alphabetical' ? ['section[id]', 'article[id]'] : ['section[id]'],
+    [sortedLevelData, sortMode]
+  );
+  const resetActiveSection = () => setActiveSection('');
+
+  // Render-phase reset on type change; must sit below the useActiveSection
+  // call because it invokes setActiveSection during render.
+  const prevTypeName = useRef(typeName);
+  if (typeName !== prevTypeName.current) {
+    prevTypeName.current = typeName;
+    setActiveSection('');
+    setCycleFilter('All');
+    setSubtypeFilter('All');
+    setSortMode('default');
+  }
+
   // Scroll to hash on load once data is ready
   useLayoutEffect(() => {
     if (levelData.length > 0 && location.hash) {
@@ -267,35 +276,6 @@ function CollectibleTypePage() {
       setAllImages(images);
     }
   }, [sortedLevelData]);
-
-  // Scroll spy effect
-  useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '-80px 0px -80% 0px',
-      threshold: 0
-    };
-
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    const sections = document.querySelectorAll('section[id]');
-    sections.forEach((section) => observer.observe(section));
-
-    if (sortMode === 'alphabetical') {
-      const articles = document.querySelectorAll('article[id]');
-      articles.forEach((article) => observer.observe(article));
-    }
-
-    return () => observer.disconnect();
-  }, [sortedLevelData, sortMode]);
 
   const handleImageClick = useCallback((imageUrl: string) => {
     const index = allImages.findIndex(img => img.src === imageUrl);
@@ -430,7 +410,7 @@ function CollectibleTypePage() {
       // Clicked a sublink — set directly
       setActiveSection(targetId);
     }
-  }, [sortedLevelData, sortMode]);
+  }, [sortedLevelData, sortMode, setActiveSection]);
 
   // Check for invalid type FIRST (before loading state)
   if (!isValidType) {
@@ -758,4 +738,4 @@ function CollectibleTypePage() {
   );
 }
 
-export default CollectibleTypePage;
+export default CollectibleTypeDetailPage;
