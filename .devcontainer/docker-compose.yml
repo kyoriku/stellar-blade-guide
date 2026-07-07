@@ -53,7 +53,6 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/stellarblade
       REDIS_URL: redis://redis:6379
-      CORS_ORIGINS: http://localhost:3000
       DEBUG: "true"
 
     depends_on:

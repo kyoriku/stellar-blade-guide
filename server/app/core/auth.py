@@ -12,6 +12,7 @@ from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.config.settings import settings
 from app.db.database import get_db
 from app.core.cache import redis_client
 
@@ -21,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
 ALGORITHM: str = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
-REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
+ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_DAYS: int = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
 if not SECRET_KEY:
     raise RuntimeError("JWT_SECRET_KEY environment variable is not set")
