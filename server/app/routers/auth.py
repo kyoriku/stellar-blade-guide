@@ -2,7 +2,6 @@
 Authentication routes - register, login, refresh, logout, OAuth.
 """
 
-import os
 import logging
 
 import httpx
@@ -11,6 +10,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.config.settings import settings
 from app.db.database import get_db
 from app.models.users import User, OAuthAccount
 from app.core.auth import (
@@ -266,15 +266,15 @@ async def reset_password(
 
 # OAuth
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "https://api.stellarbladeguide.com/api/auth/google/callback")
+GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI = settings.GOOGLE_REDIRECT_URI
 
-DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
-DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
-DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "https://api.stellarbladeguide.com/api/auth/discord/callback")
+DISCORD_CLIENT_ID = settings.DISCORD_CLIENT_ID
+DISCORD_CLIENT_SECRET = settings.DISCORD_CLIENT_SECRET
+DISCORD_REDIRECT_URI = settings.DISCORD_REDIRECT_URI
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://stellarbladeguide.com")
+FRONTEND_URL = settings.FRONTEND_URL
 
 
 async def _get_or_create_oauth_user(
@@ -338,7 +338,7 @@ async def _get_or_create_oauth_user(
 @limiter.limit("20/minute")
 async def google_login(request: Request):
     """Redirect user to Google's OAuth consent screen."""
-    if not GOOGLE_CLIENT_ID:
+    if not GOOGLE_CLIENT_ID or not GOOGLE_REDIRECT_URI:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
     params = (
         f"client_id={GOOGLE_CLIENT_ID}"
@@ -361,7 +361,7 @@ async def google_callback(
     if not code:
         raise HTTPException(status_code=400, detail="Bad request")
     
-    if not GOOGLE_CLIENT_ID:
+    if not GOOGLE_CLIENT_ID or not GOOGLE_REDIRECT_URI:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
 
     async with httpx.AsyncClient() as client:
@@ -415,7 +415,7 @@ async def google_callback(
 @limiter.limit("20/minute")
 async def discord_login(request: Request):
     """Redirect user to Discord's OAuth consent screen."""
-    if not DISCORD_CLIENT_ID:
+    if not DISCORD_CLIENT_ID or not DISCORD_REDIRECT_URI:
         raise HTTPException(status_code=501, detail="Discord OAuth not configured")
     params = (
         f"client_id={DISCORD_CLIENT_ID}"
@@ -437,7 +437,7 @@ async def discord_callback(
     if not code:
         raise HTTPException(status_code=400, detail="Bad request")
 
-    if not DISCORD_CLIENT_ID:
+    if not DISCORD_CLIENT_ID or not DISCORD_REDIRECT_URI:
         raise HTTPException(status_code=501, detail="Discord OAuth not configured")
 
     async with httpx.AsyncClient() as client:
