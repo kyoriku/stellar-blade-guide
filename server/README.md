@@ -85,6 +85,40 @@ Configuration is read from `server/.env` (gitignored). Secrets should be generat
 
 `ORIGIN_SECRET` and `ADMIN_SECRET` are read directly from the environment rather than through `settings.py`.
 
+Starter template for `server/.env` (the table above explains each value):
+
+```bash
+ENVIRONMENT=development
+DEBUG=True
+LOG_LEVEL=INFO
+
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/stellarblade
+REDIS_URL=redis://localhost:6379
+CACHE_TTL=2592000                # 30-day default; dev setups often use a shorter value
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+JWT_SECRET_KEY=                  # openssl rand -hex 32
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+REFRESH_TOKEN_EXPIRE_DAYS=7
+FRONTEND_URL=http://localhost:3000
+ORIGIN_SECRET=                   # openssl rand -hex 32
+ADMIN_SECRET=                    # openssl rand -hex 32
+
+OPENAI_API_KEY=your_openai_api_key
+RESEND_API_KEY=your_resend_api_key
+
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
+DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+DISCORD_REDIRECT_URI=http://localhost:8000/api/auth/discord/callback
+```
+
 ## API
 
 All routes are mounted under `/api` and rate limited per route.
