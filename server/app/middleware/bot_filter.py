@@ -5,11 +5,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from app.config.settings import settings
 from app.core.colours import RED, RESET
-from app.core.security import get_client_ip
 
 logger = logging.getLogger("api")
-
-LOCALHOST_IPS = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
 
 REFERER_ALLOWED_HOSTS = {
     "stellarbladeguide.com",
@@ -114,10 +111,6 @@ BOT_SIGNATURES = (
 )
 
 
-def is_localhost(ip: str) -> bool:
-    return settings.DEBUG and ip in LOCALHOST_IPS
-
-
 # Paths that look like normal URL segments (letters, digits, hyphens, slashes — no empty segments).
 # Each '/' is a mandatory delimiter between segments so a slash-free run has exactly one
 # decomposition — this keeps matching LINEAR. Do NOT rewrite as `(?:[a-z0-9\-]+/?)*`: that
@@ -131,8 +124,8 @@ async def bot_filter_middleware(request: Request, call_next):
     original_path = request.url.path
     normalized = original_path.lower().rstrip('/') or '/'
 
-    # Skip in dev
-    if is_localhost(get_client_ip(request)):
+    # Skip in local dev (same pattern as origin_check)
+    if settings.DEBUG:
         return await call_next(request)
 
     # Block /api/* requests with a Referer from an unrecognised domain
