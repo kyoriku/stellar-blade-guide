@@ -106,7 +106,7 @@ def _make_app() -> FastAPI:
 
 @pytest_asyncio.fixture
 async def bot_client(monkeypatch):
-    # is_localhost() short-circuits the filter when DEBUG is True; force prod behaviour.
+    # The filter is skipped entirely when DEBUG is True; force prod behaviour.
     monkeypatch.setattr(settings, "DEBUG", False)
     async with AsyncClient(transport=ASGITransport(app=_make_app()), base_url="http://test") as c:
         yield c

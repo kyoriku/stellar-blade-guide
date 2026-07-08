@@ -1,5 +1,3 @@
-import os
-
 import resend
 from fastapi import Response
 from passlib.context import CryptContext
@@ -84,7 +82,7 @@ RESET_TOKEN_TTL = 60 * 60  # 1 hour
 
 async def _send_reset_email(email: str, token: str) -> None:
     """Send password reset email via Resend."""
-    frontend_url = os.getenv("FRONTEND_URL", "https://stellarbladeguide.com")
+    frontend_url = settings.FRONTEND_URL
     reset_url = f"{frontend_url}/reset-password?token={token}"
 
     resend.api_key = settings.RESEND_API_KEY
