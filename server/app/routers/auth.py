@@ -19,6 +19,7 @@ from app.core.auth import (
     store_refresh_token,
     validate_refresh_token,
     revoke_refresh_token,
+    demote_refresh_token,
     revoke_all_refresh_tokens,
     get_current_user,
 )
@@ -108,6 +109,9 @@ async def refresh(
 ):
     token = request.cookies.get(COOKIE_NAME)
     if not token:
+        # auth_fail_reason is picked up by the logging middleware so 401s here
+        # are diagnosable from the access log (missing cookie vs dead session).
+        request.state.auth_fail_reason = "no-cookie"
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token")
 
     # We need user_id — encode it in the cookie value as "user_id:token"
@@ -115,18 +119,23 @@ async def refresh(
         user_id_str, refresh_token = token.split(":", 1)
         user_id = int(user_id_str)
     except (ValueError, AttributeError):
+        request.state.auth_fail_reason = "malformed-cookie"
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Your session is invalid. Please sign in again.")
 
     if not await validate_refresh_token(user_id, refresh_token):
+        request.state.auth_fail_reason = "revoked-or-expired"
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalid or expired")
 
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
     user = result.scalar_one_or_none()
     if not user:
+        request.state.auth_fail_reason = "user-not-found"
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    # Rotate: revoke old, issue new
-    await revoke_refresh_token(user_id, refresh_token)
+    # Rotate with a grace window: demote the old token instead of revoking it,
+    # so a client that never received this response can retry (logout and
+    # password changes still hard-revoke).
+    await demote_refresh_token(user_id, refresh_token)
     return await _issue_tokens(user, response)
 
 

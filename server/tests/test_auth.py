@@ -238,6 +238,59 @@ async def test_refresh_revoked_token_returns_401(auth_client, test_user):
     assert r.json()["detail"] == "Refresh token invalid or expired"
 
 
+async def test_refresh_rotation_demotes_old_token_with_grace_ttl(auth_client, test_user, fake_redis):
+    r_login = await auth_client.post("/api/auth/login", json={
+        "email": test_user.email,
+        "password": "password123",
+    })
+    old_value = r_login.cookies["refresh_token"]
+
+    r1 = await auth_client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+
+    # Rotation demotes rather than deletes: the old key survives with its TTL
+    # clamped to the grace window
+    user_id_str, raw_token = old_value.split(":", 1)
+    key = core_auth._refresh_key(int(user_id_str), raw_token)
+    ttl = await fake_redis.ttl(key)
+    assert 0 < ttl <= core_auth.ROTATION_GRACE_SECONDS
+
+    # A client that never received the rotation response (tab closed mid-refresh,
+    # network drop) retries with the old cookie and recovers. Clear the jar — it
+    # now holds the rotated cookie — and re-send the old value as a raw header
+    # (see the revoked-token test above for why the jar can't be used).
+    auth_client.cookies.clear()
+    r2 = await auth_client.post(
+        "/api/auth/refresh",
+        headers={"Cookie": f"refresh_token={old_value}"},
+    )
+    assert r2.status_code == 200
+    assert "access_token" in r2.json()
+
+
+async def test_refresh_after_grace_expiry_returns_401(auth_client, test_user, fake_redis):
+    r_login = await auth_client.post("/api/auth/login", json={
+        "email": test_user.email,
+        "password": "password123",
+    })
+    old_value = r_login.cookies["refresh_token"]
+
+    r1 = await auth_client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+
+    # Fast-forward past the grace window: the demoted key has expired
+    user_id_str, raw_token = old_value.split(":", 1)
+    await fake_redis.delete(core_auth._refresh_key(int(user_id_str), raw_token))
+
+    auth_client.cookies.clear()
+    r2 = await auth_client.post(
+        "/api/auth/refresh",
+        headers={"Cookie": f"refresh_token={old_value}"},
+    )
+    assert r2.status_code == 401
+    assert r2.json()["detail"] == "Refresh token invalid or expired"
+
+
 # ── Logout ────────────────────────────────────────────────────────────────────
 
 async def test_logout_returns_204(auth_client, test_user):

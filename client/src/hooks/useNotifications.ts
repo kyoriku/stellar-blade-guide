@@ -28,7 +28,7 @@ export const NOTIFICATIONS_KEY = ['notifications'] as const
  * so rapid focus/navigation within the window collapses to a single request.
  */
 export function useNotifications() {
-  const { isAuthenticated, authFetch } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, authFetch } = useAuth()
   const queryClient = useQueryClient()
 
   const query = useQuery<NotificationList>({
@@ -38,7 +38,10 @@ export function useNotifications() {
       if (!res.ok) throw new Error('Failed to load notifications')
       return res.json() as Promise<NotificationList>
     },
-    enabled: isAuthenticated,
+    // Wait for the mount refresh like useProgress does — isAuthenticated alone
+    // is true from the cached display user, so firing earlier sends a tokenless
+    // request that 401s whenever the session turns out to be dead.
+    enabled: isAuthenticated && !authLoading,
     refetchOnWindowFocus: true, // override the global `false` for this query only
     staleTime: 30 * 1000,       // dedupe the stacked mount/focus/nav triggers
   })

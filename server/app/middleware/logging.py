@@ -102,6 +102,11 @@ async def log_requests_middleware(request: Request, call_next):
     # Only show UA for auth endpoints or non-2xx responses — appended after path
     if request.url.path.startswith("/api/auth") or response.status_code >= 400:
         log_line += f' | {GRAY}UA: {parse_ua(user_agent)}{RESET}'
+        # Set by auth routes on 401 (e.g. no-cookie vs revoked-or-expired) so
+        # dead-session incidents are diagnosable from the access log alone.
+        fail_reason = getattr(request.state, "auth_fail_reason", None)
+        if fail_reason:
+            log_line += f' {GRAY}({fail_reason}){RESET}'
 
     if response.status_code >= 500:
         logger.error(log_line)
