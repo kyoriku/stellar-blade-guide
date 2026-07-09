@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Index, text
 from sqlalchemy.sql import func
 
 from app.db.database import Base
@@ -18,7 +18,7 @@ class Notification(Base):
     comment_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True)
     content_type = Column(String(50), nullable=False)  # walkthrough, collectible, level
     content_id = Column(Integer, nullable=False)
-    is_read = Column(Boolean, nullable=False, default=False)
+    is_read = Column(Boolean, nullable=False, default=False, server_default=text("false"))
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (

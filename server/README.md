@@ -50,7 +50,7 @@ uv sync                                    # install dependencies
 uv run uvicorn app.main:app --reload       # dev server on :8000
 ```
 
-`DATABASE_URL` must point at a PostgreSQL instance and `REDIS_URL` at a Redis instance; the dev container provides and wires both automatically. Interactive API docs at `http://localhost:8000/docs` are available only when `DEBUG=True` (disabled in production). Search additionally needs the `pg_trgm` extension and FTS indexes created by `scripts/migrations/add_search_indexes.py`.
+`DATABASE_URL` must point at a PostgreSQL instance and `REDIS_URL` at a Redis instance; the dev container provides and wires both automatically. Interactive API docs at `http://localhost:8000/docs` are available only when `DEBUG=True` (disabled in production). The `pg_trgm` extension and FTS indexes that search needs are created by `scripts/db/seed_db.py` (also available standalone as `scripts/migrations/add_search_indexes.py`).
 
 ## Environment Variables
 
