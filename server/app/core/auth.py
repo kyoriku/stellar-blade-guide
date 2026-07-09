@@ -79,6 +79,19 @@ async def revoke_refresh_token(user_id: int, token: str) -> None:
     await redis_client.delete(key)
 
 
+# On rotation the old token is demoted, not deleted: if the rotation response
+# never reaches the client (tab closed mid-refresh, network drop), the browser
+# is left holding the old cookie — the grace window lets its retry succeed
+# instead of permanently bricking the session.
+ROTATION_GRACE_SECONDS = 60
+
+
+async def demote_refresh_token(user_id: int, token: str) -> None:
+    """Clamp a rotated-out token's TTL to the grace window."""
+    key = _refresh_key(user_id, token)
+    await redis_client.expire(key, ROTATION_GRACE_SECONDS)
+
+
 async def revoke_all_refresh_tokens(user_id: int) -> None:
     """Delete all refresh tokens for a user (e.g. password change)."""
     pattern = f"refresh:{user_id}:*"
