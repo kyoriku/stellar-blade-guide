@@ -80,10 +80,9 @@ Configuration is read from `server/.env` (gitignored). Secrets should be generat
 | `DISCORD_CLIENT_SECRET` | Discord OAuth client secret |
 | `DISCORD_REDIRECT_URI` | Discord OAuth callback URL |
 | `ORIGIN_SECRET` | shared secret required on API requests in production (origin check middleware) |
-| `ADMIN_SECRET` | shared secret protecting private operational endpoints |
 | `LOG_LEVEL` | logging level (default `INFO`) |
 
-`ORIGIN_SECRET` and `ADMIN_SECRET` are read directly from the environment rather than through `settings.py`.
+`ORIGIN_SECRET` is read directly from the environment rather than through `settings.py`.
 
 Starter template for `server/.env` (the table above explains each value):
 
@@ -102,7 +101,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES=15
 REFRESH_TOKEN_EXPIRE_DAYS=7
 FRONTEND_URL=http://localhost:3000
 ORIGIN_SECRET=                   # openssl rand -hex 32
-ADMIN_SECRET=                    # openssl rand -hex 32
 
 OPENAI_API_KEY=your_openai_api_key
 RESEND_API_KEY=your_resend_api_key
