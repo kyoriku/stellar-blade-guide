@@ -105,7 +105,7 @@ export function SearchResults({
   return (
     <div className="py-1">
       {data.results.map((result, i) => {
-        const Icon = KIND_ICONS[result.kind as keyof typeof KIND_ICONS]
+        const Icon = KIND_ICONS[result.kind]
         const isActive = i === activeIndex
         return (
           <Link
