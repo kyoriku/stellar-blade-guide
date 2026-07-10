@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 import asyncio
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Add project root
@@ -14,13 +14,40 @@ from app.models.collectibles import Level, Location, CollectibleType
 from app.models.walkthroughs import Walkthrough
 from app.models.users import User, OAuthAccount
 from app.models.comments import Comment
-from app.models.progress import UserProgress   
+from app.models.progress import UserProgress
+
+# Search infrastructure create_all cannot express: the pg_trgm extension and the
+# GIN indexes app/services/search.py queries at runtime. Definitions match what
+# production has (verified byte-identical in the 2026-07-09 schema audit).
+SEARCH_INDEX_DDL = [
+    "CREATE EXTENSION IF NOT EXISTS pg_trgm",
+    "CREATE INDEX IF NOT EXISTS ix_collectibles_fts "
+    "ON collectibles USING GIN (to_tsvector('english', title))",
+    "CREATE INDEX IF NOT EXISTS ix_walkthroughs_fts "
+    "ON walkthroughs USING GIN ("
+    "  to_tsvector('english', title || ' ' || COALESCE(subtitle, '')))",
+    "CREATE INDEX IF NOT EXISTS ix_levels_fts "
+    "ON levels USING GIN (to_tsvector('english', name))",
+    "CREATE INDEX IF NOT EXISTS ix_collectibles_trgm "
+    "ON collectibles USING GIN (title gin_trgm_ops)",
+    "CREATE INDEX IF NOT EXISTS ix_walkthroughs_trgm "
+    "ON walkthroughs USING GIN (title gin_trgm_ops)",
+    "CREATE INDEX IF NOT EXISTS ix_levels_trgm "
+    "ON levels USING GIN (name gin_trgm_ops)",
+]
 
 async def seed_database():
     # 1 Create tables (sync inside async context)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     print("\033[92mTables created/verified\033[0m")
+
+    # 1b Search extension + indexes (before the already-seeded early return so
+    # re-runs heal missing search infra too)
+    async with engine.begin() as conn:
+        for ddl in SEARCH_INDEX_DDL:
+            await conn.execute(text(ddl))
+    print("\033[92mSearch extension + indexes ready\033[0m")
 
     # 2 Use a single session for the seeding process
     async with AsyncSession(engine) as session:
