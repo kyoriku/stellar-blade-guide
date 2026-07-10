@@ -18,7 +18,7 @@ from app.middleware.security_headers import add_security_headers_middleware, add
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.origin_check import add_origin_check_middleware
-from app.routers import levels, collectibles, types, walkthroughs, admin, auth, users, comments, health, progress, search, notifications
+from app.routers import levels, collectibles, types, walkthroughs, auth, users, comments, health, progress, search, notifications
 setup_logging()
 
 cloudinary.config(
@@ -82,7 +82,6 @@ app.include_router(collectibles.cosmetics_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.materials_router, prefix=settings.API_PREFIX)
 app.include_router(types.router, prefix=settings.API_PREFIX)
 app.include_router(walkthroughs.router, prefix=settings.API_PREFIX)
-app.include_router(admin.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)
 app.include_router(comments.router, prefix=settings.API_PREFIX)
