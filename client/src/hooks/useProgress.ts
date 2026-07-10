@@ -4,6 +4,7 @@ import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
 
+// Also hardcoded in AuthContext's merge-on-login effect — keep in sync.
 const STORAGE_KEY = 'sb_progress'
 
 function getLocalProgress(): Set<number> {

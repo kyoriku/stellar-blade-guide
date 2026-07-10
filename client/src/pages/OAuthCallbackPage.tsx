@@ -6,7 +6,9 @@ import SEO from '../components/SEO';
 /**
  * Landing page for OAuth callbacks.
  * The backend redirects here with ?token=<access_token> after Google/Discord auth.
- * We read the token, store it in AuthContext, clean the URL, then redirect back
+ * The ?token param is only a success signal and is never stored: the real access
+ * token comes from POST /api/auth/refresh using the HttpOnly cookie — storing the
+ * URL token would fork AuthContext's single source of truth. Then redirect back
  * to where the user came from (stored in localStorage before the OAuth redirect).
  */
 export default function OAuthCallbackPage() {

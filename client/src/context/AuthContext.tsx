@@ -134,7 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshToken().finally(() => setIsLoading(false))
   }, [refreshToken])
 
-  // Proactive token refresh — refresh 1 minute before the 15 min expiry
+  // Proactive token refresh — refresh 1 minute before the 15 min expiry (the
+  // server's ACCESS_TOKEN_EXPIRE_MINUTES; keep this interval below that TTL)
   useEffect(() => {
     if (!accessToken) return
     const interval = setInterval(() => {
@@ -167,6 +168,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && user && !prevAuthRef.current) {
+      // 'sb_progress' must match STORAGE_KEY in hooks/useProgress.ts — drift
+      // means guest progress silently never merges (or never clears) on login.
       const local = localStorage.getItem('sb_progress')
       if (local) {
         try {

@@ -52,6 +52,10 @@ def add_security_headers_middleware(app: FastAPI):
                 # 6 hours
                 response.headers["Cache-Control"] = "public, max-age=21600"
             elif request.url.path.startswith("/api/"):
+                # Hand-maintained security allowlist: any per-user/authenticated
+                # /api route MUST be added here, or its responses get s-maxage CDN
+                # caching and are served to other users. /api/users/{id} stays
+                # public only because the router strips email.
                 if request.url.path.startswith(("/api/progress", "/api/auth", "/api/comments", "/api/health", "/api/notifications", "/api/users/me")):
                     response.headers["Cache-Control"] = "no-store"
                 else:

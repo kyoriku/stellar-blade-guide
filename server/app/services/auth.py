@@ -29,6 +29,10 @@ def verify_password(plain: str, hashed: str) -> bool:
 COOKIE_NAME = "refresh_token"
 
 
+# set_refresh_cookie and clear_refresh_cookie must use byte-identical
+# domain+path: browsers key cookies on name+domain+path, so any mismatch turns
+# delete_cookie into a silent no-op (logout leaves a live refresh cookie).
+# path="/api/auth" also pins the auth router's mount prefix.
 def set_refresh_cookie(response: Response, token: str) -> None:
     is_prod = settings.ENVIRONMENT == "production"
     response.set_cookie(

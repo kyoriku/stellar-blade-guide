@@ -53,6 +53,8 @@ type LevelItem = {
 // Array of levels
 type LevelData = LevelItem[];
 
+// Display order AND allowlist: a subtype missing here (or spelled differently
+// than the DB value) silently never appears as a filter option.
 const SUBTYPE_ORDER = [
   'Log Data', 'Journal', 'Messages', 'Announcements', 'Series', 'Books', 'Information', 'Promotions', 'Prayers', 
 ] as const;

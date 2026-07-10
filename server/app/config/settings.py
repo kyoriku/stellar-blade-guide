@@ -44,6 +44,8 @@ class Settings:
 
     # Auth
     JWT_SECRET_KEY: str = os.getenv('JWT_SECRET_KEY', '')
+    # The client proactively refreshes every 14 min (AuthContext.tsx) — keep this
+    # above that cadence or sessions expire between refreshes.
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 15))
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
     FRONTEND_URL: str = os.getenv('FRONTEND_URL', 'https://stellarbladeguide.com')
