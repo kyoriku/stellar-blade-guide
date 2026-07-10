@@ -21,7 +21,7 @@ DOC_PATH = SERVER_DIR.parent / "docs" / "missing-images.md"
 SEED_DB_SOURCE = SERVER_DIR / "scripts" / "db" / "seed_db.py"
 
 CLOUDINARY = "res.cloudinary.com"
-STAGED_PREFIX = "/assets/"
+STAGED_PREFIX = "/assets/"  # logical-key namespace (matches seed JSON URLs), not a filesystem path
 CYCLE_ORDER = ["base", "ng+", "ng++", "dlc"]
 UNRANKED = 10**6
 WALKTHROUGH_CATEGORIES = [

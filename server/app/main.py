@@ -74,6 +74,9 @@ add_logging_middleware(app)          # outermost (runs first)
 
 # Routes
 app.include_router(health.router, prefix=settings.API_PREFIX)
+# levels.router before collectibles.levels_router: both mount /api/levels, and
+# routes match in registration order — the literal /{level_name}/locations must
+# win over the catch-all /{level_name}/{location_name}.
 app.include_router(levels.router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.levels_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.collectibles_router, prefix=settings.API_PREFIX)

@@ -51,6 +51,9 @@ def create_refresh_token() -> str:
 
 
 # Redis helpers
+# No try/except around Redis in these on purpose: token state must not fail
+# open. An outage raises and surfaces as error_handler's 503 — the opposite of
+# core/cache.py's degrade-to-Postgres.
 
 def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()

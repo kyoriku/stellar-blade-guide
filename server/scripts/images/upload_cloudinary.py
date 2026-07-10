@@ -124,7 +124,10 @@ def upload_images(dry_run=True, content_type='all'):
                 public_id = f"stellar-blade/{folder_path}/{filename}"
                 asset_folder = f"stellar-blade/{folder_path}"
             
-            # Old URL format (what's currently in database/JSON)
+            # Old URL format (what's currently in database/JSON).
+            # /assets/images/... is a logical key, not a filesystem path: the
+            # stable namespace stored in JSON/DB that this rewrite matches on.
+            # The physical screenshot root can move; this prefix cannot.
             old_url = f"/assets/images/{rel_path_clean.as_posix()}"
             
             # Check if already in mapping (from previous run)

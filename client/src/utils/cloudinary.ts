@@ -19,6 +19,8 @@ export const GRID_SIZES =
   '(max-width: 1535px) 454px, ' +
   '582px';
 
+// Only rewrites the canonical /upload/f_webp,q_auto/ form — anything else
+// passes through unchanged, silently collapsing buildSrcSet to one width.
 export function thumbnailUrl(url: string, width = 1200): string {
   return url.replace('/upload/f_webp,q_auto/', `/upload/f_webp,q_auto,w_${width}/`);
 }
@@ -31,6 +33,9 @@ export function buildSrcSet(url: string): string {
   return GALLERY_WIDTHS.map(w => `${thumbnailUrl(url, w)} ${w}w`).join(', ');
 }
 
+// Duplicates the px values in SINGLE_SIZES/GRID_SIZES — change those strings
+// and this ladder together, or predictRenderedWidth mispredicts and the
+// prefetch cache key misses.
 function getCssWidth(imageCount: number, viewportWidth: number): number {
   if (imageCount === 0) return GALLERY_WIDTHS[0];
   if (viewportWidth < 640) return Math.max(1, viewportWidth - 48);

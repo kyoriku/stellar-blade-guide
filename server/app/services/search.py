@@ -105,6 +105,9 @@ def _level_slug(name: str) -> str:
 
 
 def _slugify_title(title: str) -> str:
+    # Byte-for-byte mirror of slugifyTitle in client/src/utils/slugify.ts: anchors
+    # built here must match client DOM ids. The Greek range Ͱ-Ͽ is load-bearing
+    # for titles with Greek characters — not dead code.
     title = title.lower()
     title = re.sub(r"★+", lambda m: f" {len(m.group())} ", title)
     title = re.sub(r"'", "", title)

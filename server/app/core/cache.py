@@ -16,6 +16,9 @@ redis_client = redis.Redis.from_url(
     health_check_interval=30,
 )
 
+# Redis errors fail open by design: every handler below logs and returns a miss
+# so reads fall through to Postgres. Contrast core/auth.py, where Redis errors
+# deliberately raise — auth fails closed (503 via error_handler).
 async def get_cache(key: str) -> Optional[dict]:
     try:
         data = await redis_client.get(key)

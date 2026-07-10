@@ -18,6 +18,8 @@ class Notification(Base):
     comment_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True)
     content_type = Column(String(50), nullable=False)  # walkthrough, collectible, level
     content_id = Column(Integer, nullable=False)
+    # server_default byte-matches prod DDL (schema-parity gate); the Python-side
+    # default stays — they serve ORM inserts and raw SQL respectively.
     is_read = Column(Boolean, nullable=False, default=False, server_default=text("false"))
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

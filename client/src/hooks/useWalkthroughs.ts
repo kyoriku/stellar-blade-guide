@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../services/api'
 
+// Keep query keys in sync with usePrefetch — it warms these exact keys.
 export function useWalkthroughs() {
   return useQuery({
     queryKey: ['walkthroughs'],

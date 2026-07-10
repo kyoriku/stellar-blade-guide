@@ -82,6 +82,9 @@ export function prefetchImageUrls(urls: string[]) {
 export function usePrefetch() {
   const queryClient = useQueryClient()
 
+  // Query keys below must byte-match useCollectibles/useWalkthroughs — keys are
+  // the cache identity, so drift means prefetch warms dead entries and hover
+  // prefetching silently stops working.
   const prefetchLevel = async (levelName: string, anchor?: string) => {
     const queryKey = ['level-collectibles', levelName] as const;
     await queryClient.prefetchQuery({
