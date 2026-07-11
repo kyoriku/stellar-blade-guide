@@ -78,6 +78,7 @@ server/scripts/images/*
 !server/scripts/images/compress_images.py
 !server/scripts/images/fetch_cloudinary_assets.py
 !server/scripts/images/generate_variants.py
+!server/scripts/images/update_r2_urls.py
 !server/scripts/images/update_urls.py
 !server/scripts/images/upload_cloudinary.py
 !server/scripts/images/upload_r2.py

@@ -14,7 +14,7 @@ const LAST_UPDATED = 'June 7, 2026'
 // Official Shift Up reveal trailer (Summer Game Fest 2026)
 const TRAILER_URL = 'https://www.youtube.com/watch?v=zhdh_LspRHk'
 
-const HERO_IMAGE = 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1780723056/Stellar_Blade_Blood_Rain_xipufx.jpg'
+const HERO_IMAGE = 'https://img.stellarbladeguide.com/stellar-blade/site/blood-rain-hero.webp'
 
 const KEY_FACTS: { label: string; value: string; confirmed: boolean }[] = [
   { label: 'Title', value: 'Stellar Blade: Blood Rain', confirmed: true },
