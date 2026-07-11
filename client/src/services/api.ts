@@ -146,7 +146,7 @@ export interface Walkthrough {
 }
 
 export interface SearchResult {
-  kind: 'collectible' | 'walkthrough' | 'level'
+  kind: 'collectibles' | 'upgrades' | 'cosmetics' | 'materials' | 'walkthrough' | 'level'
   id: number
   title: string
   snippet: string | null
