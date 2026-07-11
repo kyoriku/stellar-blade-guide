@@ -63,30 +63,52 @@ All run from `server/` with `uv run python scripts/images/<script>.py`.
    Idempotent: skips outputs that already exist. Asserts the staged file count
    matches the expected count and cross-checks sources against
    `url-mapping.json` (a source missing from the mapping is fine only for
-   brand-new content that was never on Cloudinary).
-4. `upload_r2.py` (added in Phase 2) : uploads `r2-staging/` to the
-   `stellar-blade-guide-images` bucket with correct Content-Type and
-   Cache-Control headers, and writes `r2-url-mapping.json`
-   (old Cloudinary URL to new R2 URL). Dry run first, typed confirmation.
-5. `update_r2_urls.py` (added in Phase 4) : rewrites seed JSON (and
-   `categoryImages.ts`) from `r2-url-mapping.json`. Dry run first; has a
-   reverse mode that restores Cloudinary URLs.
+   brand-new content that was never on Cloudinary). `r2-staging/` is
+   disposable: it is fully regenerable by this script, so it can be deleted
+   at any time to reclaim disk.
+4. `upload_r2.py` : uploads `r2-staging/` to the `stellar-blade-guide-images`
+   bucket with correct Content-Type and Cache-Control headers, skipping keys
+   already in the bucket, and writes `r2-url-mapping.json` (old Cloudinary URL
+   to new R2 URL, migration-era assets only). Dry run first, typed
+   confirmation.
+5. `update_r2_urls.py` : rewrites image URLs in seed JSON and
+   `categoryImages.ts`. Dry run before every write. Three passes: Cloudinary
+   URL to R2 URL via `r2-url-mapping.json` (version-agnostic, migration only),
+   staged local `/assets/images/...` path to R2 URL by direct derivation (the
+   permanent new-content path, guarded on the staged file existing in
+   `r2-staging/`), and a reverse mode that restores Cloudinary URLs for
+   migration entries.
 6. Seeding is unchanged: `scripts/db/seed_collectibles.py` and
    `scripts/db/seed_walkthroughs.py` store whatever URLs the seed JSON holds
    and invalidate the Redis response cache.
+
+Both mapping files (`url-mapping.json`, `r2-url-mapping.json`) are frozen
+migration-era artifacts. New content never touches them: R2 URLs are a pure
+function of the local path, so no mapping is needed going forward.
 
 ## Adding new content (post-migration workflow)
 
 1. Drop captures into the right masters folder under
    `client/public/assets/images/<Level>/<Location>/` (or `Walkthroughs/...`).
-2. `uv run python scripts/images/compress_images.py`
-3. `uv run python scripts/images/generate_variants.py` (only new files encode;
+2. Write the seed JSON entries referencing the local staged paths, exactly as
+   in the Cloudinary era: `"url": "/assets/images/<Level>/<Location>/<file>.jpg"`.
+3. `uv run python scripts/images/compress_images.py`
+4. `uv run python scripts/images/generate_variants.py` (only new files encode;
    existing staging is skipped)
-4. `uv run python scripts/images/upload_r2.py` (dry run shows only the new
-   objects; confirm to upload; r2-url-mapping.json gains the new entries)
-5. Reference the new full-size R2 URL in seed JSON, then run the seeder.
-   `update_r2_urls.py` can rewrite staged local `/assets/...` URLs for you the
-   same way `update_urls.py` used to.
+5. `uv run python scripts/images/upload_r2.py` (dry run shows only the new
+   objects; confirm to upload)
+6. `uv run python scripts/images/update_r2_urls.py` (option 1): the staged-path
+   pass turns the local paths into R2 URLs, derived from the path itself. Any
+   path whose staged file is missing is reported and left untouched, which
+   catches typos and skipped pipeline steps.
+7. Run the seeder, then commit the seed-data repo.
+
+Staged-path rewrites are one-way: the kebab-cased R2 URL cannot be turned back
+into the original local path mechanically (case and underscores are lost).
+Rollback for new content is reverting the seed JSON commit. If a
+reverse-to-local tool is ever needed, local paths are recoverable from the
+`*_1080p` tree or the seed-data git history; no mapping is required, and no
+such mode is being built.
 
 ## Replacing an image (rename, never overwrite)
 

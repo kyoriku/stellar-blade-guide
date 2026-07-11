@@ -11,7 +11,7 @@ export default function SEO({
   title,
   description,
   canonical,
-  ogImage = 'https://res.cloudinary.com/drw9mrozr/image/upload/t_og_card/v1764288880/stellar-blade/homepage/banner.jpg',
+  ogImage = 'https://img.stellarbladeguide.com/stellar-blade/site/og-banner.webp',
   ogType = 'website',
   noindex = false
 }: SEOProps) {

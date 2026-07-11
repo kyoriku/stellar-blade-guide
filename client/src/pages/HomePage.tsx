@@ -7,9 +7,9 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO'
 import StructuredData from '../components/StructuredData'
 
-const HERO_IMAGE = "https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1771136778/stellar_blade2_c9qinq.jpg";
-const HERO_SRCSET = [400, 640, 960, 1200, 1600, 1920, 2560]
-  .map(w => `${HERO_IMAGE.replace('/upload/f_webp,q_auto/', `/upload/f_webp,q_auto,w_${w}/`)} ${w}w`)
+const HERO_IMAGE = "https://img.stellarbladeguide.com/stellar-blade/site/home-hero.webp";
+const HERO_SRCSET = [640, 960, 1200, 1600, 1920, 2560]
+  .map(w => `${thumbnailUrl(HERO_IMAGE, w)} ${w}w`)
   .join(', ');
 
 
@@ -36,7 +36,7 @@ function HomePage() {
       {/* Hero */}
       <div className="relative h-[40vh] sm:h-[60vh] md:h-[70vh] overflow-hidden">
         <img
-          src={HERO_IMAGE.replace('/upload/f_webp,q_auto/', '/upload/f_webp,q_auto,w_1920/')}
+          src={thumbnailUrl(HERO_IMAGE, 1920)}
           srcSet={HERO_SRCSET}
           sizes="100vw"
           alt="Stellar Blade"
@@ -216,7 +216,7 @@ function HomePage() {
                 icon={<Compass size={18} />}
                 to="/collectibles"
                 count={COLLECTIBLES.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221806/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.jpg"
+                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.webp"
               />
               <CategoryCard
                 title="Upgrades"
@@ -224,7 +224,7 @@ function HomePage() {
                 icon={<Zap size={18} />}
                 to="/upgrades"
                 count={UPGRADES.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221093/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.jpg"
+                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.webp"
               />
               <CategoryCard
                 title="Cosmetics"
@@ -232,7 +232,7 @@ function HomePage() {
                 icon={<Sparkles size={18} />}
                 to="/cosmetics"
                 count={COSMETICS.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1774063994/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.jpg"
+                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.webp"
               />
               <CategoryCard
                 title="Materials"
@@ -240,7 +240,7 @@ function HomePage() {
                 icon={<Box size={18} />}
                 to="/materials"
                 count={MATERIALS.length}
-                imageUrl="https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765220998/stellar-blade/collectibles/eidos-7/construction-zone/1-crate-16.jpg"
+                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/1-crate-16.webp"
               />
             </div>
           </div>

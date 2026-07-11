@@ -127,12 +127,16 @@ def main():
             "desc": "Compressing images to 1080p"
         },
         {
-            "cmd": ["uv", "run", "python", "scripts/images/upload_cloudinary.py", content_type],
-            "desc": f"Uploading {content_type} images to Cloudinary"
+            "cmd": ["uv", "run", "python", "scripts/images/generate_variants.py"],
+            "desc": "Generating R2 WebP variants"
         },
         {
-            "cmd": ["uv", "run", "python", "scripts/images/update_urls.py", content_type],
-            "desc": f"Updating {content_type} JSON with Cloudinary URLs"
+            "cmd": ["uv", "run", "python", "scripts/images/upload_r2.py"],
+            "desc": "Uploading staged images to R2"
+        },
+        {
+            "cmd": ["uv", "run", "python", "scripts/images/update_r2_urls.py", content_type],
+            "desc": f"Updating {content_type} JSON with R2 URLs"
         },
         {
             "cmd": ["uv", "run", "python", seed_cmd],
