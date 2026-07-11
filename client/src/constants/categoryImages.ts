@@ -2,8 +2,8 @@ export const WALKTHROUGH_IMAGES: Record<string, string> = {
   'main-story': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765223101/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.jpg',
   'side-quests': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221620/stellar-blade/collectibles/matrix-11/rotten-labyrinth/20-document-prayers-chapter-of-trial-1-b.jpg',
   'bulletin-board-requests': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1780002210/stellar-blade/walkthroughs/main-story/xion-the-last-remaining-city/stellar-blade-20260104000910.jpg',
-  'nier-dlc': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1781372867/Stellar_Blade_x_NieR_Automata_1_zyaza4.webp',
-  'nikke-dlc': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1781380718/Stellar_Blade_x_Goddess_of_Victory_NIKKE_1_mtwsqs.webp',
+  'nier-dlc': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1783741368/stellar-blade/walkthroughs/dlc/nier-automata/stellar-blade-x-nier-automata.jpg',
+  'nikke-dlc': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1783741367/stellar-blade/walkthroughs/dlc/goddess-of-victory-nikke/stellar-blade-x-goddess-of-victory-nikke.jpg',
   // 'bosses': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
   // 'fishing': 'https://res.cloudinary.com/drw9mrozr/image/upload/f_webp,q_auto/v1765221102/stellar-blade/collectibles/eidos-7/silent-street/1-passcode-r0ar0a-1.jpg',
 };
