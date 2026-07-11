@@ -72,6 +72,7 @@ server/scripts/db/*
 !server/scripts/db/seed_walkthroughs.py
 server/scripts/images/*
 !server/scripts/images/compress_images.py
+!server/scripts/images/fetch_cloudinary_assets.py
 !server/scripts/images/update_urls.py
 !server/scripts/images/upload_cloudinary.py
 server/scripts/generate_sitemap.py
