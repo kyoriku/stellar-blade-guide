@@ -16,7 +16,7 @@ def add_security_headers_middleware(app: FastAPI):
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; "
         "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data: https://res.cloudinary.com https://lh3.googleusercontent.com https://cdn.discordapp.com; "
+        "img-src 'self' data: https://res.cloudinary.com https://img.stellarbladeguide.com https://lh3.googleusercontent.com https://cdn.discordapp.com; "
         "connect-src 'self' https://cloudflareinsights.com; "
         "font-src 'self'; "
         "base-uri 'self'; "

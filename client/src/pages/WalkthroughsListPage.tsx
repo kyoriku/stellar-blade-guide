@@ -168,7 +168,7 @@ export default function WalkthroughsListPage() {
                 <div className="w-2/5 shrink-0 aspect-video overflow-hidden">
                   {walkthrough.thumbnail_url ? (
                     <img
-                      src={thumbnailUrl(walkthrough.thumbnail_url, 400)}
+                      src={thumbnailUrl(walkthrough.thumbnail_url, 640)}
                       srcSet={buildSrcSet(walkthrough.thumbnail_url)}
                       sizes="40vw"
                       alt={walkthrough.title}

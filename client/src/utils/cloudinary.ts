@@ -1,4 +1,4 @@
-export const GALLERY_WIDTHS = [400, 640, 960, 1200, 1600] as const;
+export const GALLERY_WIDTHS = [640, 960, 1200, 1600] as const;
 
 // Pixel widths the gallery actually renders at each Tailwind breakpoint.
 // Single: 1 image fills full gallery width. Grid: 2-col layout at sm+.
@@ -19,14 +19,28 @@ export const GRID_SIZES =
   '(max-width: 1535px) 454px, ' +
   '582px';
 
-// Only rewrites the canonical /upload/f_webp,q_auto/ form — anything else
+const CLOUDINARY_MARKER = '/upload/f_webp,q_auto/';
+const R2_BASE = 'https://img.stellarbladeguide.com/';
+
+// Dual-scheme during the R2 migration: canonical Cloudinary URLs keep the
+// transform injection, R2 URLs get a -w{N} filename suffix — anything else
 // passes through unchanged, silently collapsing buildSrcSet to one width.
 export function thumbnailUrl(url: string, width = 1200): string {
-  return url.replace('/upload/f_webp,q_auto/', `/upload/f_webp,q_auto,w_${width}/`);
+  if (url.includes(CLOUDINARY_MARKER)) {
+    return url.replace(CLOUDINARY_MARKER, `/upload/f_webp,q_auto,w_${width}/`);
+  }
+  if (url.startsWith(R2_BASE) && url.endsWith('.webp')) {
+    return `${url.slice(0, -'.webp'.length)}-w${width}.webp`;
+  }
+  return url;
 }
 
+// R2 has no named transforms; og consumers get the 1200-wide variant there.
 export function ogImageUrl(url: string): string {
-  return url.replace('/upload/f_webp,q_auto/', '/upload/t_og_card/');
+  if (url.includes(CLOUDINARY_MARKER)) {
+    return url.replace(CLOUDINARY_MARKER, '/upload/t_og_card/');
+  }
+  return thumbnailUrl(url, 1200);
 }
 
 export function buildSrcSet(url: string): string {
