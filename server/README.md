@@ -51,7 +51,7 @@ uv sync                                    # install dependencies
 uv run uvicorn app.main:app --reload       # dev server on :8000
 ```
 
-`DATABASE_URL` must point at a PostgreSQL instance and `REDIS_URL` at a Redis instance; the dev container provides and wires both automatically. Interactive API docs at `http://localhost:8000/docs` are available only when `DEBUG=True` (disabled in production). The `pg_trgm` extension and FTS indexes that search needs are created by `scripts/db/seed_db.py` (also available standalone as `scripts/migrations/add_search_indexes.py`).
+`DATABASE_URL` must point at a PostgreSQL instance and `REDIS_URL` at a Redis instance; the dev container provides and wires both automatically. Interactive API docs at `http://localhost:8000/docs` are available only when `DEBUG=True` (disabled in production). The `pg_trgm` extension and FTS indexes that search needs are created by `scripts/db/seed_db.py`.
 
 ## Environment Variables
 
@@ -79,6 +79,10 @@ Configuration is read from `server/.env` (gitignored). Secrets should be generat
 | `R2_SECRET_ACCESS_KEY` | R2 API token secret (image pipeline scripts only) |
 | `R2_BUCKET` | R2 bucket holding content images |
 | `R2_PUBLIC_BASE_URL` | public base URL images are served from (`https://img.stellarbladeguide.com`) |
+| `PROD_DATABASE_URL` | production PostgreSQL DSN (`prod_seed.py` only; not needed locally) |
+| `PROD_REDIS_URL` | production Redis URL (`prod_seed.py` only; not needed locally) |
+| `CLOUDFLARE_ZONE_ID` | Cloudflare zone for the post-seed edge purge (`prod_seed.py` only) |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with cache-purge permission (`prod_seed.py` only) |
 | `GOOGLE_CLIENT_ID` | Google OAuth client id |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `GOOGLE_REDIRECT_URI` | Google OAuth callback URL |
@@ -120,6 +124,12 @@ R2_ACCESS_KEY_ID=your_r2_access_key
 R2_SECRET_ACCESS_KEY=your_r2_secret_key
 R2_BUCKET=your_r2_bucket_name
 R2_PUBLIC_BASE_URL=https://img.stellarbladeguide.com
+
+# production seeding only (prod_seed.py); leave unset locally
+PROD_DATABASE_URL=
+PROD_REDIS_URL=
+CLOUDFLARE_ZONE_ID=
+CLOUDFLARE_API_TOKEN=
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
@@ -215,7 +225,7 @@ uv run python scripts/db/seed_collectibles.py
 uv run python scripts/db/seed_walkthroughs.py
 ```
 
-Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalidates the affected Redis cache patterns. `scripts/prod_seed.py` (production seeding) is gitignored by design. `scripts/generate_sitemap.py` regenerates `client/public/sitemap.xml` from the live API.
+Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalidates the affected Redis cache patterns. `scripts/prod_seed.py` (production seeding) reads its credentials from `server/.env` (`PROD_*` / `CLOUDFLARE_*`, see Environment Variables) and requires a typed confirmation. `scripts/generate_sitemap.py` regenerates `client/public/sitemap.xml` from the live API.
 
 Schema changes are manual scripts in `scripts/migrations/` (there is no Alembic). Run them individually with `uv run python scripts/migrations/<script>.py` and update the matching SQLAlchemy model.
 

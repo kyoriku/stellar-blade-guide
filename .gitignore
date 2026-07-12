@@ -69,23 +69,11 @@ r2-staging/
 
 # Server specific files
 server/seed-data
-server/scripts/db/*
-!server/scripts/db/seed_collectibles.py
-!server/scripts/db/seed_db.py
-!server/scripts/db/seed_walkthroughs.py
-server/scripts/images/*
-!server/scripts/images/PIPELINE.md
-!server/scripts/images/compress_images.py
-!server/scripts/images/fetch_cloudinary_assets.py
-!server/scripts/images/generate_variants.py
-!server/scripts/images/update_r2_urls.py
-!server/scripts/images/update_urls.py
-!server/scripts/images/upload_cloudinary.py
-!server/scripts/images/upload_r2.py
-server/scripts/generate_sitemap.py
-server/scripts/update_category_images.py
-!server/scripts/renumber_ids.py
-server/scripts/prod_seed.py
+# migration-era URL mappings (local artifacts; see scripts/images/PIPELINE.md)
+server/scripts/images/url-mapping.json
+server/scripts/images/r2-url-mapping.json
+# executed one-off schema migrations (local reference material)
+server/scripts/migrations/
 
 # Documentation
 docs/
