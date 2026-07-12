@@ -71,8 +71,6 @@ r2-staging/
 server/seed-data
 # migration-era URL mappings (local artifacts; see scripts/images/PIPELINE.md)
 server/scripts/images/url-mapping.json
-server/scripts/images/url-mapping.json.backup
-server/scripts/images/url-mapping.json.cleaned
 server/scripts/images/r2-url-mapping.json
 # executed one-off schema migrations (local reference; add_search_indexes.py and
 # add_type_slug.py remain tracked because tracked files reference them)
