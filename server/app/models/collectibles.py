@@ -42,8 +42,7 @@ class Location(Base):
 #     collectibles = relationship('Collectible', secondary=collectible_type_mappings, back_populates='types')
 class CollectibleType(Base):
     __tablename__ = 'collectible_types'
-    # Mirrors production's partial unique index exactly (created there by
-    # scripts/migrations/add_type_slug.py); SQLite drops the WHERE clause.
+    # Mirrors production's partial unique index exactly; SQLite drops the WHERE clause.
     __table_args__ = (
         Index('collectible_types_slug_key', 'slug', unique=True,
               postgresql_where=text('slug IS NOT NULL')),
