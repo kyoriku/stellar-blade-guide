@@ -62,9 +62,16 @@ variants are encoded directly from the masters at native resolution
    out exactly as the final R2 keys (full size at native resolution plus the
    width variants). WebP quality 80, method 6, parallel encode. Idempotent:
    skips outputs that already exist. Asserts the staged file count matches
-   the expected count and bidirectionally cross-checks sources against
-   `url-mapping.json` (a source missing from the mapping is expected for
-   brand-new content; a mapping entry with no master is a loud warning).
+   the expected count and runs two manifest checks that must both come back
+   clean (any flag is fatal, exit 1). The seed-based check is the manifest
+   invariant: every master is referenced by seed data or client constants,
+   every reference resolves to a master, and no two masters derive the same
+   R2 key; authored `/assets/images/...` paths count as valid references
+   while a batch is mid-workflow (pre-swap). The legacy `url-mapping.json`
+   cross-check runs in parallel until retirement (a source missing from the
+   mapping is expected for brand-new content; a mapping entry with no master
+   is fatal). `--retire-legacy-check` previews the post-retirement behavior
+   by skipping the legacy check.
    `r2-staging/` is disposable: it is fully regenerable by this script, so
    it can be deleted at any time to reclaim disk.
 2. `upload_r2.py` : uploads `r2-staging/` to the `stellar-blade-guide-images`
@@ -87,7 +94,12 @@ variants are encoded directly from the masters at native resolution
    and invalidate the Redis response cache.
 
 Both mapping files (`url-mapping.json`, `r2-url-mapping.json`) are frozen
-migration-era artifacts. New content never touches them: R2 URLs are a pure
+migration-era artifacts, and as of 2026-07-12 they are retired from the
+manifest role: the manifest invariant is now masters to seed references,
+checked by `generate_variants.py`, with the legacy mapping cross-check kept
+running in parallel. They become deletable (not deleted) once one real
+content batch ships with both checks agreeing; the gate is tracked in
+`docs/DECOMMISSION.md`. New content never touches them: R2 URLs are a pure
 function of the local path, so no mapping is needed going forward.
 
 ## Adding new content

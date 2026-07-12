@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import json
+import re
 import shutil
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -26,6 +27,18 @@ IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
 BASE_IMAGES_DIR = Path(__file__).parent.parent.parent.parent / 'client' / 'public' / 'assets' / 'images'
 STAGING_DIR = Path(__file__).parent.parent.parent.parent / 'r2-staging'
 MAPPING_FILE = Path(__file__).parent / 'url-mapping.json'
+SEED_DATA_DIR = Path(__file__).parent.parent.parent / 'seed-data'
+CLIENT_SRC_DIR = Path(__file__).parent.parent.parent.parent / 'client' / 'src'
+R2_BASE = 'https://img.stellarbladeguide.com/'
+
+# Pipeline references live in two states: swapped R2 URLs (at rest) and
+# authored /assets/images/ paths (mid-workflow, pre-swap). Site/ assets are
+# exempt from the manifest by construction: the R2 pattern only captures
+# collectibles/walkthroughs keys. Any URL literal counts as a reference,
+# including commented-out client lines - conservative on purpose.
+R2_REF_PATTERN = re.compile(
+    re.escape(R2_BASE) + r'(stellar-blade/(?:collectibles|walkthroughs)/[^\'"\s`)]+?)\.webp')
+LOCAL_REF_PATTERN = re.compile(r'/assets/images/([^\'"\n]+?\.(?:jpg|jpeg|png|webp))')
 
 # Site/ assets are full-resolution one-offs keyed under stellar-blade/site/.
 # og-banner.webp is a finished 1200x630 social card: copied verbatim, no variants.
@@ -41,6 +54,61 @@ def derive_key(rel_path_clean):
     if rel_path_clean.parts[0] == 'Walkthroughs':
         return f"stellar-blade/{folder_path}/{filename}"
     return f"stellar-blade/collectibles/{folder_path}/{filename}"
+
+
+def collect_references():
+    """Every pipeline-image reference in seed data and client source.
+
+    Returns (r2_keys, local_rels): R2 references as derived keys, authored
+    local references as masters-tree-relative paths. Together with
+    check_manifest() this is the seed-based successor to the url-mapping.json
+    cross-check: it proves every master is referenced by a live page and
+    every referenced image has a master.
+    """
+    r2_keys, local_rels = set(), set()
+    ref_files = sorted(SEED_DATA_DIR.rglob('*.json'))
+    ref_files += sorted(p for p in CLIENT_SRC_DIR.rglob('*')
+                        if p.is_file() and p.suffix in ('.ts', '.tsx'))
+    for p in ref_files:
+        text = p.read_text(encoding='utf-8')
+        r2_keys.update(m.group(1) for m in R2_REF_PATTERN.finditer(text))
+        local_rels.update(m.group(1) for m in LOCAL_REF_PATTERN.finditer(text))
+    return r2_keys, local_rels
+
+
+def check_manifest(sources, r2_refs, local_refs):
+    """Seed-based manifest check over the pipeline sources.
+
+    Returns a dict of problem lists (all empty on a clean tree):
+      dup_keys      - two masters deriving the same R2 key (staging would collide)
+      unreferenced  - masters no seed entry or client constant points at
+      masterless    - references that resolve to no master (R2 key unknown,
+                      or authored local path whose file does not exist)
+    plus referenced-count stats for the one-line summary.
+    """
+    masters = [(mk[len('/assets/images/'):], key)
+               for _, key, _, mk in sources if mk is not None]
+    key_owner = {}
+    dup_keys = []
+    for rel, key in masters:
+        if key in key_owner:
+            dup_keys.append((key, key_owner[key], rel))
+        else:
+            key_owner[key] = rel
+    unreferenced = sorted(rel for rel, key in masters
+                          if key not in r2_refs and rel not in local_refs)
+    masterless = sorted(f'{R2_BASE}{k}.webp' for k in r2_refs if k not in key_owner)
+    masterless += sorted(f'/assets/images/{r}' for r in local_refs
+                         if not (BASE_IMAGES_DIR / r).exists())
+    return {
+        'dup_keys': dup_keys,
+        'unreferenced': unreferenced,
+        'masterless': masterless,
+        'total': len(masters),
+        'referenced': len(masters) - len(unreferenced),
+        'r2_refs': len(r2_refs),
+        'local_refs': len(local_refs),
+    }
 
 
 def plan_outputs(key, widths):
@@ -139,17 +207,23 @@ def main():
             shutil.copy2(src, dest)
             copies += 1
 
-    # Bidirectional cross-check against url-mapping.json (frozen migration-era
-    # manifest). Sources absent from the mapping are informational: brand-new
-    # content is expected there. Mapping entries with NO source are a loud
-    # warning: a historical asset lost its master and can never regenerate.
-    if MAPPING_FILE.exists():
+    manifest_bad = 0
+    pipeline_count = sum(1 for _, _, _, mk in sources if mk is not None)
+    print(f"Sources: {len(sources)} images ({pipeline_count} pipeline + {len(sources) - pipeline_count} site)")
+
+    # LEGACY manifest check: bidirectional cross-check against url-mapping.json
+    # (frozen migration-era artifact). Runs in parallel with the seed-based
+    # check below until one real content batch ships with both agreeing; then
+    # this block and the MAPPING_FILE dependency are deleted and the mapping
+    # files become deletable (gate tracked in docs/DECOMMISSION.md).
+    # --retire-legacy-check previews that end state by skipping this block.
+    retire_legacy = '--retire-legacy-check' in sys.argv
+    if not retire_legacy and MAPPING_FILE.exists():
         mapping = json.load(open(MAPPING_FILE, encoding='utf-8'))
         source_mks = {mk for _, _, _, mk in sources if mk is not None}
         unmapped = sorted(source_mks - set(mapping))
         masterless = sorted(set(mapping) - source_mks)
-        pipeline_count = len(source_mks)
-        print(f"Sources: {len(sources)} images ({pipeline_count} pipeline + {len(sources) - pipeline_count} site)")
+        manifest_bad += len(masterless)
         print(f"Mapping: {len(mapping)} entries; sources not in mapping (new content): {len(unmapped)}; mapping entries without a master: {len(masterless)}")
         for mk in unmapped[:10]:
             print(f"\033[90m    new: {mk}\033[0m")
@@ -157,8 +231,30 @@ def main():
             print(f"\033[31m    ⚠ NO MASTER: {mk}\033[0m")
         if len(masterless) > 10:
             print(f"\033[31m    ... and {len(masterless) - 10} more\033[0m")
-    else:
+    elif not retire_legacy:
         print("\033[33m⚠ url-mapping.json not found, skipping mapping cross-check\033[0m")
+
+    # Seed-based manifest check: masters <-> live references (seed data +
+    # client constants). Stronger invariant than the mapping check - every
+    # master must be referenced by a page, and every reference must have a
+    # master. Authored /assets/images/ paths (pre-swap state) count as valid
+    # references when the master exists.
+    r2_refs, local_refs = collect_references()
+    m = check_manifest(sources, r2_refs, local_refs)
+    manifest_bad += len(m['dup_keys']) + len(m['unreferenced']) + len(m['masterless'])
+    print(f"Seed check: {m['referenced']}/{m['total']} masters referenced "
+          f"({m['r2_refs']} r2 + {m['local_refs']} local refs); "
+          f"unreferenced: {len(m['unreferenced'])}; masterless refs: {len(m['masterless'])}; "
+          f"duplicate keys: {len(m['dup_keys'])}")
+    for key, a, b in m['dup_keys'][:10]:
+        print(f"\033[31m    ⚠ DUPLICATE KEY {key}: {a} and {b}\033[0m")
+    for rel in m['unreferenced'][:10]:
+        print(f"\033[31m    ⚠ UNREFERENCED MASTER: {rel}\033[0m")
+    for ref in m['masterless'][:10]:
+        print(f"\033[31m    ⚠ NO MASTER FOR REF: {ref}\033[0m")
+    for name, lst in (('unreferenced', m['unreferenced']), ('masterless refs', m['masterless'])):
+        if len(lst) > 10:
+            print(f"\033[31m    ... and {len(lst) - 10} more {name}\033[0m")
     print(f"Expected staged files: {expected}\n")
 
     created, skipped, errors = copies, 0, []
@@ -191,10 +287,13 @@ def main():
     print(f"→ Staged files on disk: {staged}")
     print(f"→ Time: {minutes}m {seconds}s ({workers} workers)")
 
-    if staged == expected and not errors:
-        print(f"\033[32m✓ Staged count matches expected ({expected})\033[0m")
+    if staged == expected and not errors and manifest_bad == 0:
+        print(f"\033[32m✓ Staged count matches expected ({expected}); manifest checks clean\033[0m")
     else:
-        print(f"\033[31m✗ Staged {staged} != expected {expected} (or errors above) — investigate before uploading\033[0m")
+        if manifest_bad:
+            print(f"\033[31m✗ Manifest checks flagged {manifest_bad} problem(s) above — investigate before uploading\033[0m")
+        if staged != expected or errors:
+            print(f"\033[31m✗ Staged {staged} != expected {expected} (or errors above) — investigate before uploading\033[0m")
         sys.exit(1)
 
 
