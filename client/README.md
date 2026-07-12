@@ -49,11 +49,12 @@ src/
   layouts/           RootLayout (scroll reset + navbar + outlet + footer)
   services/          api.ts: typed fetch wrappers + all TypeScript interfaces
   constants/         navigation structure, category images, per-type SEO copy
-  utils/             Cloudinary URL/srcset helpers, image cache, slug generation and dedup,
+  utils/             image URL/srcset helpers (cloudinary.ts, legacy name kept intentionally
+                     until the Cloudinary decommission), image cache, slug generation and dedup,
                      TOC builders, description parser, username validation
 public/              robots.txt, static sitemap.xml, favicons, README screenshots;
                      assets/images/ is gitignored local source imagery (production serves
-                     from Cloudinary)
+                     from Cloudflare R2 at img.stellarbladeguide.com)
 ```
 
 Route shape: `/walkthroughs/:type/:slug`, `/levels/:levelName`, and `/collectibles|upgrades|materials|cosmetics/:typeName`. The four collectible categories share one detail page (`CollectibleTypeDetailPage`), and `useActiveSection` drives the scroll-spy table of contents on all three detail pages.
@@ -64,7 +65,7 @@ Route shape: `/walkthroughs/:type/:slug`, `/levels/:levelName`, and `/collectibl
 
 ## Images
 
-Everything is served from Cloudinary with a responsive `srcSet` ladder (`GALLERY_WIDTHS = [400, 640, 960, 1200, 1600]` in `utils/cloudinary.ts`) and `sizes` strings derived from the real rendered layout widths at each breakpoint. `predictRenderedWidth()` computes which ladder variant the browser will actually request, and `utils/imageCache.ts` keeps a set of already-loaded URLs so `ImageGallery` can skip skeleton states for images the prefetcher already warmed.
+Everything is served from Cloudflare R2 (`img.stellarbladeguide.com`) as pre-generated WebP files with a responsive `srcSet` ladder (`GALLERY_WIDTHS = [640, 960, 1200, 1600]` in `utils/cloudinary.ts`) and `sizes` strings derived from the real rendered layout widths at each breakpoint. Variants use a filename suffix (`{name}-w960.webp`); the URL builders are dual-scheme, still handling Cloudinary transform URLs during the migration wind-down, which is why the file keeps its legacy `cloudinary.ts` name. `predictRenderedWidth()` computes which ladder variant the browser will actually request, and `utils/imageCache.ts` keeps a set of already-loaded URLs so `ImageGallery` can skip skeleton states for images the prefetcher already warmed. The server-side pipeline that produces and uploads the variants is documented in `../server/scripts/images/PIPELINE.md`.
 
 ## Prefetching
 
