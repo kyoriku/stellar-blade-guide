@@ -8,7 +8,7 @@ The FastAPI backend for [Stellar Blade Guide](../README.md). It serves all guide
 - **SQLAlchemy 2.0** (async, `asyncpg` driver) + **Pydantic v2**
 - **PostgreSQL** (content, users, progress, comments) + **Redis** (cache, rate limiting, sessions)
 - **PyJWT** + **passlib/argon2** for auth
-- **Cloudinary** (image CDN), **OpenAI Moderation API** (comments and avatars), **Resend** (email)
+- **Cloudflare R2** (content image hosting), **Cloudinary** (user avatars; migration rollback), **OpenAI Moderation API** (comments and avatars), **Resend** (email)
 - Managed with [uv](https://docs.astral.sh/uv/); tested with **pytest**
 
 ## Layout
@@ -32,9 +32,10 @@ app/
   services/          business logic: auth, collectibles, comments, search, users
   middleware/        request-pipeline layers (see Middleware) + rate-limiter and exception-handler setup
 scripts/
-  dev_workflow.py    one-command content pipeline (compress, upload, update URLs, seed)
+  dev_workflow.py    one-command content pipeline (compress, generate variants, upload, update URLs, seed)
   db/                seed and export scripts (seed_collectibles.py, seed_walkthroughs.py, ...)
-  images/            Cloudinary pipeline (compress_images.py, upload_cloudinary.py, update_urls.py)
+  images/            R2 image pipeline (generate_variants.py, upload_r2.py, update_r2_urls.py; full flow
+                     documented in images/PIPELINE.md; legacy Cloudinary scripts retained until decommission)
   migrations/        manual, one-off schema migration scripts (no Alembic)
 seed-data/           JSON source of truth for all content (untracked; carries its own README)
 tests/               pytest suite (18 modules + conftest.py)
@@ -70,9 +71,14 @@ Configuration is read from `server/.env` (gitignored). Secrets should be generat
 | `FRONTEND_URL` | base URL used in OAuth redirects and password-reset emails |
 | `OPENAI_API_KEY` | comment and avatar moderation (moderation fails open if unreachable) |
 | `RESEND_API_KEY` | transactional email (password reset) |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary account for image hosting |
-| `CLOUDINARY_API_KEY` | Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary account (user avatars and legacy migration scripts only) |
+| `CLOUDINARY_API_KEY` | Cloudinary API key (avatars/legacy only) |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret (avatars/legacy only) |
+| `R2_ACCOUNT_ID` | Cloudflare account id for the R2 S3 endpoint (image pipeline scripts only) |
+| `R2_ACCESS_KEY_ID` | R2 API token access key (image pipeline scripts only) |
+| `R2_SECRET_ACCESS_KEY` | R2 API token secret (image pipeline scripts only) |
+| `R2_BUCKET` | R2 bucket holding content images |
+| `R2_PUBLIC_BASE_URL` | public base URL images are served from (`https://img.stellarbladeguide.com`) |
 | `GOOGLE_CLIENT_ID` | Google OAuth client id |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `GOOGLE_REDIRECT_URI` | Google OAuth callback URL |
@@ -105,9 +111,15 @@ ORIGIN_SECRET=                   # openssl rand -hex 32
 OPENAI_API_KEY=your_openai_api_key
 RESEND_API_KEY=your_resend_api_key
 
-CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_CLOUD_NAME=your_cloud_name    # avatars/legacy scripts only
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_key
+R2_BUCKET=your_r2_bucket_name
+R2_PUBLIC_BASE_URL=https://img.stellarbladeguide.com
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
@@ -186,7 +198,7 @@ All guide content is authored as JSON in `seed-data/` (untracked in this repo; t
 - Collectible IDs are append-only: new items take `max id + 1`, gaps are fine, and IDs are never renumbered, because user progress references them and seeding upserts by ID.
 - Descriptions support a `[[category/type#anchor|Link text]]` wikilink syntax (parsed client-side into prefetching links) and `\n\n` paragraph breaks.
 - `cycle` (Base / NG+ / NG++ / DLC) and `quantity` describe availability; `subtype` categorizes Documents.
-- Images are authored as `/assets/images/...` paths; the image pipeline uploads them to Cloudinary and rewrites the JSON URLs in place.
+- Images are authored as `/assets/images/...` paths; the image pipeline uploads them to R2 and rewrites the JSON URLs in place (see `scripts/images/PIPELINE.md`).
 
 ## Seeding and deployment
 
@@ -196,7 +208,7 @@ New content goes through one command:
 uv run python scripts/dev_workflow.py collectibles    # or walkthroughs
 ```
 
-which compresses source images to 1080p, uploads them to Cloudinary, rewrites the JSON URLs, and seeds PostgreSQL. To re-seed without touching images:
+which compresses source images to 1080p, pre-generates the WebP variants, uploads them to R2, rewrites the JSON URLs, and seeds PostgreSQL (`scripts/images/PIPELINE.md` documents each step, the URL scheme, and the image-replacement and rollback procedures). To re-seed without touching images:
 
 ```bash
 uv run python scripts/db/seed_collectibles.py
@@ -215,4 +227,4 @@ Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React
 uv run pytest
 ```
 
-261 tests run in about two and a half seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
+263 tests run in about two and a half seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.

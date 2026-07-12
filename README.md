@@ -1,10 +1,10 @@
 # Stellar Blade Guide
 
-An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, side quests, bulletin board requests, and more) and 1000+ collectibles. Full-stack web application managing 2000+ images via Cloudinary CDN.
+An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, side quests, bulletin board requests, and more) and 1000+ collectibles. Full-stack web application managing 2000+ images served as pre-generated WebP from Cloudflare R2.
 
 **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
-**Key Features:** Progress tracking (guest + authenticated) • Walkthroughs • Full-text search • User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Redis caching • Cloudinary CDN • Image galleries • Responsive design
+**Key Features:** Progress tracking (guest + authenticated) • Walkthroughs • Full-text search • User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Redis caching • Cloudflare R2 image CDN • Image galleries • Responsive design
 
 ![Home Page](client/public/assets/screenshots/homepage.png)
 
@@ -73,8 +73,12 @@ An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, 
 - Multi-tier caching: Redis (server-side, 30-day TTL) + ETag/304 responses + TanStack Query (client-side)
 - Redis outages degrade gracefully: cached reads fail open to PostgreSQL, rate limiting falls back to in-memory counters, and auth endpoints fail closed with a 503 + Retry-After
 - Cache-Control exclusions for mutable per-user data (progress tracking)
-- Cloudinary CDN for image delivery and optimisation
+- Cloudflare R2 with edge caching for image delivery (pre-generated WebP variants, immutable cache headers)
 - Every API response carries an X-Process-Time timing header
+
+**Infrastructure**
+
+Content images are pre-generated as static WebP variants (four srcSet widths plus a full-size original per image, no runtime transforms) and served from Cloudflare R2 behind `img.stellarbladeguide.com` with immutable one-year cache headers and zone edge caching. The image pipeline migrated from Cloudinary to R2 in six independently verifiable phases with zero downtime: variants were generated and uploaded while Cloudinary stayed live, the client shipped a dual-scheme URL builder that handles both hosts, and the database cutover was a reversible URL rewrite. Cloudinary remains in place for user avatar uploads and as a rollback path until decommission. Pipeline details live in `server/scripts/images/PIPELINE.md`.
 
 **Auth & User System**
 - Email/password registration and login
