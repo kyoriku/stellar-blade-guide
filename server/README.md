@@ -32,7 +32,7 @@ app/
   services/          business logic: auth, collectibles, comments, search, users
   middleware/        request-pipeline layers (see Middleware) + rate-limiter and exception-handler setup
 scripts/
-  dev_workflow.py    one-command content pipeline (compress, generate variants, upload, update URLs, seed)
+  dev_workflow.py    one-command content pipeline (generate variants, upload, update URLs, seed)
   db/                seed and export scripts (seed_collectibles.py, seed_walkthroughs.py, ...)
   images/            R2 image pipeline (generate_variants.py, upload_r2.py, update_r2_urls.py; full flow
                      documented in images/PIPELINE.md; legacy Cloudinary scripts retained until decommission)
@@ -218,7 +218,7 @@ New content goes through one command:
 uv run python scripts/dev_workflow.py collectibles    # or walkthroughs
 ```
 
-which compresses source images to 1080p, pre-generates the WebP variants, uploads them to R2, rewrites the JSON URLs, and seeds PostgreSQL (`scripts/images/PIPELINE.md` documents each step, the URL scheme, and the image-replacement and rollback procedures). To re-seed without touching images:
+which pre-generates the WebP variants from the full-resolution masters, uploads them to R2, rewrites the JSON URLs, and seeds PostgreSQL (`scripts/images/PIPELINE.md` documents each step, the URL scheme, and the image-replacement and rollback procedures). To re-seed without touching images:
 
 ```bash
 uv run python scripts/db/seed_collectibles.py

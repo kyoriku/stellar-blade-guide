@@ -9,10 +9,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from PIL import Image
 
-# Pre-generates every WebP file R2 serves. Layout in r2-staging/ mirrors R2 keys
-# exactly: {key}.webp (full size, lightbox/stored URL) + {key}-w{N}.webp variants.
-# Keys reuse upload_cloudinary.py's public_id derivation so R2 paths match the
-# existing Cloudinary paths and r2-url-mapping.json can be joined on them.
+# Pre-generates every WebP file R2 serves, sourced from the masters tree at
+# native resolution (the masters tree is the publication manifest: curated
+# captures only; a file present there WILL publish). Layout in r2-staging/
+# mirrors R2 keys exactly: {key}.webp (full size, lightbox/stored URL) +
+# {key}-w{N}.webp variants. Keys reuse upload_cloudinary.py's public_id
+# derivation so R2 paths match the original Cloudinary paths and
+# r2-url-mapping.json can be joined on them.
 
 STANDARD_WIDTHS = [640, 960, 1200, 1600]
 HERO_WIDTHS = [640, 960, 1200, 1600, 1920, 2560]
@@ -75,15 +78,22 @@ def process_image(src, key, widths):
 
 
 def collect_sources():
-    """(src_path, key, widths, mapping_key) for every image to stage."""
+    """(src_path, key, widths, mapping_key) for every image to stage.
+
+    Enumerates the masters tree: every top-level directory except the retired
+    *_1080p trees and Site/ (special-cased below). Root-level loose files are
+    never enumerated (promo art, not pipeline content).
+    """
     sources = []
-    for ext in IMAGE_EXTENSIONS:
-        for src in BASE_IMAGES_DIR.rglob(f"*{ext}"):
-            if '_1080p' not in str(src):
+    for top in sorted(BASE_IMAGES_DIR.iterdir()):
+        if not top.is_dir() or '_1080p' in top.name or top.name == SITE_DIR_NAME:
+            continue
+        for src in top.rglob('*'):
+            if not src.is_file() or src.suffix.lower() not in IMAGE_EXTENSIONS:
                 continue
-            rel_path_clean = Path(str(src.relative_to(BASE_IMAGES_DIR)).replace('_1080p', ''))
-            key = derive_key(rel_path_clean)
-            mapping_key = f"/assets/images/{rel_path_clean.as_posix()}"
+            rel_path = src.relative_to(BASE_IMAGES_DIR)
+            key = derive_key(rel_path)
+            mapping_key = f"/assets/images/{rel_path.as_posix()}"
             sources.append((src, key, STANDARD_WIDTHS, mapping_key))
 
     site_dir = BASE_IMAGES_DIR / SITE_DIR_NAME
@@ -101,7 +111,7 @@ def collect_sources():
 def main():
     start = time.time()
     print("\033[36m=== Generate R2 WebP Variants ===\033[0m")
-    print(f"Source: {BASE_IMAGES_DIR} (*_1080p trees + {SITE_DIR_NAME}/)")
+    print(f"Source: {BASE_IMAGES_DIR} (masters tree at native resolution + {SITE_DIR_NAME}/)")
     print(f"Output: {STAGING_DIR}")
     print(f"Encode: webp quality={WEBP_QUALITY} method={WEBP_METHOD}\n")
 
@@ -129,19 +139,24 @@ def main():
             shutil.copy2(src, dest)
             copies += 1
 
-    # Cross-check against url-mapping.json: a pipeline source without a mapping
-    # entry has never been uploaded to Cloudinary (fine for brand-new content,
-    # unexpected during the migration itself).
-    unmapped = []
+    # Bidirectional cross-check against url-mapping.json (frozen migration-era
+    # manifest). Sources absent from the mapping are informational: brand-new
+    # content is expected there. Mapping entries with NO source are a loud
+    # warning: a historical asset lost its master and can never regenerate.
     if MAPPING_FILE.exists():
         mapping = json.load(open(MAPPING_FILE, encoding='utf-8'))
-        unmapped = [mk for _, _, _, mk in sources if mk is not None and mk not in mapping]
-        print(f"Sources: {len(sources)} images ({len(sources) - len([s for s in sources if s[3] is None])} pipeline + {len([s for s in sources if s[3] is None])} site)")
-        print(f"Mapping: {len(mapping)} entries; pipeline sources not in mapping: {len(unmapped)}")
+        source_mks = {mk for _, _, _, mk in sources if mk is not None}
+        unmapped = sorted(source_mks - set(mapping))
+        masterless = sorted(set(mapping) - source_mks)
+        pipeline_count = len(source_mks)
+        print(f"Sources: {len(sources)} images ({pipeline_count} pipeline + {len(sources) - pipeline_count} site)")
+        print(f"Mapping: {len(mapping)} entries; sources not in mapping (new content): {len(unmapped)}; mapping entries without a master: {len(masterless)}")
         for mk in unmapped[:10]:
-            print(f"\033[33m    ⚠ {mk}\033[0m")
-        if len(unmapped) > 10:
-            print(f"\033[33m    ... and {len(unmapped) - 10} more\033[0m")
+            print(f"\033[90m    new: {mk}\033[0m")
+        for mk in masterless[:10]:
+            print(f"\033[31m    ⚠ NO MASTER: {mk}\033[0m")
+        if len(masterless) > 10:
+            print(f"\033[31m    ... and {len(masterless) - 10} more\033[0m")
     else:
         print("\033[33m⚠ url-mapping.json not found, skipping mapping cross-check\033[0m")
     print(f"Expected staged files: {expected}\n")

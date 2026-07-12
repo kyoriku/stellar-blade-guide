@@ -123,10 +123,6 @@ def main():
     
     steps = [
         {
-            "cmd": ["uv", "run", "python", "scripts/images/compress_images.py"],
-            "desc": "Compressing images to 1080p"
-        },
-        {
             "cmd": ["uv", "run", "python", "scripts/images/generate_variants.py"],
             "desc": "Generating R2 WebP variants"
         },
