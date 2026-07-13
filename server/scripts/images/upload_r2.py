@@ -102,7 +102,7 @@ def build_r2_mapping(public_base):
     return r2_mapping, missing_staged
 
 
-def upload(dry_run=True):
+def upload(dry_run=True, overwrite=False):
     start = time.time()
     bucket = os.getenv('R2_BUCKET')
     public_base = (os.getenv('R2_PUBLIC_BASE_URL') or '').rstrip('/')
@@ -140,16 +140,25 @@ def upload(dry_run=True):
     print(f"\033[32m✓ Bucket currently holds {len(existing)} objects\033[0m\n")
 
     to_upload = [(f, f.relative_to(STAGING_DIR).as_posix()) for f in files]
-    pending = [(f, key) for f, key in to_upload if key not in existing]
-    skipped = len(to_upload) - len(pending)
+    if overwrite:
+        # One-shot replace-in-place mode (quality refreshes). Deliberate
+        # exception to skip-if-in-bucket; URLs and headers are unchanged.
+        pending = to_upload
+        skipped = 0
+        replacing = sum(1 for _, key in to_upload if key in existing)
+        print(f"\033[31m=== OVERWRITE MODE: {replacing} existing objects will be replaced in place ({len(to_upload) - replacing} new) ===\033[0m")
+    else:
+        pending = [(f, key) for f, key in to_upload if key not in existing]
+        skipped = len(to_upload) - len(pending)
 
     if dry_run:
         print("\033[33m=== DRY RUN — no uploads will be performed ===\033[0m")
+        verb = 'would REPLACE' if overwrite else 'would upload'
         for f, key in pending[:10]:
-            print(f"\033[33m[DRY RUN] would upload: {key} ({f.stat().st_size // 1024} KB)\033[0m")
+            print(f"\033[33m[DRY RUN] {verb}: {key} ({f.stat().st_size // 1024} KB)\033[0m")
         if len(pending) > 10:
             print(f"\033[90m... and {len(pending) - 10} more\033[0m")
-        print(f"\n\033[33m[DRY RUN] Would upload: {len(pending)}\033[0m")
+        print(f"\n\033[33m[DRY RUN] Would {'replace' if overwrite else 'upload'}: {len(pending)}\033[0m")
         print(f"\033[90m[DRY RUN] Would skip (already in bucket): {skipped}\033[0m")
         print(f"Headers: Content-Type: {CONTENT_TYPE}; Cache-Control: {CACHE_CONTROL}")
         return True
@@ -178,9 +187,13 @@ def upload(dry_run=True):
 
     r2_mapping, missing_staged = build_r2_mapping(public_base)
     if missing_staged:
-        print(f"\033[33m⚠ {len(missing_staged)} mapping entries have no staged file:\033[0m")
-        for mk in missing_staged[:10]:
-            print(f"\033[33m    {mk}\033[0m")
+        # Expected steady-state after the 2026-07-13 timestamp rename: the
+        # frozen url-mapping still records pre-rename paths, so their derived
+        # keys have no staged file. Dropped from the rebuild; NOT a loss
+        # signal (the seed-based manifest check in generate_variants.py is
+        # the integrity authority). See docs/DECOMMISSION.md mapping item.
+        print(f"\033[90m→ {len(missing_staged)} url-mapping entries have no staged file "
+              f"(expected post-rename; dropped from the r2-url-mapping rebuild)\033[0m")
     with open(R2_MAPPING_FILE, 'w', encoding='utf-8') as f:
         json.dump(r2_mapping, f, indent=2, ensure_ascii=False)
 
@@ -208,27 +221,36 @@ def upload(dry_run=True):
 if __name__ == '__main__':
     print("\033[36m=== R2 Upload Script ===\033[0m")
 
+    overwrite = '--overwrite' in sys.argv[1:]
+
     required = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET', 'R2_PUBLIC_BASE_URL']
     missing = [k for k in required if not os.getenv(k)]
     if missing:
         print(f"\033[31m✗ Missing env vars in .env: {', '.join(missing)}\033[0m")
         sys.exit(1)
 
-    if not upload(dry_run=True):
+    if not upload(dry_run=True, overwrite=overwrite):
         sys.exit(1)
 
     print("\n\033[36m=== Confirmation ===\033[0m")
-    print("This will upload the files listed above to R2 with immutable cache headers")
-    print("and write r2-url-mapping.json. Existing objects are never overwritten.")
-    print("\n\033[33mType 'yes' to proceed with upload:\033[0m ", end='')
+    if overwrite:
+        print("OVERWRITE MODE: the objects listed above will be REPLACED IN PLACE.")
+        print("URLs and headers are unchanged; edge/browser caches serve old bytes")
+        print("until purged or naturally expired. Content changes must rename instead.")
+        confirm_word = 'overwrite'
+    else:
+        print("This will upload the files listed above to R2 with immutable cache headers")
+        print("and write r2-url-mapping.json. Existing objects are never overwritten.")
+        confirm_word = 'yes'
+    print(f"\n\033[33mType '{confirm_word}' to proceed:\033[0m ", end='')
     try:
         confirm = input().strip().lower()
     except EOFError:
         confirm = ''
 
-    if confirm == 'yes':
+    if confirm == confirm_word:
         print()
-        if not upload(dry_run=False):
+        if not upload(dry_run=False, overwrite=overwrite):
             sys.exit(1)
     else:
         print("\n\033[90mCancelled - no files uploaded\033[0m")

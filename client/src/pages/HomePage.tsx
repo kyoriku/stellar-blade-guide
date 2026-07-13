@@ -216,7 +216,7 @@ function HomePage() {
                 icon={<Compass size={18} />}
                 to="/collectibles"
                 count={COLLECTIBLES.length}
-                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/tower-outer-wall/3-can-moonwell-3.webp"
+                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/tower-outer-wall/stellar-blade-20240809025324.webp"
               />
               <CategoryCard
                 title="Upgrades"
@@ -224,7 +224,7 @@ function HomePage() {
                 icon={<Zap size={18} />}
                 to="/upgrades"
                 count={UPGRADES.length}
-                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/10-beta-core-1.webp"
+                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514035151.webp"
               />
               <CategoryCard
                 title="Cosmetics"
@@ -240,7 +240,7 @@ function HomePage() {
                 icon={<Box size={18} />}
                 to="/materials"
                 count={MATERIALS.length}
-                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/1-crate-16.webp"
+                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/stellar-blade-20240514060129.webp"
               />
             </div>
           </div>
