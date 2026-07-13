@@ -187,9 +187,13 @@ def upload(dry_run=True, overwrite=False):
 
     r2_mapping, missing_staged = build_r2_mapping(public_base)
     if missing_staged:
-        print(f"\033[33m⚠ {len(missing_staged)} mapping entries have no staged file:\033[0m")
-        for mk in missing_staged[:10]:
-            print(f"\033[33m    {mk}\033[0m")
+        # Expected steady-state after the 2026-07-13 timestamp rename: the
+        # frozen url-mapping still records pre-rename paths, so their derived
+        # keys have no staged file. Dropped from the rebuild; NOT a loss
+        # signal (the seed-based manifest check in generate_variants.py is
+        # the integrity authority). See docs/DECOMMISSION.md mapping item.
+        print(f"\033[90m→ {len(missing_staged)} url-mapping entries have no staged file "
+              f"(expected post-rename; dropped from the r2-url-mapping rebuild)\033[0m")
     with open(R2_MAPPING_FILE, 'w', encoding='utf-8') as f:
         json.dump(r2_mapping, f, indent=2, ensure_ascii=False)
 
