@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import json
 import re
 import shutil
 import time
@@ -26,7 +25,6 @@ IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
 
 BASE_IMAGES_DIR = Path(__file__).parent.parent.parent.parent / 'client' / 'public' / 'assets' / 'images'
 STAGING_DIR = Path(__file__).parent.parent.parent.parent / 'r2-staging'
-MAPPING_FILE = Path(__file__).parent / 'url-mapping.json'
 SEED_DATA_DIR = Path(__file__).parent.parent.parent / 'seed-data'
 CLIENT_SRC_DIR = Path(__file__).parent.parent.parent.parent / 'client' / 'src'
 R2_BASE = 'https://img.stellarbladeguide.com/'
@@ -61,9 +59,9 @@ def collect_references():
 
     Returns (r2_keys, local_rels): R2 references as derived keys, authored
     local references as masters-tree-relative paths. Together with
-    check_manifest() this is the seed-based successor to the url-mapping.json
-    cross-check: it proves every master is referenced by a live page and
-    every referenced image has a master.
+    check_manifest() this is the manifest check (it replaced the retired
+    url-mapping.json cross-check): it proves every master is referenced by a
+    live page and every referenced image has a master.
     """
     r2_keys, local_rels = set(), set()
     ref_files = sorted(SEED_DATA_DIR.rglob('*.json'))
@@ -146,7 +144,10 @@ def process_image(src, key, widths):
 
 
 def collect_sources():
-    """(src_path, key, widths, mapping_key) for every image to stage.
+    """(src_path, key, widths, local_key) for every image to stage.
+
+    local_key is the authored-reference form (/assets/images/<path>) for
+    pipeline masters, None for Site/ assets (exempt from the manifest check).
 
     Enumerates the masters tree: every top-level directory except the retired
     *_1080p trees and Site/ (special-cased below). Root-level loose files are
@@ -161,8 +162,8 @@ def collect_sources():
                 continue
             rel_path = src.relative_to(BASE_IMAGES_DIR)
             key = derive_key(rel_path)
-            mapping_key = f"/assets/images/{rel_path.as_posix()}"
-            sources.append((src, key, STANDARD_WIDTHS, mapping_key))
+            local_key = f"/assets/images/{rel_path.as_posix()}"
+            sources.append((src, key, STANDARD_WIDTHS, local_key))
 
     site_dir = BASE_IMAGES_DIR / SITE_DIR_NAME
     if site_dir.exists():
@@ -211,34 +212,10 @@ def main():
     pipeline_count = sum(1 for _, _, _, mk in sources if mk is not None)
     print(f"Sources: {len(sources)} images ({pipeline_count} pipeline + {len(sources) - pipeline_count} site)")
 
-    # LEGACY manifest check: bidirectional cross-check against url-mapping.json
-    # (frozen migration-era artifact). Runs in parallel with the seed-based
-    # check below until one real content batch ships with both agreeing; then
-    # this block and the MAPPING_FILE dependency are deleted and the mapping
-    # files become deletable (gate tracked in docs/DECOMMISSION.md).
-    # --retire-legacy-check previews that end state by skipping this block.
-    retire_legacy = '--retire-legacy-check' in sys.argv
-    if not retire_legacy and MAPPING_FILE.exists():
-        mapping = json.load(open(MAPPING_FILE, encoding='utf-8'))
-        source_mks = {mk for _, _, _, mk in sources if mk is not None}
-        unmapped = sorted(source_mks - set(mapping))
-        masterless = sorted(set(mapping) - source_mks)
-        manifest_bad += len(masterless)
-        print(f"Mapping: {len(mapping)} entries; sources not in mapping (new content): {len(unmapped)}; mapping entries without a master: {len(masterless)}")
-        for mk in unmapped[:10]:
-            print(f"\033[90m    new: {mk}\033[0m")
-        for mk in masterless[:10]:
-            print(f"\033[31m    ⚠ NO MASTER: {mk}\033[0m")
-        if len(masterless) > 10:
-            print(f"\033[31m    ... and {len(masterless) - 10} more\033[0m")
-    elif not retire_legacy:
-        print("\033[33m⚠ url-mapping.json not found, skipping mapping cross-check\033[0m")
-
-    # Seed-based manifest check: masters <-> live references (seed data +
-    # client constants). Stronger invariant than the mapping check - every
-    # master must be referenced by a page, and every reference must have a
-    # master. Authored /assets/images/ paths (pre-swap state) count as valid
-    # references when the master exists.
+    # Manifest check: masters <-> live references (seed data + client
+    # constants). Every master must be referenced by a page, and every
+    # reference must have a master. Authored /assets/images/ paths (pre-swap
+    # state) count as valid references when the master exists.
     r2_refs, local_refs = collect_references()
     m = check_manifest(sources, r2_refs, local_refs)
     manifest_bad += len(m['dup_keys']) + len(m['unreferenced']) + len(m['masterless'])
