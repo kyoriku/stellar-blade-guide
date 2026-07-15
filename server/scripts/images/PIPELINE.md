@@ -55,7 +55,10 @@ publication manifest: captures are curated BEFORE they enter it, and every
 image present there is published by the pipeline. A stray file dropped into
 the masters tree WILL publish. There is no intermediate compression step;
 variants are encoded directly from the masters at native resolution
-(uniformly 3840x2160 as of the 2026-07-12 refresh).
+(uniformly 3840x2160 as of the 2026-07-12 refresh). As of the 2026-07-15
+timestamp rename, the library is uniformly PS5-timestamp-named
+(`Stellar Blade_<YYYYMMDDHHMMSS>.jpg`); the two DLC promo images are the
+documented exclusions (promo art, not captures).
 
 1. `generate_variants.py` : reads every image in the masters tree plus
    `Site/`, writes all WebP files into `r2-staging/` at the repo root, laid
@@ -127,11 +130,13 @@ such mode is being built.
 ## Replacing an image (rename, never overwrite)
 
 Because every URL is cached as immutable for a year, never re-upload different
-bytes under an existing key when the CONTENT changes. Instead:
+bytes under an existing key when the CONTENT changes. Since the 2026-07-15
+timestamp rename this rule is satisfied by convention: a replacement is a new
+capture, and a new capture always arrives under a new timestamp name, so
+replacement-by-recapture auto-versions by construction. Instead:
 
-1. Name the replacement capture with a new stem, for example
-   `7_Crate_3_1b.jpg` next to the old `7_Crate_3_1.jpg`, or delete the old
-   master and add the new one under a `-2` suffixed name.
+1. Curate the replacement capture into the masters folder under its own
+   timestamp name; delete the old master.
 2. Run generate_variants and upload_r2 as for new content.
 3. Point the seed JSON entry at the new full-size URL and re-seed.
 4. The old R2 objects can be deleted whenever convenient; nothing references
