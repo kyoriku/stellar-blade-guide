@@ -9,7 +9,6 @@ from app.models.users import User
 from app.core.auth import get_current_user, require_role
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
-from app.config.settings import settings
 from app.schemas.users import UpdateProfileRequest, UpdateRoleRequest
 from app.services.users import (
     user_to_response,
@@ -23,16 +22,6 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 # Routes
-
-@router.get("/me")
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
-async def get_me(
-    request: Request,
-    current_user: User = Depends(get_current_user),
-):
-    """Return the authenticated user's profile."""
-    return user_to_response(current_user)
-
 
 @router.patch("/me")
 @limiter.limit("20/minute")
@@ -83,28 +72,6 @@ async def delete_me(
     await db.delete(current_user)
     await db.commit()
     logger.info(f"{CYAN}User {current_user.username} deleted their account{RESET}")
-
-
-@router.get("/{user_id}")
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
-async def get_user(
-    request: Request,
-    user_id: int,
-    db: AsyncSession = Depends(get_db),
-):
-    """Public profile — returns limited info (no email)."""
-    result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    return {
-        "id": user.id,
-        "username": user.username,
-        "avatar_url": user.avatar_url,
-        "role": user.role,
-        "created_at": user.created_at.isoformat(),
-    }
 
 
 # Admin-only

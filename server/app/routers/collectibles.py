@@ -1,6 +1,6 @@
 import time
 import logging
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -8,10 +8,7 @@ from typing import List
 
 from app.db.database import get_db
 from app.models.collectibles import Location, Collectible
-from app.schemas.collectibles import (
-    CollectibleResponse,
-    CollectibleWithLocationResponse,
-)
+from app.schemas.collectibles import CollectibleWithLocationResponse
 from app.core.cache import get_cache, set_cache
 from app.core.security import limiter
 from app.config.settings import settings
@@ -65,48 +62,6 @@ async def get_collectibles_by_level(level_name: str, request: Request, db: Async
             "collectibles": [_serialize_collectible(c) for c in collectibles]
         })
 
-    await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
-    return response
-
-
-@levels_router.get("/{level_name}/{location_name}", response_model=List[CollectibleResponse])
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
-async def get_collectibles_by_location(level_name: str, location_name: str, request: Request, db: AsyncSession = Depends(get_db)):
-    """Get collectibles for a specific location within a level."""
-    cache_key = f"collectibles:level:{level_name}:location:{location_name}"
-    cached_data = await get_cache(cache_key)
-    if cached_data:
-        return cached_data
-
-    level = await _resolve_level(level_name, db)
-
-    result = await db.execute(
-        select(Location).filter(Location.level_id == level.id, Location.name == location_name)
-    )
-    location = result.scalar_one_or_none()
-
-    if not location:
-        formatted = location_name.replace('-', ' ').title()
-        result = await db.execute(
-            select(Location).filter(Location.level_id == level.id, Location.name.ilike(formatted))
-        )
-        location = result.scalar_one_or_none()
-
-    if not location:
-        raise HTTPException(status_code=404, detail="Location not found")
-
-    stmt = select(Collectible).filter(Collectible.location_id == location.id).options(
-        joinedload(Collectible.types),
-        joinedload(Collectible.images)
-    ).order_by(Collectible.display_order)
-
-    result = await db.execute(stmt)
-    collectibles = result.unique().scalars().all()
-
-    if not collectibles:
-        raise HTTPException(status_code=404, detail="No collectibles found for this location")
-
-    response = [_serialize_collectible(c) for c in collectibles]
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
     return response
 
