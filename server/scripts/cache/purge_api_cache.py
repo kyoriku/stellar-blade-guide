@@ -37,7 +37,7 @@ PUBLIC_BASE = 'https://stellarbladeguide.com'
 CACHED_PREFIXES = ('/api/walkthroughs', '/api/levels', '/api/collectibles',
                    '/api/upgrades', '/api/cosmetics', '/api/materials')
 BATCH_SIZE = 30      # Pro plan: purge-by-URL takes at most 30 per call
-SANITY_FLOOR = 100   # well under the current 159; a smaller result means the
+SANITY_FLOOR = 50    # well under the current 81; a smaller result means the
                      # derivation broke somewhere and the caller must full-purge
 NAVIGATION_TS = Path(__file__).resolve().parents[3] / 'client' / 'src' / 'constants' / 'navigation.ts'
 
@@ -66,25 +66,23 @@ def parse_navigation():
 
 
 def load_db_sources():
-    """Level/location/walkthrough slugs from the database this process was
+    """Level/walkthrough slugs from the database this process was
     pointed at (prod when invoked by prod_seed.py)."""
     import asyncio
     from sqlalchemy import select
     from app.db.database import AsyncSessionLocal
-    from app.models.collectibles import Level, Location
+    from app.models.collectibles import Level
     from app.models.walkthroughs import Walkthrough
     from app.routers.walkthroughs import _normalize_type
 
     async def q():
         async with AsyncSessionLocal() as s:
             levels = (await s.execute(select(Level.name))).scalars().all()
-            locs = (await s.execute(
-                select(Level.name, Location.name).join(Location, Location.level_id == Level.id))).all()
             wts = (await s.execute(select(Walkthrough.mission_type, Walkthrough.slug))).all()
-        return levels, locs, wts
+        return levels, wts
 
-    levels, locs, wts = asyncio.run(q())
-    if not levels or not locs or not wts:
+    levels, wts = asyncio.run(q())
+    if not levels or not wts:
         raise RuntimeError('DB slug query returned an empty set')
 
     # DB mission_type is singular; clients request the plural nav slug. Build
@@ -98,7 +96,6 @@ def load_db_sources():
 
     return {
         'levels': sorted({kebab(lv) for lv in levels}),
-        'level_location_pairs': sorted({(kebab(lv), kebab(lo)) for lv, lo in locs}),
         'walkthrough_pairs': sorted({(db_to_url[t], slug) for t, slug in wts}),
         'walkthrough_types': nav_types,
     }
@@ -127,9 +124,6 @@ def derive_urls(routes, db, nav):
             urls.append(path)
         elif params == ['level_name']:
             urls += [path.format(level_name=lv) for lv in db['levels']]
-        elif params == ['level_name', 'location_name']:
-            urls += [path.format(level_name=lv, location_name=lo)
-                     for lv, lo in db['level_location_pairs']]
         elif params == ['walkthrough_type']:
             urls += [path.format(walkthrough_type=t) for t in db['walkthrough_types']]
         elif params == ['walkthrough_type', 'slug']:
@@ -175,8 +169,7 @@ def main():
     if len(urls) < SANITY_FLOOR:
         raise RuntimeError(f'derived only {len(urls)} URLs (< {SANITY_FLOOR}) — refusing partial purge')
     print(f'Derived {len(urls)} cached API URLs '
-          f'({len(db["levels"])} levels, {len(db["level_location_pairs"])} locations, '
-          f'{len(db["walkthrough_pairs"])} walkthroughs)')
+          f'({len(db["levels"])} levels, {len(db["walkthrough_pairs"])} walkthroughs)')
     if dry_run:
         for u in urls:
             print(f'  {u}')

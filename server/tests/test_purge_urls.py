@@ -10,7 +10,6 @@ from scripts.cache.purge_api_cache import PUBLIC_BASE, derive_urls
 
 DB = {
     'levels': ['eidos-7', 'nest'],
-    'level_location_pairs': [('eidos-7', 'silent-street'), ('nest', 'nest')],
     'walkthrough_pairs': [('main-story', 'scavenger-adam'), ('side-quests', 'looking-at-you')],
     'walkthrough_types': ['main-story', 'side-quests'],
 }
@@ -30,10 +29,7 @@ BASE_ROUTES = [
     route('/api/walkthroughs/'),
     route('/api/walkthroughs/{walkthrough_type}'),
     route('/api/walkthroughs/{walkthrough_type}/{slug}'),
-    route('/api/levels/'),
     route('/api/levels/{level_name}'),
-    route('/api/levels/{level_name}/locations'),
-    route('/api/levels/{level_name}/{location_name}'),
     route('/api/collectibles/'),
     route('/api/collectibles/{type_name}'),
     route('/api/upgrades/{type_name}'),
@@ -44,9 +40,9 @@ BASE_ROUTES = [
 
 def test_full_expansion_counts():
     urls = derive_urls(BASE_ROUTES, DB, NAV)
-    # 1 + 2 + 2 + 1 + 2 + 2 + 2 + 1 + 2 + 1 + 1 + 1
-    assert len(urls) == 18
-    assert f'{PUBLIC_BASE}/api/levels/eidos-7/silent-street' in urls
+    # 1 + 2 + 2 + 2 + 1 + 2 + 1 + 1 + 1
+    assert len(urls) == 13
+    assert f'{PUBLIC_BASE}/api/levels/eidos-7' in urls
     assert f'{PUBLIC_BASE}/api/walkthroughs/side-quests/looking-at-you' in urls
     assert f'{PUBLIC_BASE}/api/collectibles/memorysticks' in urls
 
