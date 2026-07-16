@@ -18,6 +18,7 @@ sys.path.insert(0, str(project_root))
 from app.db.database import get_db, AsyncSessionLocal
 from app.models.collectibles import Level, Location, CollectibleType, Collectible, CollectibleImage
 from app.core.cache import invalidate_cache_pattern
+from scripts.images.paths import normalize_image_path
 
 
 def load_all_seed_files():
@@ -218,7 +219,7 @@ async def seed_database():
                             continue
                         new_image = CollectibleImage(
                             collectible_id=collectible_instance.id,
-                            cloudinary_url=img['url'],
+                            cloudinary_url=normalize_image_path(img['url']),
                             alt_text=img['alt'],
                             display_order=img['order']
                         )

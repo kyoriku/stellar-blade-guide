@@ -142,12 +142,22 @@ def main():
     
     for i, step in enumerate(steps, 1):
         print(f"\nStep {i}/{len(steps)}: {step['desc']}")
-        
+
         if not run_command(step["cmd"], step["desc"]):
             print(f"\n\033[31m[FAILED]\033[0m Workflow stopped at step {i}")
             sys.exit(1)
-    
+
     print(f"\n\033[32m[SUCCESS]\033[0m {content_type.title()} workflow complete!")
+
+    # Prune ledger reminder: masters pruned during generate_variants leave
+    # their bucket objects pending until prod references the new state.
+    ledger = Path("scripts/images/prune-pending.json")
+    if ledger.exists():
+        import json
+        pending = json.loads(ledger.read_text())
+        if pending:
+            print(f"\n\033[33m[PENDING]\033[0m {len(pending)} pruned image(s) still have bucket objects.")
+            print("After prod_seed.py, run: uv run python scripts/images/prune_bucket.py")
 
 if __name__ == "__main__":
     main()

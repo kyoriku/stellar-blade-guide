@@ -76,10 +76,45 @@ def purge_cloudflare_cache():
         print("  → Purge manually via Cloudflare dashboard\n")
 
 
+def offer_bucket_prune():
+    """Post-seed hook for the reference-driven prune (scripts/images/PIPELINE.md):
+    pruned images leave bucket objects pending until prod stops referencing
+    them, which is true once this seed + purge has succeeded. Offers to run
+    prune_bucket.py here; that tool's own typed 'prune' confirmation still
+    applies. Declining keeps the ledger and prints the standalone command."""
+    import json
+    ledger = scripts_dir / "images" / "prune-pending.json"
+    try:
+        pending = json.loads(ledger.read_text()) if ledger.exists() else []
+    except Exception as e:
+        print(
+            f"{RED}[WARN]{RESET} could not read prune ledger ({e}); skipping offer")
+        return
+    if not pending:
+        return
+    print(
+        f"{CYAN}[PENDING]{RESET} {len(pending)} pruned image(s) still have bucket objects.")
+    answer = input(
+        "Run prune_bucket.py now? (its own 'prune' confirm still applies) [y/N]: ").strip().lower()
+    if answer != "y":
+        print("  → Ledger kept. Later: uv run python scripts/images/prune_bucket.py\n")
+        return
+    result = subprocess.run(
+        ["uv", "run", "python", "scripts/images/prune_bucket.py"],
+        cwd=scripts_dir.parent,
+    )
+    if result.returncode != 0:
+        print("  → prune_bucket did not complete; ledger kept."
+              " Later: uv run python scripts/images/prune_bucket.py\n")
+
+
 def main():
+    purge_all = "--purge-all" in sys.argv[1:]
     print(f"\n{CYAN}--- Prod seed ---{RESET}")
     print(f"  Database: {_mask(PROD_DATABASE_URL)}")
     print(f"  Redis:    {_mask(PROD_REDIS_URL)}")
+    print(f"  Purge:    "
+          f"{'FULL ZONE (--purge-all)' if purge_all else 'scoped API URLs (pass --purge-all for a full zone purge)'}")
     answer = input(
         f"\nType {CYAN}seed prod{RESET} to continue: ").strip()
     if answer != "seed prod":
@@ -99,9 +134,23 @@ def main():
             sys.exit(1)
         print(f"{GREEN}[SUCCESS]{RESET} {label}\n")
 
-    purge_cloudflare_cache()
+    if purge_all:
+        purge_cloudflare_cache()
+    else:
+        label = "Purging seeded API URLs (scoped)"
+        print(f"{CYAN}[RUNNING]{RESET} {label}")
+        result = subprocess.run(
+            ["uv", "run", "python", "scripts/cache/purge_api_cache.py"],
+            env=env, cwd=scripts_dir.parent)
+        if result.returncode == 0:
+            print(f"{GREEN}[SUCCESS]{RESET} {label}\n")
+        else:
+            print(f"{RED}[FAILED]{RESET} {label} — falling back to full purge")
+            purge_cloudflare_cache()
 
     print(f"{GREEN}--- Prod seed complete ---{RESET}\n")
+
+    offer_bucket_prune()
 
 
 if __name__ == "__main__":

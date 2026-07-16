@@ -55,7 +55,10 @@ publication manifest: captures are curated BEFORE they enter it, and every
 image present there is published by the pipeline. A stray file dropped into
 the masters tree WILL publish. There is no intermediate compression step;
 variants are encoded directly from the masters at native resolution
-(uniformly 3840x2160 as of the 2026-07-12 refresh).
+(uniformly 3840x2160 as of the 2026-07-12 refresh). As of the 2026-07-15
+timestamp rename, the library is uniformly PS5-timestamp-named
+(`Stellar Blade_<YYYYMMDDHHMMSS>.jpg`); the two DLC promo images are the
+documented exclusions (promo art, not captures).
 
 1. `generate_variants.py` : reads every image in the masters tree plus
    `Site/`, writes all WebP files into `r2-staging/` at the repo root, laid
@@ -106,7 +109,14 @@ is needed going forward.
    `client/public/assets/images/<Level>/<Location>/` (or `Walkthroughs/...`).
    Remember: presence in the masters tree IS the publication decision.
 2. Write the seed JSON entries referencing the local staged paths:
-   `"url": "/assets/images/<Level>/<Location>/<file>.jpg"`.
+   `"url": "/assets/images/<Level>/<Location>/<file>.jpg"`. Copy-paste
+   authoring is fine: an absolute host path (macOS `/Users/...` or the
+   devcontainer's `/workspaces/...`) containing
+   `client/public/assets/images/` is accepted by every reader (seeders,
+   manifest check, URL swap, missing-images report) and normalized to the
+   canonical form; the authored file itself is canonicalized when
+   `update_r2_urls.py` rewrites it to the R2 URL. Contract lives in
+   `scripts/images/paths.py`.
 3. `uv run python scripts/images/generate_variants.py` (only new files encode;
    existing staging is skipped)
 4. `uv run python scripts/images/upload_r2.py` (dry run shows only the new
@@ -127,15 +137,58 @@ such mode is being built.
 ## Replacing an image (rename, never overwrite)
 
 Because every URL is cached as immutable for a year, never re-upload different
-bytes under an existing key when the CONTENT changes. Instead:
+bytes under an existing key when the CONTENT changes. Since the 2026-07-15
+timestamp rename this rule is satisfied by convention: a replacement is a new
+capture, and a new capture always arrives under a new timestamp name, so
+replacement-by-recapture auto-versions by construction. Instead:
 
-1. Name the replacement capture with a new stem, for example
-   `7_Crate_3_1b.jpg` next to the old `7_Crate_3_1.jpg`, or delete the old
-   master and add the new one under a `-2` suffixed name.
-2. Run generate_variants and upload_r2 as for new content.
-3. Point the seed JSON entry at the new full-size URL and re-seed.
-4. The old R2 objects can be deleted whenever convenient; nothing references
-   them after the re-seed and cache invalidation.
+1. Curate the replacement capture into the masters folder under its own
+   timestamp name.
+2. Point the seed JSON entry at the new capture (local path, any accepted
+   form) and run the workflow. The old image is now unreferenced, so the
+   prune gate below surfaces it in the same run.
+
+## Removing images: the prune gate (two stages, never silent)
+
+The manifest check treats an unreferenced master as fatal. When
+`generate_variants.py` runs interactively (as it does inside `dev_workflow`),
+that fatal stop becomes a gate instead: the unreferenced set is listed in
+full (master path, derived key, and the 10 artifacts per image: 5 staged
+files + 5 bucket objects), and typing `prune` deletes the master and staged
+files, ledgers the bucket keys in `prune-pending.json` (gitignored
+artifact), re-runs the check, and lets the workflow proceed. Declining, EOF,
+or a non-interactive run keeps the fatal stop: one bad seed edit can never
+destroy source files without a human reading the list.
+
+Bucket objects are deliberately NOT deleted in that moment. Prod's database
+still references the old URLs until `prod_seed.py` runs, so deleting them
+would 404 live images (the immutable edge cache is unreliable protection).
+The second stage runs after prod is reseeded:
+
+    uv run python scripts/images/prune_bucket.py
+
+It refuses to run (fatal, not a warning) if any ledgered key has become
+referenced again, lists the pending objects, requires the same typed
+`prune`, deletes in chunks with post-verification (bucket count re-derived,
+zero residual), then clears the ledger. `dev_workflow` prints this command
+whenever the ledger is non-empty, and `prod_seed.py` offers to invoke it
+after a successful seed + purge.
+
+## What a prod seed purges
+
+`prod_seed.py` purges only the seeded API surface: every cached GET URL
+under the six API prefixes, derived live by
+`scripts/cache/purge_api_cache.py` (FastAPI route table x DB slugs x client
+navigation constants, batched at the Pro plan's 30-URLs-per-call limit,
+every response verified; `--dry-run` lists without purging). Images are
+never purged: their URLs are immutable and content changes always rename,
+so the ~10k-object image cache stays warm across seeds. Any enumeration or
+purge failure falls back loudly to a full zone purge — partial purge is
+never an outcome, because API responses carry s-maxage=30d and a missed URL
+would serve stale for up to a month. `prod_seed.py --purge-all` forces the
+old full-zone purge explicitly; use it if anything outside the API surface
+must be flushed (for example after replacing a Site/ asset in place, which
+should not happen, or if the scoped derivation is ever in doubt).
 
 One documented exception: on 2026-07-12 every object (originals and variants)
 was deliberately re-encoded from the 4K masters and overwritten in place via
