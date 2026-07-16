@@ -18,6 +18,7 @@ sys.path.insert(0, str(project_root))
 from app.db.database import get_db
 from app.models.walkthroughs import Walkthrough
 from app.core.cache import invalidate_cache_pattern
+from scripts.images.paths import normalize_image_path, normalize_content_images
 
 
 def load_all_walkthrough_files():
@@ -82,9 +83,9 @@ async def seed_walkthroughs():
                     existing.subtitle = item.get("subtitle")
                     existing.level = item.get("level")
                     existing.mission_type = item["mission_type"]
-                    existing.thumbnail_url = item.get("thumbnail_url")
+                    existing.thumbnail_url = normalize_image_path(item.get("thumbnail_url"))
                     existing.objectives = item.get("objectives")
-                    existing.content = item["content"]
+                    existing.content = normalize_content_images(item["content"])
                     existing.display_order = item["display_order"]
                     existing.rewards = item.get("rewards")
                     existing.available_after = item.get("available_after")
@@ -99,9 +100,9 @@ async def seed_walkthroughs():
                         subtitle=item.get("subtitle"),
                         level=item.get("level"),
                         mission_type=item["mission_type"],
-                        thumbnail_url=item.get("thumbnail_url"),
+                        thumbnail_url=normalize_image_path(item.get("thumbnail_url")),
                         objectives=item.get("objectives"),
-                        content=item["content"],
+                        content=normalize_content_images(item["content"]),
                         display_order=item["display_order"],
                         rewards=item.get("rewards"),
                         available_after=item.get("available_after")

@@ -15,6 +15,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from images.paths import normalize_image_path
+
 SERVER_DIR = Path(__file__).resolve().parents[1]
 SEED_DIR = SERVER_DIR / "seed-data"
 DOC_PATH = SERVER_DIR.parent / "docs" / "missing-images.md"
@@ -128,7 +130,7 @@ def scan_collectibles():
             display = disambiguate([c.get("title", "(untitled)") for c in entries])
             loc_totals[(level, loc_file.stem)] = len(entries)
             for title, c in zip(display, entries):
-                state = classify_urls([i["url"] for i in (c.get("images") or [])])
+                state = classify_urls([normalize_image_path(i["url"]) for i in (c.get("images") or [])])
                 counts["total"] += 1
                 if state == "complete":
                     counts["complete"] += 1

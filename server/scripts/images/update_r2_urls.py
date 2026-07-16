@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from dotenv import load_dotenv
 
+from images.paths import normalize_image_path
+
 load_dotenv()
 
 # Rewrites image URLs for the R2 migration, modeled on update_urls.py.
@@ -55,6 +57,10 @@ def load_indexes():
 
 def convert_url(url, forward, stats):
     """Return the rewritten URL or None if unchanged."""
+    # Copy-paste authoring: absolute host paths normalize before the staged
+    # check, so they derive and rewrite like canonical /assets/images/ paths.
+    # This rewrite is also what canonicalizes the authored file on disk.
+    url = normalize_image_path(url)
     if 'res.cloudinary.com' in url:
         new_url = forward.get(strip_version(url))
         if new_url:
