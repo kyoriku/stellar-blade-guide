@@ -2,29 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../services/api'
 
 // Keep query keys in sync with usePrefetch — it warms these exact keys.
-export function useLevels() {
-  return useQuery({
-    queryKey: ['levels'],
-    queryFn: () => api.getLevels(),
-  })
-}
-
-export function useLocations(levelName: string) {
-  return useQuery({
-    queryKey: ['locations', levelName],
-    queryFn: () => api.getLocations(levelName),
-    enabled: !!levelName,
-  })
-}
-
-export function useLocationCollectibles(levelName: string, locationName: string) {
-  return useQuery({
-    queryKey: ['collectibles', levelName, locationName],
-    queryFn: () => api.getCollectibles(levelName, locationName),
-    enabled: !!levelName && !!locationName,
-  })
-}
-
 export function useLevelCollectibles(levelName: string) {
   return useQuery({
     queryKey: ['level-collectibles', levelName],

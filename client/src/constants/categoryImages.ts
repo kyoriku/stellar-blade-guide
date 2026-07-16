@@ -27,7 +27,6 @@ export const COLLECTIBLE_IMAGES: Record<string, string> = {
   'documents': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514043012.webp',
   'memorysticks': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514033809.webp',
   'passcodes': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514033654.webp',
-  'robots': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514033900.webp',
 };
 
 export const UPGRADE_IMAGES: Record<string, string> = {
