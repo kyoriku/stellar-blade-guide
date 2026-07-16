@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import json
 import re
 import shutil
 import time
@@ -30,10 +31,14 @@ CLIENT_SRC_DIR = Path(__file__).parent.parent.parent.parent / 'client' / 'src'
 R2_BASE = 'https://img.stellarbladeguide.com/'
 
 # Pipeline references live in two states: swapped R2 URLs (at rest) and
-# authored /assets/images/ paths (mid-workflow, pre-swap). Site/ assets are
-# exempt from the manifest by construction: the R2 pattern only captures
+# authored local paths (mid-workflow, pre-swap). Site/ assets are exempt
+# from the manifest by construction: the R2 pattern only captures
 # collectibles/walkthroughs keys. Any URL literal counts as a reference,
 # including commented-out client lines - conservative on purpose.
+# Copy-paste authoring contract (scripts/images/paths.py): authored refs may
+# be absolute host paths; LOCAL_REF_PATTERN matches from the /assets/images/
+# tail of the marker segment, so absolute and canonical forms capture the
+# same masters-relative path by construction.
 R2_REF_PATTERN = re.compile(
     re.escape(R2_BASE) + r'(stellar-blade/(?:collectibles|walkthroughs)/[^\'"\s`)]+?)\.webp')
 LOCAL_REF_PATTERN = re.compile(r'/assets/images/([^\'"\n]+?\.(?:jpg|jpeg|png|webp))')
@@ -107,6 +112,83 @@ def check_manifest(sources, r2_refs, local_refs):
         'r2_refs': len(r2_refs),
         'local_refs': len(local_refs),
     }
+
+
+LEDGER_FILE = Path(__file__).parent / 'prune-pending.json'
+
+
+def run_manifest_check(sources):
+    """Run the manifest check and print its summary + flags; returns the
+    check_manifest result dict."""
+    r2_refs, local_refs = collect_references()
+    m = check_manifest(sources, r2_refs, local_refs)
+    print(f"Seed check: {m['referenced']}/{m['total']} masters referenced "
+          f"({m['r2_refs']} r2 + {m['local_refs']} local refs); "
+          f"unreferenced: {len(m['unreferenced'])}; masterless refs: {len(m['masterless'])}; "
+          f"duplicate keys: {len(m['dup_keys'])}")
+    for key, a, b in m['dup_keys'][:10]:
+        print(f"\033[31m    ⚠ DUPLICATE KEY {key}: {a} and {b}\033[0m")
+    for rel in m['unreferenced'][:10]:
+        print(f"\033[31m    ⚠ UNREFERENCED MASTER: {rel}\033[0m")
+    for ref in m['masterless'][:10]:
+        print(f"\033[31m    ⚠ NO MASTER FOR REF: {ref}\033[0m")
+    for name, lst in (('unreferenced', m['unreferenced']), ('masterless refs', m['masterless'])):
+        if len(lst) > 10:
+            print(f"\033[31m    ... and {len(lst) - 10} more {name}\033[0m")
+    return m
+
+
+def offer_prune(unreferenced):
+    """Interactive prune gate: converts the fatal unreferenced-masters stop
+    into list -> typed confirm -> delete local surfaces -> ledger bucket keys.
+
+    Deletes ONLY the master file and its staged files (prod-invisible
+    surfaces). The 5 bucket keys per image go to prune-pending.json for
+    scripts/images/prune_bucket.py, which runs AFTER prod_seed.py — deleting
+    bucket objects earlier would 404 prod images that still reference them
+    (prod's DB keeps the old URLs until it is reseeded). Returns True if the
+    local surfaces were deleted; False (declined/EOF) keeps the fatal stop.
+    Never called when stdin is not a tty: non-interactive runs stay fatal so
+    one bad seed edit cannot delete source files without a human reading
+    this list.
+    """
+    print(f"\n\033[33m{len(unreferenced)} unreferenced master(s) found. Pruning deletes each"
+          f" master + its staged files now and ledgers its 5 bucket keys for"
+          f" prune_bucket.py (run that after prod_seed.py). Declining keeps the fatal stop.\033[0m")
+    plan = []
+    for rel in unreferenced:
+        key = derive_key(Path(rel))
+        object_keys = [f'{key}.webp'] + [f'{key}-w{w}.webp' for w in STANDARD_WIDTHS]
+        plan.append({'master': rel, 'key': key, 'object_keys': object_keys})
+        print(f"  master: {rel}")
+        print(f"    10 artifacts (each key = 1 staged file + 1 bucket object):")
+        for k in object_keys:
+            print(f"      {k}")
+    try:
+        answer = input(f"\nType 'prune' to delete {len(plan)} master(s) + staged files"
+                       f" and ledger the bucket keys: ")
+    except EOFError:
+        return False
+    if answer.strip() != 'prune':
+        print("\033[33mDeclined — keeping the fatal stop.\033[0m")
+        return False
+
+    deleted_masters = deleted_staged = 0
+    for p in plan:
+        (BASE_IMAGES_DIR / p['master']).unlink()
+        deleted_masters += 1
+        for k in p['object_keys']:
+            staged = STAGING_DIR / k
+            if staged.exists():
+                staged.unlink()
+                deleted_staged += 1
+    ledger = json.loads(LEDGER_FILE.read_text()) if LEDGER_FILE.exists() else []
+    ledger.extend(plan)
+    LEDGER_FILE.write_text(json.dumps(ledger, indent=1))
+    print(f"\033[32m✓ Pruned {deleted_masters} master(s), {deleted_staged} staged file(s); "
+          f"{len(ledger)} image(s) pending in {LEDGER_FILE.name}\033[0m")
+    print(f"\033[33m→ After prod_seed.py, run: uv run python scripts/images/prune_bucket.py\033[0m")
+    return True
 
 
 def plan_outputs(key, widths):
@@ -189,6 +271,27 @@ def main():
         print("\033[31m✗ No source images found!\033[0m")
         sys.exit(1)
 
+    # Manifest check: masters <-> live references (seed data + client
+    # constants). Every master must be referenced by a page, and every
+    # reference must have a master. Authored local paths (pre-swap state,
+    # absolute or canonical) count as valid references when the master exists.
+    pipeline_count = sum(1 for _, _, _, mk in sources if mk is not None)
+    print(f"Sources: {len(sources)} images ({pipeline_count} pipeline + {len(sources) - pipeline_count} site)")
+    m = run_manifest_check(sources)
+
+    # Prune gate: interactively converts the fatal unreferenced-masters stop
+    # into list -> typed confirm -> delete local surfaces -> ledger bucket
+    # keys, then re-derives everything from disk and re-checks. Declined,
+    # EOF, or non-interactive runs fall through to the fatal path unchanged.
+    if m['unreferenced'] and sys.stdin.isatty():
+        if offer_prune(m['unreferenced']):
+            sources = collect_sources()
+            pipeline_count = sum(1 for _, _, _, mk in sources if mk is not None)
+            print(f"\nPost-prune sources: {len(sources)} images ({pipeline_count} pipeline + {len(sources) - pipeline_count} site)")
+            m = run_manifest_check(sources)
+
+    manifest_bad = len(m['dup_keys']) + len(m['unreferenced']) + len(m['masterless'])
+
     expected = sum(len(plan_outputs(key, widths)) for _, key, widths, _ in sources)
 
     # Verbatim copies (no re-encode): finished renders like og-banner.webp.
@@ -208,30 +311,6 @@ def main():
             shutil.copy2(src, dest)
             copies += 1
 
-    manifest_bad = 0
-    pipeline_count = sum(1 for _, _, _, mk in sources if mk is not None)
-    print(f"Sources: {len(sources)} images ({pipeline_count} pipeline + {len(sources) - pipeline_count} site)")
-
-    # Manifest check: masters <-> live references (seed data + client
-    # constants). Every master must be referenced by a page, and every
-    # reference must have a master. Authored /assets/images/ paths (pre-swap
-    # state) count as valid references when the master exists.
-    r2_refs, local_refs = collect_references()
-    m = check_manifest(sources, r2_refs, local_refs)
-    manifest_bad += len(m['dup_keys']) + len(m['unreferenced']) + len(m['masterless'])
-    print(f"Seed check: {m['referenced']}/{m['total']} masters referenced "
-          f"({m['r2_refs']} r2 + {m['local_refs']} local refs); "
-          f"unreferenced: {len(m['unreferenced'])}; masterless refs: {len(m['masterless'])}; "
-          f"duplicate keys: {len(m['dup_keys'])}")
-    for key, a, b in m['dup_keys'][:10]:
-        print(f"\033[31m    ⚠ DUPLICATE KEY {key}: {a} and {b}\033[0m")
-    for rel in m['unreferenced'][:10]:
-        print(f"\033[31m    ⚠ UNREFERENCED MASTER: {rel}\033[0m")
-    for ref in m['masterless'][:10]:
-        print(f"\033[31m    ⚠ NO MASTER FOR REF: {ref}\033[0m")
-    for name, lst in (('unreferenced', m['unreferenced']), ('masterless refs', m['masterless'])):
-        if len(lst) > 10:
-            print(f"\033[31m    ... and {len(lst) - 10} more {name}\033[0m")
     print(f"Expected staged files: {expected}\n")
 
     created, skipped, errors = copies, 0, []

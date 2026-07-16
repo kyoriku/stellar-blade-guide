@@ -72,6 +72,8 @@ server/seed-data
 # migration-era URL mappings (local artifacts; see scripts/images/PIPELINE.md)
 server/scripts/images/url-mapping.json
 server/scripts/images/r2-url-mapping.json
+# prune ledger: bucket keys pending deletion via scripts/images/prune_bucket.py
+server/scripts/images/prune-pending.json
 # executed one-off schema migrations (local reference material)
 server/scripts/migrations/
 
