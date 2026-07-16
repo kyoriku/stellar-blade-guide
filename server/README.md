@@ -146,10 +146,9 @@ All routes are mounted under `/api` and rate limited per route.
 | Route family | Purpose |
 |---|---|
 | `/api/health` | liveness check (also reports Redis connectivity) |
-| `/api/levels` | game levels, their locations, and the collectibles within each |
+| `/api/levels` | a level's collectibles grouped by location |
 | `/api/collectibles` | collectibles by type |
 | `/api/upgrades`, `/api/cosmetics`, `/api/materials` | category-scoped collectible reads (five routers defined in `routers/collectibles.py`) |
-| `/api/types` | all collectible types |
 | `/api/walkthroughs` | walkthroughs by mission type and slug |
 | `/api/search` | full-text search across collectibles, walkthroughs, and levels (`pg_trgm` + `tsvector`, scores merged) |
 | `/api/auth` | register / login / logout, token refresh, OAuth (Google, Discord), password reset |
@@ -225,7 +224,7 @@ uv run python scripts/db/seed_collectibles.py
 uv run python scripts/db/seed_walkthroughs.py
 ```
 
-Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalidates the affected Redis cache patterns. `scripts/prod_seed.py` (production seeding) reads its credentials from `server/.env` (`PROD_*` / `CLOUDFLARE_*`, see Environment Variables) and requires a typed confirmation. `scripts/generate_sitemap.py` regenerates `client/public/sitemap.xml` from the live API.
+Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalidates the affected Redis cache patterns. `scripts/prod_seed.py` (production seeding) reads its credentials from `server/.env` (`PROD_*` / `CLOUDFLARE_*`, see Environment Variables) and requires a typed confirmation. `scripts/generate_sitemap.py` regenerates `client/public/sitemap.xml` from the database, deriving each page's `lastmod` from a content hash persisted in `scripts/sitemap-state.json` (gitignored).
 
 Schema changes are manual scripts in `scripts/migrations/` (there is no Alembic). Run them individually with `uv run python scripts/migrations/<script>.py` and update the matching SQLAlchemy model.
 
@@ -237,4 +236,4 @@ Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React
 uv run pytest
 ```
 
-277 tests run in about two and a half seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
+265 tests run in about two and a half seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
