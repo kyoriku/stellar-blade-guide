@@ -109,9 +109,12 @@ def offer_bucket_prune():
 
 
 def main():
+    purge_all = "--purge-all" in sys.argv[1:]
     print(f"\n{CYAN}--- Prod seed ---{RESET}")
     print(f"  Database: {_mask(PROD_DATABASE_URL)}")
     print(f"  Redis:    {_mask(PROD_REDIS_URL)}")
+    print(f"  Purge:    "
+          f"{'FULL ZONE (--purge-all)' if purge_all else 'scoped API URLs (pass --purge-all for a full zone purge)'}")
     answer = input(
         f"\nType {CYAN}seed prod{RESET} to continue: ").strip()
     if answer != "seed prod":
@@ -131,7 +134,19 @@ def main():
             sys.exit(1)
         print(f"{GREEN}[SUCCESS]{RESET} {label}\n")
 
-    purge_cloudflare_cache()
+    if purge_all:
+        purge_cloudflare_cache()
+    else:
+        label = "Purging seeded API URLs (scoped)"
+        print(f"{CYAN}[RUNNING]{RESET} {label}")
+        result = subprocess.run(
+            ["uv", "run", "python", "scripts/cache/purge_api_cache.py"],
+            env=env, cwd=scripts_dir.parent)
+        if result.returncode == 0:
+            print(f"{GREEN}[SUCCESS]{RESET} {label}\n")
+        else:
+            print(f"{RED}[FAILED]{RESET} {label} — falling back to full purge")
+            purge_cloudflare_cache()
 
     print(f"{GREEN}--- Prod seed complete ---{RESET}\n")
 

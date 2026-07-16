@@ -38,7 +38,7 @@ scripts/
                      documented in images/PIPELINE.md; legacy Cloudinary scripts retained until decommission)
   migrations/        manual, one-off schema migration scripts (no Alembic)
 seed-data/           JSON source of truth for all content (untracked; carries its own README)
-tests/               pytest suite (19 modules + conftest.py)
+tests/               pytest suite (20 modules + conftest.py)
 pyproject.toml       dependencies + pytest config
 ```
 
@@ -237,4 +237,4 @@ Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React
 uv run pytest
 ```
 
-272 tests run in about two and a half seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
+277 tests run in about two and a half seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.

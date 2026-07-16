@@ -174,6 +174,22 @@ zero residual), then clears the ledger. `dev_workflow` prints this command
 whenever the ledger is non-empty, and `prod_seed.py` offers to invoke it
 after a successful seed + purge.
 
+## What a prod seed purges
+
+`prod_seed.py` purges only the seeded API surface: every cached GET URL
+under the six API prefixes, derived live by
+`scripts/cache/purge_api_cache.py` (FastAPI route table x DB slugs x client
+navigation constants, batched at the Pro plan's 30-URLs-per-call limit,
+every response verified; `--dry-run` lists without purging). Images are
+never purged: their URLs are immutable and content changes always rename,
+so the ~10k-object image cache stays warm across seeds. Any enumeration or
+purge failure falls back loudly to a full zone purge — partial purge is
+never an outcome, because API responses carry s-maxage=30d and a missed URL
+would serve stale for up to a month. `prod_seed.py --purge-all` forces the
+old full-zone purge explicitly; use it if anything outside the API surface
+must be flushed (for example after replacing a Site/ asset in place, which
+should not happen, or if the scoped derivation is ever in doubt).
+
 One documented exception: on 2026-07-12 every object (originals and variants)
 was deliberately re-encoded from the 4K masters and overwritten in place via
 `upload_r2.py --overwrite`, followed by a zone-wide edge purge. That was safe
