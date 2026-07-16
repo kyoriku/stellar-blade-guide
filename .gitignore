@@ -74,6 +74,8 @@ server/scripts/images/url-mapping.json
 server/scripts/images/r2-url-mapping.json
 # prune ledger: bucket keys pending deletion via scripts/images/prune_bucket.py
 server/scripts/images/prune-pending.json
+# sitemap lastmod state: url -> {hash, lastmod} sidecar for generate_sitemap.py
+server/scripts/sitemap-state.json
 # executed one-off schema migrations (local reference material)
 server/scripts/migrations/
 
