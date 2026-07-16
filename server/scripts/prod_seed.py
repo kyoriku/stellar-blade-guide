@@ -76,6 +76,38 @@ def purge_cloudflare_cache():
         print("  → Purge manually via Cloudflare dashboard\n")
 
 
+def offer_bucket_prune():
+    """Post-seed hook for the reference-driven prune (scripts/images/PIPELINE.md):
+    pruned images leave bucket objects pending until prod stops referencing
+    them, which is true once this seed + purge has succeeded. Offers to run
+    prune_bucket.py here; that tool's own typed 'prune' confirmation still
+    applies. Declining keeps the ledger and prints the standalone command."""
+    import json
+    ledger = scripts_dir / "images" / "prune-pending.json"
+    try:
+        pending = json.loads(ledger.read_text()) if ledger.exists() else []
+    except Exception as e:
+        print(
+            f"{RED}[WARN]{RESET} could not read prune ledger ({e}); skipping offer")
+        return
+    if not pending:
+        return
+    print(
+        f"{CYAN}[PENDING]{RESET} {len(pending)} pruned image(s) still have bucket objects.")
+    answer = input(
+        "Run prune_bucket.py now? (its own 'prune' confirm still applies) [y/N]: ").strip().lower()
+    if answer != "y":
+        print("  → Ledger kept. Later: uv run python scripts/images/prune_bucket.py\n")
+        return
+    result = subprocess.run(
+        ["uv", "run", "python", "scripts/images/prune_bucket.py"],
+        cwd=scripts_dir.parent,
+    )
+    if result.returncode != 0:
+        print("  → prune_bucket did not complete; ledger kept."
+              " Later: uv run python scripts/images/prune_bucket.py\n")
+
+
 def main():
     print(f"\n{CYAN}--- Prod seed ---{RESET}")
     print(f"  Database: {_mask(PROD_DATABASE_URL)}")
@@ -102,6 +134,8 @@ def main():
     purge_cloudflare_cache()
 
     print(f"{GREEN}--- Prod seed complete ---{RESET}\n")
+
+    offer_bucket_prune()
 
 
 if __name__ == "__main__":
