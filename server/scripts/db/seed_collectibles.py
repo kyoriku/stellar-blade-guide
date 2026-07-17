@@ -280,7 +280,7 @@ async def seed_database():
     print(f"\n\033[96m━━━ STEP 6: Clearing Cache ━━━\033[0m")
     try:
         total = 0
-        for pattern in ["collectibles:*", "levels:*", "locations:*", "cosmetics:*", "upgrades:*", "materials:*", "search:*"]:
+        for pattern in ["collectibles:*", "cosmetics:*", "upgrades:*", "materials:*", "search:*"]:
             count = await invalidate_cache_pattern(pattern)
             if count:
                 print(f"\033[32m[CLEARED]\033[0m {pattern} ({count} keys)")

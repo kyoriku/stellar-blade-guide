@@ -17,6 +17,8 @@ conftest's autouse patch_redis covers app.core.cache.redis_client — no extra p
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
@@ -358,3 +360,44 @@ async def test_get_level_collectibles_returns_flat_location_grouped_response(
     assert entry["location_name"] == "Silent Street"
     assert len(entry["collectibles"]) == 1
     assert entry["collectibles"][0]["title"] == "Camp Alpha"
+
+
+# ── _resolve_level integration via HTTP ──────────────────────────────────────
+
+async def test_get_level_unknown_level_returns_404(collectibles_client):
+    """Requesting a level that does not exist returns 404."""
+    r = await collectibles_client.get("/api/levels/Nonexistent")
+    assert r.status_code == 404
+
+
+async def test_get_level_slug_normalization(
+    collectibles_client, collectibles_db_session
+):
+    """Hyphen-separated slug resolves to the matching level via title-case + ILIKE fallback."""
+    level = await _seed_level(collectibles_db_session, "Eidos 7")
+    await _seed_location(collectibles_db_session, level.id, "Silent Street")
+    await collectibles_db_session.commit()
+
+    # "eidos-7" → replace('-', ' ') → "eidos 7" → .title() → "Eidos 7" → ILIKE match
+    r = await collectibles_client.get("/api/levels/eidos-7")
+    assert r.status_code == 200
+    assert r.json()[0]["location_name"] == "Silent Street"
+
+
+async def test_get_level_slug_normalization_edge_cases(
+    collectibles_client, collectibles_db_session
+):
+    """Additional slug inputs that exercise the replace+title fallback path."""
+    level = await _seed_level(collectibles_db_session, "Eidos 7")
+    await _seed_location(collectibles_db_session, level.id, "Silent Street")
+    await collectibles_db_session.commit()
+
+    # "EIDOS-7" → replace('-', ' ') → "EIDOS 7" → .title() → "Eidos 7" → ILIKE match
+    r = await collectibles_client.get("/api/levels/EIDOS-7")
+    assert r.status_code == 200
+    assert r.json()[0]["location_name"] == "Silent Street"
+
+    # "eidos 7" → replace is a no-op (no hyphens) → .title() → "Eidos 7" → ILIKE match
+    r = await collectibles_client.get(f"/api/levels/{quote('eidos 7', safe='')}")
+    assert r.status_code == 200
+    assert r.json()[0]["location_name"] == "Silent Street"

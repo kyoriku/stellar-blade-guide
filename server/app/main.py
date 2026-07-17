@@ -18,7 +18,7 @@ from app.middleware.security_headers import add_security_headers_middleware, add
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.origin_check import add_origin_check_middleware
-from app.routers import levels, collectibles, types, walkthroughs, auth, users, comments, health, progress, search, notifications
+from app.routers import collectibles, walkthroughs, auth, users, comments, health, progress, search, notifications
 setup_logging()
 
 cloudinary.config(
@@ -74,16 +74,11 @@ add_logging_middleware(app)          # outermost (runs first)
 
 # Routes
 app.include_router(health.router, prefix=settings.API_PREFIX)
-# levels.router before collectibles.levels_router: both mount /api/levels, and
-# routes match in registration order — the literal /{level_name}/locations must
-# win over the catch-all /{level_name}/{location_name}.
-app.include_router(levels.router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.levels_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.collectibles_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.upgrades_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.cosmetics_router, prefix=settings.API_PREFIX)
 app.include_router(collectibles.materials_router, prefix=settings.API_PREFIX)
-app.include_router(types.router, prefix=settings.API_PREFIX)
 app.include_router(walkthroughs.router, prefix=settings.API_PREFIX)
 app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(users.router, prefix=settings.API_PREFIX)

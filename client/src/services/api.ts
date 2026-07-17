@@ -54,18 +54,6 @@ export function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-export interface Level {
-  id: number;
-  name: string;
-  display_order: number;
-}
-
-export interface Location {
-  id: number;
-  name: string;
-  display_order: number;
-}
-
 export interface CollectibleImage {
   id: number;
   url: string;
@@ -194,28 +182,11 @@ const handleResponse = async <T>(response: Response, context: string): Promise<T
 
 export const api = {
   // Levels
-  getLevels: async (): Promise<Level[]> => {
-    const response = await fetch(`${API_BASE_URL}/levels/`);
-    return handleResponse<Level[]>(response, 'levels');
-  },
-
-  getLocations: async (levelName: string): Promise<Location[]> => {
-    const response = await fetch(`${API_BASE_URL}/levels/${encodeURIComponent(levelName)}/locations`);
-    return handleResponse<Location[]>(response, 'locations');
-  },
-
   getLevelCollectibles: async (levelName: string): Promise<LocationWithCollectibles[]> => {
     const response = await fetch(
       `${API_BASE_URL}/levels/${encodeURIComponent(levelName)}`
     );
     return handleResponse<LocationWithCollectibles[]>(response, 'level collectibles');
-  },
-
-  getCollectibles: async (levelName: string, locationName: string): Promise<Collectible[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/levels/${encodeURIComponent(levelName)}/${encodeURIComponent(locationName)}`
-    );
-    return handleResponse<Collectible[]>(response, 'collectibles');
   },
 
   // Collectibles

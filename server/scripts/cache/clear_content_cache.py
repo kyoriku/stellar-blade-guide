@@ -9,8 +9,6 @@ from app.core.cache import invalidate_cache_pattern
 
 CONTENT_PATTERNS = [
     "collectibles:*",
-    "levels:*",
-    "locations:*",
     "cosmetics:*",
     "upgrades:*",
     "materials:*",

@@ -95,13 +95,6 @@ export function usePrefetch() {
     prefetchImage(anchor, data?.flatMap(loc => loc.collectibles) ?? []);
   }
 
-  const prefetchLocations = (levelName: string) => {
-    void queryClient.prefetchQuery({
-      queryKey: ['locations', levelName],
-      queryFn: () => api.getLocations(levelName),
-    })
-  }
-
   const prefetchCollectiblesByType = async (typeName: string, category: string = 'collectibles', anchor?: string) => {
     const queryKey = ['type-collectibles', category, typeName] as const;
     await queryClient.prefetchQuery({
@@ -142,7 +135,6 @@ export function usePrefetch() {
 
   return {
     prefetchLevel,
-    prefetchLocations,
     prefetchCollectiblesByType,
     prefetchWalkthroughsByType,
     prefetchWalkthroughBySlug,

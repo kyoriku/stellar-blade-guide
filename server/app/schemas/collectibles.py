@@ -42,19 +42,3 @@ class CollectibleResponse(BaseModel):
 class CollectibleWithLocationResponse(CollectibleResponse):
     level: str
     location: str
-
-class LevelResponse(BaseModel):
-    id: int
-    name: str
-    display_order: int
-
-class LocationResponse(BaseModel):
-    id: int
-    name: str
-    display_order: int
-
-class TypeResponse(BaseModel):
-    id: int
-    name: str
-    category_group: Optional[str] = None
-    display_order: Optional[int] = None

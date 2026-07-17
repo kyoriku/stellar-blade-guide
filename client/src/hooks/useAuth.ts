@@ -18,7 +18,7 @@ export function useAuth() {
    *
    * Usage:
    *   const { authFetch } = useAuth()
-   *   const data = await authFetch('/api/users/me')
+   *   const data = await authFetch('/api/progress/')
    */
   const authFetch = useCallback(async (
     input: RequestInfo,
