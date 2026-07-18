@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { ElementType } from 'react';
-import { buildSrcSet, thumbnailUrl } from '../utils/cloudinary';
+import { buildSrcSet, thumbnailUrl } from '../utils/image';
 
 const SIZES = '(min-width: 1024px) calc(33vw - 2rem), calc(50vw - 2rem)';
 

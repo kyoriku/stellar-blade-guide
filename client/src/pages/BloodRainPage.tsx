@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Info, CheckSquare, HelpCircle, BookOpen, ExternalLink, Book, Compass, ArrowRight } from 'lucide-react'
-import { buildSrcSet, thumbnailUrl, ogImageUrl } from '../utils/cloudinary'
+import { buildSrcSet, thumbnailUrl, ogImageUrl } from '../utils/image'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
 

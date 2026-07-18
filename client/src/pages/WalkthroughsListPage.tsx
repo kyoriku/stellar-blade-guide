@@ -7,7 +7,7 @@ import { WALKTHROUGHS } from '../constants/navigation';
 import { usePrefetch } from '../hooks/usePrefetch';
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
-import { thumbnailUrl, buildSrcSet } from '../utils/cloudinary';
+import { thumbnailUrl, buildSrcSet } from '../utils/image';
 
 export default function WalkthroughsListPage() {
   const { type } = useParams<{ type: string }>();

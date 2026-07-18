@@ -16,7 +16,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
 import { useActiveSection } from '../hooks/useActiveSection'
-import { ogImageUrl } from '../utils/cloudinary'
+import { ogImageUrl } from '../utils/image'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'

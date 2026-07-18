@@ -15,7 +15,7 @@ import TableOfContents from '../components/TableOfContents'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useActiveSection } from '../hooks/useActiveSection'
-import { ogImageUrl } from '../utils/cloudinary'
+import { ogImageUrl } from '../utils/image'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
