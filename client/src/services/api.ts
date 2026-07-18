@@ -160,6 +160,14 @@ export interface WalkthroughListItem {
   available_after: string | null;
 }
 
+// Mirrors ProgressWriteResponse in server/app/schemas/progress.py.
+// already_complete / not_found are the no-op statuses: the write matched
+// server state that the client's cache didn't predict (stale-cache signal).
+export interface ProgressWriteResponse {
+  status: 'added' | 'already_complete' | 'removed' | 'not_found'
+  collectible_id: number
+}
+
 /**
  * Read a non-OK Response into a friendly display message: fixed copy for 429 and
  * 5xx (never leak internals or rate-limit jargon), otherwise the server's own

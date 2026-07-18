@@ -1,7 +1,8 @@
 """
-Tests for the progress endpoints: GET own progress, POST toggle, POST sync.
+Tests for the progress endpoints: GET own progress, PUT set-complete,
+DELETE un-complete, POST toggle (deprecated, transitional), POST sync.
 
-All three endpoints require authentication — 401 for unauthenticated requests.
+All five endpoints require authentication — 401 for unauthenticated requests.
 Token injection follows the test_comments.py pattern: create_access_token()
 is called directly, no login endpoint traffic.
 
@@ -199,6 +200,92 @@ async def test_toggle_nonexistent_collectible_returns_404(user_client):
     assert r.status_code == 404
 
 
+# ── PUT /api/progress/{collectible_id} (idempotent set-complete) ──────────────
+
+async def test_put_unauthenticated_returns_401(progress_client):
+    r = await progress_client.put("/api/progress/1")
+    assert r.status_code == 401
+
+
+async def test_put_marks_collectible_as_completed(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    r = await user_client.put("/api/progress/1")
+    assert r.status_code == 200
+    assert r.json() == {"status": "added", "collectible_id": 1}
+
+    r = await user_client.get("/api/progress")
+    assert r.json() == [1]
+
+
+async def test_put_twice_is_idempotent_and_signals_no_op(user_client, progress_db_session):
+    # The stale-tab incident shape: re-asserting a completion must NOT invert it
+    # (the POST toggle deleted the row here). already_complete is the drift
+    # signal the client uses to schedule a re-sync.
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    r1 = await user_client.put("/api/progress/1")
+    assert r1.json()["status"] == "added"
+
+    r2 = await user_client.put("/api/progress/1")
+    assert r2.status_code == 200
+    assert r2.json() == {"status": "already_complete", "collectible_id": 1}
+
+    r = await user_client.get("/api/progress")
+    assert r.json() == [1]
+
+
+async def test_put_nonexistent_collectible_returns_404(user_client):
+    r = await user_client.put("/api/progress/999")
+    assert r.status_code == 404
+
+
+# ── DELETE /api/progress/{collectible_id} (idempotent un-complete) ────────────
+
+async def test_delete_unauthenticated_returns_401(progress_client):
+    r = await progress_client.delete("/api/progress/1")
+    assert r.status_code == 401
+
+
+async def test_delete_removes_completion(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    await user_client.put("/api/progress/1")
+    r = await user_client.delete("/api/progress/1")
+    assert r.status_code == 200
+    assert r.json() == {"status": "removed", "collectible_id": 1}
+
+    r = await user_client.get("/api/progress")
+    assert r.json() == []
+
+
+async def test_delete_twice_is_idempotent_and_signals_no_op(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    await user_client.put("/api/progress/1")
+    await user_client.delete("/api/progress/1")
+
+    r = await user_client.delete("/api/progress/1")
+    assert r.status_code == 200
+    assert r.json() == {"status": "not_found", "collectible_id": 1}
+
+
+async def test_delete_nonexistent_collectible_returns_404(user_client):
+    r = await user_client.delete("/api/progress/999")
+    assert r.status_code == 404
+
+
+async def test_put_delete_round_trip(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    assert (await user_client.put("/api/progress/1")).json()["status"] == "added"
+    assert (await user_client.delete("/api/progress/1")).json()["status"] == "removed"
+    assert (await user_client.put("/api/progress/1")).json()["status"] == "added"
+
+    r = await user_client.get("/api/progress")
+    assert r.json() == [1]
+
+
 # ── POST /api/progress/sync ───────────────────────────────────────────────────
 
 async def test_sync_unauthenticated_returns_401(progress_client):
@@ -234,6 +321,22 @@ async def test_sync_silently_drops_nonexistent_collectible_ids(user_client):
     assert body["added"] == 0
 
 
+async def test_sync_is_additive_only_never_deletes(user_client, progress_db_session):
+    # Hard invariant: sync merges guest ids INTO existing progress; it must never
+    # remove server-side completions, no matter what the client posts.
+    await _seed_collectible(progress_db_session, collectible_id=1)
+    await _seed_collectible(progress_db_session, collectible_id=2)
+
+    await user_client.put("/api/progress/1")
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [2]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 1
+
+    r = await user_client.get("/api/progress")
+    assert sorted(r.json()) == [1, 2]
+
+
 # ── Isolation ─────────────────────────────────────────────────────────────────
 
 async def test_progress_isolation_between_users(
@@ -250,3 +353,21 @@ async def test_progress_isolation_between_users(
     r = await second_user_client.get("/api/progress")
     assert r.status_code == 200
     assert r.json() == []
+
+
+async def test_delete_is_scoped_to_current_user(
+    user_client, second_user_client, progress_db_session
+):
+    # Pins the user_id predicate in the DELETE verb: user B un-completing an
+    # item must never touch user A's row for the same collectible.
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    r = await user_client.put("/api/progress/1")
+    assert r.json()["status"] == "added"
+
+    r = await second_user_client.delete("/api/progress/1")
+    assert r.status_code == 200
+    assert r.json()["status"] == "not_found"
+
+    r = await user_client.get("/api/progress")
+    assert r.json() == [1]
