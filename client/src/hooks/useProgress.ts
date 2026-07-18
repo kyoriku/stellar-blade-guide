@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
-import { API_BASE_URL, readError, errorMessage } from '../services/api'
+import { API_BASE_URL, ApiError, readError, errorMessage } from '../services/api'
 
 // Also hardcoded in AuthContext's merge-on-login effect — keep in sync.
 const STORAGE_KEY = 'sb_progress'
@@ -37,7 +37,7 @@ export function useProgress() {
     queryKey: ['progress'],
     queryFn: async () => {
       const res = await authFetch(`${API_BASE_URL}/progress`)
-      if (!res.ok) throw new Error(await readError(res, 'Failed to load progress'))
+      if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to load progress'))
       const ids: number[] = await res.json()
       return ids
     },

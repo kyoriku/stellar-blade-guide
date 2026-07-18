@@ -32,6 +32,7 @@ from app.services.auth import (
     COOKIE_NAME,
     set_refresh_cookie,
     clear_refresh_cookie,
+    clear_refresh_cookie_headers,
     _issue_tokens,
     RESET_TOKEN_TTL,
     _send_reset_email,
@@ -120,17 +121,33 @@ async def refresh(
         user_id = int(user_id_str)
     except (ValueError, AttributeError):
         request.state.auth_fail_reason = "malformed-cookie"
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Your session is invalid. Please sign in again.")
+        # Definitive rejections clear the dead cookie, or the browser re-presents
+        # it on every visit for up to 7 days. A Redis outage never reaches these
+        # raises — it surfaces as error_handler's 503 — so an outage can't clear
+        # anyone's cookie.
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Your session is invalid. Please sign in again.",
+            headers=clear_refresh_cookie_headers(),
+        )
 
     if not await validate_refresh_token(user_id, refresh_token):
         request.state.auth_fail_reason = "revoked-or-expired"
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalid or expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token invalid or expired",
+            headers=clear_refresh_cookie_headers(),
+        )
 
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
     user = result.scalar_one_or_none()
     if not user:
         request.state.auth_fail_reason = "user-not-found"
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+            headers=clear_refresh_cookie_headers(),
+        )
 
     # Rotate with a grace window: demote the old token instead of revoking it,
     # so a client that never received this response can retry (logout and

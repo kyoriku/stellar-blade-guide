@@ -104,6 +104,9 @@ async def test_redis_timeout_on_refresh_returns_503(resilience_client, fake_redi
     body = r.json()
     assert body["error"] == "Service temporarily unavailable"
     assert body["path"] == "/api/auth/refresh"
+    # An outage must never clear anyone's cookie — only the refresh route's
+    # definitive 401 rejections carry the delete-cookie header.
+    assert "refresh_token" not in r.headers.get("set-cookie", "")
 
 
 async def test_non_redis_error_still_returns_500(resilience_client):

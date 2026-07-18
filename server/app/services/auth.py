@@ -55,6 +55,15 @@ def clear_refresh_cookie(response: Response) -> None:
     )
 
 
+def clear_refresh_cookie_headers() -> dict[str, str]:
+    """Delete-cookie header for HTTPException responses, where headers set on
+    the injected Response are dropped. Routes through clear_refresh_cookie so
+    the domain+path lockstep invariant above holds by construction."""
+    response = Response()
+    clear_refresh_cookie(response)
+    return {"Set-Cookie": response.headers["set-cookie"]}
+
+
 def user_to_dict(user: User) -> dict:
     return {
         "id": user.id,

@@ -238,6 +238,42 @@ async def test_refresh_revoked_token_returns_401(auth_client, test_user):
     assert r.json()["detail"] == "Refresh token invalid or expired"
 
 
+async def test_refresh_revoked_401_clears_cookie(auth_client, test_user):
+    r_login = await auth_client.post("/api/auth/login", json={
+        "email": test_user.email,
+        "password": "password123",
+    })
+    saved_value = r_login.cookies["refresh_token"]
+    await auth_client.post("/api/auth/logout")
+
+    r = await auth_client.post(
+        "/api/auth/refresh",
+        headers={"Cookie": f"refresh_token={saved_value}"},
+    )
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Refresh token invalid or expired"
+    # The definitive rejection must expire the dead cookie, or the browser
+    # re-presents it on every visit for up to 7 days. Path must match the
+    # set/clear lockstep invariant in services/auth.py.
+    cookie = r.headers.get("set-cookie", "")
+    assert cookie.startswith("refresh_token=")
+    assert "Max-Age=0" in cookie
+    assert "Path=/api/auth" in cookie
+
+
+async def test_refresh_malformed_cookie_401_clears_cookie(auth_client):
+    r = await auth_client.post(
+        "/api/auth/refresh",
+        headers={"Cookie": "refresh_token=garbage-without-a-colon"},
+    )
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Your session is invalid. Please sign in again."
+    cookie = r.headers.get("set-cookie", "")
+    assert cookie.startswith("refresh_token=")
+    assert "Max-Age=0" in cookie
+    assert "Path=/api/auth" in cookie
+
+
 async def test_refresh_rotation_demotes_old_token_with_grace_ttl(auth_client, test_user, fake_redis):
     r_login = await auth_client.post("/api/auth/login", json={
         "email": test_user.email,

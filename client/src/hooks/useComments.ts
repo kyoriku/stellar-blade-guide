@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
-import { API_BASE_URL, readError } from '../services/api'
+import { API_BASE_URL, ApiError, readError } from '../services/api'
 
 export interface CommentData {
   id: number
@@ -27,7 +27,7 @@ export function useComments(contentType: string, contentId: number) {
       const res = await fetch(`${API_BASE_URL}/comments/${contentType}/${contentId}`, {
         cache: 'no-store',
       })
-      if (!res.ok) throw new Error(await readError(res, 'Failed to load comments'))
+      if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to load comments'))
       return res.json()
     },
     enabled: !!contentType && !!contentId,
