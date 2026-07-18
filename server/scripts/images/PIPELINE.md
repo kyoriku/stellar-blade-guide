@@ -2,8 +2,7 @@
 
 How site images get from a game capture to the browser, and how to work with the
 pipeline without breaking anything. Written to be self-sufficient: assume no other
-context. Status: being built out during the R2 migration; sections marked
-"added in Phase N" describe scripts that land in later migration phases.
+context.
 
 ## Why R2 and how caching works
 
@@ -21,16 +20,14 @@ a year with no way to purge browser caches.
 
 ## URL scheme
 
-R2 object key = the Cloudinary public_id path this site already used, so keys are
-deterministic from local file paths:
+R2 object keys are deterministic from local file paths:
 
 - Collectibles: `stellar-blade/collectibles/<level>/<location>/<file>`
 - Walkthroughs: `stellar-blade/walkthroughs/<type>/<mission>/<file>`
 - One-off site assets (heroes, og banner): `stellar-blade/site/<name>`
 
 Path segments are the local path lowercased with underscores and spaces turned
-into hyphens and `&` into `and` (see `derive_key` in `generate_variants.py`,
-which mirrors `upload_cloudinary.py`).
+into hyphens and `&` into `and` (see `derive_key` in `generate_variants.py`).
 
 Per source image, the staged/uploaded files are:
 
@@ -41,10 +38,10 @@ Per source image, the staged/uploaded files are:
   copy under that name so no srcSet candidate 404s.
 - The home hero additionally has `-w1920` and `-w2560`.
 - `stellar-blade/site/og-banner.webp` is a finished 1200x630 social card
-  (the old Cloudinary `t_og_card` render) used only as the default og:image.
+  used only as the default og:image.
 
 No version numbers appear anywhere in paths. Client code builds variant URLs by
-inserting `-w{N}` before `.webp` (`client/src/utils/cloudinary.ts`).
+inserting `-w{N}` before `.webp` (`client/src/utils/image.ts`).
 
 ## Scripts, in pipeline order
 
@@ -74,34 +71,18 @@ documented exclusions (promo art, not captures).
    it can be deleted at any time to reclaim disk.
 2. `upload_r2.py` : uploads `r2-staging/` to the `stellar-blade-guide-images`
    bucket with correct Content-Type and Cache-Control headers, skipping keys
-   already in the bucket, and writes `r2-url-mapping.json` (old Cloudinary URL
-   to new R2 URL, migration-era assets only). Dry run first, typed
-   confirmation. A separate `--overwrite` flag exists for sanctioned
-   replace-in-place refreshes only (see "Replacing an image" for why this is
-   never the default): it bypasses the skip, states the replacement count in
-   the dry run, and requires typing `overwrite` instead of `yes`.
-3. `update_r2_urls.py` : rewrites image URLs in seed JSON and
-   `categoryImages.ts`. Dry run before every write. Three passes: Cloudinary
-   URL to R2 URL via `r2-url-mapping.json` (version-agnostic, migration only),
-   staged local `/assets/images/...` path to R2 URL by direct derivation (the
-   permanent new-content path, guarded on the staged file existing in
-   `r2-staging/`), and a reverse mode that restores Cloudinary URLs for
-   migration entries.
+   already in the bucket. Dry run first, typed confirmation. A separate
+   `--overwrite` flag exists for sanctioned replace-in-place refreshes only
+   (see "Replacing an image" for why this is never the default): it bypasses
+   the skip, states the replacement count in the dry run, and requires typing
+   `overwrite` instead of `yes`.
+3. `update_r2_urls.py` : rewrites staged local `/assets/images/...` paths in
+   seed JSON to R2 URLs by direct derivation, guarded on the staged file
+   existing in `r2-staging/`. Dry run before every write. R2 URLs are a pure
+   function of the local path, so no mapping is involved.
 4. Seeding is unchanged: `scripts/db/seed_collectibles.py` and
    `scripts/db/seed_walkthroughs.py` store whatever URLs the seed JSON holds
    and invalidate the Redis response cache.
-
-Both mapping files (`url-mapping.json`, `r2-url-mapping.json`) are frozen
-migration-era artifacts, retired from the manifest role on 2026-07-12 and
-deletable-but-retained since 2026-07-13, when the first real content batch
-shipped with both checks agreeing and the legacy cross-check was removed
-from `generate_variants.py`. They are retained because `upload_r2.py` still
-reads `url-mapping.json` on every run to rebuild `r2-url-mapping.json`
-(consumed by `update_r2_urls.py`'s migration-era passes), and because final
-deletion of `url-mapping.json` waits for Phase 6's Cloudinary reconciliation
-cross-check (both tracked in `docs/DECOMMISSION.md`). New content never
-touches them: R2 URLs are a pure function of the local path, so no mapping
-is needed going forward.
 
 ## Adding new content
 
@@ -198,23 +179,3 @@ copy keeps showing the identical correct image until natural cache turnover.
 Any change to what an image DEPICTS must still rename. The same refresh
 retired the 1080p compression step (`compress_images.py` deleted; the
 `*_1080p` trees removed) so the pipeline sources directly from masters.
-
-## Rollback, per migration phase
-
-Historical record of the 2026-07-11 migration; the phase tooling it names
-(fetch script, compress step) has since been retired.
-
-- Phase 0 (fetch script): delete `client/public/assets/images/Site/` and revert
-  the commit. Nothing external changed.
-- Phase 1 (variant generation): delete `r2-staging/` and revert the commit.
-  Nothing external changed.
-- Phase 2 (upload): empty the `stellar-blade-guide-images` bucket (or delete the
-  uploaded prefixes) and delete `r2-url-mapping.json`. The site never referenced
-  R2, so nothing user-facing changed.
-- Phase 3 (client dual-scheme builder + CSP): revert the client commit and
-  redeploy. Cloudinary URLs still flow through the old code path.
-- Phase 4 (local data cutover): run `update_r2_urls.py` reverse mode to restore
-  Cloudinary URLs in seed JSON and `categoryImages.ts`, then re-seed locally.
-- Phase 5 (prod cutover): reverse mode, redeploy the previous client build, run
-  `prod_seed.py` to re-seed prod and purge the Cloudflare edge. Cloudinary stays
-  fully live until decommission, so rollback is always available.

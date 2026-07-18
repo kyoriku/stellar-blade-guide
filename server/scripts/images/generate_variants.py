@@ -14,9 +14,8 @@ from PIL import Image
 # native resolution (the masters tree is the publication manifest: curated
 # captures only; a file present there WILL publish). Layout in r2-staging/
 # mirrors R2 keys exactly: {key}.webp (full size, lightbox/stored URL) +
-# {key}-w{N}.webp variants. Keys reuse upload_cloudinary.py's public_id
-# derivation so R2 paths match the original Cloudinary paths and
-# r2-url-mapping.json can be joined on them.
+# {key}-w{N}.webp variants. Keys are a pure function of the masters-relative
+# path (kebab-cased; see derive_key).
 
 STANDARD_WIDTHS = [640, 960, 1200, 1600]
 HERO_WIDTHS = [640, 960, 1200, 1600, 1920, 2560]
@@ -51,7 +50,7 @@ SITE_HERO_STEM = 'home-hero'
 
 
 def derive_key(rel_path_clean):
-    """Mirror upload_cloudinary.py public_id derivation exactly."""
+    """Derive the R2 key from a masters-relative path (kebab-cased)."""
     folder_path = rel_path_clean.parent.as_posix().replace('_', '-').replace(' ', '-').lower()
     filename = rel_path_clean.stem.replace('_', '-').replace(' ', '-').replace('&', 'and').lower()
     if rel_path_clean.parts[0] == 'Walkthroughs':
@@ -64,9 +63,8 @@ def collect_references():
 
     Returns (r2_keys, local_rels): R2 references as derived keys, authored
     local references as masters-tree-relative paths. Together with
-    check_manifest() this is the manifest check (it replaced the retired
-    url-mapping.json cross-check): it proves every master is referenced by a
-    live page and every referenced image has a master.
+    check_manifest() this is the manifest check: it proves every master is
+    referenced by a live page and every referenced image has a master.
     """
     r2_keys, local_rels = set(), set()
     ref_files = sorted(SEED_DATA_DIR.rglob('*.json'))

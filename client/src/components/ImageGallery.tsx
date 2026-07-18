@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { type CollectibleImage } from '../services/api'
 import { ZoomIn, Image as ImageIcon } from 'lucide-react'
 import { loadedUrlCache } from '../utils/imageCache'
-import { thumbnailUrl, buildSrcSet, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES } from '../utils/cloudinary'
+import { thumbnailUrl, buildSrcSet, predictRenderedWidth, SINGLE_SIZES, GRID_SIZES } from '../utils/image'
 
 interface ImageGalleryProps {
   images: CollectibleImage[];

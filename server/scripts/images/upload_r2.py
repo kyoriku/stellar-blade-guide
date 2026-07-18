@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import json
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -13,32 +12,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Uploads r2-staging/ to the R2 bucket 1:1 (staging layout == object keys) and
-# writes r2-url-mapping.json: canonical stored Cloudinary URL -> R2 original URL.
+# Uploads r2-staging/ to the R2 bucket 1:1 (staging layout == object keys).
 # Immutable caching: objects are never overwritten; a changed image gets a new
 # key (see PIPELINE.md "Replacing an image").
 
 STAGING_DIR = Path(__file__).parent.parent.parent.parent / 'r2-staging'
-MAPPING_FILE = Path(__file__).parent / 'url-mapping.json'
-R2_MAPPING_FILE = Path(__file__).parent / 'r2-url-mapping.json'
-SEED_DATA_DIR = Path(__file__).parent.parent.parent / 'seed-data'
-CLIENT_SRC_DIR = Path(__file__).parent.parent.parent.parent / 'client' / 'src'
 
 CACHE_CONTROL = 'public, max-age=31536000, immutable'
 CONTENT_TYPE = 'image/webp'
 UPLOAD_WORKERS = 16
-
-# Old manually-uploaded DLC assets, superseded by pipeline re-uploads. Their URLs
-# must not survive anywhere; presence means the pre-Phase-0 repointing regressed.
-FORBIDDEN_URL_MARKERS = ['zyaza4', 'mtwsqs']
-
-# Cloudinary-only site assets (downloaded by fetch_cloudinary_assets.py). Keys are
-# the exact URL strings hardcoded in client code; values are R2 keys.
-SITE_ASSET_URLS = {
-    'https://res.cloudinary.com/{cloud}/image/upload/f_webp,q_auto/v1771136778/stellar_blade2_c9qinq.jpg': 'stellar-blade/site/home-hero.webp',
-    'https://res.cloudinary.com/{cloud}/image/upload/f_webp,q_auto/v1780723056/Stellar_Blade_Blood_Rain_xipufx.jpg': 'stellar-blade/site/blood-rain-hero.webp',
-    'https://res.cloudinary.com/{cloud}/image/upload/t_og_card/v1764288880/stellar-blade/homepage/banner.jpg': 'stellar-blade/site/og-banner.webp',
-}
 
 
 def get_client():
@@ -54,58 +36,9 @@ def get_client():
     )
 
 
-def derive_key_from_mapping_key(mapping_key):
-    """Mirror upload_cloudinary.py/generate_variants.py public_id derivation,
-    starting from a url-mapping.json key (/assets/images/<OriginalCase path>)."""
-    rel_path_clean = Path(mapping_key[len('/assets/images/'):])
-    folder_path = rel_path_clean.parent.as_posix().replace('_', '-').replace(' ', '-').lower()
-    filename = rel_path_clean.stem.replace('_', '-').replace(' ', '-').replace('&', 'and').lower()
-    if rel_path_clean.parts[0] == 'Walkthroughs':
-        return f"stellar-blade/{folder_path}/{filename}"
-    return f"stellar-blade/collectibles/{folder_path}/{filename}"
-
-
-def check_forbidden_urls():
-    """Abort if the superseded manual DLC URLs still appear anywhere."""
-    hits = []
-    search_files = list(SEED_DATA_DIR.rglob('*.json')) + list(CLIENT_SRC_DIR.rglob('*.ts')) + list(CLIENT_SRC_DIR.rglob('*.tsx'))
-    for f in search_files:
-        try:
-            text = f.read_text(encoding='utf-8')
-        except (UnicodeDecodeError, OSError):
-            continue
-        for marker in FORBIDDEN_URL_MARKERS:
-            if marker in text:
-                hits.append(f"{f}: {marker}")
-    return hits
-
-
-def build_r2_mapping(public_base):
-    """Canonical stored Cloudinary URL -> R2 original URL, for every pipeline
-    asset in url-mapping.json plus the hardcoded site assets."""
-    url_mapping = json.load(open(MAPPING_FILE, encoding='utf-8'))
-    cloud = os.getenv('CLOUDINARY_CLOUD_NAME')
-    r2_mapping = {}
-    missing_staged = []
-    for mapping_key, base_url in url_mapping.items():
-        canonical = base_url.replace('/upload/', '/upload/f_webp,q_auto/', 1)
-        key = derive_key_from_mapping_key(mapping_key)
-        if not (STAGING_DIR / f"{key}.webp").exists():
-            missing_staged.append(mapping_key)
-            continue
-        r2_mapping[canonical] = f"{public_base}/{key}.webp"
-    for url_template, key in SITE_ASSET_URLS.items():
-        if not (STAGING_DIR / key).exists():
-            missing_staged.append(key)
-            continue
-        r2_mapping[url_template.format(cloud=cloud)] = f"{public_base}/{key}"
-    return r2_mapping, missing_staged
-
-
 def upload(dry_run=True, overwrite=False):
     start = time.time()
     bucket = os.getenv('R2_BUCKET')
-    public_base = (os.getenv('R2_PUBLIC_BASE_URL') or '').rstrip('/')
 
     files = sorted(p for p in STAGING_DIR.rglob('*.webp'))
     print(f"\n\033[36m=== Scanning ===\033[0m")
@@ -116,14 +49,6 @@ def upload(dry_run=True, overwrite=False):
     if not files:
         print("\033[31m✗ Nothing staged — run generate_variants.py first\033[0m")
         return False
-
-    hits = check_forbidden_urls()
-    if hits:
-        print("\033[31m✗ Superseded manual DLC URLs still referenced — fix before uploading:\033[0m")
-        for h in hits[:10]:
-            print(f"\033[31m    {h}\033[0m")
-        return False
-    print("\033[32m✓ Superseded DLC URLs absent from seed data and client\033[0m")
 
     client = get_client()
     existing = set()
@@ -185,18 +110,6 @@ def upload(dry_run=True, overwrite=False):
             if done % 500 == 0 or done == len(pending):
                 print(f"\033[90m[{done}/{len(pending)}] {uploaded} uploaded, {len(errors)} errors ({time.time() - start:.0f}s)\033[0m")
 
-    r2_mapping, missing_staged = build_r2_mapping(public_base)
-    if missing_staged:
-        # Expected steady-state after the 2026-07-13 timestamp rename: the
-        # frozen url-mapping still records pre-rename paths, so their derived
-        # keys have no staged file. Dropped from the rebuild; NOT a loss
-        # signal (the seed-based manifest check in generate_variants.py is
-        # the integrity authority). See docs/DECOMMISSION.md mapping item.
-        print(f"\033[90m→ {len(missing_staged)} url-mapping entries have no staged file "
-              f"(expected post-rename; dropped from the r2-url-mapping rebuild)\033[0m")
-    with open(R2_MAPPING_FILE, 'w', encoding='utf-8') as f:
-        json.dump(r2_mapping, f, indent=2, ensure_ascii=False)
-
     elapsed = time.time() - start
     print(f"\n\033[36m=== Summary ===\033[0m")
     print(f"\033[32m✓ Uploaded: {uploaded}\033[0m")
@@ -205,7 +118,6 @@ def upload(dry_run=True, overwrite=False):
         print(f"\033[31m✗ Errors: {len(errors)}\033[0m")
         for err in errors[:10]:
             print(f"\033[31m    {err}\033[0m")
-    print(f"→ r2-url-mapping.json: {len(r2_mapping)} entries -> {R2_MAPPING_FILE}")
     print(f"→ Time: {int(elapsed // 60)}m {int(elapsed % 60)}s")
 
     if errors:
@@ -239,8 +151,8 @@ if __name__ == '__main__':
         print("until purged or naturally expired. Content changes must rename instead.")
         confirm_word = 'overwrite'
     else:
-        print("This will upload the files listed above to R2 with immutable cache headers")
-        print("and write r2-url-mapping.json. Existing objects are never overwritten.")
+        print("This will upload the files listed above to R2 with immutable cache headers.")
+        print("Existing objects are never overwritten.")
         confirm_word = 'yes'
     print(f"\n\033[33mType '{confirm_word}' to proceed:\033[0m ", end='')
     try:

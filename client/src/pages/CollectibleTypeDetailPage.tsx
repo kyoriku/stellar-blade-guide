@@ -15,7 +15,7 @@ import { COLLECTIBLE_IMAGES, UPGRADE_IMAGES, COSMETIC_IMAGES, MATERIAL_IMAGES } 
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
-import { ogImageUrl } from '../utils/cloudinary'
+import { ogImageUrl } from '../utils/image'
 import { useProgress } from '../hooks/useProgress'
 import { useActiveSection } from '../hooks/useActiveSection'
 import SEO from '../components/SEO';

@@ -22,7 +22,7 @@ SEED_DIR = SERVER_DIR / "seed-data"
 DOC_PATH = SERVER_DIR.parent / "docs" / "missing-images.md"
 SEED_DB_SOURCE = SERVER_DIR / "scripts" / "db" / "seed_db.py"
 
-CLOUDINARY = "img.stellarbladeguide.com"
+CDN_HOST = "img.stellarbladeguide.com"
 STAGED_PREFIX = "/assets/"  # logical-key namespace (matches seed JSON URLs), not a filesystem path
 CYCLE_ORDER = ["base", "ng+", "ng++", "dlc"]
 UNRANKED = 10**6
@@ -39,11 +39,11 @@ def classify_urls(urls: list[str]) -> str:
     """none | staged | mixed | complete | anomaly for a list of image URLs."""
     if not urls:
         return "none"
-    cloud = sum(1 for u in urls if CLOUDINARY in u)
+    cdn = sum(1 for u in urls if CDN_HOST in u)
     staged = sum(1 for u in urls if u.startswith(STAGED_PREFIX))
-    if cloud + staged != len(urls):
+    if cdn + staged != len(urls):
         return "anomaly"
-    if cloud == len(urls):
+    if cdn == len(urls):
         return "complete"
     if staged == len(urls):
         return "staged"
@@ -188,10 +188,10 @@ def scan_walkthroughs():
             thumb = w.get("thumbnail_url") or ""
             blocks = w.get("content") or []
             unimaged = [b for b in blocks if not b.get("images")]
-            urls = [thumb] if thumb else []
-            urls += [i["url"] for b in blocks for i in (b.get("images") or [])]
+            urls = [normalize_image_path(thumb)] if thumb else []
+            urls += [normalize_image_path(i["url"]) for b in blocks for i in (b.get("images") or [])]
             has_staged = any(u.startswith(STAGED_PREFIX) for u in urls)
-            has_anomaly = any(CLOUDINARY not in u and not u.startswith(STAGED_PREFIX) for u in urls)
+            has_anomaly = any(CDN_HOST not in u and not u.startswith(STAGED_PREFIX) for u in urls)
             counts["total"] += 1
             if has_anomaly:
                 anomalies.append(f"walkthroughs/{category}/{f.stem}")
@@ -321,7 +321,7 @@ def build_doc(c_counts, c_by_cycle, records, loc_totals, complete_levels, orders
     render_walkthroughs(w_counts, categories, lines)
 
     if anomalies:
-        lines.append("## Anomalies (URLs that are neither Cloudinary nor /assets/ keys)")
+        lines.append("## Anomalies (URLs that are neither CDN URLs nor /assets/ keys)")
         lines.append("")
         lines.extend(f"- {a}" for a in anomalies)
         lines.append("")
