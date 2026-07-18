@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
-import { API_BASE_URL } from '../services/api'
+import { API_BASE_URL, ApiError } from '../services/api'
 
 export interface NotificationItem {
   id: number
@@ -35,7 +35,7 @@ export function useNotifications() {
     queryKey: NOTIFICATIONS_KEY,
     queryFn: async () => {
       const res = await authFetch(`${API_BASE_URL}/notifications`)
-      if (!res.ok) throw new Error('Failed to load notifications')
+      if (!res.ok) throw new ApiError(res.status, 'Failed to load notifications')
       return res.json() as Promise<NotificationList>
     },
     // Wait for the mount refresh like useProgress does — isAuthenticated alone

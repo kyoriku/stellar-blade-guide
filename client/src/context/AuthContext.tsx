@@ -88,7 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) {
           setUser(null)
           setAccessToken(null)
-          localStorage.removeItem(SESSION_FLAG)
+          // Only a definitive 401 ends the session: clear the hint and tell the
+          // user. A 503 (Redis outage) or other transient failure must not —
+          // the hint survives so the next load retries, and the in-memory
+          // teardown self-heals on the next successful refresh.
+          if (res.status === 401) {
+            localStorage.removeItem(SESSION_FLAG)
+            showToast('Your session expired — please log in again.')
+          }
           return null
         }
         const data = await res.json()
@@ -97,9 +104,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         lastRefreshRef.current = Date.now()
         return data.access_token
       } catch {
+        // Network failure — never definitive; keep the hint so the next load
+        // retries, and stay silent (no false logout announcement mid-outage).
         setUser(null)
         setAccessToken(null)
-        localStorage.removeItem(SESSION_FLAG)
         return null
       } finally {
         refreshInFlightRef.current = null
@@ -109,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const p = run()
     refreshInFlightRef.current = p
     return p
-  }, [])
+  }, [showToast]) // stable (ToastContext useCallback), so refreshToken identity holds
 
   // Mirror only the display fields into localStorage on every change, so the
   // next reload hydrates the avatar/bell instantly (the refresh reconciles it).
