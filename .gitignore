@@ -69,9 +69,6 @@ r2-staging/
 
 # Server specific files
 server/seed-data
-# migration-era URL mappings (local artifacts; see scripts/images/PIPELINE.md)
-server/scripts/images/url-mapping.json
-server/scripts/images/r2-url-mapping.json
 # prune ledger: bucket keys pending deletion via scripts/images/prune_bucket.py
 server/scripts/images/prune-pending.json
 # sitemap lastmod state: url -> {hash, lastmod} sidecar for generate_sitemap.py

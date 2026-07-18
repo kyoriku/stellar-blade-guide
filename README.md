@@ -78,7 +78,7 @@ An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, 
 
 **Infrastructure**
 
-Content images are pre-generated as static WebP variants (four srcSet widths plus a full-size original per image, no runtime transforms) and served from Cloudflare R2 behind `img.stellarbladeguide.com` with immutable one-year cache headers and zone edge caching. The image pipeline migrated from Cloudinary to R2 in six independently verifiable phases with zero downtime: variants were generated and uploaded while Cloudinary stayed live, the client shipped a dual-scheme URL builder that handles both hosts, and the database cutover was a reversible URL rewrite. Cloudinary remains in place for user avatar uploads and as a rollback path until decommission. Pipeline details live in `server/scripts/images/PIPELINE.md`.
+Content images are pre-generated as static WebP variants (four srcSet widths plus a full-size original per image, no runtime transforms) and served from Cloudflare R2 behind `img.stellarbladeguide.com` with immutable one-year cache headers and zone edge caching. The image pipeline migrated from Cloudinary to R2 in six independently verifiable phases with zero downtime, and Cloudinary has since been decommissioned for content; it remains in place solely for user avatar uploads. Pipeline details live in `server/scripts/images/PIPELINE.md`.
 
 **Auth & User System**
 - Email/password registration and login

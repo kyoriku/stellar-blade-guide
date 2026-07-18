@@ -8,7 +8,7 @@ The FastAPI backend for [Stellar Blade Guide](../README.md). It serves all guide
 - **SQLAlchemy 2.0** (async, `asyncpg` driver) + **Pydantic v2**
 - **PostgreSQL** (content, users, progress, comments) + **Redis** (cache, rate limiting, sessions)
 - **PyJWT** + **passlib/argon2** for auth
-- **Cloudflare R2** (content image hosting), **Cloudinary** (user avatars; migration rollback), **OpenAI Moderation API** (comments and avatars), **Resend** (email)
+- **Cloudflare R2** (content image hosting), **Cloudinary** (user avatars), **OpenAI Moderation API** (comments and avatars), **Resend** (email)
 - Managed with [uv](https://docs.astral.sh/uv/); tested with **pytest**
 
 ## Layout
@@ -34,8 +34,8 @@ app/
 scripts/
   dev_workflow.py    one-command content pipeline (generate variants, upload, update URLs, seed)
   db/                seed and export scripts (seed_collectibles.py, seed_walkthroughs.py, ...)
-  images/            R2 image pipeline (generate_variants.py, upload_r2.py, update_r2_urls.py; full flow
-                     documented in images/PIPELINE.md; legacy Cloudinary scripts retained until decommission)
+  images/            R2 image pipeline (generate_variants.py, upload_r2.py, update_r2_urls.py,
+                     prune_bucket.py; full flow documented in images/PIPELINE.md)
   migrations/        manual, one-off schema migration scripts (no Alembic)
 seed-data/           JSON source of truth for all content (untracked; carries its own README)
 tests/               pytest suite (20 modules + conftest.py)
@@ -71,9 +71,9 @@ Configuration is read from `server/.env` (gitignored). Secrets should be generat
 | `FRONTEND_URL` | base URL used in OAuth redirects and password-reset emails |
 | `OPENAI_API_KEY` | comment and avatar moderation (moderation fails open if unreachable) |
 | `RESEND_API_KEY` | transactional email (password reset) |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary account (user avatars and legacy migration scripts only) |
-| `CLOUDINARY_API_KEY` | Cloudinary API key (avatars/legacy only) |
-| `CLOUDINARY_API_SECRET` | Cloudinary API secret (avatars/legacy only) |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary account (user avatars only) |
+| `CLOUDINARY_API_KEY` | Cloudinary API key (avatars only) |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret (avatars only) |
 | `R2_ACCOUNT_ID` | Cloudflare account id for the R2 S3 endpoint (image pipeline scripts only) |
 | `R2_ACCESS_KEY_ID` | R2 API token access key (image pipeline scripts only) |
 | `R2_SECRET_ACCESS_KEY` | R2 API token secret (image pipeline scripts only) |
@@ -115,7 +115,7 @@ ORIGIN_SECRET=                   # openssl rand -hex 32
 OPENAI_API_KEY=your_openai_api_key
 RESEND_API_KEY=your_resend_api_key
 
-CLOUDINARY_CLOUD_NAME=your_cloud_name    # avatars/legacy scripts only
+CLOUDINARY_CLOUD_NAME=your_cloud_name    # avatars only
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
@@ -217,7 +217,7 @@ New content goes through one command:
 uv run python scripts/dev_workflow.py collectibles    # or walkthroughs
 ```
 
-which pre-generates the WebP variants from the full-resolution masters, uploads them to R2, rewrites the JSON URLs, and seeds PostgreSQL (`scripts/images/PIPELINE.md` documents each step, the URL scheme, and the image-replacement and rollback procedures). To re-seed without touching images:
+which pre-generates the WebP variants from the full-resolution masters, uploads them to R2, rewrites the JSON URLs, and seeds PostgreSQL (`scripts/images/PIPELINE.md` documents each step, the URL scheme, and the image-replacement procedure). To re-seed without touching images:
 
 ```bash
 uv run python scripts/db/seed_collectibles.py
