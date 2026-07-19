@@ -160,7 +160,7 @@ after a successful seed + purge.
 `prod_seed.py` purges only the seeded API surface: every cached GET URL
 under the six API prefixes, derived live by
 `scripts/cache/purge_api_cache.py` (FastAPI route table x DB slugs x client
-navigation constants, batched at the Pro plan's 30-URLs-per-call limit,
+navigation constants, batched per the purge API's limits,
 every response verified; `--dry-run` lists without purging). Images are
 never purged: their URLs are immutable and content changes always rename,
 so the ~10k-object image cache stays warm across seeds. Any enumeration or
