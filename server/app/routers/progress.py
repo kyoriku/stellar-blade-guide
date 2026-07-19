@@ -9,7 +9,7 @@ from app.db.database import get_db
 from app.models.users import User
 from app.models.progress import UserProgress
 from app.models.collectibles import Collectible
-from app.schemas.progress import ProgressWriteResponse, SyncRequest, SyncResponse, ToggleResponse
+from app.schemas.progress import ProgressWriteResponse, SyncRequest, SyncResponse
 from app.core.auth import get_current_user
 from app.core.security import limiter
 from app.config.settings import settings
@@ -134,52 +134,15 @@ async def unset_progress(
     return {"status": write_status, "collectible_id": collectible_id}
 
 
-# DEPRECATED — transitional only: SPA tabs opened before this deploy still call
-# POST. Next release, replace this handler's body with
-#   raise HTTPException(status_code=410, detail="This version of the guide is "
-#       "out of date — refresh the page to keep tracking progress.")
-# (410 with that detail, NOT route deletion: the old client surfaces the detail
-# string in its error toast, so stale tabs fail loud instead of hitting a 404.)
-@router.post("/{collectible_id}", response_model=ToggleResponse, status_code=status.HTTP_200_OK)
+# Retired blind-toggle route, kept registered as a 410 signpost: SPA tabs from
+# before the intent-verb deploy still POST here, and the old client surfaces
+# this detail string in its error toast — a loud, instructive failure instead
+# of a 404. No auth on purpose: a dead-session stale tab gets the instruction
+# directly rather than a 401 that kicks off a doomed refresh cycle.
+@router.post("/{collectible_id}")
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
-async def toggle_progress(
-    request: Request,
-    collectible_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Toggle a collectible as found/unfound."""
-    # Check collectible exists
-    collectible = await db.execute(
-        select(Collectible.id).where(Collectible.id == collectible_id)
+async def toggle_progress(request: Request, collectible_id: int):
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="This version of the guide is out of date — refresh the page to keep tracking progress.",
     )
-    if not collectible.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Collectible not found")
-
-    result = await db.execute(
-        select(UserProgress)
-        .where(
-            UserProgress.user_id == current_user.id,
-            UserProgress.collectible_id == collectible_id,
-        )
-    )
-    existing = result.scalar_one_or_none()
-
-    if existing:
-        await db.delete(existing)
-        await db.commit()
-        return {"status": "removed", "collectible_id": collectible_id}
-
-    # Upsert rather than a bare INSERT: two concurrent toggles for the same
-    # (user_id, collectible_id) can both pass the SELECT above, and the loser's
-    # INSERT would otherwise violate uq_user_collectible -> IntegrityError -> 500.
-    # ON CONFLICT DO NOTHING makes the loser a silent no-op, and "added" is still
-    # the correct converged state. (Under SQLite in tests this compiles to a bare
-    # ON CONFLICT DO NOTHING, which behaves identically.)
-    await db.execute(
-        pg_insert(UserProgress)
-        .values(user_id=current_user.id, collectible_id=collectible_id)
-        .on_conflict_do_nothing(constraint="uq_user_collectible")
-    )
-    await db.commit()
-    return {"status": "added", "collectible_id": collectible_id}

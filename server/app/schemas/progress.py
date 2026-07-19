@@ -2,11 +2,6 @@ from pydantic import BaseModel
 from typing import List, Literal
 
 
-class ToggleResponse(BaseModel):
-    status: str
-    collectible_id: int
-
-
 class ProgressWriteResponse(BaseModel):
     """Response for the idempotent PUT/DELETE progress verbs. added/removed
     mean the row changed; already_complete/not_found mean it was a no-op —

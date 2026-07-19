@@ -1,8 +1,9 @@
 """
 Tests for the progress endpoints: GET own progress, PUT set-complete,
-DELETE un-complete, POST toggle (deprecated, transitional), POST sync.
+DELETE un-complete, POST sync, and the retired POST toggle (now a 410
+signpost for pre-intent-verb SPA tabs — deliberately unauthenticated).
 
-All five endpoints require authentication — 401 for unauthenticated requests.
+GET/PUT/DELETE/sync require authentication — 401 for unauthenticated requests.
 Token injection follows the test_comments.py pattern: create_access_token()
 is called directly, no login endpoint traffic.
 
@@ -165,39 +166,21 @@ async def test_get_progress_returns_completed_ids(user_client, progress_db_sessi
     assert r.json() == [7]
 
 
-# ── POST /api/progress/{collectible_id} toggle ────────────────────────────────
+# ── POST /api/progress/{collectible_id} — retired, 410 signpost ───────────────
 
-async def test_toggle_unauthenticated_returns_401(progress_client):
-    # get_current_user dependency fires before route body — no collectible needed
+async def test_retired_toggle_post_returns_410(progress_client, user_client):
+    detail = "This version of the guide is out of date — refresh the page to keep tracking progress."
+
+    # No auth dependency on the signpost: a dead-session stale tab gets the
+    # instruction directly instead of a 401 that starts a doomed refresh cycle.
     r = await progress_client.post("/api/progress/1")
-    assert r.status_code == 401
+    assert r.status_code == 410
+    assert r.json()["detail"] == detail
 
-
-async def test_toggle_marks_collectible_as_completed(user_client, progress_db_session):
-    await _seed_collectible(progress_db_session, collectible_id=1)
-
+    # Same signpost with a live session — the route ignores auth state entirely.
     r = await user_client.post("/api/progress/1")
-    assert r.status_code == 200
-    body = r.json()
-    assert body["status"] == "added"
-    assert body["collectible_id"] == 1
-
-
-async def test_toggle_twice_removes_completion(user_client, progress_db_session):
-    await _seed_collectible(progress_db_session, collectible_id=1)
-
-    r1 = await user_client.post("/api/progress/1")
-    assert r1.status_code == 200
-    assert r1.json()["status"] == "added"
-
-    r2 = await user_client.post("/api/progress/1")
-    assert r2.status_code == 200
-    assert r2.json()["status"] == "removed"
-
-
-async def test_toggle_nonexistent_collectible_returns_404(user_client):
-    r = await user_client.post("/api/progress/999")
-    assert r.status_code == 404
+    assert r.status_code == 410
+    assert r.json()["detail"] == detail
 
 
 # ── PUT /api/progress/{collectible_id} (idempotent set-complete) ──────────────
@@ -345,7 +328,7 @@ async def test_progress_isolation_between_users(
     await _seed_collectible(progress_db_session, collectible_id=1)
 
     # User A marks collectible 1 as complete
-    r = await user_client.post("/api/progress/1")
+    r = await user_client.put("/api/progress/1")
     assert r.status_code == 200
     assert r.json()["status"] == "added"
 
