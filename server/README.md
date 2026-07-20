@@ -33,12 +33,12 @@ app/
   middleware/        request-pipeline layers (see Middleware) + rate-limiter and exception-handler setup
 scripts/
   dev_workflow.py    one-command content pipeline (generate variants, upload, update URLs, seed)
-  db/                seed and export scripts (seed_collectibles.py, seed_walkthroughs.py, ...)
+  db/                seed scripts (seed_db.py, seed_collectibles.py, seed_walkthroughs.py)
   images/            R2 image pipeline (generate_variants.py, upload_r2.py, update_r2_urls.py,
                      prune_bucket.py; full flow documented in images/PIPELINE.md)
-  migrations/        manual, one-off schema migration scripts (no Alembic)
+  migrations/        one-off schema migrations, written as needed (no Alembic; executed scripts stay out of the repo)
 seed-data/           JSON source of truth for all content (untracked; carries its own README)
-tests/               pytest suite (20 modules + conftest.py)
+tests/               pytest suite (18 modules + conftest.py)
 pyproject.toml       dependencies + pytest config
 ```
 
@@ -226,7 +226,7 @@ uv run python scripts/db/seed_walkthroughs.py
 
 Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalidates the affected Redis cache patterns. `scripts/prod_seed.py` (production seeding) reads its credentials from `server/.env` (`PROD_*` / `CLOUDFLARE_*`, see Environment Variables) and requires a typed confirmation. `scripts/generate_sitemap.py` regenerates `client/public/sitemap.xml` from the database, deriving each page's `lastmod` from a content hash persisted in `scripts/sitemap-state.json` (gitignored).
 
-Schema changes are manual scripts in `scripts/migrations/` (there is no Alembic). Run them individually with `uv run python scripts/migrations/<script>.py` and update the matching SQLAlchemy model.
+Schema changes are one-off manual scripts written into `scripts/migrations/` as needed (there is no Alembic). Each runs once with `uv run python scripts/migrations/<script>.py` alongside an update to the matching SQLAlchemy model; executed scripts are kept out of the repo, so the directory is empty between schema changes.
 
 Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.13 image serves the API and the built SPA from a single origin as a non-root user.
 
@@ -236,4 +236,4 @@ Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React
 uv run pytest
 ```
 
-265 tests run in about two and a half seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
+275 tests run in about three seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
