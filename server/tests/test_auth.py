@@ -338,6 +338,43 @@ async def test_logout_returns_204(auth_client, test_user):
     assert r.status_code == 204
 
 
+async def test_logout_all_sweeps_demoted_grace_token(auth_client, test_user, fake_redis):
+    # Explicit revocation must beat the rotation grace window: a token still in
+    # its grace window (demoted, not deleted) has to die on logout-all, or a
+    # "sign out everywhere" leaves a live token for up to the grace TTL.
+    r_login = await auth_client.post("/api/auth/login", json={
+        "email": test_user.email,
+        "password": "password123",
+    })
+    old_value = r_login.cookies["refresh_token"]
+
+    r1 = await auth_client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+    access_token = r1.json()["access_token"]
+
+    # The old token is now demoted (grace TTL), not gone.
+    user_id_str, raw_token = old_value.split(":", 1)
+    demoted_key = core_auth._refresh_key(int(user_id_str), raw_token)
+    assert 0 < await fake_redis.ttl(demoted_key) <= core_auth.ROTATION_GRACE_SECONDS
+
+    r = await auth_client.post(
+        "/api/auth/logout-all",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert r.status_code == 204
+
+    # The wildcard sweep took the demoted key too, so re-presenting the
+    # grace-window token now 401s instead of recovering.
+    assert await fake_redis.get(demoted_key) is None
+    auth_client.cookies.clear()
+    r2 = await auth_client.post(
+        "/api/auth/refresh",
+        headers={"Cookie": f"refresh_token={old_value}"},
+    )
+    assert r2.status_code == 401
+    assert r2.json()["detail"] == "Refresh token invalid or expired"
+
+
 # ── Protected route ───────────────────────────────────────────────────────────
 
 async def test_protected_valid_token_returns_200(authenticated_client):

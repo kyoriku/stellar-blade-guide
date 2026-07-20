@@ -152,7 +152,14 @@ async def refresh(
     # Rotate with a grace window: demote the old token instead of revoking it,
     # so a client that never received this response can retry (logout and
     # password changes still hard-revoke).
-    await demote_refresh_token(user_id, refresh_token)
+    prior_ttl = await demote_refresh_token(user_id, refresh_token)
+    # A TTL already within the grace window means this was a superseded token
+    # being retried (lost Set-Cookie / killed tab / wake double-fire), not a
+    # fresh rotation — surface it so these benign recoveries are observable
+    # instead of hiding inside the normal 200 stream.
+    if 0 < prior_ttl <= settings.REFRESH_GRACE_SECONDS:
+        request.state.auth_grace_refresh = True
+        logger.info(f"{CYAN}Grace-window refresh for user {user_id} (token had {prior_ttl}s left){RESET}")
     return await _issue_tokens(user, response)
 
 
