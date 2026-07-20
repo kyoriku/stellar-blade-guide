@@ -61,7 +61,7 @@ async def sync_progress(
     new_ids = [cid for cid in body.collectible_ids if cid in valid_ids and cid not in existing_ids]
 
     # Route the insert through an upsert as a safety net: a concurrent sync (or a
-    # toggle racing this) could re-add a cid that passed the existing_ids dedup
+    # PUT racing this) could re-add a cid that passed the existing_ids dedup
     # above, violating uq_user_collectible -> IntegrityError -> 500. ON CONFLICT
     # DO NOTHING absorbs that. The "added" count stays based on new_ids (accurate
     # fast-path; best-effort under a concurrent race).
@@ -96,8 +96,8 @@ async def set_progress(
     db: AsyncSession = Depends(get_db),
 ):
     """Idempotently mark a collectible as found. A re-assert against an existing
-    row reports already_complete instead of inverting it — the POST toggle below
-    deleted rows when a stale tab re-sent completions."""
+    row reports already_complete instead of inverting it (the retired blind
+    toggle deleted rows when a stale tab re-sent completions)."""
     await _require_collectible(db, collectible_id)
 
     result = await db.execute(
@@ -132,17 +132,3 @@ async def unset_progress(
     await db.commit()
     write_status = "removed" if result.rowcount else "not_found"
     return {"status": write_status, "collectible_id": collectible_id}
-
-
-# Retired blind-toggle route, kept registered as a 410 signpost: SPA tabs from
-# before the intent-verb deploy still POST here, and the old client surfaces
-# this detail string in its error toast — a loud, instructive failure instead
-# of a 404. No auth on purpose: a dead-session stale tab gets the instruction
-# directly rather than a 401 that kicks off a doomed refresh cycle.
-@router.post("/{collectible_id}")
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
-async def toggle_progress(request: Request, collectible_id: int):
-    raise HTTPException(
-        status_code=status.HTTP_410_GONE,
-        detail="This version of the guide is out of date — refresh the page to keep tracking progress.",
-    )

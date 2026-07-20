@@ -1,9 +1,9 @@
 """
 Tests for the progress endpoints: GET own progress, PUT set-complete,
-DELETE un-complete, POST sync, and the retired POST toggle (now a 410
-signpost for pre-intent-verb SPA tabs — deliberately unauthenticated).
+DELETE un-complete, POST sync. (The old POST toggle and its transitional
+410 signpost are gone — a POST to /progress/{id} is method-rejected.)
 
-GET/PUT/DELETE/sync require authentication — 401 for unauthenticated requests.
+All four endpoints require authentication — 401 for unauthenticated requests.
 Token injection follows the test_comments.py pattern: create_access_token()
 is called directly, no login endpoint traffic.
 
@@ -166,21 +166,14 @@ async def test_get_progress_returns_completed_ids(user_client, progress_db_sessi
     assert r.json() == [7]
 
 
-# ── POST /api/progress/{collectible_id} — retired, 410 signpost ───────────────
+# ── POST /api/progress/{collectible_id} — no such route ───────────────────────
 
-async def test_retired_toggle_post_returns_410(progress_client, user_client):
-    detail = "This version of the guide is out of date — refresh the page to keep tracking progress."
-
-    # No auth dependency on the signpost: a dead-session stale tab gets the
-    # instruction directly instead of a 401 that starts a doomed refresh cycle.
+async def test_post_to_progress_id_has_no_handler(progress_client):
+    # The blind toggle and its 410 signpost are both gone. PUT/DELETE remain
+    # registered on this path, so routing rejects the method itself — a POST
+    # handler reappearing here (toggle-style or otherwise) would flip this.
     r = await progress_client.post("/api/progress/1")
-    assert r.status_code == 410
-    assert r.json()["detail"] == detail
-
-    # Same signpost with a live session — the route ignores auth state entirely.
-    r = await user_client.post("/api/progress/1")
-    assert r.status_code == 410
-    assert r.json()["detail"] == detail
+    assert r.status_code == 405
 
 
 # ── PUT /api/progress/{collectible_id} (idempotent set-complete) ──────────────
