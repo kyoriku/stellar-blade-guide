@@ -48,6 +48,12 @@ class Settings:
     # above that cadence or sessions expire between refreshes.
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 15))
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv('REFRESH_TOKEN_EXPIRE_DAYS', 7))
+    # Rotation reuse grace: a just-superseded refresh token is still honored for
+    # this long, so a lost Set-Cookie response / killed tab mid-rotation / wake
+    # double-fire recovers instead of logging the user out. Threat tradeoff: a
+    # stolen cookie replayed against a rotating victim gains <= this window,
+    # nothing against an idle one.
+    REFRESH_GRACE_SECONDS: int = int(os.getenv('REFRESH_GRACE_SECONDS', 60))
     FRONTEND_URL: str = os.getenv('FRONTEND_URL', 'https://stellarbladeguide.com')
 
     # OpenAI
