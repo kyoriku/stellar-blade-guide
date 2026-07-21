@@ -153,22 +153,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken, refreshToken])
 
   // Background tabs throttle/freeze the interval above (and timers don't advance
-  // during system sleep), so a token can silently expire while hidden. When the
-  // tab becomes visible again, refresh if the token is stale — single-flight in
-  // refreshToken collapses the visibilitychange + focus pair into one network call.
+  // during system sleep), so a token can silently expire — or a refresh fired at
+  // machine-wake can fail on not-yet-restored network and null it — while hidden.
+  // On return, recover based on the session hint, NOT accessToken: a transient
+  // failure leaves the hint intact but the token null, and gating on the token
+  // would strand the tab looking logged-out until a manual reload. Single-flight
+  // in refreshToken collapses the visibilitychange + focus pair into one call.
   useEffect(() => {
-    if (!accessToken) return
-    const refreshIfStale = () => {
+    const refreshIfNeeded = () => {
       if (document.visibilityState !== 'visible') return
-      if (Date.now() - lastRefreshRef.current > REFRESH_ON_FOCUS_STALE_MS) {
-        void refreshToken()
-      }
+      if (!localStorage.getItem(SESSION_FLAG)) return // genuinely logged out — nothing to recover
+      const tokenMissing = !accessToken               // dropped by a transient failure → recover now
+      const stale = Date.now() - lastRefreshRef.current > REFRESH_ON_FOCUS_STALE_MS
+      if (tokenMissing || stale) void refreshToken()
     }
-    document.addEventListener('visibilitychange', refreshIfStale)
-    window.addEventListener('focus', refreshIfStale)
+    document.addEventListener('visibilitychange', refreshIfNeeded)
+    window.addEventListener('focus', refreshIfNeeded)
     return () => {
-      document.removeEventListener('visibilitychange', refreshIfStale)
-      window.removeEventListener('focus', refreshIfStale)
+      document.removeEventListener('visibilitychange', refreshIfNeeded)
+      window.removeEventListener('focus', refreshIfNeeded)
     }
   }, [accessToken, refreshToken])
 
