@@ -50,7 +50,7 @@ function setLocalProgress(ids: Set<number>) {
 }
 
 export function useProgress() {
-  const { isAuthenticated, isLoading: authLoading, authFetch } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, accessToken, authFetch } = useAuth()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
@@ -70,7 +70,11 @@ export function useProgress() {
       const ids: number[] = await res.json()
       return ids
     },
-    enabled: isAuthenticated && !authLoading,
+    // Token presence, not just identity: with optimistic identity rendering,
+    // `user` (→ isAuthenticated) survives transient refresh failures, but the
+    // data layer must stay quiet until a real token exists — otherwise every
+    // outage fires tokenless requests that 401 and toast "couldn't load".
+    enabled: isAuthenticated && !authLoading && accessToken !== null,
     staleTime: 5 * 60 * 1000,       // 5 minutes before refetch
     gcTime: 60 * 60 * 1000,          // keep in cache for 1 hour
     // Override the global `false`: a long-backgrounded tab must re-sync before

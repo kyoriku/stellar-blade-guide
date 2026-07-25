@@ -29,7 +29,7 @@ function Navbar() {
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   // const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isRestoring, logout } = useAuth();
   const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch();
   const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError, error: mobileSearchErrorObj } = useSearch(searchQuery);
   const handleLogout = async () => {
@@ -243,8 +243,26 @@ function Navbar() {
             {/* Auth UI */}
             <div className="flex items-center gap-1">
               <SearchTrigger onExpand={() => setOpenDropdown(null)} />
-              {isAuthenticated && user && <NotificationBell />}
               {isAuthenticated && user ? (
+                <NotificationBell />
+              ) : isRestoring ? (
+                // Defensive-only window (hint present, sb_user missing/corrupt
+                // — normally the cached identity renders instead): a static
+                // neutral placeholder reserving the bell's exact footprint so
+                // nothing shifts if the session confirms.
+                <div aria-hidden className="hidden lg:flex h-10 items-center">
+                  <div className="p-2"><div className="w-5 h-5 rounded bg-gray-700" /></div>
+                </div>
+              ) : null}
+              {isRestoring ? (
+                // Static placeholder mirroring the avatar button's footprint
+                // EXACTLY (gap-2 + the w-3.5 chevron) — the right-anchored
+                // cluster must not shift if the real avatar replaces it.
+                <div aria-hidden className="hidden lg:flex items-center gap-2 px-2 py-1.5">
+                  <div className="w-7 h-7 rounded-full bg-gray-700" />
+                  <div className="w-3.5 h-3.5" />
+                </div>
+              ) : isAuthenticated && user ? (
                 <div className="relative hidden lg:block" ref={userDropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(p => !p)}
@@ -264,7 +282,9 @@ function Navbar() {
                   <div className={`absolute right-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${userDropdownOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                     <div className="px-4 py-3 border-b border-gray-700/50 ">
                       <p className="text-sm font-medium text-white truncate">{user.username}</p>
-                      <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                      {/* email isn't cached (PII) — hide the line while the
+                          identity is optimistic instead of rendering a blank */}
+                      {user.email && <p className="text-xs text-gray-400 truncate">{user.email}</p>}
                     </div>
                     <div className="py-1.5">
                       <Link
@@ -409,7 +429,18 @@ function Navbar() {
 
               {/* Mobile Auth Section */}
               <div className="px-4 py-4">
-                {isAuthenticated && user ? (
+                {isRestoring ? (
+                  // Defensive-only window (hint present, no cached identity):
+                  // static neutral row mirroring the signed-in shape so it
+                  // resolves in place (no bell on mobile).
+                  <div aria-hidden className="flex items-center gap-3 px-2 py-2">
+                    <div className="w-8 h-8 rounded-full bg-gray-700 shrink-0" />
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="h-3 w-24 rounded bg-gray-700" />
+                      <div className="h-2.5 w-32 rounded bg-gray-700" />
+                    </div>
+                  </div>
+                ) : isAuthenticated && user ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 px-2 py-2">
                       <div className="w-8 h-8 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -420,7 +451,7 @@ function Navbar() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-white truncate">{user.username}</p>
-                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        {user.email && <p className="text-xs text-gray-400 truncate">{user.email}</p>}
                       </div>
                     </div>
                     <div className="flex gap-3">
