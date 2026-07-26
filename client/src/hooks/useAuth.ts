@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useAuthContext } from '../context/AuthContext'
+import { useAuthContext } from './useAuthContext'
 
 /**
  * Main auth hook — use this everywhere in your components.

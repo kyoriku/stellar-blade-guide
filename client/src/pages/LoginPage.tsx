@@ -25,7 +25,7 @@ export default function LoginPage() {
     setIsSubmitting(true)
     try {
       await login(email, password)
-      navigate(from, { replace: true })
+      void navigate(from, { replace: true })
     } catch (err) {
       setError(errorMessage(err, 'Login failed'))
     } finally {
@@ -96,7 +96,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             {error && (
               <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {error}

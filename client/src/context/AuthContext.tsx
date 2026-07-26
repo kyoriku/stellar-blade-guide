@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { API_BASE_URL, readError } from '../services/api'
 import { useToast } from './ToastContext'
+import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
 // for unauthenticated visitors. Worst case: cleared localStorage causes one
@@ -22,14 +23,10 @@ const REFRESH_ON_FOCUS_STALE_MS = 10 * 60 * 1000 // 10 minutes
 // exempt: a hung 14-min rotation never logs the UI out.
 const RESTORE_MAX_MS = 8000
 
-// Types
-export interface AuthUser {
-  id: number
-  email: string
-  username: string
-  avatar_url: string | null
-  role: 'user' | 'moderator' | 'admin'
-  created_at: string
+// Shape of the /auth/login, /auth/register, and /auth/refresh success bodies.
+interface AuthResponse {
+  user: AuthUser
+  access_token: string
 }
 
 // Cached *display* user so the navbar avatar + bell render instantly on reload,
@@ -51,21 +48,6 @@ function readCachedUser(): AuthUser | null {
     return null
   }
 }
-
-interface AuthContextValue {
-  user: AuthUser | null
-  accessToken: string | null
-  isLoading: boolean
-  isAuthenticated: boolean
-  isRestoring: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, username: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  refreshToken: () => Promise<string | null>
-}
-
-// Context
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 // Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -124,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           return null
         }
-        const data = await res.json()
+        const data = (await res.json()) as AuthResponse
         setUser(data.user)
         setAccessToken(data.access_token)
         lastRefreshRef.current = Date.now()
@@ -168,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
       return
     }
-    refreshToken().finally(() => setIsLoading(false))
+    void refreshToken().finally(() => setIsLoading(false))
   }, [refreshToken])
 
   // Proactive token refresh — refresh 1 minute before the 15 min expiry (the
@@ -176,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!accessToken) return
     const interval = setInterval(() => {
-      refreshToken()
+      void refreshToken()
     }, 14 * 60 * 1000) // every 14 minutes
     return () => clearInterval(interval)
   }, [accessToken, refreshToken])
@@ -213,7 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const local = localStorage.getItem('sb_progress')
       if (local) {
         try {
-          const ids = JSON.parse(local)
+          const ids = JSON.parse(local) as number[]
           if (ids.length > 0) {
             fetch(`${API_BASE_URL}/progress/sync`, {
               method: 'POST',
@@ -227,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               else showToast("Couldn't sync your saved progress — it's still saved on this device.")
             }).catch(() => showToast("Couldn't sync your saved progress — it's still saved on this device."))
           }
-        } catch { }
+        } catch { /* corrupt sb_progress JSON — nothing to sync */ }
       }
     }
     prevAuthRef.current = !!user
@@ -243,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) {
       throw new Error(await readError(res, 'Login failed'))
     }
-    const data = await res.json()
+    const data = (await res.json()) as AuthResponse
     setUser(data.user)
     setAccessToken(data.access_token)
     lastRefreshRef.current = Date.now()
@@ -261,7 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) {
       throw new Error(await readError(res, 'Registration failed'))
     }
-    const data = await res.json()
+    const data = (await res.json()) as AuthResponse
     setUser(data.user)
     setAccessToken(data.access_token)
     lastRefreshRef.current = Date.now()
@@ -332,11 +314,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-// Internal hook (used by useAuth.ts)
-export function useAuthContext() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuthContext must be used inside <AuthProvider>')
-  return ctx
 }

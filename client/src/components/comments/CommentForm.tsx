@@ -63,7 +63,7 @@ export default function CommentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-2">
       <textarea
         value={body}
         onChange={e => { setBody(e.target.value); setError(null) }}

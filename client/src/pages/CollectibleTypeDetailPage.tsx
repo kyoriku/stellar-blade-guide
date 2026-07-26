@@ -26,33 +26,6 @@ import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 
-// Single level item type
-type LevelItem = {
-  type_id: number;
-  level_id: number;
-  level_name: string;
-  level_order: number;
-  locations: {
-    location_id: number;
-    location_name: string;
-    location_order: number;
-    collectibles: {
-      id: number;
-      title: string;
-      description: any;
-      display_order: number;
-      cycle: string;
-      quantity: number;
-      subtype: string | null;
-      types: string[];
-      images: Array<{ id: number; url: string; alt: string; order: number }>;
-    }[];
-  }[];
-};
-
-// Array of levels
-type LevelData = LevelItem[];
-
 // Display order AND allowlist: a subtype missing here (or spelled differently
 // than the DB value) silently never appears as a filter option.
 const SUBTYPE_ORDER = [
@@ -85,7 +58,7 @@ function CollectibleTypeDetailPage() {
   );
 
   // Pass category to hook
-  const { data: levelData = [] as LevelData, isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
+  const { data: levelData = [], isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -363,7 +336,7 @@ function CollectibleTypeDetailPage() {
         mainLink: '#all',
         title: `${allCollectibles.length} ${displayTypeName}`,
         subLinks: allCollectibles.map(c => ({
-          href: `#${(c as any)._slug || slugifyTitle(c.title)}`,
+          href: `#${c._slug || slugifyTitle(c.title)}`,
           title: c.title
         }))
       }];
@@ -653,7 +626,7 @@ function CollectibleTypeDetailPage() {
                   <Link
                     to={`/${category}/${nextType}`}
                     className="group w-full sm:w-auto order-1 sm:order-2"
-                    onMouseEnter={() => prefetchCollectiblesByType(nextType, category)}
+                    onMouseEnter={() => void prefetchCollectiblesByType(nextType, category)}
                   >
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 hover:from-cyan-600/30 hover:to-cyan-500/20 border border-cyan-500/30 hover:border-cyan-500/50 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20">
                       <div className="flex-1 min-w-0 text-right">
@@ -691,7 +664,7 @@ function CollectibleTypeDetailPage() {
                   <Link
                     to={`/${category}/${previousType}`}
                     className="group w-full sm:w-auto order-2 sm:order-1"
-                    onMouseEnter={() => prefetchCollectiblesByType(previousType, category)}
+                    onMouseEnter={() => void prefetchCollectiblesByType(previousType, category)}
                   >
                     <div className="flex items-center gap-3 p-3 md:px-5 md:py-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl transition-all duration-200">
                       <div className="p-2 bg-gray-700/50 rounded-lg group-hover:bg-gray-700 transition-colors">

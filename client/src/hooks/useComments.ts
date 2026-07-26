@@ -28,7 +28,7 @@ export function useComments(contentType: string, contentId: number) {
         cache: 'no-store',
       })
       if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to load comments'))
-      return res.json()
+      return res.json() as Promise<CommentData[]>
     },
     enabled: !!contentType && !!contentId,
     staleTime: 5 * 60 * 1000,   // serve from cache for 5 min on SPA navigation
@@ -54,7 +54,7 @@ export function useComments(contentType: string, contentId: number) {
     if (!res.ok) {
       throw new Error(await readError(res, 'Failed to post comment'))
     }
-    const newComment: CommentData = await res.json()
+    const newComment = (await res.json()) as CommentData
     setComments(prev => [...prev, { ...newComment, replies: [] }])
   }
 
@@ -69,7 +69,7 @@ export function useComments(contentType: string, contentId: number) {
     if (!res.ok) {
       throw new Error(await readError(res, 'Failed to post reply'))
     }
-    const reply: CommentData = await res.json()
+    const reply = (await res.json()) as CommentData
     setComments(prev =>
       prev.map(c => c.id === parentId ? { ...c, replies: [...(c.replies ?? []), reply] } : c)
     )
@@ -87,7 +87,7 @@ export function useComments(contentType: string, contentId: number) {
     if (!res.ok) {
       throw new Error(await readError(res, 'Failed to edit comment'))
     }
-    const updated: CommentData = await res.json()
+    const updated = (await res.json()) as CommentData
     setComments(prev =>
       prev.map(c => {
         if (c.id === updated.id) return { ...updated, replies: c.replies }

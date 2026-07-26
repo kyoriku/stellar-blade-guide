@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
@@ -39,7 +39,7 @@ function maybeFlushDrift(queryClient: ReturnType<typeof useQueryClient>) {
 function getLocalProgress(): Set<number> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? new Set(JSON.parse(stored)) : new Set()
+    return stored ? new Set(JSON.parse(stored) as number[]) : new Set()
   } catch {
     return new Set()
   }
@@ -67,7 +67,7 @@ export function useProgress() {
     queryFn: async () => {
       const res = await authFetch(`${API_BASE_URL}/progress`)
       if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to load progress'))
-      const ids: number[] = await res.json()
+      const ids = (await res.json()) as number[]
       return ids
     },
     // Token presence, not just identity: with optimistic identity rendering,
@@ -91,9 +91,10 @@ export function useProgress() {
     if (loadFailed) showToast(errorMessage(loadErr, "Couldn't load your saved progress."))
   }, [loadFailed, loadErr, showToast])
 
-  const completedIds = isAuthenticated
-    ? new Set(serverIds ?? [])
-    : guestIds
+  const completedIds = useMemo(
+    () => (isAuthenticated ? new Set(serverIds ?? []) : guestIds),
+    [isAuthenticated, serverIds, guestIds]
+  )
 
   const isLoading = authLoading || (isAuthenticated && queryLoading)
 
@@ -167,7 +168,7 @@ export function useProgress() {
     },
   })
 
-  const toggle = useCallback(async (collectibleId: number) => {
+  const toggle = useCallback((collectibleId: number) => {
     if (isAuthenticated) {
       // Intent is read from the query cache (not render state) at click time:
       // earlier optimistic writes have already landed there, so rapid clicks

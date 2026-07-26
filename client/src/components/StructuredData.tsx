@@ -13,71 +13,74 @@ export default function StructuredData({
   description,
   extraSchemas
 }: StructuredDataProps) {
-  const siteUrl = 'https://stellarbladeguide.com';
   const pathname = window.location.pathname;
-  const currentUrl = `${siteUrl}${pathname}`;
 
-  const websiteSchema = pathname === '/' ? {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Stellar Blade Guide',
-    url: siteUrl,
-    description: 'Complete guide for Stellar Blade collectibles, walkthroughs, and secrets',
-    publisher: { '@type': 'Organization', name: 'Stellar Blade Guide' }
-  } : null;
-
-  const generateBreadcrumbs = () => {
-    const pathParts = pathname.split('/').filter(Boolean);
-    if (pathParts.length === 0) return null;
-
-    const breadcrumbs = [{ name: 'Home', url: '/' }];
-    let currentPath = '';
-
-    pathParts.forEach((part, index) => {
-      currentPath += `/${part}`;
-      let name = part.replace(/-/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-
-      if (index === 0) {
-        const sectionNames: Record<string, string> = {
-          collectibles: 'Collectibles',
-          levels: 'Levels',
-          walkthroughs: 'Walkthroughs'
-        };
-        name = sectionNames[part] || name;
-      }
-
-      breadcrumbs.push({ name, url: currentPath });
-    });
-
-    return breadcrumbs;
-  };
-
-  const breadcrumbs = generateBreadcrumbs();
-
-  const breadcrumbSchema = breadcrumbs ? {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: breadcrumbs.map((crumb, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      name: crumb.name,
-      item: `${siteUrl}${crumb.url}`
-    }))
-  } : null;
-
-  const pageSchema = {
-    '@context': 'https://schema.org',
-    '@type': type,
-    url: currentUrl,
-    ...(headline && { headline }),
-    ...(description && { description }),
-    publisher: { '@type': 'Organization', name: 'Stellar Blade Guide' }
-  };
-
+  // Schemas are built inside the effect: computing them during render would
+  // make fresh object identities on every render and re-run the effect.
   useEffect(() => {
+    const siteUrl = 'https://stellarbladeguide.com';
+    const currentUrl = `${siteUrl}${pathname}`;
+
+    const websiteSchema = pathname === '/' ? {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Stellar Blade Guide',
+      url: siteUrl,
+      description: 'Complete guide for Stellar Blade collectibles, walkthroughs, and secrets',
+      publisher: { '@type': 'Organization', name: 'Stellar Blade Guide' }
+    } : null;
+
+    const generateBreadcrumbs = () => {
+      const pathParts = pathname.split('/').filter(Boolean);
+      if (pathParts.length === 0) return null;
+
+      const breadcrumbs = [{ name: 'Home', url: '/' }];
+      let currentPath = '';
+
+      pathParts.forEach((part, index) => {
+        currentPath += `/${part}`;
+        let name = part.replace(/-/g, ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+
+        if (index === 0) {
+          const sectionNames: Record<string, string> = {
+            collectibles: 'Collectibles',
+            levels: 'Levels',
+            walkthroughs: 'Walkthroughs'
+          };
+          name = sectionNames[part] || name;
+        }
+
+        breadcrumbs.push({ name, url: currentPath });
+      });
+
+      return breadcrumbs;
+    };
+
+    const breadcrumbs = generateBreadcrumbs();
+
+    const breadcrumbSchema = breadcrumbs ? {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbs.map((crumb, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: crumb.name,
+        item: `${siteUrl}${crumb.url}`
+      }))
+    } : null;
+
+    const pageSchema = {
+      '@context': 'https://schema.org',
+      '@type': type,
+      url: currentUrl,
+      ...(headline && { headline }),
+      ...(description && { description }),
+      publisher: { '@type': 'Organization', name: 'Stellar Blade Guide' }
+    };
+
     const scripts: HTMLScriptElement[] = [];
 
     const addSchema = (schema: object) => {

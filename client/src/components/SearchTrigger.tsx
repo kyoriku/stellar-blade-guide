@@ -77,7 +77,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
       setActiveIndex(i => Math.max(i - 1, -1))
     } else if (e.key === 'Enter') {
       if (activeIndex >= 0 && data?.results[activeIndex]) {
-        navigate(data.results[activeIndex].navigation_url)
+        void navigate(data.results[activeIndex].navigation_url)
         collapse()
       }
     } else if (e.key === 'Escape') {

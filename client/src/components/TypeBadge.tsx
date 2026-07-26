@@ -40,7 +40,7 @@ export function TypeBadge({ type }: TypeBadgeProps) {
     return (
       <Link
         to={to}
-        onMouseEnter={() => prefetchCollectiblesByType(slug, category)}
+        onMouseEnter={() => void prefetchCollectiblesByType(slug, category)}
       >
         {badge}
       </Link>

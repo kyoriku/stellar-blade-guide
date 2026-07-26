@@ -137,8 +137,8 @@ export default function SettingsPage() {
       setNewPassword('')
       setTimeout(() => {
         // change-password revokes all sessions, redirect to login
-        logout()
-        navigate('/login')
+        void logout()
+        void navigate('/login')
       }, 2000)
     } catch (err) {
       setPasswordError(errorMessage(err, 'Failed to change password'))
@@ -153,8 +153,8 @@ export default function SettingsPage() {
     try {
       const res = await authFetch(`${API_BASE_URL}/auth/logout-all`, { method: 'POST' })
       if (!res.ok) throw new Error(await readError(res, 'Failed to sign out of all devices'))
-      logout()
-      navigate('/login')
+      void logout()
+      void navigate('/login')
     } catch (err) {
       setLogoutAllError(errorMessage(err, 'Failed to sign out of all devices'))
     } finally {
@@ -169,7 +169,7 @@ export default function SettingsPage() {
       const res = await authFetch(`${API_BASE_URL}/users/me`, { method: 'DELETE' })
       if (!res.ok) throw new Error(await readError(res, 'Failed to delete account'))
       await logout()
-      navigate('/')
+      void navigate('/')
     } catch (err) {
       setDeleteError(errorMessage(err, 'Failed to delete account'))
     } finally {
@@ -195,7 +195,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-100">Profile</h2>
           </div>
 
-          <form onSubmit={handleProfileSave} className="space-y-4">
+          <form onSubmit={(e) => void handleProfileSave(e)} className="space-y-4">
             {profileError && (
               <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {profileError}
@@ -247,7 +247,7 @@ export default function SettingsPage() {
                 <span className="text-xs text-gray-400">Current avatar</span>
                 <button
                   type="button"
-                  onClick={handleRemoveAvatar}
+                  onClick={() => void handleRemoveAvatar()}
                   className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
                 >
                   Remove
@@ -275,7 +275,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-100">Security</h2>
           </div>
 
-          <form onSubmit={handlePasswordChange} className="space-y-4">
+          <form onSubmit={(e) => void handlePasswordChange(e)} className="space-y-4">
             {passwordError && (
               <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {passwordError}
@@ -354,7 +354,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-gray-400 mt-0.5">Revokes all active sessions everywhere.</p>
               </div>
               <button
-                onClick={handleLogoutAll}
+                onClick={() => void handleLogoutAll()}
                 disabled={logoutAllLoading}
                 className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all duration-200 cursor-pointer"
               >
@@ -398,7 +398,7 @@ export default function SettingsPage() {
             </div>
 
             <button
-              onClick={handleDeleteAccount}
+              onClick={() => void handleDeleteAccount()}
               disabled={deleteConfirm !== user.username || deleteLoading}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed text-red-400 font-semibold text-sm transition-all duration-200 cursor-pointer"
             >

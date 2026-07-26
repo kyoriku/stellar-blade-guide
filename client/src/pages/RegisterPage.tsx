@@ -22,7 +22,7 @@ export default function RegisterPage() {
     setIsSubmitting(true)
     try {
       await register(email, username, password)
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     } catch (err) {
       setError(errorMessage(err, 'Registration failed'))
     } finally {
@@ -88,7 +88,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             {error && (
               <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {error}

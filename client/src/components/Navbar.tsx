@@ -25,6 +25,10 @@ function Navbar() {
     cosmetics: false,
   });
   const [searchQuery, setSearchQuery] = useState('');
+  // Mirror for the navigation-reset effect below: it reads the query as it was
+  // at nav time but must not re-run on every keystroke.
+  const searchQueryRef = useRef(searchQuery);
+  useEffect(() => { searchQueryRef.current = searchQuery }, [searchQuery]);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
@@ -135,7 +139,7 @@ function Navbar() {
   useEffect(() => {
     setIsOpen(false);
     setSearchQuery('');
-    if (!searchQuery) {
+    if (!searchQueryRef.current) {
       setOpenSections(getActiveSectionFromPath(location.pathname));
     }
   }, [location]);
@@ -299,7 +303,7 @@ function Navbar() {
                         Settings
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={() => void handleLogout()}
                         className="w-full flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 border-transparent text-gray-300 transition-[color,background-color] duration-200 cursor-pointer hover:text-white hover:bg-gray-800/50 hover:border-gray-400"
                       >
                         <LogOut className="w-4 h-4" />
@@ -464,7 +468,7 @@ function Navbar() {
                         Settings
                       </Link>
                       <button
-                        onClick={() => { setIsOpen(false); handleLogout(); }}
+                        onClick={() => { setIsOpen(false); void handleLogout(); }}
                         className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
                       >
                         <LogOut className="w-4 h-4" />
