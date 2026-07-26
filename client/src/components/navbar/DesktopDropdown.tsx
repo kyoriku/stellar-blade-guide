@@ -37,6 +37,7 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
           onClick={onToggle}
           className="cursor-pointer p-1 -mr-1"
           aria-label={`Toggle ${label.toLowerCase()} menu`}
+          aria-expanded={isOpen}
         >
           <ChevronDown className={`w-4 h-4 transition-transform duration-100 ${isOpen ? 'rotate-180' : ''}`} />
         </button>

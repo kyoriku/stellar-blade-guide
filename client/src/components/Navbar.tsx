@@ -55,6 +55,9 @@ function Navbar() {
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Focus restore target when the drawer is dismissed via the backdrop —
+  // inert blurs the drawer's focused element to <body> otherwise.
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [openDropdown, setOpenDropdown] = useState<null | 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'materials' | 'cosmetics'>(null);
 
   const handleMouseEnter = (menu: 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'materials' | 'cosmetics') => {
@@ -271,6 +274,7 @@ function Navbar() {
                   <button
                     onClick={() => setUserDropdownOpen(p => !p)}
                     aria-label="Account menu"
+                    aria-expanded={userDropdownOpen}
                     className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-cyan-400 cursor-pointer"
                   >
                     <div className="w-7 h-7 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden">
@@ -325,16 +329,21 @@ function Navbar() {
 
               {/* Mobile menu button */}
               <button
+                ref={menuButtonRef}
                 onClick={() => setIsOpen(!isOpen)}
                 className="lg:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
                 aria-label="Toggle menu"
+                aria-expanded={isOpen}
+                aria-controls="mobile-menu"
               >
                 <div className="relative w-6 h-6">
                   <Menu
+                    aria-hidden
                     className={`absolute inset-0 transition-all duration-300 ${isOpen ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`}
                     size={24}
                   />
                   <X
+                    aria-hidden
                     className={`absolute inset-0 transition-all duration-300 ${isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}`}
                     size={24}
                   />
@@ -349,7 +358,7 @@ function Navbar() {
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={() => { setIsOpen(false); menuButtonRef.current?.focus(); }}
           style={{
             top: '64px',
             animation: 'fadeIn 0.2s ease-out'
@@ -357,9 +366,13 @@ function Navbar() {
         />
       )}
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation — inert when closed: the drawer hides by transform/
+          opacity (never display/visibility), so without inert its ~54 controls
+          stay in the tab order and a11y tree while invisible */}
       <div
+        id="mobile-menu"
         ref={mobileMenuRef}
+        inert={!isOpen}
         className={`lg:hidden fixed left-0 right-0 bottom-0 bg-primary transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
         style={{ top: '64px' }}
       >

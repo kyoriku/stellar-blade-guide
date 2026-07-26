@@ -13,11 +13,14 @@ interface MobileAccordionSectionProps {
 
 function MobileAccordionSection({ section, isOpen, onToggle, onNavigate, prefetchItem }: MobileAccordionSectionProps) {
   const { icon: Icon, label, basePath, items, itemActiveMatch, mobileMaxH } = section;
+  const contentId = `mobile-nav-${label.toLowerCase()}`;
 
   return (
     <div className="border-b border-gray-800/50">
       <button
         onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={contentId}
         className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
       >
         <div className="flex items-center gap-3">
@@ -28,7 +31,9 @@ function MobileAccordionSection({ section, isOpen, onToggle, onNavigate, prefetc
         </div>
         <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
       </button>
-      <div className={`section-content overflow-hidden ${isOpen ? `${mobileMaxH} opacity-100` : 'max-h-0 opacity-0'}`}>
+      {/* inert (not visibility) when collapsed: keeps the max-height transition
+          while removing the hidden links from tab order and the a11y tree */}
+      <div id={contentId} inert={!isOpen} className={`section-content overflow-hidden ${isOpen ? `${mobileMaxH} opacity-100` : 'max-h-0 opacity-0'}`}>
         <div className="space-y-0.5 pb-2 px-2">
           <Link
             to={basePath}
