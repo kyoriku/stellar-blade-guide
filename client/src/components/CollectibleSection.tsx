@@ -5,11 +5,19 @@ import TypeBadge from './TypeBadge';
 import { FileText, List } from 'lucide-react'
 import { parseDescription } from '../utils/parseDescription'
 
+// CollectibleTypeDetailPage augments collectibles with presentation-only
+// fields: a pre-deduped anchor slug, and (in A–Z sort) origin level/location.
+export type AnnotatedCollectible = Collectible & {
+  _slug?: string;
+  _levelName?: string;
+  _locationName?: string;
+};
+
 interface CollectibleSectionProps {
   id: string;
   title: string;
   levelName?: string;
-  collectibles: Collectible[];
+  collectibles: AnnotatedCollectible[];
   onImageClick?: (imageUrl: string) => void;
   hideTypeBadge?: boolean;
   itemLabel?: string;
@@ -71,7 +79,7 @@ function CollectibleSection({
         {collectibles.map((collectible) => (
           <article
             key={collectible.id}
-            id={'_slug' in collectible ? (collectible as any)._slug : `collectible-${collectible.id}`}
+            id={collectible._slug ?? `collectible-${collectible.id}`}
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800"
           >
             <div className="relative">
@@ -99,11 +107,11 @@ function CollectibleSection({
                         <span className="ml-2 text-base font-medium text-gray-100">x{collectible.quantity}</span>
                       )}
                     </h2>
-                    {'_levelName' in collectible && (
+                    {collectible._levelName && (
                       <p className="w-full sm:w-auto text-sm text-gray-300 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
-                        <span className="text-gray-200">{(collectible as any)._levelName}</span>
-                        {(collectible as any)._locationName !== (collectible as any)._levelName && (
-                          <> <span className="text-cyan-600">·</span> {(collectible as any)._locationName}</>
+                        <span className="text-gray-200">{collectible._levelName}</span>
+                        {collectible._locationName !== collectible._levelName && (
+                          <> <span className="text-cyan-600">·</span> {collectible._locationName}</>
                         )}
                       </p>
                     )}

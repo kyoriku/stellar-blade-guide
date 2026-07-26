@@ -106,7 +106,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook colocated with its provider (same pattern as AuthContext)
+// eslint-disable-next-line react-refresh/only-export-components -- hook deliberately colocated with its provider; the only cost is that edits to this file full-reload instead of fast-refreshing
 export function useToast() {
   const ctx = useContext(ToastContext)
   if (!ctx) throw new Error('useToast must be used inside <ToastProvider>')

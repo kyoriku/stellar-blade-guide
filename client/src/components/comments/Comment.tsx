@@ -136,7 +136,7 @@ export default function Comment({
                   Cancel
                 </button>
                 <button
-                  onClick={handleEdit}
+                  onClick={() => void handleEdit()}
                   disabled={isSaving || !editBody.trim() || editBody.trim() === comment.body || !!editError}
                   className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all cursor-pointer"
                 >
@@ -236,7 +236,7 @@ export default function Comment({
         title="Delete comment"
         message="This comment will be removed. This action cannot be undone."
         confirmLabel="Delete"
-        onConfirm={handleDelete}
+        onConfirm={() => void handleDelete()}
         onCancel={() => { setShowDeleteModal(false); setDeleteError(null) }}
         isLoading={isDeleting}
         error={deleteError}

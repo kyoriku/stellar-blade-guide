@@ -185,7 +185,7 @@ const handleResponse = async <T>(response: Response, context: string): Promise<T
     if (import.meta.env.DEV && response.status === 429) console.warn(`Rate limit hit on ${context}`);
     throw new ApiError(response.status, await readError(response, `Failed to load ${context}`));
   }
-  return response.json();
+  return response.json() as Promise<T>;
 };
 
 export const api = {

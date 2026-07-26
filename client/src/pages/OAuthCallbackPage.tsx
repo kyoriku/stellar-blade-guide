@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuthContext, SESSION_FLAG } from '../context/AuthContext'
+import { useAuthContext } from '../hooks/useAuthContext'
+import { SESSION_FLAG } from '../context/AuthContext'
 import SEO from '../components/SEO';
 
 /**
@@ -20,19 +21,19 @@ export default function OAuthCallbackPage() {
     const token = searchParams.get('token')
 
     if (!token) {
-      navigate('/login', { replace: true })
+      void navigate('/login', { replace: true })
       return
     }
 
-    refreshToken().then((token) => {
+    void refreshToken().then((token) => {
       if (token) {
         localStorage.setItem(SESSION_FLAG, '1')
       }
       const redirect = localStorage.getItem('oauth_redirect') || '/'
       localStorage.removeItem('oauth_redirect')
-      navigate(redirect, { replace: true })
+      void navigate(redirect, { replace: true })
     })
-  }, [])
+  }, [navigate, refreshToken, searchParams])
 
   return (
     <div className="min-h-main bg-primary flex items-center justify-center">
