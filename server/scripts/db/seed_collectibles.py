@@ -45,7 +45,14 @@ def load_all_seed_files():
 
 
 async def reset_collectibles_sequence(db):
-    """Reset collectibles sequence to match max ID"""
+    """Reset collectibles sequence to match max ID.
+
+    setval-to-MAX is safe here ONLY because a fresh full-table seed has just
+    made MAX(id) authoritative. As a general repair this must never move the
+    counter DOWNWARD: a sequence ahead of MAX(id) (deletion history) is
+    healthy, and lowering it mints colliding ids. If this sync is ever reused
+    outside a fresh seed, use GREATEST(MAX(id), last_value) instead.
+    """
     print("\n\033[96m━━━ STEP 5: Resetting Collectibles Sequence ━━━\033[0m")
     
     result = await db.execute(text("SELECT MAX(id) FROM collectibles"))

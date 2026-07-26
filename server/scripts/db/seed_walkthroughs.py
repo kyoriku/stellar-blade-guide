@@ -9,7 +9,7 @@ import json
 import glob
 import asyncio
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, text
 
 # Add project root
 project_root = Path(__file__).parent.parent.parent
@@ -42,6 +42,32 @@ def load_all_walkthrough_files():
             print(f"   {rel_path}: {data['title']}")
     
     return all_data
+
+
+async def reset_walkthroughs_sequence(db):
+    """Reset walkthroughs sequence to match max ID.
+
+    setval-to-MAX is safe here ONLY because a fresh full-table seed has just
+    made MAX(id) authoritative. As a general repair this must never move the
+    counter DOWNWARD: a sequence ahead of MAX(id) (deletion history) is
+    healthy, and lowering it mints colliding ids. If this sync is ever reused
+    outside a fresh seed, use GREATEST(MAX(id), last_value) instead.
+    """
+    print(f"\n\033[96m━━━ STEP 4: Resetting Walkthroughs Sequence ━━━\033[0m")
+
+    result = await db.execute(text("SELECT MAX(id) FROM walkthroughs"))
+    max_id = result.scalar() or 0
+
+    if max_id > 0:
+        await db.execute(
+            text(f"SELECT setval(pg_get_serial_sequence('walkthroughs', 'id'), {max_id}, true)")
+        )
+        print(f"  ✓ Walkthroughs sequence reset to {max_id}")
+    else:
+        await db.execute(
+            text("SELECT setval(pg_get_serial_sequence('walkthroughs', 'id'), 1, false)")
+        )
+        print(f"  ✓ Walkthroughs sequence reset to 1 (table is empty)")
 
 
 async def seed_walkthroughs():
@@ -144,8 +170,11 @@ async def seed_walkthroughs():
         else:
             print(f"  ✓ No orphaned walkthroughs found")
 
-    # STEP 4: Clear cache
-    print(f"\n\033[96m━━━ STEP 4: Clearing Cache ━━━\033[0m")
+        # STEP 4: Reset walkthroughs sequence to match max ID
+        await reset_walkthroughs_sequence(db)
+
+    # STEP 5: Clear cache
+    print(f"\n\033[96m━━━ STEP 5: Clearing Cache ━━━\033[0m")
     try:
         await invalidate_cache_pattern("walkthrough*")
         print("\033[32m✓ Redis cache cleared\033[0m")
