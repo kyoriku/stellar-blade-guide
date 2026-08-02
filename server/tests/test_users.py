@@ -1,6 +1,6 @@
 """
-Tests for the users endpoints — currently the avatar pipeline of
-PATCH /api/users/me.
+Tests for the users endpoints: the avatar pipeline of PATCH /api/users/me,
+and the avatar cleanup on DELETE /api/users/me.
 
 Avatar moderation deliberately fails CLOSED (503 + Retry-After), unlike
 comment moderation which fails open: blocking comments during an OpenAI
@@ -23,21 +23,25 @@ end-to-end through the endpoint:
   - _resolve_host      → fixed public IP (no live DNS in the suite)
   - openai.AsyncOpenAI → moderation (raises / flagged / clean per test);
     call kwargs recorded
-  - cloudinary.uploader.upload → records received bytes, returns a stub
-    secure_url
+  - cloudinary.uploader.upload / .destroy → record what they received, the
+    thread they ran on, and (for destroy) raise on demand
 
-DDL strategy: users + oauth_accounts via Base.metadata.create_all (no JSONB
-columns). app.models.comments is imported for the mapper registry only —
-User.comments must resolve — but the comments table is never created or
-queried here.
+DDL strategy: users + oauth_accounts + comments via Base.metadata.create_all
+(no JSONB columns). No test touches comments directly, but the table must
+exist: User.comments is a relationship with no cascade, so db.delete(user)
+emits a SELECT against it to nullify children.
 
-conftest's autouse patch_redis / disable_rate_limits cover Redis and slowapi.
+conftest's autouse patch_redis / disable_rate_limits cover slowapi and
+app.core.cache's Redis client. app.core.auth imports redis_client by value, so
+the user_client fixture patches that one separately — without it the DELETE
+path reaches the real Redis and fails across event loops.
 """
 
 from __future__ import annotations
 
 import asyncio
 import base64
+import logging
 import threading
 from types import SimpleNamespace
 
@@ -49,11 +53,12 @@ from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
+import app.core.auth as core_auth
 from app.core.auth import create_access_token
 from app.db.database import Base, get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
-from app.models.comments import Comment  # noqa: F401 — User.comments mapper resolution
+from app.models.comments import Comment
 from app.services.auth import hash_password
 from app.services.users import MAX_AVATAR_BYTES
 from app.routers.users import router as users_router
@@ -81,7 +86,10 @@ async def users_db_engine():
     async with engine.begin() as conn:
         await conn.run_sync(
             Base.metadata.create_all,
-            tables=[User.__table__, OAuthAccount.__table__],
+            # comments is required even though no test touches it: User.comments
+            # is a relationship with no cascade, so db.delete(user) emits a
+            # SELECT against comments to nullify children.
+            tables=[User.__table__, OAuthAccount.__table__, Comment.__table__],
         )
     yield engine
     await engine.dispose()
@@ -108,7 +116,11 @@ async def test_user(users_db_session):
 
 
 @pytest_asyncio.fixture
-async def user_client(users_db_session, test_user):
+async def user_client(users_db_session, test_user, monkeypatch, fake_redis):
+    # app.core.auth imports redis_client by value, so conftest's patch of
+    # app.core.cache.redis_client does not reach revoke_all_refresh_tokens on
+    # the DELETE path. Same fixture pattern as test_auth.py.
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
     token = create_access_token(test_user.id, test_user.role)
     async with AsyncClient(
         transport=ASGITransport(_make_users_app(users_db_session)),
@@ -258,6 +270,22 @@ def _patch_avatar_pipeline(monkeypatch, moderation=_clean_moderation, responses=
         return {"secure_url": STUB_SECURE_URL}
 
     monkeypatch.setattr("app.services.users.cloudinary.uploader.upload", _stub_upload)
+    return rec
+
+
+def _patch_cloudinary_destroy(monkeypatch, raises=None, result="ok"):
+    """Stub cloudinary.uploader.destroy, recording public_id, kwargs and thread."""
+    rec = SimpleNamespace(destroy_calls=[], destroy_kwargs=[], destroy_threads=[])
+
+    def _stub_destroy(public_id, **kwargs):
+        rec.destroy_calls.append(public_id)
+        rec.destroy_kwargs.append(kwargs)
+        rec.destroy_threads.append(threading.current_thread())
+        if raises is not None:
+            raise raises
+        return {"result": result}
+
+    monkeypatch.setattr("app.services.users.cloudinary.uploader.destroy", _stub_destroy)
     return rec
 
 
@@ -649,3 +677,70 @@ async def test_too_many_redirects_rejected(user_client, monkeypatch):
     assert len(rec.requested_urls) == 4  # MAX_REDIRECTS + 1 requests, then give up
     assert rec.moderation_calls == []
     assert rec.upload_calls == []
+
+
+# ── DELETE /api/users/me ──────────────────────────────────────────────────────
+
+async def _user_exists(session, user_id) -> bool:
+    from sqlalchemy import select
+    result = await session.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none() is not None
+
+
+async def test_delete_account_removes_cloudinary_avatar(
+    user_client, users_db_session, test_user, monkeypatch
+):
+    # Deleting an account used to leave the avatar in Cloudinary forever.
+    rec = _patch_cloudinary_destroy(monkeypatch)
+    user_id = test_user.id
+
+    r = await user_client.delete("/api/users/me")
+
+    assert r.status_code == 204
+    assert rec.destroy_calls == [f"stellar-blade/avatars/user-{user_id}.webp"]
+    assert not await _user_exists(users_db_session, user_id)
+
+
+async def test_cloudinary_failure_does_not_block_account_deletion(
+    user_client, users_db_session, test_user, monkeypatch
+):
+    # Deleting the account is what the user actually asked for. Cloudinary being
+    # down must not stand between them and that — which also pins the ordering,
+    # since a pre-commit call could not survive this.
+    rec = _patch_cloudinary_destroy(monkeypatch, raises=ConnectionError("cloudinary down"))
+    user_id = test_user.id
+
+    r = await user_client.delete("/api/users/me")
+
+    assert r.status_code == 204
+    assert rec.destroy_calls == [f"stellar-blade/avatars/user-{user_id}.webp"]
+    assert not await _user_exists(users_db_session, user_id)
+
+
+async def test_orphaned_avatar_is_logged(
+    user_client, users_db_session, test_user, monkeypatch, caplog
+):
+    # The failure is swallowed by design, so this log line is the only record
+    # that an unreachable asset exists — there is no Cloudinary reconciliation
+    # script. If it is ever weakened, the orphan becomes untraceable.
+    _patch_cloudinary_destroy(monkeypatch, raises=ConnectionError("cloudinary down"))
+    user_id = test_user.id
+
+    with caplog.at_level(logging.ERROR, logger="app.services.users"):
+        r = await user_client.delete("/api/users/me")
+
+    assert r.status_code == 204
+    errors = [rec for rec in caplog.records if rec.levelno == logging.ERROR]
+    assert any(f"user-{user_id}.webp" in rec.getMessage() for rec in errors)
+
+
+async def test_avatar_destroy_runs_off_the_event_loop(
+    user_client, users_db_session, test_user, monkeypatch
+):
+    rec = _patch_cloudinary_destroy(monkeypatch)
+
+    r = await user_client.delete("/api/users/me")
+
+    assert r.status_code == 204
+    assert rec.destroy_threads[0] is not threading.main_thread()
+    assert rec.destroy_kwargs[0]["timeout"] > 0

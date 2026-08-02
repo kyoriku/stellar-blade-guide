@@ -68,10 +68,18 @@ async def delete_me(
 ):
     """Permanently delete the authenticated user's account and all their data."""
     from app.core.auth import revoke_all_refresh_tokens
-    await revoke_all_refresh_tokens(current_user.id)
+    user_id, username = current_user.id, current_user.username
+
+    await revoke_all_refresh_tokens(user_id)
     await db.delete(current_user)
     await db.commit()
-    logger.info(f"{CYAN}User {current_user.username} deleted their account{RESET}")
+    logger.info(f"{CYAN}User {username} deleted their account{RESET}")
+
+    # After the commit: deleting the account is what the user actually asked
+    # for, so a slow or failing Cloudinary call must not block or roll it back.
+    # The public_id is derived from the user id, so deleting the row first
+    # loses nothing, and destroying a non-existent asset is a no-op.
+    await delete_avatar_from_cloudinary(user_id)
 
 
 # Admin-only

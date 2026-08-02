@@ -13,7 +13,7 @@ import openai
 from fastapi import HTTPException
 
 from app.models.users import User
-from app.core.colours import YELLOW, RESET
+from app.core.colours import CYAN, GRAY, RED, YELLOW, RESET
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -223,18 +223,28 @@ def _upload_to_cloudinary_sync(data: bytes, user_id: int) -> str:
     return result["secure_url"]
 
 async def delete_avatar_from_cloudinary(user_id: int) -> None:
-    """Delete a user's avatar from Cloudinary.
+    """Delete a user's avatar from Cloudinary. Never raises.
 
-    Runs off the event loop: this is on the cheap avatar_url == "" branch, so
-    it is the most trivially reachable blocking call on the endpoint."""
+    Runs off the event loop because the SDK is synchronous, and is bounded by
+    CLOUDINARY_TIMEOUT. Failures are swallowed so they cannot block whatever
+    the caller was actually doing — which makes the log line below the only
+    record that an orphaned asset exists, since there is no reconciliation
+    script for Cloudinary."""
+    public_id = f"stellar-blade/avatars/user-{user_id}.webp"
+
     def _destroy() -> None:
         try:
-            cloudinary.uploader.destroy(
-                f"stellar-blade/avatars/user-{user_id}.webp",
-                timeout=CLOUDINARY_TIMEOUT,
-            )
+            result = cloudinary.uploader.destroy(public_id, timeout=CLOUDINARY_TIMEOUT)
+            status = (result or {}).get("result")
+            if status == "ok":
+                logger.info(f"{CYAN}Deleted Cloudinary avatar {public_id}{RESET}")
+            elif status == "not found":
+                # Normal: OAuth users and users who never uploaded have no asset.
+                logger.info(f"{GRAY}No Cloudinary avatar to delete for {public_id}{RESET}")
+            else:
+                logger.warning(f"{YELLOW}Unexpected Cloudinary destroy result for {public_id}: {status}{RESET}")
         except Exception as e:
-            logger.warning(f"{YELLOW}Failed to delete Cloudinary avatar for user {user_id}: {e}{RESET}")
+            logger.error(f"{RED}Failed to delete Cloudinary avatar {public_id} — asset may be orphaned: {e}{RESET}")
 
     # Cancelling this coroutine does NOT stop the thread; CLOUDINARY_TIMEOUT
     # above is the actual bound on how long it lives.
