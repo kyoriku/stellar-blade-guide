@@ -23,6 +23,14 @@ logger = logging.getLogger(__name__)
 MAX_AVATAR_BYTES = 10 * 1024 * 1024
 MAX_REDIRECTS = 3
 
+# Moderation statuses that mean "try again later", not "your image is bad":
+# 401/403 are OUR credentials failing (expired/revoked key, org permission) — an
+# outage on our side, so surfacing it as a per-user 400 would blame the user for
+# our misconfiguration AND hide the real problem. 408/429 are transient by
+# definition. Everything else in 4xx means OpenAI looked at this specific image
+# and could not decode it.
+_MODERATION_RETRY_STATUSES = {401, 403, 408, 429}
+
 
 def user_to_response(user: User) -> dict:
     return {
@@ -73,7 +81,14 @@ async def _fetch_avatar_image(url: str) -> tuple[bytes, str]:
         # redirect to http or to an internal address rejects before any request.
         for _ in range(MAX_REDIRECTS + 1):
             await _validate_avatar_url(url)
-            async with client.stream("GET", url, follow_redirects=False, timeout=10) as response:
+            async with client.stream(
+                "GET", url,
+                follow_redirects=False,
+                timeout=10,
+                # Images are already compressed; asking for identity keeps
+                # well-behaved servers from handing us an expandable body.
+                headers={"Accept-Encoding": "identity"},
+            ) as response:
                 # has_redirect_location, not is_redirect: the latter is a bare
                 # status-code check, so a 3xx with no Location would KeyError.
                 if response.has_redirect_location:
@@ -84,6 +99,18 @@ async def _fetch_avatar_image(url: str) -> tuple[bytes, str]:
                 content_type = response.headers.get("content-type", "")
                 if not content_type.startswith("image/"):
                     raise HTTPException(status_code=400, detail="URL does not point to an image")
+                # A compressed body defeats the size cap: Content-Length is the
+                # COMPRESSED size and aiter_bytes() yields decoded bytes, so a few
+                # KB can expand past MAX_AVATAR_BYTES before the streaming check
+                # fires. We ask for identity above; a server that ignores that
+                # gets rejected here.
+                encoding = response.headers.get("content-encoding", "").strip().lower()
+                if encoding and encoding != "identity":
+                    logger.warning(f"{YELLOW}Rejecting compressed avatar response (content-encoding: {encoding}){RESET}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Image could not be processed. Try uploading a different file.",
+                    )
                 content_length = response.headers.get("content-length", "")
                 if (content_length.isascii() and content_length.isdigit()
                         and int(content_length) > MAX_AVATAR_BYTES):
@@ -116,6 +143,13 @@ async def check_image_moderation(image_bytes: bytes, content_type: str) -> None:
         )
         result = response.results[0]
     except Exception as e:
+        status = getattr(e, "status_code", None) if isinstance(e, openai.APIStatusError) else None
+        if status is not None and 400 <= status < 500 and status not in _MODERATION_RETRY_STATUSES:
+            logger.warning(f"{YELLOW}Moderation API rejected avatar image ({status}): {e}{RESET}")
+            raise HTTPException(
+                status_code=400,
+                detail="Image format is not supported. Use PNG, JPEG, GIF, or WebP.",
+            )
         logger.warning(f"{YELLOW}OpenAI moderation unreachable, rejecting avatar upload: {e}{RESET}")
         raise HTTPException(
             status_code=503,

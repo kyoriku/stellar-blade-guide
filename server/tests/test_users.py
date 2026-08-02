@@ -39,6 +39,9 @@ from __future__ import annotations
 import base64
 from types import SimpleNamespace
 
+import httpx
+import openai
+import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
@@ -166,9 +169,10 @@ class _StubHTTPClient:
     """Scriptable httpx.AsyncClient stand-in: serves one scripted response per
     stream() call and records every URL requested."""
 
-    def __init__(self, script, requested_urls):
+    def __init__(self, script, requested_urls, request_headers):
         self._script = script
         self._requested = requested_urls
+        self._request_headers = request_headers
 
     async def __aenter__(self):
         return self
@@ -184,6 +188,7 @@ class _StubHTTPClient:
             "redirects must be followed manually so every hop is validated"
         )
         self._requested.append(str(url))
+        self._request_headers.append(kwargs.get("headers") or {})
         return _StubStreamContext(self._script.pop(0))
 
 
@@ -211,13 +216,14 @@ def _patch_avatar_pipeline(monkeypatch, moderation=_clean_moderation, responses=
         upload_calls=[],       # bytes received by cloudinary.uploader.upload
         moderation_calls=[],   # kwargs passed to moderations.create
         requested_urls=[],     # every URL our fetch actually requested
+        request_headers=[],    # headers sent on each fetch
         resolved_hosts=[],     # every hostname handed to DNS resolution
     )
 
     script = list(responses) if responses is not None else [_ok_image_response()]
     monkeypatch.setattr(
         "app.services.users.httpx.AsyncClient",
-        lambda *a, **k: _StubHTTPClient(script, rec.requested_urls),
+        lambda *a, **k: _StubHTTPClient(script, rec.requested_urls, rec.request_headers),
     )
 
     def _stub_resolve(hostname):
@@ -304,6 +310,77 @@ async def test_clean_image_uploads_and_sets_avatar(
     assert test_user.avatar_url == STUB_SECURE_URL
 
 
+# ── PATCH /api/users/me — moderation error classification ─────────────────────
+
+def _api_status_error(cls, status):
+    """Build a real SDK exception so these tests break if the hierarchy shifts."""
+    request = httpx.Request("POST", "https://api.openai.com/v1/moderations")
+    return cls("boom", response=httpx.Response(status, request=request), body=None)
+
+
+async def test_moderation_rejecting_the_image_returns_400(
+    user_client, users_db_session, test_user, monkeypatch
+):
+    # A 400 from OpenAI means it looked at THIS image and could not decode it
+    # (SVG, BMP, HEIC, empty body...). That is the user's problem and retrying
+    # will never help, so it must not masquerade as a transient outage.
+    async def _create(**kwargs):
+        raise _api_status_error(openai.BadRequestError, 400)
+
+    rec = _patch_avatar_pipeline(monkeypatch, _create)
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 400
+    assert "format is not supported" in r.json()["detail"]
+    assert "Retry-After" not in r.headers
+    assert rec.upload_calls == []
+    await users_db_session.refresh(test_user)
+    assert test_user.avatar_url is None
+
+
+@pytest.mark.parametrize(
+    "exc_cls, status",
+    [
+        (openai.AuthenticationError, 401),    # our key expired — our outage, not theirs
+        (openai.PermissionDeniedError, 403),  # our org lost access
+        (openai.RateLimitError, 429),
+        (openai.InternalServerError, 500),
+    ],
+)
+async def test_transient_moderation_failures_return_503(
+    user_client, monkeypatch, exc_cls, status
+):
+    async def _create(**kwargs):
+        raise _api_status_error(exc_cls, status)
+
+    rec = _patch_avatar_pipeline(monkeypatch, _create)
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 503
+    assert "temporarily unavailable" in r.json()["detail"]
+    assert r.headers["Retry-After"] == "30"
+    assert rec.upload_calls == []
+
+
+async def test_api_connection_error_returns_503(user_client, monkeypatch):
+    # APIConnectionError is NOT an APIStatusError — it has no status_code and
+    # must fall through to the fail-closed 503 path.
+    async def _create(**kwargs):
+        raise openai.APIConnectionError(
+            request=httpx.Request("POST", "https://api.openai.com/v1/moderations")
+        )
+
+    rec = _patch_avatar_pipeline(monkeypatch, _create)
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 503
+    assert r.headers["Retry-After"] == "30"
+    assert rec.upload_calls == []
+
+
 # ── PATCH /api/users/me — size cap ────────────────────────────────────────────
 
 async def test_oversize_stream_aborts_at_cap(user_client, monkeypatch):
@@ -341,6 +418,41 @@ async def test_oversize_content_length_fast_rejects(user_client, monkeypatch):
     assert consumed == []  # rejected on the header alone, zero chunks read
     assert rec.moderation_calls == []
     assert rec.upload_calls == []
+
+
+async def test_compressed_response_rejected(user_client, monkeypatch):
+    # Decompression bomb: Content-Length carries the COMPRESSED size and
+    # aiter_bytes() yields decoded bytes, so a few KB could expand past the cap
+    # before the streaming check fires. Compressed responses are refused
+    # outright rather than decoded.
+    consumed = []
+    resp = _ok_image_response(
+        chunks=[b"x" * 100],
+        consumed=consumed,
+        extra_headers={"content-encoding": "gzip", "content-length": "4893"},
+    )
+    rec = _patch_avatar_pipeline(monkeypatch, responses=[resp])
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 400
+    detail = r.json()["detail"]
+    assert "could not be processed" in detail
+    # Not the size message: a 4 KB gzipped body is not "too large", and saying
+    # so would send someone chasing the wrong problem.
+    assert "too large" not in detail
+    assert consumed == []
+    assert rec.moderation_calls == []
+    assert rec.upload_calls == []
+
+
+async def test_fetch_requests_identity_encoding(user_client, monkeypatch):
+    rec = _patch_avatar_pipeline(monkeypatch)
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 200
+    assert rec.request_headers[0]["Accept-Encoding"] == "identity"
 
 
 async def test_non_image_content_type_returns_400(user_client, monkeypatch):
