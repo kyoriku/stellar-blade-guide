@@ -397,7 +397,10 @@ async def google_callback(
     if not GOOGLE_CLIENT_ID or not GOOGLE_REDIRECT_URI:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
 
-    async with httpx.AsyncClient() as client:
+    # No pooled DB connection is held here — the first db.execute() happens after
+    # this block exits — but that is incidental, so keep the calls bounded: any
+    # DB read moved above this line would turn it into a pool-exhaustion risk.
+    async with httpx.AsyncClient(timeout=10) as client:
         # Exchange code for tokens
         token_resp = await client.post(
             "https://oauth2.googleapis.com/token",
@@ -473,7 +476,10 @@ async def discord_callback(
     if not DISCORD_CLIENT_ID or not DISCORD_REDIRECT_URI:
         raise HTTPException(status_code=501, detail="Discord OAuth not configured")
 
-    async with httpx.AsyncClient() as client:
+    # No pooled DB connection is held here — the first db.execute() happens after
+    # this block exits — but that is incidental, so keep the calls bounded: any
+    # DB read moved above this line would turn it into a pool-exhaustion risk.
+    async with httpx.AsyncClient(timeout=10) as client:
         # Exchange code for tokens
         token_resp = await client.post(
             "https://discord.com/api/oauth2/token",
