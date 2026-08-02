@@ -24,13 +24,26 @@ def user_to_response(user: User) -> dict:
     }
 
 async def check_image_moderation(url: str) -> None:
-    """Check image against OpenAI moderation API. Raises HTTPException if flagged."""
+    """Check image against OpenAI moderation API. Raises HTTPException(400) if
+    flagged, HTTPException(503) if the moderation service is unavailable.
+
+    Deliberately fails closed (unlike comment moderation, which fails open):
+    blocking comments during an OpenAI outage breaks the site's main
+    interaction, whereas an avatar can wait."""
     client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    response = await client.moderations.create(
-        model="omni-moderation-latest",
-        input=[{"type": "image_url", "image_url": {"url": url}}]
-    )
-    result = response.results[0]
+    try:
+        response = await client.moderations.create(
+            model="omni-moderation-latest",
+            input=[{"type": "image_url", "image_url": {"url": url}}]
+        )
+        result = response.results[0]
+    except Exception as e:
+        logger.warning(f"{YELLOW}OpenAI moderation unreachable, rejecting avatar upload: {e}{RESET}")
+        raise HTTPException(
+            status_code=503,
+            detail="Avatar upload is temporarily unavailable. Please try again in a moment.",
+            headers={"Retry-After": "30"},
+        )
     if result.flagged:
         flagged_categories = [cat for cat, flagged in result.categories.__dict__.items() if flagged]
         logger.warning(f"{YELLOW}Avatar image flagged by moderation: {flagged_categories}{RESET}")
