@@ -40,7 +40,7 @@ async def update_me(
 
     if body.avatar_url is not None:
       if body.avatar_url == "":
-          delete_avatar_from_cloudinary(current_user.id)
+          await delete_avatar_from_cloudinary(current_user.id)
           current_user.avatar_url = None
       else:
           try:

@@ -6,7 +6,17 @@ from openai import AsyncOpenAI
 from app.models.comments import Comment
 from app.core.colours import YELLOW, RESET
 
-openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Explicit bounds: the SDK defaults to a 600s timeout with 2 retries. This call
+# runs while the request holds a pooled DB connection, so an OpenAI incident
+# would otherwise pin the pool for ~30 minutes per in-flight comment.
+MODERATION_TIMEOUT = 10.0
+MODERATION_MAX_RETRIES = 1
+
+openai_client = AsyncOpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    timeout=MODERATION_TIMEOUT,
+    max_retries=MODERATION_MAX_RETRIES,
+)
 
 logger = logging.getLogger(__name__)
 

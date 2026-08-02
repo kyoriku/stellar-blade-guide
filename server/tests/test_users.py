@@ -36,7 +36,9 @@ conftest's autouse patch_redis / disable_rate_limits cover Redis and slowapi.
 
 from __future__ import annotations
 
+import asyncio
 import base64
+import threading
 from types import SimpleNamespace
 
 import httpx
@@ -119,11 +121,12 @@ async def user_client(users_db_session, test_user):
 # ── Avatar pipeline stubs ─────────────────────────────────────────────────────
 
 class _StubResponse:
-    def __init__(self, status_code, headers, chunks, consumed):
+    def __init__(self, status_code, headers, chunks, consumed, chunk_delay=0):
         self.status_code = status_code
         self.headers = headers
         self._chunks = chunks
         self._consumed = consumed
+        self._chunk_delay = chunk_delay
 
     @property
     def has_redirect_location(self):
@@ -134,12 +137,14 @@ class _StubResponse:
 
     async def aiter_bytes(self):
         for chunk in self._chunks:
+            if self._chunk_delay:
+                await asyncio.sleep(self._chunk_delay)
             self._consumed.append(len(chunk))
             yield chunk
 
 
 def _ok_image_response(body=DEFAULT_IMAGE_BYTES, content_type="image/png",
-                       extra_headers=None, chunks=None, consumed=None):
+                       extra_headers=None, chunks=None, consumed=None, chunk_delay=0):
     headers = {"content-type": content_type}
     if extra_headers:
         headers.update(extra_headers)
@@ -147,6 +152,7 @@ def _ok_image_response(body=DEFAULT_IMAGE_BYTES, content_type="image/png",
         200, headers,
         chunks if chunks is not None else [body],
         consumed if consumed is not None else [],
+        chunk_delay=chunk_delay,
     )
 
 
@@ -218,6 +224,9 @@ def _patch_avatar_pipeline(monkeypatch, moderation=_clean_moderation, responses=
         requested_urls=[],     # every URL our fetch actually requested
         request_headers=[],    # headers sent on each fetch
         resolved_hosts=[],     # every hostname handed to DNS resolution
+        upload_kwargs=[],      # kwargs cloudinary.uploader.upload received
+        upload_threads=[],     # thread each upload ran on
+        openai_kwargs=[],      # kwargs the AsyncOpenAI client was built with
     )
 
     script = list(responses) if responses is not None else [_ok_image_response()]
@@ -236,13 +245,16 @@ def _patch_avatar_pipeline(monkeypatch, moderation=_clean_moderation, responses=
         rec.moderation_calls.append(kwargs)
         return await moderation(**kwargs)
 
-    monkeypatch.setattr(
-        "app.services.users.openai.AsyncOpenAI",
-        lambda *a, **k: SimpleNamespace(moderations=SimpleNamespace(create=_create)),
-    )
+    def _stub_client(*a, **k):
+        rec.openai_kwargs.append(k)
+        return SimpleNamespace(moderations=SimpleNamespace(create=_create))
+
+    monkeypatch.setattr("app.services.users.openai.AsyncOpenAI", _stub_client)
 
     def _stub_upload(file, **kwargs):
         rec.upload_calls.append(file.read())
+        rec.upload_kwargs.append(kwargs)
+        rec.upload_threads.append(threading.current_thread())
         return {"secure_url": STUB_SECURE_URL}
 
     monkeypatch.setattr("app.services.users.cloudinary.uploader.upload", _stub_upload)
@@ -465,6 +477,51 @@ async def test_non_image_content_type_returns_400(user_client, monkeypatch):
     assert "does not point to an image" in r.json()["detail"]
     assert rec.moderation_calls == []
     assert rec.upload_calls == []
+
+
+# ── PATCH /api/users/me — deadlines and blocking calls ────────────────────────
+
+async def test_slow_drip_fetch_times_out(user_client, monkeypatch):
+    # The reported DoS: httpx's timeout is per-operation, so a server trickling
+    # one chunk at a time resets it forever and holds a pooled DB connection
+    # open with it. The total deadline is what stops that. Constants are patched
+    # down so the test proves the behaviour without actually waiting 15s.
+    monkeypatch.setattr("app.services.users.AVATAR_FETCH_TIMEOUT", 0.05)
+    resp = _ok_image_response(chunks=[b"x" * 10] * 50, chunk_delay=0.2)
+    rec = _patch_avatar_pipeline(monkeypatch, responses=[resp])
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 504
+    assert "took too long" in r.json()["detail"]
+    assert rec.moderation_calls == []
+    assert rec.upload_calls == []
+
+
+async def test_cloudinary_upload_runs_off_the_event_loop(user_client, monkeypatch):
+    # cloudinary's SDK is synchronous; called inline it blocks every other
+    # request, not just this one. It must run in a worker thread, and it must
+    # carry its own timeout — cancelling the coroutine cannot stop the thread.
+    rec = _patch_avatar_pipeline(monkeypatch)
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 200
+    assert rec.upload_threads[0] is not threading.main_thread()
+    assert rec.upload_kwargs[0]["timeout"] > 0
+
+
+async def test_moderation_client_has_explicit_bounds(user_client, monkeypatch):
+    # Guards against a silent revert to the SDK defaults (600s x 3 retries),
+    # which would hold a pooled DB connection for ~30 minutes during an outage.
+    rec = _patch_avatar_pipeline(monkeypatch)
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 200
+    kwargs = rec.openai_kwargs[0]
+    assert kwargs["timeout"] > 0
+    assert kwargs["max_retries"] <= 1
 
 
 # ── PATCH /api/users/me — SSRF guard ──────────────────────────────────────────

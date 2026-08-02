@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
+import openai
 import pytest_asyncio
 import app.routers.comments as comments_module
 
@@ -260,3 +261,16 @@ async def test_delete_unauthenticated_returns_401(comments_client, comments_db_s
 
     r = await comments_client.delete(f"/api/comments/{comment.id}")
     assert r.status_code == 401
+
+
+async def test_moderation_client_has_explicit_bounds():
+    # The OpenAI SDK defaults to a 600s timeout with 2 retries. This call runs
+    # while the request holds a pooled DB connection, so those defaults would
+    # let an OpenAI incident pin the pool for ~30 minutes per in-flight comment.
+    from app.services.comments import openai_client
+
+    timeout = openai_client.timeout
+    assert timeout != openai.DEFAULT_TIMEOUT
+    read_timeout = timeout if isinstance(timeout, (int, float)) else timeout.read
+    assert read_timeout <= 30
+    assert openai_client.max_retries <= 1

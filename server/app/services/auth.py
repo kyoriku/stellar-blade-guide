@@ -1,3 +1,5 @@
+import asyncio
+
 import resend
 from fastapi import Response
 from passlib.context import CryptContext
@@ -100,7 +102,10 @@ async def _send_reset_email(email: str, token: str) -> None:
 
     resend.api_key = settings.RESEND_API_KEY
 
-    resend.Emails.send({
+    # resend is a synchronous library — calling it inline would block the event
+    # loop for every other request. Cancelling this coroutine does NOT stop the
+    # thread; resend's own 30s per-request timeout is the actual bound.
+    await asyncio.to_thread(resend.Emails.send, {
         "from": "Stellar Blade Guide <noreply@stellarbladeguide.com>",
         "to": email,
         "subject": "Reset your password",
