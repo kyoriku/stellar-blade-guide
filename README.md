@@ -34,7 +34,7 @@ An unofficial game guide for *Stellar Blade* covering walkthroughs (main story, 
 - [Repository Layout](#repository-layout)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
-- [License](#license--legal)
+- [Use and attribution](#use-and-attribution)
 
 ## Technical Details
 
@@ -163,12 +163,9 @@ npm run dev
 
 </details>
 
-## License & Legal
+## Use and attribution
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge&logo=mit)](https://opensource.org/licenses/MIT)
-
-### Code License
-This project is licensed under the [MIT License](LICENSE).
+This repository is source-available for review. It is not licensed for reuse, redistribution, or deployment.
 
 ### Game Content
 **Stellar Blade™** and all related content (screenshots, artwork, character names, locations, game mechanics) are © Shift Up Corporation and Sony Interactive Entertainment. This is an **unofficial fan-made guide** and is not affiliated with, endorsed by, or connected to the rights holders.
