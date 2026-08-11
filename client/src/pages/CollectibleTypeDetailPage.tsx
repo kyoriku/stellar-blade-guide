@@ -120,7 +120,9 @@ function CollectibleTypeDetailPage() {
       .filter(level => level.locations.length > 0);
   }, [levelData, cycleFilter]);
 
-  // Count collectibles per subtype from cycle-filtered data (Documents only)
+  // Count collectibles per subtype from cycle-filtered data (Documents only).
+  // Quantity-weighted, the site-wide unit (identical to entry counts here in
+  // practice — every document has quantity 1).
   const subtypeCounts = useMemo(() => {
     if (!showSubtypeFilter) return { counts: new Map<string, number>(), total: 0 };
     const counts = new Map<string, number>();
@@ -265,7 +267,9 @@ function CollectibleTypeDetailPage() {
     ? typeName.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
     : '';
 
-  // Count totals (use full data for header, filtered for display)
+  // Count totals (use full data for header, filtered for display). Quantity-
+  // weighted (a ×2 card counts 2) — the site-wide unit, matching the progress
+  // page and stats endpoint; ×N badges stay on cards.
   const totalCollectibles = levelData.reduce((sum, level) =>
     sum + level.locations.reduce((locSum, loc) =>
       locSum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0), 0
@@ -334,7 +338,8 @@ function CollectibleTypeDetailPage() {
       const allCollectibles = sortedLevelData[0]?.locations[0]?.collectibles || [];
       return [{
         mainLink: '#all',
-        title: `${allCollectibles.length} ${displayTypeName}`,
+        // Quantity-weighted, matching the page header's unit.
+        title: `${allCollectibles.reduce((s, c) => s + (c.quantity || 1), 0)} ${displayTypeName}`,
         subLinks: allCollectibles.map(c => ({
           href: `#${c._slug || slugifyTitle(c.title)}`,
           title: c.title

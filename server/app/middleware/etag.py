@@ -16,7 +16,7 @@ class ETagMiddleware(BaseHTTPMiddleware):
             return response
         
         # Skip mutable per-user endpoints
-        if request.url.path.startswith("/api/progress"):
+        if request.url.path.startswith(("/api/progress", "/api/users/me/stats")):
             return response
 
         # Only bother for successful GET responses

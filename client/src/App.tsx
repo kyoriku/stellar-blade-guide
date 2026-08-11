@@ -29,6 +29,7 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import SettingsPage from './pages/SettingsPage'
+import ProgressPage from './pages/ProgressPage'
 
 // Other pages
 import BloodRainPage from './pages/BloodRainPage'
@@ -71,6 +72,11 @@ function App() {
           <Route path="/settings" element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/progress" element={
+            <ProtectedRoute renderWhileRestoring>
+              <ProgressPage />
             </ProtectedRoute>
           } />
 

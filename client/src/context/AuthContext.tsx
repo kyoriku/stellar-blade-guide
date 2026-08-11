@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { API_BASE_URL, readError } from '../services/api'
 import { useToast } from './ToastContext'
 import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
@@ -251,6 +252,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(SESSION_FLAG, '1')
   }, [])
 
+  const queryClient = useQueryClient()
+
+  // Identity-change guard: whenever the signed-in id changes to a DIFFERENT
+  // id — login after a 401-dead session, registering a second account while
+  // signed in, any path that skips logout — per-user query data from the
+  // previous identity must be dropped, or the unscoped ['progress'] key
+  // serves the old account's completion set until its staleTime lapses.
+  const prevUserIdRef = useRef<number | null>(null)
+  useEffect(() => {
+    const id = user?.id ?? null
+    if (id === null) return // signed out: logout/teardown handles its own clearing
+    if (prevUserIdRef.current !== null && id !== prevUserIdRef.current) {
+      queryClient.removeQueries({ queryKey: ['progress'] })
+      queryClient.removeQueries({ queryKey: ['user-stats'] })
+    }
+    prevUserIdRef.current = id
+  }, [user, queryClient])
+
   const logout = useCallback(async () => {
     try {
       await fetch(`${API_BASE_URL}/auth/logout`, {
@@ -263,8 +282,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       confirmedRef.current = false // a later restore in this tab must re-arm the bound
       localStorage.removeItem(SESSION_FLAG)
       localStorage.removeItem(USER_CACHE)
+      // Per-user query data must not survive into a different account's
+      // session on this tab: ['progress'] is an unscoped key with a 5-minute
+      // staleTime, so without this a second sign-in inherits the previous
+      // account's completion set (navbar ring, stats hero, checkboxes) until
+      // it lapses. ['user-stats'] is id-scoped but dropped as the same hygiene.
+      queryClient.removeQueries({ queryKey: ['progress'] })
+      queryClient.removeQueries({ queryKey: ['user-stats'] })
     }
-  }, [])
+  }, [queryClient])
 
   // Unconfirmed-session bound: while a refresh runs for a session the server
   // has not yet confirmed, the UI is rendering optimistically (cached identity,

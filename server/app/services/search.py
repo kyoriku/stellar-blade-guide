@@ -82,6 +82,8 @@ _LEVELS_SQL = text("""
         lv.id,
         lv.name,
         (
+            -- Quantity-weighted: the site counts in-game items (a x2 entry
+            -- counts 2), matching detail-page headers and the progress page.
             SELECT COALESCE(SUM(COALESCE(c.quantity, 1)), 0)
             FROM locations loc
             JOIN collectibles c ON c.location_id = loc.id

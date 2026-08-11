@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Literal, Optional, Union
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.walkthroughs import Walkthrough
 
@@ -42,7 +42,9 @@ class _SeedCollectible(BaseModel):
     description: Union[str, List[str], _TextDescription, _ListDescription]
     display_order: int = 0
     images: List[_SeedImage] = []
-    quantity: int = 1
+    # gt=0: counts are quantity-weighted site-wide, so a zero (or negative)
+    # quantity would silently shrink SUM totals rather than fail loudly.
+    quantity: int = Field(1, gt=0)
     cycle: str = "Base"
     subtype: Optional[str] = None
 
