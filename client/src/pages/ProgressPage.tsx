@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 // Map is aliased: the bare icon name would shadow the global Map constructor
 // used by the row-builder helpers.
-import { Box, Compass, Map as MapIcon, Repeat, Sparkles, Zap } from 'lucide-react'
+import { Box, CircleEllipsis, Compass, Map as MapIcon, Repeat, Sparkles, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import SEO from '../components/SEO'
 import QueryError from '../components/QueryError'
@@ -62,14 +62,17 @@ function typeRows(
   return [...known, ...extras]
 }
 
-// The level list is static too: the 10 navbar levels (linked) plus the two
-// data-only buckets the server owns — 'Default' (shown as "Other") and
-// 'Boss Challenge' — pinned last. The server sorts Default first
-// (display_order 0), but a catch-all bucket reads better at the bottom, and
-// the loading and loaded orders must match. Unknown server levels append.
-const LEVEL_ROWS_STATIC: { key: string; label: string; slug: string | null }[] = [
-  ...LEVELS.map(l => ({ key: l.name, label: l.name, slug: l.slug })),
-  { key: 'Default', label: 'Other', slug: null },
+// By Level lists only the 10 real, navigable levels (the navbar list). The
+// server's levels array also carries two buckets that aren't levels at all —
+// 'Default' (level-less starting/bonus gear; the label the type pages already
+// show) and 'Boss Challenge' (a game mode) — those render in their own
+// "Other Sources" section below. Together the two sections partition the
+// catalog.
+const LEVEL_ROWS_STATIC: { key: string; label: string; slug: string | null }[] =
+  LEVELS.map(l => ({ key: l.name, label: l.name, slug: l.slug }))
+
+const NON_LEVEL_ROWS_STATIC: { key: string; label: string; slug: string | null }[] = [
+  { key: 'Default', label: 'Default', slug: null },
   { key: 'Boss Challenge', label: 'Boss Challenge', slug: null },
 ]
 
@@ -80,10 +83,24 @@ function levelRows(levels: LevelStat[] | undefined): Row[] {
     const s = byName.get(r.key)
     return s ? [{ ...r, stat: s }] : []
   })
+  // Unknown names are presumed genuine new levels (a real one would get a nav
+  // entry in the same release) — appended here, not to the non-level section.
   const extras = levels
-    .filter(l => !LEVEL_ROWS_STATIC.some(r => r.key === l.name))
+    .filter(l =>
+      !LEVEL_ROWS_STATIC.some(r => r.key === l.name) &&
+      !NON_LEVEL_ROWS_STATIC.some(r => r.key === l.name)
+    )
     .map(l => ({ key: l.name, label: l.name, slug: null, stat: l }))
   return [...known, ...extras]
+}
+
+function nonLevelRows(levels: LevelStat[] | undefined): Row[] {
+  if (!levels) return NON_LEVEL_ROWS_STATIC.map(r => ({ ...r, stat: null }))
+  const byName = new Map(levels.map(l => [l.name, l]))
+  return NON_LEVEL_ROWS_STATIC.flatMap(r => {
+    const s = byName.get(r.key)
+    return s ? [{ ...r, stat: s }] : []
+  })
 }
 
 // Fixed cycle order, matching the detail pages' cycle ordering and the
@@ -157,13 +174,38 @@ function StatRow({
   )
 }
 
+// Card-header rollup: counts + percent (StatRow's value styling) paired with
+// the 16px ring, mirroring the account dropdown's "42% ◔" motif. Loading →
+// pulsing chip; loaded with no matching stat → nothing.
+function HeaderStat({ stat, loading }: { stat?: Stat; loading: boolean }) {
+  if (loading) {
+    return <span aria-hidden className="h-4 w-16 bg-gray-700/50 rounded animate-pulse" />
+  }
+  if (!stat) return null
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="text-xs text-gray-400 tabular-nums">
+        {stat.completed}/{stat.total}<span className="text-cyan-400"> · </span>
+        {pct(stat.completed, stat.total)}%
+      </span>
+      <CompletionRing
+        fraction={stat.total > 0 ? stat.completed / stat.total : 0}
+        size={16}
+        strokeWidth={2.5}
+      />
+    </span>
+  )
+}
+
 function SectionCard({
   Icon,
   title,
+  headerEnd,
   children,
 }: {
   Icon: LucideIcon
   title: string
+  headerEnd?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -171,6 +213,7 @@ function SectionCard({
       <div className="flex items-center gap-2 mb-6">
         <Icon className="w-5 h-5 text-cyan-400" />
         <h2 className="text-lg font-semibold text-gray-100">{title}</h2>
+        {headerEnd != null && <span className="ml-auto">{headerEnd}</span>}
       </div>
       {children}
     </section>
@@ -203,6 +246,7 @@ export default function ProgressPage() {
   const liveCompleted = stats ? weightedFound(completedIds, stats.quantity_overrides) : 0
 
   const lvls = levelRows(stats?.levels)
+  const nonLvls = nonLevelRows(stats?.levels)
   const cycs = cycleRows(stats?.cycles)
 
   return (
@@ -270,7 +314,17 @@ export default function ProgressPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               {CATEGORY_META.map(({ key, label, Icon, nav }) => (
-                <SectionCard key={key} Icon={Icon} title={label}>
+                <SectionCard
+                  key={key}
+                  Icon={Icon}
+                  title={label}
+                  headerEnd={
+                    <HeaderStat
+                      loading={!stats}
+                      stat={stats?.categories.find(c => c.category === key)}
+                    />
+                  }
+                >
                   <div className="space-y-4">
                     {typeRows(stats?.types, key, nav).map(r => {
                       const slug = r.slug
@@ -304,6 +358,14 @@ export default function ProgressPage() {
                     />
                   )
                 })}
+              </TwoColRows>
+            </SectionCard>
+
+            <SectionCard Icon={CircleEllipsis} title="Other Sources">
+              <TwoColRows count={nonLvls.length}>
+                {nonLvls.map(r => (
+                  <StatRow key={r.key} name={r.label} to={null} stat={r.stat} />
+                ))}
               </TwoColRows>
             </SectionCard>
 

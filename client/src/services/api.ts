@@ -169,6 +169,12 @@ export interface ProgressWriteResponse {
 }
 
 // Mirrors UserStatsResponse in server/app/schemas/users.py
+export interface CategoryStat {
+  category: string
+  completed: number
+  total: number
+}
+
 export interface TypeStat {
   name: string
   slug: string
@@ -192,6 +198,9 @@ export interface CycleStat {
 
 export interface UserStatsResponse {
   total: { completed: number; total: number }
+  // Each collectible counted once per category group (dual-typed items are
+  // NOT double-counted here, unlike the per-type rows); partitions the catalog.
+  categories: CategoryStat[]
   types: TypeStat[]
   levels: LevelStat[]
   cycles: CycleStat[]
