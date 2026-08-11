@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -30,6 +30,45 @@ class UpdateProfileRequest(BaseModel):
         if not v.replace("_", "").replace("-", "").isalnum():
             raise ValueError("Username may only contain letters, numbers, hyphens, and underscores")
         return v
+
+
+class OverallStat(BaseModel):
+    completed: int
+    total: int
+
+
+class TypeStat(BaseModel):
+    name: str
+    slug: str
+    category: str  # category_group with NULL coalesced to "collectibles"
+    completed: int
+    total: int
+
+
+class LevelStat(BaseModel):
+    name: str
+    order: int
+    completed: int
+    total: int
+
+
+class CycleStat(BaseModel):
+    name: str
+    completed: int
+    total: int
+
+
+class UserStatsResponse(BaseModel):
+    total: OverallStat
+    types: List[TypeStat]
+    levels: List[LevelStat]
+    cycles: List[CycleStat]
+    # Sparse {collectible_id: quantity} for quantity > 1 entries only (~15
+    # rows) — lets the client quantity-weight its live numerator without
+    # fetching the catalog. All counts above are quantity-weighted.
+    quantity_overrides: Dict[int, int]
+    comments_posted: int
+    member_since: str
 
 
 class UpdateRoleRequest(BaseModel):

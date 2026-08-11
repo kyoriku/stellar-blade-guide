@@ -103,7 +103,9 @@ function LevelDetailPage() {
     : null;
   const previousLevel = currentIndex > 0 ? allLevels[currentIndex - 1] : null;
 
-  // Count total collectibles
+  // Count total collectibles. Quantity-weighted (a ×2 card counts 2) — the
+  // site-wide unit, matching the progress page and stats endpoint; entries
+  // remain the tracking granularity (one checkbox per card).
   const totalCollectibles = locationData.reduce((sum, loc) =>
     sum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0);
 

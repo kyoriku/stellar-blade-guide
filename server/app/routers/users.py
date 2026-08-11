@@ -2,14 +2,24 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import and_, case, func, select
 
+from app.config.settings import settings
 from app.db.database import get_db
+from app.models.collectibles import (
+    Collectible,
+    CollectibleType,
+    Level,
+    Location,
+    collectible_type_mappings,
+)
+from app.models.comments import Comment
+from app.models.progress import UserProgress
 from app.models.users import User
 from app.core.auth import get_current_user, require_role
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
-from app.schemas.users import UpdateProfileRequest, UpdateRoleRequest
+from app.schemas.users import UpdateProfileRequest, UpdateRoleRequest, UserStatsResponse
 from app.services.users import (
     user_to_response,
     upload_avatar_to_cloudinary,
@@ -80,6 +90,142 @@ async def delete_me(
     # The public_id is derived from the user id, so deleting the row first
     # loses nothing, and destroying a non-existent asset is a no-op.
     await delete_avatar_from_cloudinary(user_id)
+
+
+CYCLE_DISPLAY_ORDER = ("Base", "NG+", "NG++", "DLC")
+
+
+@router.get("/me/stats", response_model=UserStatsResponse)
+@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
+async def get_my_stats(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Aggregate the authenticated user's collectible completion.
+
+    All counts are quantity-weighted (a checked xN entry credits N — the
+    site-wide unit; entries remain the tracking granularity). Not
+    Redis-cached: per-user responses have no invalidation hook today and the
+    whole aggregation is a handful of indexed reads. Edge caching is already
+    suppressed by the /api/users/me no-store allowlist prefix.
+    """
+    progress_on = and_(
+        UserProgress.collectible_id == Collectible.id,
+        UserProgress.user_id == current_user.id,
+    )
+    # uq_user_collectible guarantees at most one joined progress row per
+    # collectible, so summing quantity over matched rows never double-credits.
+    weighted_total = func.coalesce(func.sum(Collectible.quantity), 0)
+    weighted_completed = func.coalesce(
+        func.sum(case((UserProgress.id.is_not(None), Collectible.quantity), else_=0)), 0
+    )
+
+    overall = (await db.execute(
+        select(
+            weighted_total.label("total"),
+            weighted_completed.label("completed"),
+        )
+        .select_from(Collectible)
+        .outerjoin(UserProgress, progress_on)
+    )).one()
+
+    # A dual-typed collectible counts once per type here, so per-type totals
+    # can sum above the overall — buckets are per-type views, not a partition.
+    type_rows = (await db.execute(
+        select(
+            CollectibleType.name,
+            CollectibleType.slug,
+            func.coalesce(CollectibleType.category_group, "collectibles").label("category"),
+            weighted_total.label("total"),
+            weighted_completed.label("completed"),
+        )
+        .select_from(CollectibleType)
+        .outerjoin(
+            collectible_type_mappings,
+            collectible_type_mappings.c.type_id == CollectibleType.id,
+        )
+        .outerjoin(Collectible, Collectible.id == collectible_type_mappings.c.collectible_id)
+        .outerjoin(UserProgress, progress_on)
+        .group_by(CollectibleType.id)
+        .order_by(func.coalesce(CollectibleType.display_order, 0), CollectibleType.name)
+    )).all()
+
+    level_rows = (await db.execute(
+        select(
+            Level.name,
+            Level.display_order,
+            weighted_total.label("total"),
+            weighted_completed.label("completed"),
+        )
+        .select_from(Level)
+        .join(Location, Location.level_id == Level.id)
+        .join(Collectible, Collectible.location_id == Location.id)
+        .outerjoin(UserProgress, progress_on)
+        .group_by(Level.id)
+        .order_by(Level.display_order)
+    )).all()
+
+    cycle_rows = (await db.execute(
+        select(
+            Collectible.cycle,
+            weighted_total.label("total"),
+            weighted_completed.label("completed"),
+        )
+        .select_from(Collectible)
+        .outerjoin(UserProgress, progress_on)
+        .group_by(Collectible.cycle)
+    )).all()
+
+    override_rows = (await db.execute(
+        select(Collectible.id, Collectible.quantity).where(Collectible.quantity > 1)
+    )).all()
+    # Fixed display order applied in Python — portable across Postgres and the
+    # SQLite test engine, unlike CASE/array_position ordering in SQL.
+    cycle_rank = {name: i for i, name in enumerate(CYCLE_DISPLAY_ORDER)}
+    cycle_rows = sorted(cycle_rows, key=lambda r: cycle_rank.get(r.cycle, len(CYCLE_DISPLAY_ORDER)))
+
+    # Mirrors the public read path (is_deleted + is_approved filters), so the
+    # count equals comments the user can actually see rendered.
+    comments_posted = (await db.execute(
+        select(func.count())
+        .select_from(Comment)
+        .where(
+            Comment.user_id == current_user.id,
+            Comment.is_deleted == False,  # noqa: E712
+            Comment.is_approved == True,  # noqa: E712
+        )
+    )).scalar_one()
+
+    return {
+        "total": {"completed": overall.completed, "total": overall.total},
+        "types": [
+            {
+                "name": r.name,
+                "slug": r.slug,
+                "category": r.category,
+                "completed": r.completed,
+                "total": r.total,
+            }
+            for r in type_rows
+        ],
+        "levels": [
+            {
+                "name": r.name,
+                "order": r.display_order,
+                "completed": r.completed,
+                "total": r.total,
+            }
+            for r in level_rows
+        ],
+        "cycles": [
+            {"name": r.cycle, "completed": r.completed, "total": r.total}
+            for r in cycle_rows
+        ],
+        "quantity_overrides": {r.id: r.quantity for r in override_rows},
+        "comments_posted": comments_posted,
+        "member_since": current_user.created_at.isoformat(),
+    }
 
 
 # Admin-only

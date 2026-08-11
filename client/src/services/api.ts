@@ -168,6 +168,40 @@ export interface ProgressWriteResponse {
   collectible_id: number
 }
 
+// Mirrors UserStatsResponse in server/app/schemas/users.py
+export interface TypeStat {
+  name: string
+  slug: string
+  category: string
+  completed: number
+  total: number
+}
+
+export interface LevelStat {
+  name: string
+  order: number
+  completed: number
+  total: number
+}
+
+export interface CycleStat {
+  name: string
+  completed: number
+  total: number
+}
+
+export interface UserStatsResponse {
+  total: { completed: number; total: number }
+  types: TypeStat[]
+  levels: LevelStat[]
+  cycles: CycleStat[]
+  // Sparse {collectible_id: quantity} for quantity > 1 entries only; keys are
+  // strings on the wire (JSON object keys). All counts are quantity-weighted.
+  quantity_overrides: Record<string, number>
+  comments_posted: number
+  member_since: string
+}
+
 /**
  * Read a non-OK Response into a friendly display message: fixed copy for 429 and
  * 5xx (never leak internals or rate-limit jargon), otherwise the server's own

@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings } from 'lucide-react'
+import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useAuth } from '../hooks/useAuth'
 import { useSearch } from '../hooks/useSearch'
+import { useUserStats, weightedFound } from '../hooks/useUserStats'
+import { useProgress } from '../hooks/useProgress'
 import { SearchTrigger } from './SearchTrigger'
 import { SearchResults } from './SearchResults'
 import NotificationBell from './NotificationBell'
+import CompletionRing from './CompletionRing'
 import { NAV_SECTIONS } from './navbar/navSections'
 import type { NavSection } from './navbar/navSections'
 import DesktopDropdown from './navbar/DesktopDropdown'
@@ -35,6 +38,16 @@ function Navbar() {
   // const navigate = useNavigate();
   const { user, isAuthenticated, isRestoring, logout } = useAuth();
   const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch();
+  // "Progress" completion ring: denominator from the stats snapshot, numerator
+  // live from the progress set (quantity-weighted via the overrides map) so
+  // toggles reflect immediately. Both hooks are enabled-gated on a real token,
+  // so guests fire nothing. Rendered only when both have resolved — no
+  // fabricated 0% during loading.
+  const { data: userStats } = useUserStats();
+  const { completedIds, isLoading: progressLoading } = useProgress();
+  const ringReady = isAuthenticated && !progressLoading && !!userStats && userStats.total.total > 0;
+  const ringFound = ringReady ? weightedFound(completedIds, userStats.quantity_overrides) : 0;
+  const overallPct = ringReady ? Math.floor((ringFound / userStats.total.total) * 100) : 0;
   const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError, error: mobileSearchErrorObj } = useSearch(searchQuery);
   const handleLogout = async () => {
     setUserDropdownOpen(false)
@@ -296,6 +309,23 @@ function Navbar() {
                     </div>
                     <div className="py-1.5">
                       <Link
+                        to="/progress"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className={`flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${location.pathname === '/progress'
+                          ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                          : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400'
+                          }`}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Progress
+                        {ringReady && (
+                          <span className="ml-auto flex items-center gap-1.5 text-xs text-gray-400 tabular-nums">
+                            {overallPct}%
+                            <CompletionRing fraction={ringFound / userStats.total.total} size={16} strokeWidth={2.5} />
+                          </span>
+                        )}
+                      </Link>
+                      <Link
                         to="/settings"
                         onClick={() => setUserDropdownOpen(false)}
                         className={`flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${location.pathname === '/settings'
@@ -472,6 +502,14 @@ function Navbar() {
                       </div>
                     </div>
                     <div className="flex gap-3">
+                      <Link
+                        to="/progress"
+                        onClick={() => setIsOpen(false)}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Progress
+                      </Link>
                       <Link
                         to="/settings"
                         onClick={() => setIsOpen(false)}
