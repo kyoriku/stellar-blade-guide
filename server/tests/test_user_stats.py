@@ -258,6 +258,7 @@ async def test_stats_requires_auth(guest_client):
 async def test_empty_catalog_returns_zero_shape(user_client):
     data = await _get_stats(user_client)
     assert data["total"] == {"completed": 0, "total": 0}
+    assert data["categories"] == []
     assert data["types"] == []
     assert data["levels"] == []
     assert data["cycles"] == []
@@ -270,8 +271,8 @@ async def test_empty_catalog_returns_zero_shape(user_client):
 async def test_response_top_level_keys(user_client):
     data = await _get_stats(user_client)
     assert set(data.keys()) == {
-        "total", "types", "levels", "cycles", "quantity_overrides",
-        "comments_posted", "member_since",
+        "total", "categories", "types", "levels", "cycles",
+        "quantity_overrides", "comments_posted", "member_since",
     }
 
 
@@ -496,6 +497,52 @@ async def test_quantity_overrides_is_sparse_map_of_multiquantity_ids(
     data = await _get_stats(user_client)
     # JSON object keys are strings on the wire — the client relies on that.
     assert data["quantity_overrides"] == {str(double.id): 2, str(five.id): 5}
+
+
+# ── Category rollups ──────────────────────────────────────────────────────────
+
+async def test_dual_typed_within_category_counted_once_in_rollup(
+    user_client, stats_db_session, test_user
+):
+    level = await _seed_level(stats_db_session)
+    loc = await _seed_location(stats_db_session, level.id)
+    memorystick = await _seed_type(stats_db_session, "Memorystick", "memorysticks")
+    passcode = await _seed_type(stats_db_session, "Passcode", "passcodes")
+    c = await _seed_collectible(stats_db_session, loc.id, title="Dual Item")
+    await _map_type(stats_db_session, c.id, memorystick.id)
+    await _map_type(stats_db_session, c.id, passcode.id)
+    await _complete(stats_db_session, test_user.id, c.id)
+    await stats_db_session.commit()
+
+    data = await _get_stats(user_client)
+    # The type rows double-list it (per-type views), the category rollup must not.
+    assert sum(t["total"] for t in data["types"]) == 2
+    assert data["categories"] == [
+        {"category": "collectibles", "completed": 1, "total": 1}
+    ]
+
+
+async def test_category_rollups_weighted_ordered_and_coalesced(
+    user_client, stats_db_session, test_user
+):
+    level = await _seed_level(stats_db_session)
+    loc = await _seed_location(stats_db_session, level.id)
+    gear = await _seed_type(stats_db_session, "Gear", "gear", category_group="upgrades")
+    legacy = await _seed_type(stats_db_session, "Legacy", "legacy", category_group=None)
+    double = await _seed_collectible(stats_db_session, loc.id, title="x2 Gear", quantity=2)
+    single = await _seed_collectible(stats_db_session, loc.id, title="Legacy Item")
+    await _map_type(stats_db_session, double.id, gear.id)
+    await _map_type(stats_db_session, single.id, legacy.id)
+    await _complete(stats_db_session, test_user.id, double.id)
+    await stats_db_session.commit()
+
+    data = await _get_stats(user_client)
+    # NULL category_group coalesces into collectibles; fixed display order
+    # (collectibles before upgrades); quantity-weighted completion.
+    assert data["categories"] == [
+        {"category": "collectibles", "completed": 0, "total": 1},
+        {"category": "upgrades", "completed": 2, "total": 2},
+    ]
 
 
 # ── Comments ──────────────────────────────────────────────────────────────────

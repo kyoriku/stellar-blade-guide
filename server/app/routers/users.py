@@ -93,6 +93,7 @@ async def delete_me(
 
 
 CYCLE_DISPLAY_ORDER = ("Base", "NG+", "NG++", "DLC")
+CATEGORY_DISPLAY_ORDER = ("collectibles", "upgrades", "cosmetics", "materials")
 
 
 @router.get("/me/stats", response_model=UserStatsResponse)
@@ -177,6 +178,42 @@ async def get_my_stats(
         .group_by(Collectible.cycle)
     )).all()
 
+    # Category rollups count each collectible once per category group: a
+    # dual-typed item's two types share a group, so aggregating over the raw
+    # mappings (like the per-type query) would double-count it. DISTINCT
+    # collapses the two mapping rows before the outer sum.
+    cat_subq = (
+        select(
+            Collectible.id.label("cid"),
+            Collectible.quantity.label("qty"),
+            func.coalesce(CollectibleType.category_group, "collectibles").label("category"),
+        )
+        .select_from(Collectible)
+        .join(collectible_type_mappings, collectible_type_mappings.c.collectible_id == Collectible.id)
+        .join(CollectibleType, CollectibleType.id == collectible_type_mappings.c.type_id)
+        .distinct()
+        .subquery()
+    )
+    category_rows = (await db.execute(
+        select(
+            cat_subq.c.category,
+            func.coalesce(func.sum(cat_subq.c.qty), 0).label("total"),
+            func.coalesce(
+                func.sum(case((UserProgress.id.is_not(None), cat_subq.c.qty), else_=0)), 0
+            ).label("completed"),
+        )
+        .select_from(cat_subq)
+        .outerjoin(UserProgress, and_(
+            UserProgress.collectible_id == cat_subq.c.cid,
+            UserProgress.user_id == current_user.id,
+        ))
+        .group_by(cat_subq.c.category)
+    )).all()
+    cat_rank = {name: i for i, name in enumerate(CATEGORY_DISPLAY_ORDER)}
+    category_rows = sorted(
+        category_rows, key=lambda r: cat_rank.get(r.category, len(CATEGORY_DISPLAY_ORDER))
+    )
+
     override_rows = (await db.execute(
         select(Collectible.id, Collectible.quantity).where(Collectible.quantity > 1)
     )).all()
@@ -199,6 +236,10 @@ async def get_my_stats(
 
     return {
         "total": {"completed": overall.completed, "total": overall.total},
+        "categories": [
+            {"category": r.category, "completed": r.completed, "total": r.total}
+            for r in category_rows
+        ],
         "types": [
             {
                 "name": r.name,
