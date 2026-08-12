@@ -55,7 +55,7 @@ function HomePage() {
                 Stellar Blade Guide
               </h1>
               <p className="text-gray-300 text-lg max-w-lg mb-4">
-                Every collectible, walkthrough, and secret — with detailed screenshots and locations.
+                Every collectible, walkthrough, and secret, with detailed screenshots and locations.
               </p>
               <div className="flex gap-5 text-base">
                 <span className="text-gray-300">
@@ -79,7 +79,7 @@ function HomePage() {
           Stellar Blade Guide
         </h1>
         <p className="text-gray-300 mb-3">
-          Every collectible, walkthrough, and secret — with detailed screenshots and locations.
+          Every collectible, walkthrough, and secret, with detailed screenshots and locations.
         </p>
         <div className="flex gap-4 text-sm">
           <span className="text-gray-300">

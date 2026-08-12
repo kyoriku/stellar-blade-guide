@@ -5,7 +5,7 @@ import SectionHeader from '../components/SectionHeader'
 export default function Disclaimer() {
   return (
     <div className="min-h-main bg-primary">
-      <SEO title="Disclaimer" description="Disclaimer for Stellar Blade Guide — an unofficial fan-made guide not affiliated with Shift Up Corporation or Sony Interactive Entertainment." />
+      <SEO title="Disclaimer" description="Disclaimer for Stellar Blade Guide, an unofficial fan-made guide not affiliated with Shift Up Corporation or Sony Interactive Entertainment." />
       <div className="container mx-auto px-3 py-8 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Disclaimer</h1>
 

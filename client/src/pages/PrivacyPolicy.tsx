@@ -73,7 +73,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <SectionHeader icon={Cookie} id="cookies">Cookies, Sessions & Local Storage</SectionHeader>
-            <p>We use cookies and server-side sessions to keep you logged in after authentication. We also use browser localStorage to store guest progress tracking data. These are strictly functional — no advertising or cross-site tracking cookies are used. You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
+            <p>We use cookies and server-side sessions to keep you logged in after authentication. We also use browser localStorage to store guest progress tracking data. These are strictly functional. No advertising or cross-site tracking cookies are used. You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
           </section>
 
           <section>
