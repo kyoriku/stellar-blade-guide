@@ -52,7 +52,7 @@ const WHAT_WE_KNOW: KnownItem[] = [
     confirmed: true,
   },
   {
-    text: 'Combat centers on close-quarters fighting — Shift Up says the game can be cleared with CQC alone, with additional weapons (including a reverse-blade sword) and stance/combo depth layered on top.',
+    text: 'Combat centers on close-quarters fighting. Shift Up says the game can be cleared with CQC alone, with additional weapons (including a reverse-blade sword) and stance/combo depth layered on top.',
     confirmed: true,
   },
   {
@@ -82,7 +82,7 @@ const WHAT_WE_KNOW: KnownItem[] = [
     linkBefore: 'The city is ',
     linkText: 'not Xion from the first game',
     linkHref: FAMITSU_URL,
-    text: ' — Shift Up says enough in-world time has passed for humanity to build new cities beyond it.',
+    text: '. Shift Up says enough in-world time has passed for humanity to build new cities beyond it.',
     confirmed: true,
   },
   {
@@ -97,13 +97,13 @@ const WHAT_WE_KNOW: KnownItem[] = [
     linkBefore: 'Enemies are designed to fit the urban setting in a more realistic style, ',
     linkText: 'per Shift Up',
     linkHref: RULIWEB_URL,
-    text: ' — though giant boss monsters like the first game’s are still present.',
+    text: ', though giant boss monsters like the first game’s are still present.',
     confirmed: true,
   },
 ]
 
 const OPEN_QUESTIONS = [
-  'Release date — a 2027 target was mentioned but Shift Up now says it may need more time',
+  'Release date: a 2027 target was mentioned but Shift Up now says it may need more time',
   'Release platforms (only "not a PS5 exclusive" is confirmed)',
   'The exact relationship between Evie and Eve (confirmed related, but Shift Up is keeping details secret)',
   'What "CDDP" on Evie’s back stands for (Shift Up calls it a spoiler)',
@@ -124,8 +124,8 @@ export default function BloodRainPage() {
   return (
     <div className="min-h-main bg-primary">
       <SEO
-        title="Stellar Blade: Blood Rain — Release Date, Platforms & News"
-        description="Everything confirmed about Stellar Blade: Blood Rain, the sequel revealed at Summer Game Fest 2026 — new protagonist Evie, combat, platforms, and release info. Updated as news breaks."
+        title="Stellar Blade: Blood Rain - Release Date, Platforms & News"
+        description="Everything confirmed about Stellar Blade: Blood Rain, the sequel revealed at Summer Game Fest 2026: new protagonist Evie, combat, platforms, and release info. Updated as news breaks."
         canonical="/blood-rain"
         ogType="article"
         ogImage={ogImageUrl(HERO_IMAGE)}

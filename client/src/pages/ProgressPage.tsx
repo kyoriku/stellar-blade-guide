@@ -127,7 +127,8 @@ const dualTypeFootnote = (
   </p>
 )
 
-// Floor, not round: 100% must mean true completion (1,077/1,078 is 99%).
+// Floor, not round: 100% must mean true completion (one short of the total
+// must still read 99%).
 const pct = (completed: number, total: number) =>
   total > 0 ? Math.floor((completed / total) * 100) : 0
 

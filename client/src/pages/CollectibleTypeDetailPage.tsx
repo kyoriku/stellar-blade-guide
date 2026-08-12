@@ -454,7 +454,7 @@ function CollectibleTypeDetailPage() {
         title={displayTypeName}
         description={
           showCycleFilter
-            ? `All ${totalCollectibles} ${displayTypeName} in Stellar Blade — Base, NG+, NG++, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.`
+            ? `All ${totalCollectibles} ${displayTypeName} in Stellar Blade across Base, NG+, NG++, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.`
             : `Complete guide to all ${totalCollectibles} ${displayTypeName} in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.`
         }
         canonical={`/${category}/${typeName}`}

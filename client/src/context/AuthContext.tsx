@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             confirmedRef.current = false // this session is over — the next optimistic restore is unconfirmed again
             localStorage.removeItem(SESSION_FLAG)
             localStorage.removeItem(USER_CACHE)
-            showToast('Your session expired — please log in again.')
+            showToast('Your session expired. Please log in again.')
           }
           return null
         }
@@ -207,8 +207,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               body: JSON.stringify({ collectible_ids: ids }),
             }).then(res => {
               if (res.ok) localStorage.removeItem('sb_progress')
-              else showToast("Couldn't sync your saved progress — it's still saved on this device.")
-            }).catch(() => showToast("Couldn't sync your saved progress — it's still saved on this device."))
+              else showToast("Couldn't sync your saved progress. It's still saved on this device.")
+            }).catch(() => showToast("Couldn't sync your saved progress. It's still saved on this device."))
           }
         } catch { /* corrupt sb_progress JSON — nothing to sync */ }
       }
