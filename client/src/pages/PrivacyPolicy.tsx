@@ -1,4 +1,4 @@
-import { Database, FileText, Bot, BarChart3, Cookie, Globe, Shield, UserCheck, Users, RefreshCw, Heart } from 'lucide-react'
+import { Database, FileText, Bot, BarChart3, Cookie, Megaphone, Globe, Shield, UserCheck, Users, RefreshCw, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
 import SectionHeader from '../components/SectionHeader'
 
@@ -8,6 +8,7 @@ const sections = [
   { id: 'ai-moderation', label: 'AI comment moderation' },
   { id: 'analytics', label: 'Web analytics' },
   { id: 'cookies', label: 'Cookies & local storage' },
+  { id: 'advertising', label: 'Advertising' },
   { id: 'support', label: 'Support contributions' },
   { id: 'third-party', label: 'Third-party services' },
   { id: 'security', label: 'Data security & retention' },
@@ -58,7 +59,7 @@ export default function PrivacyPolicy() {
               <li>Monitor site performance and detect technical issues</li>
               <li>Comply with legal obligations</li>
             </ul>
-            <p className="mt-2">We do <strong>not</strong> sell, rent, or share your personal information with third parties for marketing purposes.</p>
+            <p className="mt-2">We do <strong>not</strong> sell or rent your personal information, and we never provide your account details — email address, password, or comment history — to advertisers. Loading Google AdSense does mean Google independently receives standard request data and may use advertising cookies; see <a href="#advertising" className={linkClass}>Advertising</a> below.</p>
           </section>
 
           <section>
@@ -73,7 +74,15 @@ export default function PrivacyPolicy() {
 
           <section>
             <SectionHeader icon={Cookie} id="cookies">Cookies, Sessions & Local Storage</SectionHeader>
-            <p>We use cookies and server-side sessions to keep you logged in after authentication. We also use browser localStorage to store guest progress tracking data. These are strictly functional. No advertising or cross-site tracking cookies are used. You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
+            <p>We use cookies and server-side sessions to keep you logged in after authentication. We also use browser localStorage to store guest progress tracking data. These are strictly functional. Separately, this site loads Google AdSense, and Google may set or read its own advertising cookies and device identifiers as a third party — see <a href="#advertising" className={linkClass}>Advertising</a> below. You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
+          </section>
+
+          <section>
+            <SectionHeader icon={Megaphone} id="advertising">Advertising</SectionHeader>
+            <p>This site participates in Google AdSense, and the Google AdSense script is included on every page.</p>
+            <p className="mt-2">The site is currently in Google's site-review stage. <strong>No ads are displayed</strong> — there are no ad units anywhere on the site. This section will be updated before any ads begin to serve.</p>
+            <p className="mt-2">When your browser loads that script, it is requested directly from Google's servers, so Google receives standard request information including your IP address, browser user agent, and the page you are viewing. Google may also set or read cookies and similar device identifiers as a third party. Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this site or other sites, and Google's use of advertising cookies enables it and its partners to serve ads to you based on your visit to this site and/or other sites on the Internet. This processing is governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className={linkClass}>Google's privacy policy</a> and by <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer" className={linkClass}>how Google uses information from sites that use its services</a>.</p>
+            <p className="mt-2">You may opt out of personalized advertising by visiting <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" className={linkClass}>Google's Ads Settings</a>. Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className={linkClass}>www.aboutads.info</a>.</p>
           </section>
 
           <section>
@@ -91,6 +100,7 @@ export default function PrivacyPolicy() {
               <li><strong>OpenAI</strong> - automated comment moderation (comment text only)</li>
               <li><strong>Resend</strong> - transactional email delivery (email address only)</li>
               <li><strong>Ko-fi & Stripe</strong> - voluntary tip processing (we never see your payment details)</li>
+              <li><strong>Google AdSense</strong> - advertising (see <a href="#advertising" className={linkClass}>Advertising</a> above)</li>
             </ul>
           </section>
 
@@ -118,7 +128,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: May 27, 2026
+            Last Updated: August 26, 2026
           </div>
         </div>
       </div>
