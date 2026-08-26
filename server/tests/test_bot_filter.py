@@ -138,3 +138,12 @@ async def test_oversized_path_hits_length_guard(bot_client):
     # SPA-shaped but > 512 chars → the length guard returns 404 before the regex runs.
     r = await bot_client.get("/" + ("a" * 600))
     assert r.status_code == 404
+
+
+async def test_root_seo_files_pass_through(bot_client):
+    # Each contains a '.', so SPA_SAFE_PATH rejects all three — ALLOWED_EXACT is the
+    # only thing keeping them reachable. A 404 on /ads.txt is silent and expensive:
+    # Google reads it as unauthorized inventory rather than as a site error.
+    for path in ("/robots.txt", "/sitemap.xml", "/ads.txt"):
+        r = await bot_client.get(path)
+        assert r.status_code == 200, f"{path} must not be treated as a bot probe"

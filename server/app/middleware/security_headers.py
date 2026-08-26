@@ -48,7 +48,7 @@ def add_security_headers_middleware(app: FastAPI):
         if request.method in ("GET", "HEAD") and response.status_code in (200, 304):
             if request.url.path.startswith("/assets/"):
                 response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-            elif request.url.path in ("/robots.txt", "/sitemap.xml"):
+            elif request.url.path in ("/robots.txt", "/sitemap.xml", "/ads.txt"):
                 # 6 hours
                 response.headers["Cache-Control"] = "public, max-age=21600"
             elif request.url.path.startswith("/api/"):

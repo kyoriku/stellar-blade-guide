@@ -32,6 +32,10 @@ ALLOWED_PREFIXES = (
 ALLOWED_EXACT = {
     '/robots.txt',
     '/sitemap.xml',
+    # Google 404s here mean our ad inventory reads as unauthorized. Like the two
+    # above, it contains a '.' so SPA_SAFE_PATH rejects it — this set is its only
+    # way through.
+    '/ads.txt',
 }
 
 # Pure bot-signature path prefixes that pass the regex but are never legitimate
