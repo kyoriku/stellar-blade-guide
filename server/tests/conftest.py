@@ -30,6 +30,30 @@ DATABASE + HTTP CLIENT — per test file, not here:
     could silently reject test requests.
 """
 
+# Import-time env contract — must precede every `app.*` import below.
+#
+# Three modules read env at module scope and fail hard when it is missing:
+#   app/db/database.py       builds the engine; DATABASE_URL defaults to '' and
+#                            create_async_engine('') raises ArgumentError
+#   app/core/auth.py         raises RuntimeError without JWT_SECRET_KEY
+#   app/services/comments.py constructs AsyncOpenAI, which raises without a key
+#
+# The suite never reaches any of them (per-file SQLite engines with get_db
+# overridden, fakeredis, monkeypatched moderation) — only the imports have to
+# succeed. CI has no server/.env, so these values are what let `uv run pytest`
+# run from a bare clone.
+#
+# DATABASE_URL is forced rather than defaulted: in the dev container it is
+# injected as container environment pointing at the real dev Postgres, and a
+# future test that forgot its get_db override would otherwise reach it. The
+# dummy URL keeps the asyncpg dialect the engine's connect_args are written
+# for; it is parsed but never connected to.
+import os
+
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://test:test@localhost:5432/test"
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-not-used-in-production")
+os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
+
 import pytest
 import pytest_asyncio
 import fakeredis.aioredis
