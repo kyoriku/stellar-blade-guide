@@ -1,0 +1,40 @@
+# Fast, deterministic test gate: the backend suite needs no services (it runs
+# on aiosqlite + fakeredis by design) and the client job carries lint, unit
+# tests, and the type-checking build. The Playwright e2e suite (e2e/) is
+# deliberately NOT run here — it needs live Postgres/Redis and real app
+# servers; run `npm run e2e` in the dev container before merging.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen
+      - run: uv run pytest
+
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
