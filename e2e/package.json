@@ -1,0 +1,15 @@
+{
+  "name": "stellar-blade-guide-e2e",
+  "version": "1.0.0",
+  "description": "Playwright e2e suite — dev-container only (helpers/guard.ts refuses non-local DB/Redis)",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "install-browsers": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "ioredis": "^5.11.1",
+    "pg": "^8.22.0"
+  }
+}

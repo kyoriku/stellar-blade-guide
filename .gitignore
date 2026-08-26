@@ -86,3 +86,8 @@ node_modules/.tmp/
 # CC files
 .claude/
 CLAUDE.md
+# e2e suite — deps, browsers, and per-run artifacts stay local
+e2e/node_modules/
+e2e/pw-browsers/
+e2e/test-results/
+e2e/.fixtures.json

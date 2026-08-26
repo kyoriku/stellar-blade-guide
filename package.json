@@ -8,7 +8,9 @@
     "client": "cd client && npm run dev",
     "install": "cd client && npm install",
     "build": "cd client && npm run build",
-    "start": "cd server && uv run uvicorn app.main:app --host 0.0.0.0"
+    "start": "cd server && uv run uvicorn app.main:app --host 0.0.0.0",
+    "e2e": "cd e2e && npx playwright test",
+    "e2e:install": "cd e2e && npm ci && npx playwright install chromium"
   },
   "keywords": [],
   "author": "",
