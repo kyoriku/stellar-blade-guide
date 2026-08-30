@@ -13,7 +13,7 @@ export const LEVEL_IMAGES: Record<string, string> = {
   'xion': 'https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/xion-the-last-remaining-city/stellar-blade-20251205214421.webp',
   'wasteland': 'https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/altess-levoire/stellar-blade-20260411002007.webp',
   'altess-levoire': 'https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/altess-levoire/stellar-blade-20260520202629.webp',
-  'matrix-11': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/matrix-11/closed-off-platform/stellar-blade-20240525015600.webp',
+  'matrix-11': 'https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/alpha-signal/stellar-blade-20260829131432.webp',
   'great-desert': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/great-desert/solar-tower/stellar-blade-20240603014106.webp',
   'abyss-levoire': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/abyss-levoire/emergency-exit/stellar-blade-20240716054945.webp',
   'eidos-9': 'https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240716064542.webp',

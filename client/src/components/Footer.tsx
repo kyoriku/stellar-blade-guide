@@ -14,14 +14,6 @@ export default function Footer() {
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400">
-            <a
-              href="https://ko-fi.com/stellarbladeguide"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-cyan-400 transition-colors"
-            >
-              Support ☕
-            </a>
             <Link to="/blood-rain" className="hover:text-cyan-400 transition-colors">
               Blood Rain
             </Link>
@@ -34,6 +26,14 @@ export default function Footer() {
             <Link to="/privacy" className="hover:text-cyan-400 transition-colors">
               Privacy
             </Link>
+            <a
+              href="https://ko-fi.com/stellarbladeguide"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-cyan-400 transition-colors"
+            >
+              Support
+            </a>
             <a
               href="mailto:contact@stellarbladeguide.com"
               className="hover:text-cyan-400 transition-colors"

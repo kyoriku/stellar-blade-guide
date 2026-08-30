@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { thumbnailUrl, ogImageUrl, buildSrcSet, GALLERY_WIDTHS } from './image'
 
-const R2 = 'https://img.stellarbladeguide.com/stellar-blade/collectibles/xion/xion-city/example.webp'
+// Fixture must stay in the site/ namespace: the image pipeline's manifest check
+// (generate_variants.py) scans all client source for collectibles/walkthroughs
+// R2 URLs and treats them as live content references; site/ keys are exempt.
+const R2 = 'https://img.stellarbladeguide.com/stellar-blade/site/example.webp'
 
 describe('thumbnailUrl', () => {
   it('inserts the width variant before .webp for R2 URLs', () => {
     expect(thumbnailUrl(R2, 640)).toBe(
-      'https://img.stellarbladeguide.com/stellar-blade/collectibles/xion/xion-city/example-w640.webp',
+      'https://img.stellarbladeguide.com/stellar-blade/site/example-w640.webp',
     )
   })
 
