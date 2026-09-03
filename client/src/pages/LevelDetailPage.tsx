@@ -12,6 +12,7 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { LEVELS } from '../constants/navigation'
 import { LEVEL_IMAGES } from '../constants/categoryImages'
+import { LEVEL_SEO, isLevelSlug } from '../constants/levelSeo'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
@@ -28,11 +29,7 @@ function LevelDetailPage() {
   const { levelName } = useParams<{ levelName: string }>();
   const location = useLocation();
 
-  // Validate level exists before showing loading state
   const allLevels = LEVELS.map(level => level.name);
-  const isValidLevel = allLevels.some(level =>
-    level.toLowerCase().replace(/\s+/g, '-') === levelName
-  );
 
   const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!);
 
@@ -180,14 +177,30 @@ function LevelDetailPage() {
   }, [locationData, displayLevelName, totalCollectibles]);
 
   // Check for invalid level FIRST (before loading state)
-  if (!isValidLevel) {
+  if (!levelName || !isLevelSlug(levelName)) {
     return <ErrorPage code={404} />;
   }
+
+  const { title: seoTitle, description: seoDescription } = LEVEL_SEO[levelName];
+  const levelOgImage = LEVEL_IMAGES[levelName]
+    ? ogImageUrl(LEVEL_IMAGES[levelName])
+    : undefined;
+  // Title and description are static per level, so every render state (loading
+  // included) carries the same head tags.
+  const seo = (
+    <SEO
+      title={seoTitle}
+      description={seoDescription}
+      canonical={`/levels/${levelName}`}
+      ogImage={levelOgImage}
+    />
+  );
 
   // Loading state
 if (isLoading) {
   return (
     <div className="min-h-main bg-primary">
+      {seo}
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -196,8 +209,30 @@ if (isLoading) {
 
           <div className="flex-1 min-w-0">
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">{displayLevelName}</h1>
-              <div className="h-6 w-48 bg-gray-700/50 rounded animate-pulse" />
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
+                  <div className="h-6 w-48 bg-gray-700/50 rounded animate-pulse" />
+                </div>
+
+                {/* Reserves the cycle-filter row so sections don't shift when
+                    the filter mounts; styled as the active "All" button so it
+                    reads unchanged once the real row replaces it. Altess
+                    Levoire and Nest hold Base-cycle items only — no filter
+                    appears on load, so reserving the row there would shift
+                    content the other way. */}
+                {levelName !== 'altess-levoire' && levelName !== 'nest' && (
+                  <div className="flex flex-wrap items-center gap-2 order-3 sm:order-none">
+                    <div className="px-3 py-1.5 text-sm rounded-lg border bg-cyan-500/20 border-cyan-500/50 text-cyan-400">
+                      All
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
+                  {seoDescription}
+                </p>
+              </div>
             </div>
 
             <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
@@ -219,18 +254,9 @@ if (isLoading) {
     return <ErrorPage code={404} />;
   }
 
-  const levelOgImage = levelName && LEVEL_IMAGES[levelName]
-    ? ogImageUrl(LEVEL_IMAGES[levelName])
-    : undefined;
-
   return (
     <div className="min-h-main bg-primary">
-      <SEO
-        title={displayLevelName}
-        description={`All ${totalCollectibles} collectibles in ${displayLevelName}: Nano Suits, documents, cans, and more. Screenshots and guides for every location.`}
-        canonical={`/levels/${levelName}`}
-        ogImage={levelOgImage}
-      />
+      {seo}
       <StructuredData
         type="CollectionPage"
         headline={`${displayLevelName} Collectibles Guide`}
@@ -276,7 +302,7 @@ if (isLoading) {
                 </div>
 
                 {showCycleFilter && (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 order-3 sm:order-none">
                     {['All', ...availableCycles].map(cycle => (
                       <button
                         key={cycle}
@@ -292,6 +318,10 @@ if (isLoading) {
                     ))}
                   </div>
                 )}
+
+                <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
+                  {seoDescription}
+                </p>
               </div>
             </div>
 
