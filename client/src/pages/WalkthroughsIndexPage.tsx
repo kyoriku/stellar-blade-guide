@@ -6,8 +6,9 @@ import { WALKTHROUGH_IMAGES } from '../constants/categoryImages';
 const CONFIG: CategoryIndexConfig = {
   basePath: '/walkthroughs',
   title: 'Walkthroughs',
-  metaDescription: `Complete walkthrough guides for Stellar Blade. Browse ${WALKTHROUGHS.length} categories including main story missions, side quests, and more.`,
-  intro: 'Step-by-step walkthrough guides for Stellar Blade covering the main story, side quests, and more. Each guide includes screenshots, boss strategies, and tips.',
+  seoTitle: 'Main Story & Side Quest Walkthroughs',
+  metaDescription: 'Step-by-step walkthroughs for every Stellar Blade main story mission, side quest, and bulletin board request, plus the NieR: Automata and Goddess of Victory: Nikke DLC.',
+  intro: 'Step-by-step walkthrough guides for Stellar Blade covering the main story, side quests, and more. Each guide includes screenshots and tips, and every boss fight gets its own strategy.',
   structuredDataHeadline: 'Stellar Blade Walkthroughs',
   structuredDataDescription: 'Complete walkthrough guides for all Stellar Blade missions.',
   itemListName: 'Stellar Blade Walkthrough Categories',
