@@ -31,7 +31,7 @@ function LevelDetailPage() {
 
   const allLevels = LEVELS.map(level => level.name);
 
-  const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!);
+  const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!, !!levelName && isLevelSlug(levelName));
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
