@@ -16,6 +16,8 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/image'
+import { walkthroughTypeName } from '../utils/walkthroughTypeName'
+import { WALKTHROUGH_IMAGES } from '../constants/categoryImages'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -91,8 +93,17 @@ function WalkthroughDetailPage() {
     : null;
 
   if (isLoading) {
+    // The real title arrives with the data; until then the mission-type name
+    // keeps the tab and head tags populated.
+    const typeDisplay = walkthroughTypeName(type!);
     return (
       <div className="min-h-main bg-primary">
+        <SEO
+          title={`${typeDisplay} Walkthrough`}
+          description={`${typeDisplay} walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.`}
+          canonical={`/walkthroughs/${type}/${slug}`}
+          ogImage={WALKTHROUGH_IMAGES[type!] ? ogImageUrl(WALKTHROUGH_IMAGES[type!]) : undefined}
+        />
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
             {/* Skeleton sidebar - exact match */}
@@ -166,7 +177,7 @@ function WalkthroughDetailPage() {
   return (
     <div className="min-h-main bg-primary">
       <SEO
-        title={walkthrough.title}
+        title={`${walkthrough.title} Walkthrough`}
         description={`${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`}
         canonical={`/walkthroughs/${type}/${slug}`}
         ogImage={(() => {
