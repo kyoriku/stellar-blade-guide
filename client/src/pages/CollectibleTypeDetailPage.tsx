@@ -25,6 +25,7 @@ import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
+import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
 
 // Display order AND allowlist: a subtype missing here (or spelled differently
 // than the DB value) silently never appears as a filter option.
@@ -392,15 +393,31 @@ function CollectibleTypeDetailPage() {
     }
   }, [sortedLevelData, sortMode, setActiveSection]);
 
-  // Check for invalid type FIRST (before loading state)
-  if (!isValidType) {
+  // Check for invalid type FIRST (before loading state). isValidType is the
+  // real gate (it also 404s cross-category URLs like /materials/passcodes);
+  // the isTypeSlug clauses are runtime-redundant and exist to narrow typeName
+  // for the TYPE_SEO lookup.
+  if (!isValidType || !typeName || !isTypeSlug(typeName)) {
     return <ErrorPage code={404} />;
   }
+
+  const { title: seoTitle, description: seoDescription } = TYPE_SEO[typeName];
+  // Title and description are static per type, so every render state (loading
+  // included) carries the same head tags.
+  const seo = (
+    <SEO
+      title={seoTitle}
+      description={seoDescription}
+      canonical={`/${category}/${typeName}`}
+      ogImage={collectibleOgImage}
+    />
+  );
 
   // Loading state
   if (isLoading) {
     return (
       <div className="min-h-main bg-primary">
+        {seo}
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
             <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -421,9 +438,9 @@ function CollectibleTypeDetailPage() {
                     </div>
                   </div>
 
-                  {TYPE_DESCRIPTIONS[typeName!] && (
+                  {TYPE_DESCRIPTIONS[typeName] && (
                     <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
-                      {TYPE_DESCRIPTIONS[typeName!]}
+                      {TYPE_DESCRIPTIONS[typeName]}
                     </p>
                   )}
                 </div>
@@ -450,16 +467,7 @@ function CollectibleTypeDetailPage() {
 
   return (
     <div className="min-h-dvh bg-primary">
-      <SEO
-        title={displayTypeName}
-        description={
-          showCycleFilter
-            ? `All ${totalCollectibles} ${displayTypeName} in Stellar Blade across Base, NG+, NG++, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.`
-            : `Complete guide to all ${totalCollectibles} ${displayTypeName} in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.`
-        }
-        canonical={`/${category}/${typeName}`}
-        ogImage={collectibleOgImage}
-      />
+      {seo}
       <StructuredData
         type="CollectionPage"
         headline={`${displayTypeName} - Stellar Blade Guide`}
@@ -575,9 +583,9 @@ function CollectibleTypeDetailPage() {
                   </div>
                 )}
 
-                {TYPE_DESCRIPTIONS[typeName!] && (
+                {TYPE_DESCRIPTIONS[typeName] && (
                   <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
-                    {TYPE_DESCRIPTIONS[typeName!]}
+                    {TYPE_DESCRIPTIONS[typeName]}
                   </p>
                 )}
               </div>
