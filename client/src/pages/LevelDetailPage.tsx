@@ -197,53 +197,53 @@ function LevelDetailPage() {
   );
 
   // Loading state
-if (isLoading) {
-  return (
-    <div className="min-h-main bg-primary">
-      {seo}
-      <div className="container mx-auto px-3 py-8">
-        <div className="flex gap-8">
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <TableOfContentsSkeleton />
-          </aside>
+  if (isLoading) {
+    return (
+      <div className="min-h-main bg-primary">
+        {seo}
+        <div className="container mx-auto px-3 py-8">
+          <div className="flex gap-8">
+            <aside className="hidden lg:block w-64 flex-shrink-0">
+              <TableOfContentsSkeleton />
+            </aside>
 
-          <div className="flex-1 min-w-0">
-            <div className="mb-8">
-              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
-                <div>
-                  <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
-                  <div className="h-6 w-48 bg-gray-700/50 rounded animate-pulse" />
-                </div>
-
-                {/* Reserves the cycle-filter row so sections don't shift when
-                    the filter mounts; styled as the active "All" button so it
-                    reads unchanged once the real row replaces it. Altess
-                    Levoire and Nest hold Base-cycle items only — no filter
-                    appears on load, so reserving the row there would shift
-                    content the other way. */}
-                {levelName !== 'altess-levoire' && levelName !== 'nest' && (
-                  <div className="flex flex-wrap items-center gap-2 order-3 sm:order-none">
-                    <div className="px-3 py-1.5 text-sm rounded-lg border bg-cyan-500/20 border-cyan-500/50 text-cyan-400">
-                      All
-                    </div>
+            <div className="flex-1 min-w-0">
+              <div className="mb-8">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
+                    <div className="h-6 w-48 bg-gray-700/50 rounded animate-pulse" />
                   </div>
-                )}
 
-                <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
-                  {seoDescription}
-                </p>
+                  {/* Reserves the cycle-filter row so sections don't shift when
+                      the filter mounts; styled as the active "All" button so it
+                      reads unchanged once the real row replaces it. Altess
+                      Levoire and Nest hold Base-cycle items only — no filter
+                      appears on load, so reserving the row there would shift
+                      content the other way. */}
+                  {levelName !== 'altess-levoire' && levelName !== 'nest' && (
+                    <div className="flex flex-wrap items-center gap-2 order-3 sm:order-none">
+                      <div className="px-3 py-1.5 text-sm rounded-lg border bg-cyan-500/20 border-cyan-500/50 text-cyan-400">
+                        All
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-gray-300 order-2 sm:order-none sm:basis-full">
+                    {seoDescription}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
-            <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
-            <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
+              <CollectibleSectionSkeleton id="skeleton-1" cardCount={3} />
+              <CollectibleSectionSkeleton id="skeleton-2" cardCount={3} />
+              <CollectibleSectionSkeleton id="skeleton-3" cardCount={3} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // Show error page with appropriate code
   if (isError) {
