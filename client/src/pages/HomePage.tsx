@@ -15,7 +15,7 @@ const HERO_SRCSET = [640, 960, 1200, 1600, 1920, 2560]
 
 const SITE_STATS = {
   collectibles: 1000,
-  screenshots: 1500,
+  screenshots: 2000,
 } as const;
 
 function HomePage() {
