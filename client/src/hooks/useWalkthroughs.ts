@@ -9,11 +9,11 @@ export function useWalkthroughs() {
   })
 }
 
-export function useWalkthroughsByType(type: string) {
+export function useWalkthroughsByType(type: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ['walkthroughs', 'type', type],
     queryFn: () => api.getWalkthroughsByType(type),
-    enabled: !!type,
+    enabled: !!type && enabled,
   })
 }
 

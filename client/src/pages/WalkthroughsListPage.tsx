@@ -4,36 +4,39 @@ import QueryError from '../components/QueryError';
 import { MapPin, BookOpen } from 'lucide-react';
 import ErrorPage from './ErrorPage';
 import { WALKTHROUGHS } from '../constants/navigation';
+import { WALKTHROUGH_IMAGES } from '../constants/categoryImages';
 import { usePrefetch } from '../hooks/usePrefetch';
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
-import { thumbnailUrl, buildSrcSet } from '../utils/image';
+import { thumbnailUrl, buildSrcSet, ogImageUrl } from '../utils/image';
+import { walkthroughTypeName } from '../utils/walkthroughTypeName';
 
 export default function WalkthroughsListPage() {
   const { type } = useParams<{ type: string }>();
   const { prefetchWalkthroughBySlug } = usePrefetch();
 
   const isValidType = WALKTHROUGHS.some(w => w.slug === type);
-  const { data: walkthroughs, isLoading, isError, error, refetch } = useWalkthroughsByType(type!);
+  const { data: walkthroughs, isLoading, isError, error, refetch } = useWalkthroughsByType(type!, isValidType);
 
-  const DISPLAY_NAME_OVERRIDES: Record<string, string> = {
-    'nier-dlc': 'NieR: Automata DLC',
-    'nikke-dlc': 'Goddess of Victory: Nikke DLC',
-    // 'bulletin-board-requests': 'Bulletin Board Requests',
-  };
-
-  const displayType = DISPLAY_NAME_OVERRIDES[type!] ?? type?.replace(/-/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  const displayType = walkthroughTypeName(type!);
 
   if (!isValidType) {
     return <ErrorPage code={404} />;
   }
 
+  const listOgImage = WALKTHROUGH_IMAGES[type!]
+    ? ogImageUrl(WALKTHROUGH_IMAGES[type!])
+    : undefined;
+
   if (isLoading) {
     return (
       <div className="min-h-main bg-primary">
+        <SEO
+          title={`${displayType} Walkthroughs`}
+          description={`Complete ${displayType} walkthroughs for Stellar Blade. Detailed guides with step-by-step instructions and screenshots.`}
+          canonical={`/walkthroughs/${type}`}
+          ogImage={listOgImage}
+        />
         <div className="container mx-auto px-3 py-8">
           <div className="mb-8">
             <div className="h-9 md:h-10 w-64 bg-gray-700 rounded-lg animate-pulse" />
@@ -73,9 +76,10 @@ export default function WalkthroughsListPage() {
   return (
     <div className="min-h-main bg-primary">
       <SEO
-        title={displayType}
+        title={`${displayType} Walkthroughs`}
         description={`Complete ${displayType} walkthroughs for Stellar Blade. ${walkthroughs.length} detailed guides with step-by-step instructions and screenshots.`}
         canonical={`/walkthroughs/${type}`}
+        ogImage={listOgImage}
       />
       <StructuredData
         type="CollectionPage"
