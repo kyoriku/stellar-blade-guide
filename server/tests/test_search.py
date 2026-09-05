@@ -113,7 +113,7 @@ async def test_result_shape(search_client, monkeypatch):
         SearchResult(
             kind="collectible",
             id=42,
-            title="Memory Stick",
+            title="Memorystick",
             snippet="Found near the entrance.",
             navigation_url="/levels/eidos-7",
             score=0.5,
