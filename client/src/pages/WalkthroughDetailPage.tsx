@@ -174,11 +174,18 @@ function WalkthroughDetailPage() {
       }))
   }];
 
+  // "boss strategies" is only claimed when the walkthrough actually documents a
+  // boss (some side quests have one; several main-story missions do not).
+  // Shared by the meta description and both structured-data descriptions so
+  // all three always agree.
+  const hasBossFight = walkthrough.content.some(block => block.is_boss);
+  const pageDescription = `${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with ${hasBossFight ? 'screenshots, tips, and boss strategies' : 'screenshots and tips'}.`;
+
   return (
     <div className="min-h-main bg-primary">
       <SEO
         title={`${walkthrough.title} Walkthrough`}
-        description={`${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`}
+        description={pageDescription}
         canonical={`/walkthroughs/${type}/${slug}`}
         ogImage={(() => {
           const src = walkthrough.thumbnail_url
@@ -189,13 +196,13 @@ function WalkthroughDetailPage() {
       <StructuredData
         type="WebPage"
         headline={walkthrough.title}
-        description={`${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`}
+        description={pageDescription}
         extraSchemas={[{
           '@context': 'https://schema.org',
           '@type': 'Article',
           headline: walkthrough.title,
           ...(walkthrough.subtitle && { alternativeHeadline: walkthrough.subtitle }),
-          description: `${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with screenshots, tips, and boss strategies.`,
+          description: pageDescription,
           articleSection: walkthrough.mission_type,
           ...(walkthrough.content.find(c => c.images?.length > 0)?.images[0] && {
             image: walkthrough.content.find(c => c.images?.length > 0)!.images[0].url

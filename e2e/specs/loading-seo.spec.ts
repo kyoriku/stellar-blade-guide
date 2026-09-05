@@ -32,5 +32,16 @@ test.describe('walkthrough loading-state seo', () => {
     await page.unroute('**/api/walkthroughs/main-story/7th-airborne-squad');
     await page.reload();
     await expect(page).toHaveTitle(/7th Airborne Squad Walkthrough \| Stellar Blade Guide$/);
+    // 7th Airborne Squad documents a boss, so the loaded description claims strategies.
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /boss strategies/);
+  });
+
+  test('bossless walkthroughs do not claim boss strategies', async ({ page }) => {
+    // missing-husband (bulletin board request) has no is_boss content block.
+    await page.goto('/walkthroughs/bulletin-board-requests/missing-husband');
+    // Gate on the loaded title first — the loading transient also lacks the
+    // phrase, so asserting too early would pass vacuously.
+    await expect(page).toHaveTitle(/Missing Husband Walkthrough/);
+    await expect(page.locator('meta[name="description"]')).not.toHaveAttribute('content', /boss strategies/);
   });
 });

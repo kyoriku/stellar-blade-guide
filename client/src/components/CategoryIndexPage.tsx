@@ -11,8 +11,10 @@ type PrefetchFns = ReturnType<typeof usePrefetch>;
 export interface CategoryIndexConfig {
   /** Route segment with leading slash; drives the canonical URL, card links, and ItemList URLs. */
   basePath: string;
-  /** Page name — used for both the SEO <title> and the visible <h1>. */
+  /** Page name — the visible <h1>, and the SEO <title> unless seoTitle overrides it. */
   title: string;
+  /** SERP-facing <title> override; the h1 keeps `title`. */
+  seoTitle?: string;
   metaDescription: string;
   /** Intro paragraph rendered under the h1. */
   intro: string;
@@ -33,7 +35,7 @@ function CategoryIndexPage({ config }: { config: CategoryIndexConfig }) {
   return (
     <div className="min-h-main bg-primary">
       <SEO
-        title={title}
+        title={config.seoTitle ?? title}
         description={config.metaDescription}
         canonical={basePath}
       />

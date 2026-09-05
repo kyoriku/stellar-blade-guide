@@ -6,6 +6,7 @@ import { COLLECTIBLE_IMAGES } from '../constants/categoryImages';
 const CONFIG: CategoryIndexConfig = {
   basePath: '/collectibles',
   title: 'Collectibles',
+  seoTitle: 'All Collectibles & Where to Find Them',
   metaDescription: `Browse all ${COLLECTIBLES.length} collectible types in Stellar Blade. Find every Document, Can, Memorystick, and more with screenshots and locations.`,
   intro: 'All collectible types in Stellar Blade including Cans, Documents, Memorysticks, Passcodes, and Camps. Found throughout every level with screenshots and detailed locations.',
   structuredDataHeadline: 'Stellar Blade Collectibles',
