@@ -5,6 +5,7 @@ import { LEVEL_IMAGES } from '../constants/categoryImages'
 import { buildSrcSet, thumbnailUrl } from '../utils/image'
 import { usePrefetch } from '../hooks/usePrefetch'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 import StructuredData from '../components/StructuredData'
 
 const HERO_IMAGE = "https://img.stellarbladeguide.com/stellar-blade/site/home-hero.webp";
@@ -25,7 +26,7 @@ function HomePage() {
     <div className="min-h-main bg-primary">
       <SEO
         title=""
-        description="Complete Stellar Blade guide with every collectible and full walkthroughs. Locations, screenshots, and detailed descriptions for the entire game."
+        description={seo.home.description}
         canonical="/"
       />
       <StructuredData

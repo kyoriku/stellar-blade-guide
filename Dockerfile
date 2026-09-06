@@ -20,6 +20,9 @@ RUN uv sync --locked --no-dev --no-editable
 # Copy server code
 COPY server/ ./
 
+# Head-tag copy shared by the client build and the server's SPA head injection
+COPY client/src/constants/seo.json ../client/src/constants/seo.json
+
 # Copy built client from stage 1
 COPY --from=client-builder /client/dist ../client/dist
 

@@ -2,12 +2,13 @@ import { Sparkles } from 'lucide-react';
 import CategoryIndexPage, { type CategoryIndexConfig } from '../components/CategoryIndexPage';
 import { COSMETICS } from '../constants/navigation';
 import { COSMETIC_IMAGES } from '../constants/categoryImages';
+import seo from '../constants/seo.json';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/cosmetics',
   title: 'Cosmetics',
-  seoTitle: 'All Cosmetics: Outfits, Glasses & More',
-  metaDescription: `Browse all ${COSMETICS.length} cosmetic types in Stellar Blade. Find every Nano Suit, Earring, and pair of Glasses with screenshots and locations.`,
+  seoTitle: seo.index['/cosmetics'].title,
+  metaDescription: seo.index['/cosmetics'].description,
   intro: 'All cosmetic items in Stellar Blade including Nano Suits, Glasses, Earrings, Hairstyles, Drone Appearances, and outfits for Lily and Adam. Most are found in chests, purchased from shops, or earned through quests.',
   structuredDataHeadline: 'Stellar Blade Cosmetics',
   structuredDataDescription: `Browse all ${COSMETICS.length} cosmetic types in Stellar Blade.`,

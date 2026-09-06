@@ -31,6 +31,11 @@ const queryClient = new QueryClient({
   },
 })
 
+// Server-injected head tags (server/app/seo_head.py) are for crawlers; React
+// owns the head after mount. Without this, the server's <title> stays first in
+// the DOM and the tab title never updates on client-side navigation.
+document.querySelectorAll('head [data-seo="server"]').forEach(el => el.remove());
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

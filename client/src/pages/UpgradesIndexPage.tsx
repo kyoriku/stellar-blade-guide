@@ -2,12 +2,13 @@ import { Zap } from 'lucide-react';
 import CategoryIndexPage, { type CategoryIndexConfig } from '../components/CategoryIndexPage';
 import { UPGRADES } from '../constants/navigation';
 import { UPGRADE_IMAGES } from '../constants/categoryImages';
+import seo from '../constants/seo.json';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/upgrades',
   title: 'Upgrades',
-  seoTitle: 'All Upgrades: Cores, Exospines & Gear',
-  metaDescription: `Browse all ${UPGRADES.length} upgrade types in Stellar Blade. Find every Beta Core, Body Core, and Exospine with screenshots and locations.`,
+  seoTitle: seo.index['/upgrades'].title,
+  metaDescription: seo.index['/upgrades'].description,
   intro: "All upgrade items in Stellar Blade including Beta Cores, Body Cores, Exospines, Tumbler Expansion Modules, Drone Upgrade Modules, Weapon Cores, and Gear. These items enhance Eve's abilities and equipment.",
   structuredDataHeadline: 'Stellar Blade Upgrades',
   structuredDataDescription: `Browse all ${UPGRADES.length} upgrade types in Stellar Blade.`,

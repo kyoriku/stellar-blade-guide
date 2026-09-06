@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
 
 export default function ResetPasswordPage() {
@@ -53,8 +54,8 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Reset Password"
-        description="Set a new password for your Stellar Blade Guide account"
+        title={seo.noindex['/reset-password'].title}
+        description={seo.noindex['/reset-password'].description}
         noindex
       />
 

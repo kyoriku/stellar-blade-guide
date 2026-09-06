@@ -4,6 +4,7 @@ import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -33,8 +34,8 @@ export default function RegisterPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Create Account"
-        description="Create a Stellar Blade Guide account to join the community"
+        title={seo.noindex['/register'].title}
+        description={seo.noindex['/register'].description}
         noindex
       />
 

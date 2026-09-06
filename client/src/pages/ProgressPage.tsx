@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 import { Box, CircleEllipsis, Compass, Map as MapIcon, Repeat, Sparkles, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 import QueryError from '../components/QueryError'
 import CompletionRing from '../components/CompletionRing'
 import { useUserStats, weightedFound } from '../hooks/useUserStats'
@@ -159,7 +160,7 @@ export default function ProgressPage() {
     <div className="min-h-main bg-primary py-12 px-4">
       {/* Tab title mirrors the menu label; the h1 carries the fuller name —
           same split as Settings ("Settings" / "Account Settings"). */}
-      <SEO title="Progress" description="" noindex />
+      <SEO title={seo.noindex['/progress'].title} description={seo.noindex['/progress'].description} noindex />
       <div className="max-w-4xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold text-gray-100">My Progress</h1>
 
