@@ -2,12 +2,13 @@ import { Box } from 'lucide-react';
 import CategoryIndexPage, { type CategoryIndexConfig } from '../components/CategoryIndexPage';
 import { MATERIALS } from '../constants/navigation';
 import { MATERIAL_IMAGES } from '../constants/categoryImages';
+import seo from '../constants/seo.json';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/materials',
   title: 'Materials',
-  seoTitle: 'All Supply Box & Chest Locations',
-  metaDescription: 'All 151 Supply Boxes and 42 Supply Chests in Stellar Blade with screenshots and locations.',
+  seoTitle: seo.index['/materials'].title,
+  metaDescription: seo.index['/materials'].description,
   intro: 'All materials in Stellar Blade: 151 Supply Boxes and 42 Supply Chests, found throughout every level and often holding resources and upgrade materials.',
   structuredDataHeadline: 'Stellar Blade Materials',
   structuredDataDescription: `Browse all ${MATERIALS.length} material types in Stellar Blade.`,

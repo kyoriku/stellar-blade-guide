@@ -102,26 +102,12 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
     return response
 
 
-@router.get("/{walkthrough_type}/{slug}", response_model=WalkthroughSchema)
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
-async def get_walkthrough_by_slug(
-    walkthrough_type: str,
-    slug: str,
-    request: Request,
-    db: AsyncSession = Depends(get_db)
-):
-    """Get specific walkthrough by type and slug with full content."""
-    normalized_type = _normalize_type(walkthrough_type)
+async def lookup_walkthrough(db: AsyncSession, normalized_type: str, slug: str):
+    """Find one walkthrough by normalized mission type and slug, or None.
 
-    cache_key = f"walkthrough:{normalized_type}:{slug}"
-    cached_data = await get_cache(cache_key)
-    if cached_data:
-        request.state.cache_status = "HIT"
-        return cached_data
-
-    request.state.cache_status = "MISS"
-    db_start = time.time()
-
+    Shared by the API handler below and the server-side head injection
+    (app/seo_head.py) so the query logic exists exactly once.
+    """
     # Exact match
     result = await db.execute(
         select(WalkthroughModel).where(
@@ -143,6 +129,31 @@ async def get_walkthrough_by_slug(
             )
         )
         walkthrough = result.scalar_one_or_none()
+
+    return walkthrough
+
+
+@router.get("/{walkthrough_type}/{slug}", response_model=WalkthroughSchema)
+@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
+async def get_walkthrough_by_slug(
+    walkthrough_type: str,
+    slug: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get specific walkthrough by type and slug with full content."""
+    normalized_type = _normalize_type(walkthrough_type)
+
+    cache_key = f"walkthrough:{normalized_type}:{slug}"
+    cached_data = await get_cache(cache_key)
+    if cached_data:
+        request.state.cache_status = "HIT"
+        return cached_data
+
+    request.state.cache_status = "MISS"
+    db_start = time.time()
+
+    walkthrough = await lookup_walkthrough(db, normalized_type, slug)
 
     if not walkthrough:
         raise HTTPException(

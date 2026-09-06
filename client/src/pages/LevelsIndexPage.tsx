@@ -2,12 +2,13 @@ import { Map } from 'lucide-react';
 import CategoryIndexPage, { type CategoryIndexConfig } from '../components/CategoryIndexPage';
 import { LEVELS } from '../constants/navigation';
 import { LEVEL_IMAGES } from '../constants/categoryImages';
+import seo from '../constants/seo.json';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/levels',
   title: 'Levels',
-  seoTitle: `All ${LEVELS.length} Levels with Every Collectible`,
-  metaDescription: `All ${LEVELS.length} levels in Stellar Blade with 1000+ collectibles organized by location. Screenshots and written locations for every item.`,
+  seoTitle: seo.index['/levels'].title,
+  metaDescription: seo.index['/levels'].description,
   intro: `All ${LEVELS.length} levels in Stellar Blade with every collectible organized by location. Each level page includes Camps, Cans, Documents, Memorysticks, Nano Suits, and more - with screenshots and detailed directions.`,
   structuredDataHeadline: 'Stellar Blade Levels',
   structuredDataDescription: 'Browse all Stellar Blade levels and find every collectible organized by location.',

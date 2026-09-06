@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 import { API_BASE_URL, errorMessage } from '../services/api'
 
 export default function ForgotPasswordPage() {
@@ -32,8 +33,8 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Forgot Password"
-        description="Reset your Stellar Blade Guide password"
+        title={seo.noindex['/forgot-password'].title}
+        description={seo.noindex['/forgot-password'].description}
         noindex
       />
 

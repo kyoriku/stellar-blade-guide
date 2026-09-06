@@ -1,5 +1,6 @@
 import { Database, FileText, Bot, BarChart3, Cookie, Megaphone, Globe, Shield, UserCheck, Users, RefreshCw, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 import SectionHeader from '../components/SectionHeader'
 
 const sections = [
@@ -22,7 +23,7 @@ const linkClass = "text-cyan-400 underline decoration-cyan-400/30 underline-offs
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-main bg-primary">
-      <SEO title="Privacy Policy" description="Privacy Policy for Stellar Blade Guide. Learn how we collect, use, and protect your data." />
+      <SEO title={seo.pages['/privacy'].title} description={seo.pages['/privacy'].description} />
       <div className="container mx-auto px-3 py-8 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Privacy Policy</h1>
 

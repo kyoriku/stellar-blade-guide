@@ -1,11 +1,12 @@
 import { FileText, User, MessageSquare, ListChecks, Copyright, AlertTriangle, Link as LinkIcon, RefreshCw, Scale, Mail, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 import SectionHeader from '../components/SectionHeader'
 
 export default function TermsOfService() {
   return (
     <div className="min-h-main bg-primary">
-      <SEO title="Terms of Service" description="Terms of Service for Stellar Blade Guide. Read our rules for using the site and community features." />
+      <SEO title={seo.pages['/terms'].title} description={seo.pages['/terms'].description} />
       <div className="container mx-auto px-3 py-8 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Terms of Service</h1>
         <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">

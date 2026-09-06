@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
 import { isValidUsername, USERNAME_RULE } from '../utils/validateUsername'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 
 export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()
@@ -180,8 +181,8 @@ export default function SettingsPage() {
   return (
     <div className="min-h-main bg-primary py-12 px-4">
       <SEO
-        title="Settings"
-        description=""
+        title={seo.noindex['/settings'].title}
+        description={seo.noindex['/settings'].description}
         noindex
       />
 

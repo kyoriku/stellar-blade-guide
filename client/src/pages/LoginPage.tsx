@@ -4,6 +4,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -41,8 +42,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4 py-12">
       <SEO
-        title="Login"
-        description="Log in to your Stellar Blade Guide account"
+        title={seo.noindex['/login'].title}
+        description={seo.noindex['/login'].description}
         noindex
       />
 

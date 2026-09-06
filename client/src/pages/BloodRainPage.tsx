@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Info, CheckSquare, HelpCircle, BookOpen, ExternalLink, Book, Compass, ArrowRight } from 'lucide-react'
 import { buildSrcSet, thumbnailUrl, ogImageUrl } from '../utils/image'
 import SEO from '../components/SEO'
+import seo from '../constants/seo.json'
 import SectionHeader from '../components/SectionHeader'
 
 // ─── Update these as Shift Up announces more ──────────────────────────────
@@ -14,7 +15,7 @@ const LAST_UPDATED = 'June 7, 2026'
 // Official Shift Up reveal trailer (Summer Game Fest 2026)
 const TRAILER_URL = 'https://www.youtube.com/watch?v=zhdh_LspRHk'
 
-const HERO_IMAGE = 'https://img.stellarbladeguide.com/stellar-blade/site/blood-rain-hero.webp'
+const HERO_IMAGE = seo.pages['/blood-rain'].image
 
 const KEY_FACTS: { label: string; value: string; confirmed: boolean }[] = [
   { label: 'Title', value: 'Stellar Blade: Blood Rain', confirmed: true },
@@ -124,8 +125,8 @@ export default function BloodRainPage() {
   return (
     <div className="min-h-main bg-primary">
       <SEO
-        title="Stellar Blade: Blood Rain - Release Date, Platforms & News"
-        description="Everything confirmed about Stellar Blade: Blood Rain, the sequel revealed at Summer Game Fest 2026: new protagonist Evie, combat, platforms, and release info. Updated as news breaks."
+        title={seo.pages['/blood-rain'].title}
+        description={seo.pages['/blood-rain'].description}
         canonical="/blood-rain"
         ogType="article"
         ogImage={ogImageUrl(HERO_IMAGE)}

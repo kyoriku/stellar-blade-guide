@@ -1,0 +1,280 @@
+{
+  "site": {
+    "name": "Stellar Blade Guide",
+    "url": "https://stellarbladeguide.com",
+    "defaultImage": "https://img.stellarbladeguide.com/stellar-blade/site/og-banner.webp"
+  },
+  "home": {
+    "title": "",
+    "description": "Complete Stellar Blade guide with every collectible and full walkthroughs. Locations, screenshots, and detailed descriptions for the entire game."
+  },
+  "index": {
+    "/walkthroughs": {
+      "title": "Main Story & Side Quest Walkthroughs",
+      "description": "Step-by-step walkthroughs for every Stellar Blade main story mission, side quest, and bulletin board request, plus the NieR: Automata and Goddess of Victory: Nikke DLC."
+    },
+    "/levels": {
+      "title": "All 10 Levels with Every Collectible",
+      "description": "All 10 levels in Stellar Blade with 1000+ collectibles organized by location. Screenshots and written locations for every item."
+    },
+    "/collectibles": {
+      "title": "All Collectibles & Where to Find Them",
+      "description": "Browse all 5 collectible types in Stellar Blade. Find every Document, Can, Memorystick, and more with screenshots and locations."
+    },
+    "/upgrades": {
+      "title": "All Upgrades: Cores, Exospines & Gear",
+      "description": "Browse all 7 upgrade types in Stellar Blade. Find every Beta Core, Body Core, and Exospine with screenshots and locations."
+    },
+    "/cosmetics": {
+      "title": "All Cosmetics: Outfits, Glasses & More",
+      "description": "Browse all 7 cosmetic types in Stellar Blade. Find every Nano Suit, Earring, and pair of Glasses with screenshots and locations."
+    },
+    "/materials": {
+      "title": "All Supply Box & Chest Locations",
+      "description": "All 151 Supply Boxes and 42 Supply Chests in Stellar Blade with screenshots and locations."
+    }
+  },
+  "levels": {
+    "eidos-7": {
+      "title": "All 139 Eidos 7 Collectibles",
+      "description": "Eidos 7 is the opening level, and it hides 139 collectibles across 8 areas, including 34 memorysticks, 14 camps, and 6 passcodes. Every entry has a screenshot and a written location, and each can be checked off as you collect it. On a first playthrough 128 are available; the other 11 need New Game+ or later. You leave Eidos 7 at the end of Scavenger Adam, but it reopens after Altess Levoire and stays open until you travel to the Nest after Spire 4.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221942.webp"
+    },
+    "xion": {
+      "title": "All 165 Xion Collectibles",
+      "description": "Xion is the hub city rather than a combat level, but it still holds 165 collectibles, including 49 documents, 36 Nano Suits, 13 hairstyles, and 12 earrings, mostly bought, earned, or found around the city. Each is listed with a screenshot and where to get it, plus a checkbox to track what you own. Of those, 12 need New Game+ or later. The city, its side quests, and the Bulletin Board lock at the first point of no return, when you choose to travel to Spire 4 after Abyss Levoire; the Safehouse stays open, and the merchants keep trading until you leave for the Nest.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/xion-the-last-remaining-city/stellar-blade-20251205214421.webp"
+    },
+    "wasteland": {
+      "title": "All 208 Wasteland Collectibles",
+      "description": "The Wasteland is the first open region, and it spreads 208 collectibles over 9 areas, 37 memorysticks, 25 Nano Suits, and 15 cans among them. Of those, 21 come from the NieR: Automata and Goddess of Victory: Nikke DLC and 13 more need New Game+ or later, so a base-game first run can collect 174. Screenshots and written locations cover every entry, and you can tick them off one by one. The area stays open after the first point of no return; it locks at the second, when you travel to the Nest after Spire 4, and anything missed has to wait for New Game+.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/altess-levoire/stellar-blade-20260411002007.webp"
+    },
+    "altess-levoire": {
+      "title": "All 25 Altess Levoire Collectibles",
+      "description": "Altess Levoire is a short linear facility with 25 collectibles across 9 sections, among them 6 documents, 5 camps, and 4 supply chests, plus a few upgrades. Nothing is locked to a later playthrough. Every one has a screenshot and a written location, and you can mark each one collected. Everything in the area locks at the second point of no return, when you travel to the Nest after Spire 4; anything missed has to wait for New Game+.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/altess-levoire/stellar-blade-20260520202629.webp"
+    },
+    "matrix-11": {
+      "title": "All 131 Matrix 11 Collectibles",
+      "description": "Matrix 11 is the linear level that leads into the Great Desert, and it packs 131 collectibles into 8 areas, including 24 memorysticks, 12 camps, and 11 pieces of Gear. Each is listed by area with a screenshot, a written location, and a checkbox to track your progress. Of the total, 9 are locked to New Game+ or later, leaving 122 for a first run. Everything in the area locks at the second point of no return, when you travel to the Nest after Spire 4; anything missed has to wait for New Game+.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/alpha-signal/stellar-blade-20260829131432.webp"
+    },
+    "great-desert": {
+      "title": "All 188 Great Desert Collectibles",
+      "description": "The Great Desert is Stellar Blade's second open region, and it holds 188 collectibles across 6 areas, including 51 memorysticks, 19 camps, and 16 cans. Every entry has a screenshot and a written location, and you can check them off as you go. A first run can collect 179; the remaining 9 need New Game+ or later. The area stays open after the first point of no return; it locks at the second, when you travel to the Nest after Spire 4, and anything missed has to wait for New Game+.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/great-desert/solar-tower/stellar-blade-20240603014106.webp"
+    },
+    "abyss-levoire": {
+      "title": "All 30 Abyss Levoire Collectibles",
+      "description": "Abyss Levoire is a short linear level reached from the Great Desert, with just 30 collectibles across 6 sections: 7 camps, 6 supply boxes, 5 documents, and a handful of chests, upgrades, and Nano Suits. All but 2 are available on a first playthrough; the rest need New Game+ or later. Each has a screenshot, a written location, and a checkbox, so the short list is quick to clear. Finishing it locks nothing by itself; the first point of no return is choosing to travel to Spire 4 afterward, and the area only locks at the second, when you travel to the Nest.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/abyss-levoire/emergency-exit/stellar-blade-20240716054945.webp"
+    },
+    "eidos-9": {
+      "title": "All 54 Eidos 9 Collectibles",
+      "description": "Eidos 9 is optional: Lily only asks you there after Abyss Levoire if her progress bar is full, and it's required for the Making New Memories ending. It packs 54 collectibles into 3 areas, including 20 supply boxes, 9 Nano Suits, and 7 memorysticks. A first playthrough covers 48; 6 more wait for New Game+ or later. Every item comes with a screenshot and a written location, and you can log each one as you find it. Visit before you finish Spire 4; after that it's gone until New Game+.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240716064542.webp"
+    },
+    "spire-4": {
+      "title": "All 120 Spire 4 Collectibles",
+      "description": "Spire 4 is the long climb before the finale, with 120 collectibles over 11 sections, including 28 memorysticks, 13 camps, and 12 pieces of Gear. The first ascent can net 112; 8 only appear in New Game+ or later. Screenshots, written locations, and progress tracking cover every one. Finishing it also closes Eidos 9 if you haven't visited yet, and everything else locks at the second point of no return, when you travel to the Nest afterward; anything missed has to wait for New Game+.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/orca-space-complex/stellar-blade-20240723031305.webp"
+    },
+    "nest": {
+      "title": "Nest Collectibles",
+      "description": "The Nest is the final area, and it has exactly 1 collectible: a camp near the end. It's listed with a screenshot and a checkbox so nothing is left unchecked.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/nest/stellar-blade-20240813020103.webp"
+    }
+  },
+  "types": {
+    "collectibles": {
+      "cans": {
+        "title": "All 49 Can Locations",
+        "description": "Complete guide to all 49 Cans in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/tower-outer-wall/stellar-blade-20240809025324.webp"
+      },
+      "documents": {
+        "title": "All 114 Document Locations",
+        "description": "Complete guide to all 114 Documents in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514043012.webp"
+      },
+      "memorysticks": {
+        "title": "All 186 Memorystick Locations",
+        "description": "Complete guide to all 186 Memorysticks in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514033809.webp"
+      },
+      "passcodes": {
+        "title": "All 26 Passcode Locations",
+        "description": "Complete guide to all 26 Passcodes in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514033654.webp"
+      },
+      "camps": {
+        "title": "All 91 Camp Locations",
+        "description": "Complete guide to all 91 Camps in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/stellar-blade-20240514060358.webp"
+      }
+    },
+    "upgrades": {
+      "beta-cores": {
+        "title": "All 20 Beta Core Locations",
+        "description": "Complete guide to all 20 Beta Cores in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514035151.webp"
+      },
+      "body-cores": {
+        "title": "All 20 Body Core Locations",
+        "description": "Complete guide to all 20 Body Cores in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/parking-tower/stellar-blade-20240514043221.webp"
+      },
+      "weapon-cores": {
+        "title": "All 17 Weapon Cores",
+        "description": "Complete guide to all 17 Weapon Cores in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/crater/stellar-blade-20251205213635.webp"
+      },
+      "exospines": {
+        "title": "All 12 Exospine Locations",
+        "description": "Complete guide to all 12 Exospines in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/parking-tower/stellar-blade-20260319190946.webp"
+      },
+      "gear": {
+        "title": "All 77 Gear Locations",
+        "description": "Complete guide to all 77 Gear in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/crater/stellar-blade-20251205213644.webp"
+      },
+      "tumbler-expansion-modules": {
+        "title": "All 18 Tumbler Expansion Modules",
+        "description": "Complete guide to all 18 Tumbler Expansion Modules in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514033900.webp"
+      },
+      "drone-upgrade-modules": {
+        "title": "All 48 Drone Upgrade Modules",
+        "description": "Complete guide to all 48 Drone Upgrade Modules in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/parking-tower/stellar-blade-20240514050035.webp"
+      }
+    },
+    "cosmetics": {
+      "nano-suits": {
+        "title": "All 126 Nano Suits & How to Unlock",
+        "description": "All 126 Nano Suits in Stellar Blade across Base, NG+, NG++, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.webp"
+      },
+      "glasses": {
+        "title": "All 20 Glasses Locations",
+        "description": "All 20 Glasses in Stellar Blade across Base, NG+, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/wasteland/scrap-yard/stellar-blade-20260320183820.webp"
+      },
+      "earrings": {
+        "title": "All 24 Earrings Locations",
+        "description": "All 24 Earrings in Stellar Blade across Base, NG+, and NG++. Filter by cycle, sort A–Z, with screenshots and location guides.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/stellar-blade-20260320183910.webp"
+      },
+      "hairstyles": {
+        "title": "All 22 Hairstyles & How to Unlock",
+        "description": "All 22 Hairstyles in Stellar Blade across Base and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260402231657.webp"
+      },
+      "drone-appearances": {
+        "title": "All 9 Drone Appearance Locations",
+        "description": "All 9 Drone Appearances in Stellar Blade across Base, NG+, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260402231441.webp"
+      },
+      "lily-outfits": {
+        "title": "All 7 Lily Outfit Locations",
+        "description": "All 7 Lily Outfits in Stellar Blade across Base, NG+, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260402231457.webp"
+      },
+      "adam-outfits": {
+        "title": "All 8 Adam Outfit Locations",
+        "description": "All 8 Adam Outfits in Stellar Blade across Base, NG+, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260402231429.webp"
+      }
+    },
+    "materials": {
+      "supply-boxes": {
+        "title": "All 151 Supply Box Locations",
+        "description": "Complete guide to all 151 Supply Boxes in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240722050837.webp"
+      },
+      "supply-chests": {
+        "title": "All 42 Supply Chest Locations",
+        "description": "Complete guide to all 42 Supply Chests in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240716064542.webp"
+      }
+    }
+  },
+  "walkthroughTypes": {
+    "main-story": {
+      "name": "Main Story",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.webp"
+    },
+    "side-quests": {
+      "name": "Side Quests",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/matrix-11/rotten-labyrinth/stellar-blade-20240529001959.webp"
+    },
+    "bulletin-board-requests": {
+      "name": "Bulletin Board Requests",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/xion-the-last-remaining-city/stellar-blade-20260104000910.webp"
+    },
+    "nier-dlc": {
+      "name": "NieR: Automata DLC",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/dlc/nier-automata/stellar-blade-x-nier-automata.webp"
+    },
+    "nikke-dlc": {
+      "name": "Goddess of Victory: Nikke DLC",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/dlc/goddess-of-victory-nikke/stellar-blade-x-goddess-of-victory-nikke.webp"
+    }
+  },
+  "pages": {
+    "/disclaimer": {
+      "title": "Disclaimer",
+      "description": "Disclaimer for Stellar Blade Guide, an unofficial fan-made guide not affiliated with Shift Up Corporation or Sony Interactive Entertainment."
+    },
+    "/terms": {
+      "title": "Terms of Service",
+      "description": "Terms of Service for Stellar Blade Guide. Read our rules for using the site and community features."
+    },
+    "/privacy": {
+      "title": "Privacy Policy",
+      "description": "Privacy Policy for Stellar Blade Guide. Learn how we collect, use, and protect your data."
+    },
+    "/blood-rain": {
+      "title": "Stellar Blade: Blood Rain - Release Date, Platforms & News",
+      "description": "Everything confirmed about Stellar Blade: Blood Rain, the sequel revealed at Summer Game Fest 2026: new protagonist Evie, combat, platforms, and release info. Updated as news breaks.",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/site/blood-rain-hero.webp",
+      "ogType": "article"
+    }
+  },
+  "noindex": {
+    "/login": {
+      "title": "Login",
+      "description": "Log in to your Stellar Blade Guide account"
+    },
+    "/register": {
+      "title": "Create Account",
+      "description": "Create a Stellar Blade Guide account to join the community"
+    },
+    "/oauth/callback": {
+      "title": "Signing in...",
+      "description": ""
+    },
+    "/forgot-password": {
+      "title": "Forgot Password",
+      "description": "Reset your Stellar Blade Guide password"
+    },
+    "/reset-password": {
+      "title": "Reset Password",
+      "description": "Set a new password for your Stellar Blade Guide account"
+    },
+    "/settings": {
+      "title": "Settings",
+      "description": ""
+    },
+    "/progress": {
+      "title": "Progress",
+      "description": ""
+    }
+  },
+  "notFound": {
+    "title": "404 Page Not Found",
+    "description": "The page you're looking for doesn't exist or has been moved."
+  }
+}
