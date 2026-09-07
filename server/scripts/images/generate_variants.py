@@ -69,7 +69,7 @@ def collect_references():
     r2_keys, local_rels = set(), set()
     ref_files = sorted(SEED_DATA_DIR.rglob('*.json'))
     ref_files += sorted(p for p in CLIENT_SRC_DIR.rglob('*')
-                        if p.is_file() and p.suffix in ('.ts', '.tsx'))
+                        if p.is_file() and p.suffix in ('.ts', '.tsx', '.json'))
     for p in ref_files:
         text = p.read_text(encoding='utf-8')
         r2_keys.update(m.group(1) for m in R2_REF_PATTERN.finditer(text))
