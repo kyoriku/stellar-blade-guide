@@ -710,7 +710,7 @@ function CollectibleTypeDetailPage() {
         plugins={[Zoom]}
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}
-        animation={{ fade: 200, swipe: 200 }}
+        animation={{ fade: 150, swipe: 150 }}
         carousel={{ padding: isMobile ? "0%" : "4%" }}
         styles={{
           container: {
