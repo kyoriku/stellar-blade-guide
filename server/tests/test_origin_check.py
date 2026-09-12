@@ -16,6 +16,10 @@ def make_origin_check_app() -> FastAPI:
     async def stub():
         return JSONResponse({"ok": True})
 
+    @app.api_route("/api/health", methods=["GET", "HEAD"])
+    async def health():
+        return JSONResponse({"status": "ok"})
+
     return app
 
 
@@ -43,6 +47,18 @@ async def test_correct_secret_passes_through(origin_client):
     assert r.status_code == 200
 
 
-async def test_railway_host_bypasses_check(origin_client):
-    r = await origin_client.get("/api/test", headers={"host": "healthcheck.railway.app"})
+async def test_railway_health_check_bypasses_check(origin_client):
+    # Railway's health checks arrive with this Host and no secret; they must pass.
+    r = await origin_client.get("/api/health", headers={"host": "healthcheck.railway.app"})
     assert r.status_code == 200
+    r = await origin_client.head("/api/health", headers={"host": "healthcheck.railway.app"})
+    assert r.status_code == 200
+
+
+async def test_railway_host_does_not_bypass_check_on_other_paths(origin_client):
+    # The exemption is pinned to the health path: a spoofed health-check Host must not
+    # open any data endpoint, whatever Railway's edge routing does.
+    r = await origin_client.get("/api/test", headers={"host": "healthcheck.railway.app"})
+    assert r.status_code == 404
+    r = await origin_client.get("/api/health/", headers={"host": "healthcheck.railway.app"})
+    assert r.status_code == 404
