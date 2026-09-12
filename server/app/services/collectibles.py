@@ -6,7 +6,7 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import joinedload
 
 from app.models.collectibles import Level, Location, CollectibleType, Collectible
-from app.core.cache import get_cache, set_cache
+from app.core.cache import get_cache, set_cache, cache_slug
 from app.config.settings import settings
 from app.db.database import LIKE_ESCAPE, escape_like
 
@@ -143,7 +143,7 @@ def _group_by_level(collectibles, type_id: int = 0) -> list:
 
 async def _get_items_by_type(type_name: str, category: str, request: Request, db: AsyncSession):
     """Shared handler for all category type endpoints (collectibles, upgrades, cosmetics, materials)."""
-    cache_key = f"{category}:type:{type_name}"
+    cache_key = f"{category}:type:{cache_slug(type_name)}"
     cached_data = await get_cache(cache_key)
     if cached_data:
         request.state.cache_status = "HIT"

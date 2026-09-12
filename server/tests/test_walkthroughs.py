@@ -226,3 +226,36 @@ async def test_get_walkthrough_detail_case_insensitive_fallback_still_resolves(
     r = await walkthroughs_client.get("/api/walkthroughs/main-story/detail-slug")
     assert r.status_code == 200
     assert r.json()["slug"] == "Detail Slug"
+
+
+# ── Cache keys are exactly as canonical as the lookup behind them ─────────────
+#
+# Walkthrough resolution is an exact, case-sensitive match on kebab slugs, so the
+# keys stay raw: a canonicalised key would serve MAIN-STORY from a warm cache
+# while a cold cache 404s it. Bounded anyway, because only the exact spelling
+# ever resolves and writes.
+
+async def test_detail_cache_key_only_written_by_the_spelling_that_resolves(
+    walkthroughs_client, walkthroughs_db_session, fake_redis
+):
+    await _seed_walkthrough(walkthroughs_db_session, slug="detail-slug", title="Detail", mission_type="main-story")
+
+    r = await walkthroughs_client.get("/api/walkthroughs/main-story/detail-slug")
+    assert r.status_code == 200
+    # Warm cache must not change the answer for a spelling the DB rejects.
+    r = await walkthroughs_client.get("/api/walkthroughs/MAIN-STORY/DETAIL-SLUG")
+    assert r.status_code == 404
+    assert await fake_redis.keys("walkthrough:*") == ["walkthrough:main-story:detail-slug"]
+
+
+async def test_by_type_cache_key_is_raw_and_exact(walkthroughs_client, walkthroughs_db_session, fake_redis):
+    await _seed_walkthrough(walkthroughs_db_session, slug="main-one", title="Main One", mission_type="main-story")
+
+    # _normalize_type strips a trailing s, so both spellings resolve; one key.
+    for spelling in ("main-story", "main-storys"):
+        r = await walkthroughs_client.get(f"/api/walkthroughs/{spelling}")
+        assert r.status_code == 200, spelling
+    # Case variant: 404 from the DB even with the canonical entry warm, and no write.
+    r = await walkthroughs_client.get("/api/walkthroughs/MAIN-STORY")
+    assert r.status_code == 404
+    assert await fake_redis.keys("walkthroughs:type:*") == ["walkthroughs:type:main-story"]

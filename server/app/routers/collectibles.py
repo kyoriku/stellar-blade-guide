@@ -9,7 +9,7 @@ from typing import List
 from app.db.database import get_db
 from app.models.collectibles import Location, Collectible
 from app.schemas.collectibles import CollectibleWithLocationResponse
-from app.core.cache import get_cache, set_cache
+from app.core.cache import get_cache, set_cache, cache_slug
 from app.core.security import limiter
 from app.config.settings import settings
 from app.services.collectibles import (
@@ -30,7 +30,7 @@ levels_router = APIRouter(prefix="/levels", tags=["levels"])
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def get_collectibles_by_level(level_name: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Get all collectibles for a level, grouped by location."""
-    cache_key = f"collectibles:level:{level_name}"
+    cache_key = f"collectibles:level:{cache_slug(level_name)}"
     cached_data = await get_cache(cache_key)
     if cached_data:
         request.state.cache_status = "HIT"

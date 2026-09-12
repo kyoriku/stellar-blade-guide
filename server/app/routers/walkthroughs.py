@@ -7,7 +7,7 @@ from typing import List
 from app.db.database import get_db, LIKE_ESCAPE, escape_like
 from app.models.walkthroughs import Walkthrough as WalkthroughModel
 from app.schemas.walkthroughs import Walkthrough as WalkthroughSchema, WalkthroughListItem
-from app.core.cache import get_cache, set_cache
+from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
 from app.core.security import limiter
 from app.config.settings import settings
 
@@ -75,6 +75,8 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
     """Get walkthroughs by type (main-story, side-quest, etc.)."""
     normalized_type = _normalize_type(walkthrough_type)
 
+    # Raw on purpose: mission_type matching below is exact and case-sensitive, so a
+    # canonicalised key would serve spellings the DB rejects (see core/cache.py).
     cache_key = f"walkthroughs:type:{normalized_type}"
     cached_data = await get_cache(cache_key)
     if cached_data:
@@ -146,7 +148,7 @@ async def get_walkthrough_by_slug(
     """Get specific walkthrough by type and slug with full content."""
     normalized_type = _normalize_type(walkthrough_type)
 
-    cache_key = f"walkthrough:{normalized_type}:{slug}"
+    cache_key, _ = walkthrough_cache_keys(normalized_type, slug)
     cached_data = await get_cache(cache_key)
     if cached_data:
         request.state.cache_status = "HIT"

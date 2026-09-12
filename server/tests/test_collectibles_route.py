@@ -467,3 +467,37 @@ async def test_get_collectibles_by_type_ambiguous_substring_returns_404(
     r = await collectibles_client.get("/api/collectibles/camps")
     assert r.status_code == 200
     assert r.json()[0]["locations"][0]["collectibles"][0]["types"] == ["Camp"]
+
+
+# ── Cache keys are built from the canonical slug, not the raw path segment ────
+#
+# Resolution is case-insensitive, so every spelling that resolves must share one
+# 30-day payload key; otherwise 512 case variants of "documents" each get a copy
+# in the Redis that also holds refresh tokens.
+
+async def test_type_cache_key_collapses_case_variants(
+    collectibles_client, collectibles_db_session, fake_redis
+):
+    level = await _seed_level(collectibles_db_session)
+    loc = await _seed_location(collectibles_db_session, level.id)
+    ctype = await _seed_type(collectibles_db_session, "Document", "collectibles", "documents")
+    await _seed_collectible(collectibles_db_session, loc.id, ctype)
+
+    first = await collectibles_client.get("/api/collectibles/documents")
+    second = await collectibles_client.get("/api/collectibles/DOCUMENTS")
+    assert first.status_code == second.status_code == 200
+    assert first.json() == second.json()
+    assert await fake_redis.keys("collectibles:type:*") == ["collectibles:type:documents"]
+
+
+async def test_level_cache_key_collapses_case_and_spaces(
+    collectibles_client, collectibles_db_session, fake_redis
+):
+    level = await _seed_level(collectibles_db_session, "Eidos 7")
+    await _seed_location(collectibles_db_session, level.id, "Silent Street")
+    await collectibles_db_session.commit()
+
+    for spelling in ("eidos-7", "EIDOS-7", quote("eidos 7", safe="")):
+        r = await collectibles_client.get(f"/api/levels/{spelling}")
+        assert r.status_code == 200, spelling
+    assert await fake_redis.keys("collectibles:level:*") == ["collectibles:level:eidos-7"]
