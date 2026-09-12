@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
-from app.db.database import get_db
+from app.db.database import get_db, LIKE_ESCAPE, escape_like
 from app.models.walkthroughs import Walkthrough as WalkthroughModel
 from app.schemas.walkthroughs import Walkthrough as WalkthroughSchema, WalkthroughListItem
 from app.core.cache import get_cache, set_cache
@@ -117,15 +117,17 @@ async def lookup_walkthrough(db: AsyncSession, normalized_type: str, slug: str):
     )
     walkthrough = result.scalar_one_or_none()
 
-    # Case-insensitive fallback
+    # Case-insensitive fallback. Both patterns come from the URL, so they are
+    # escaped: a `%` segment must not match every row (and then blow up
+    # scalar_one_or_none()).
     if not walkthrough:
         formatted_type = normalized_type.replace('-', ' ').title()
         formatted_slug = slug.replace('-', ' ').title()
 
         result = await db.execute(
             select(WalkthroughModel).where(
-                (WalkthroughModel.mission_type.ilike(formatted_type)) &
-                (WalkthroughModel.slug.ilike(formatted_slug))
+                (WalkthroughModel.mission_type.ilike(escape_like(formatted_type), escape=LIKE_ESCAPE)) &
+                (WalkthroughModel.slug.ilike(escape_like(formatted_slug), escape=LIKE_ESCAPE))
             )
         )
         walkthrough = result.scalar_one_or_none()

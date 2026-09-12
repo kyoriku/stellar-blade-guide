@@ -401,3 +401,69 @@ async def test_get_level_slug_normalization_edge_cases(
     r = await collectibles_client.get(f"/api/levels/{quote('eidos 7', safe='')}")
     assert r.status_code == 200
     assert r.json()[0]["location_name"] == "Silent Street"
+
+
+# ── LIKE metacharacters in path slugs ────────────────────────────────────────
+#
+# The ILIKE fallbacks take the URL slug into the pattern. Before escaping, `%` in
+# the slug matched every row and scalar_one_or_none() raised MultipleResultsFound
+# (a 500), and `_` acted as a one-character wildcard. Both are literal now.
+
+async def test_get_level_percent_slug_is_literal_not_wildcard(
+    collectibles_client, collectibles_db_session
+):
+    # Two levels, so an unescaped ILIKE '%' would match both and blow up the
+    # scalar_one_or_none() -> generic 500 instead of a 404.
+    await _seed_level(collectibles_db_session, "Xion", display_order=1)
+    await _seed_level(collectibles_db_session, "Eidos 7", display_order=2)
+    await collectibles_db_session.commit()
+
+    r = await collectibles_client.get("/api/levels/%25")
+    assert r.status_code == 404
+
+
+async def test_get_level_underscore_slug_is_literal(
+    collectibles_client, collectibles_db_session
+):
+    level = await _seed_level(collectibles_db_session, "Eidos 7")
+    await _seed_location(collectibles_db_session, level.id, "Silent Street")
+    await collectibles_db_session.commit()
+
+    # "eidos_7" used to resolve via the `_` wildcard; it is not a real slug.
+    r = await collectibles_client.get("/api/levels/eidos_7")
+    assert r.status_code == 404
+
+
+async def test_get_collectibles_by_type_percent_slug_returns_404(
+    collectibles_client, collectibles_db_session
+):
+    level = await _seed_level(collectibles_db_session)
+    loc = await _seed_location(collectibles_db_session, level.id)
+    ctype = await _seed_type(collectibles_db_session, "Document", "collectibles", "documents")
+    await _seed_collectible(collectibles_db_session, loc.id, ctype)
+
+    r = await collectibles_client.get("/api/collectibles/%25")
+    assert r.status_code == 404
+
+
+async def test_get_collectibles_by_type_ambiguous_substring_returns_404(
+    collectibles_client, collectibles_db_session
+):
+    """The fuzzy %…% fallback used to hand back whichever match sorted first
+    (`/api/collectibles/a` served Camp). Several matches now mean the slug is
+    ambiguous -> 404; a slug that matches exactly one type still resolves."""
+    level = await _seed_level(collectibles_db_session)
+    loc = await _seed_location(collectibles_db_session, level.id)
+    camp = await _seed_type(collectibles_db_session, "Camp", "collectibles", "camps", display_order=1)
+    can = await _seed_type(collectibles_db_session, "Can", "collectibles", "cans", display_order=2)
+    await _seed_collectible(collectibles_db_session, loc.id, camp, title="Camp Alpha", display_order=1)
+    await _seed_collectible(collectibles_db_session, loc.id, can, title="Can One", display_order=2)
+
+    # "a" -> "A" -> %A% matches both Camp and Can
+    r = await collectibles_client.get("/api/collectibles/a")
+    assert r.status_code == 404
+
+    # "camps" -> "Camp" -> %Camp% matches only Camp
+    r = await collectibles_client.get("/api/collectibles/camps")
+    assert r.status_code == 200
+    assert r.json()[0]["locations"][0]["collectibles"][0]["types"] == ["Camp"]

@@ -197,3 +197,32 @@ async def test_get_walkthrough_detail_wrong_type_returns_404(walkthroughs_client
     assert "detail" in body
     assert "slug" not in body
     assert "content" not in body
+
+
+# ── LIKE metacharacters in path slugs ────────────────────────────────────────
+
+async def test_get_walkthrough_detail_percent_slugs_return_404(
+    walkthroughs_client, walkthroughs_db_session
+):
+    """`%` in either segment used to reach the ILIKE fallback unescaped: with two
+    rows it matched everything and scalar_one_or_none() raised -> 500."""
+    await _seed_walkthrough(walkthroughs_db_session, slug="one", title="One", mission_type="main-story", display_order=1)
+    await _seed_walkthrough(walkthroughs_db_session, slug="two", title="Two", mission_type="main-story", display_order=2)
+
+    r = await walkthroughs_client.get("/api/walkthroughs/%25/%25")
+    assert r.status_code == 404
+
+    r = await walkthroughs_client.get("/api/walkthroughs/main-story/%25")
+    assert r.status_code == 404
+
+
+async def test_get_walkthrough_detail_case_insensitive_fallback_still_resolves(
+    walkthroughs_client, walkthroughs_db_session
+):
+    # The fallback compares the title-cased, space-separated form of each URL
+    # segment case-insensitively, so it only ever matches rows stored that way.
+    await _seed_walkthrough(walkthroughs_db_session, slug="Detail Slug", title="Detail", mission_type="Main Story")
+
+    r = await walkthroughs_client.get("/api/walkthroughs/main-story/detail-slug")
+    assert r.status_code == 200
+    assert r.json()["slug"] == "Detail Slug"

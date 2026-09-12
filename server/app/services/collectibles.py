@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from app.models.collectibles import Level, Location, CollectibleType, Collectible
 from app.core.cache import get_cache, set_cache
 from app.config.settings import settings
+from app.db.database import LIKE_ESCAPE, escape_like
 
 
 def _serialize_collectible(c) -> dict:
@@ -47,13 +48,26 @@ async def _resolve_level(level_name: str, db: AsyncSession) -> Level:
 
     if not level:
         formatted = level_name.replace('-', ' ').title()
-        result = await db.execute(select(Level).filter(Level.name.ilike(formatted)))
+        # No wildcards of our own here: this is case-insensitive equality, so the
+        # whole user-derived pattern is escaped.
+        result = await db.execute(
+            select(Level).filter(Level.name.ilike(escape_like(formatted), escape=LIKE_ESCAPE))
+        )
         level = result.scalar_one_or_none()
 
     if not level:
         raise HTTPException(status_code=404, detail="Level not found")
 
     return level
+
+
+def _single(rows):
+    """The sole element of `rows`, or None when there are zero or several.
+
+    A slug that matches several types is ambiguous, and ambiguous must be a 404 —
+    never whichever row happens to sort first.
+    """
+    return rows[0] if len(rows) == 1 else None
 
 
 async def _resolve_type(type_name: str, category: str, db: AsyncSession) -> CollectibleType:
@@ -70,16 +84,20 @@ async def _resolve_type(type_name: str, category: str, db: AsyncSession) -> Coll
     result = await db.execute(
         select(CollectibleType).filter(CollectibleType.name == type_name, category_filter)
     )
-    found = result.scalars().first()
+    found = _single(result.scalars().all())
     if found:
         return found
 
-    # Fuzzy match
+    # Fuzzy match. The outer % are ours; the user-derived middle is escaped so a
+    # stray % or _ in the slug cannot widen the pattern.
     normalized = _normalize_slug(type_name)
     result = await db.execute(
-        select(CollectibleType).filter(CollectibleType.name.ilike(f"%{normalized}%"), category_filter)
+        select(CollectibleType).filter(
+            CollectibleType.name.ilike(f"%{escape_like(normalized)}%", escape=LIKE_ESCAPE),
+            category_filter,
+        )
     )
-    found = result.scalars().first()
+    found = _single(result.scalars().all())
     if found:
         return found
 

@@ -124,6 +124,14 @@ BOT_SIGNATURES = (
 SPA_SAFE_PATH = re.compile(r'^/([a-z0-9\-]+(?:/[a-z0-9\-]+)*/?)?$')
 
 
+def _reject(request: Request, reason: str) -> JSONResponse:
+    # reject_reason is printed by the logging middleware. Only /api/ paths are
+    # logged, so in practice this surfaces the referer rule; the rest are set too,
+    # so a blank reason never has to be read as "reached the router".
+    request.state.reject_reason = reason
+    return JSONResponse(status_code=404, content={"error": "Not Found"})
+
+
 async def bot_filter_middleware(request: Request, call_next):
     original_path = request.url.path
     normalized = original_path.lower().rstrip('/') or '/'
@@ -144,7 +152,7 @@ async def bot_filter_middleware(request: Request, call_next):
             if hostname not in REFERER_ALLOWED_HOSTS:
                 logger.warning("%sBlocked referer %s on %s%s",
                                RED, referer, original_path, RESET)
-                return JSONResponse(status_code=404, content={"error": "Not Found"})
+                return _reject(request, "referer")
 
     # Allow API, static assets, and SEO files (case-sensitive)
     if original_path.startswith(ALLOWED_PREFIXES) or original_path in ALLOWED_EXACT:
@@ -152,21 +160,21 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
-        return JSONResponse(status_code=404, content={"error": "Not Found"})
+        return _reject(request, "bot-signature")
 
     # Length-guard backstop before the regex (the linear pattern above already prevents
     # ReDoS). The deepest SPA route is `walkthroughs/:type/:slug`; the longest real path
     # in the sitemap is 60 chars and the structural worst case is ~150, so 512 only ever
     # rejects absurd probe paths — it never clips a legitimate route.
     if len(normalized) > 512:
-        return JSONResponse(status_code=404, content={"error": "Not Found"})
+        return _reject(request, "path-length")
 
     # Allow normal-shaped URLs through to React Router
     if SPA_SAFE_PATH.match(normalized):
         return await call_next(request)
 
     # Everything else (file extensions, weird chars) = probe
-    return JSONResponse(status_code=404, content={"error": "Not Found"})
+    return _reject(request, "path-shape")
 
 
 def add_bot_filter_middleware(app):

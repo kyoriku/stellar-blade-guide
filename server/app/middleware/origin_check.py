@@ -17,6 +17,9 @@ async def origin_check_middleware(request: Request, call_next):
 
     provided = request.headers.get("x-origin-secret", "")
     if not ORIGIN_SECRET or provided != ORIGIN_SECRET:
+        # Printed by the logging middleware, so this 404 is distinguishable from
+        # the router's unknown-path 404 in the access log.
+        request.state.reject_reason = "origin-secret"
         return JSONResponse(status_code=404, content={"error": "Not Found"})
 
     return await call_next(request)

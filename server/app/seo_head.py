@@ -265,8 +265,11 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
 
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(request: Request, full_path: str):
-        # Unknown API paths should 404 instead of falling through to the SPA
+        # Unknown API paths should 404 instead of falling through to the SPA.
+        # reject_reason is printed by the logging middleware: a blank reason must
+        # never have to be read as "reached the router".
         if full_path == 'api' or full_path.startswith('api/'):
+            request.state.reject_reason = "no-route"
             raise HTTPException(status_code=404)
         file_path = os.path.realpath(os.path.join(client_dist, full_path))
         if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
