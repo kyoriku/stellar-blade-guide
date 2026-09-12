@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
-from app.core.cache import get_cache, set_cache
+from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
 from app.db.database import AsyncSessionLocal
 from app.routers.walkthroughs import _normalize_type, _serialize_full, lookup_walkthrough
 
@@ -135,8 +135,7 @@ async def fetch_walkthrough_head(type_slug: str, slug: str) -> dict:
         return _not_found_head()
 
     normalized_type = _normalize_type(type_slug)
-    cache_key = f'walkthrough:{normalized_type}:{slug}'
-    miss_key = f'walkthrough:miss:{normalized_type}:{slug}'
+    cache_key, miss_key = walkthrough_cache_keys(normalized_type, slug)
     try:
         data = await get_cache(cache_key)
         if not data:
