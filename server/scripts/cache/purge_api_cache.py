@@ -12,6 +12,21 @@ failure so the caller (prod_seed.py) can fall back to purge_everything —
 partial purge is the one unacceptable outcome (API responses carry
 s-maxage=30d, so a missed URL would serve stale for up to a month).
 
+The surface is derived live and grows with the content: 125 URLs as of
+2026-09-14 (12 levels, 85 walkthroughs), up from 81 at the 2026-07-16
+re-baseline. Nothing here hardcodes that number — `--dry-run` prints the
+current set — but SANITY_FLOOR below is calibrated against it, so check the
+two together.
+
+Exit codes tell prod_seed.py whether retrying is worth anything:
+  0  purged (or listed, under --dry-run)
+  1  TRANSIENT  — Cloudflare timed out, refused with 429, or 5xx'd. Retry.
+  2  PERMANENT  — enumeration broke, the sanity floor tripped, or the token is
+                  missing/rejected. The same call fails identically, so the
+                  caller should go straight to its fallback.
+Both non-zero codes are still "fall back to a full purge" as far as safety is
+concerned; the split only decides whether to retry first.
+
 Invoked by prod_seed.py with the PROD DATABASE_URL in the environment, so
 slugs are derived from exactly what was just seeded. Images are never purged:
 they are immutable and content changes always rename (see
@@ -37,9 +52,32 @@ PUBLIC_BASE = 'https://stellarbladeguide.com'
 CACHED_PREFIXES = ('/api/walkthroughs', '/api/levels', '/api/collectibles',
                    '/api/upgrades', '/api/cosmetics', '/api/materials')
 BATCH_SIZE = 30      # Pro plan: purge-by-URL takes at most 30 per call
-SANITY_FLOOR = 50    # well under the current 81; a smaller result means the
-                     # derivation broke somewhere and the caller must full-purge
+SANITY_FLOOR = 50    # a smaller result means the derivation broke somewhere and
+                     # the caller must full-purge. Note the drift: 50 was set
+                     # when the surface was 81 URLs (62% of it) and the surface
+                     # is now 125, so it is 40% — a derivation that silently lost
+                     # half the walkthroughs would clear it and do a partial
+                     # purge, the one outcome the module docstring rules out.
+                     # Deliberately NOT raised, because a single threshold cannot
+                     # do the job once purges are scoped to changed entities: a
+                     # full enumeration should expect roughly the whole current
+                     # surface, while a purge covering one edited collectible is
+                     # legitimately three or four URLs. That needs two separate
+                     # checks, so pick the numbers when the split is built rather
+                     # than tuning this one twice.
 NAVIGATION_TS = Path(__file__).resolve().parents[3] / 'client' / 'src' / 'constants' / 'navigation.ts'
+
+EXIT_TRANSIENT = 1
+EXIT_PERMANENT = 2
+
+# Statuses where the identical call can plausibly succeed later. 401/403 (missing
+# or unscoped token) and 400 (malformed batch) are deliberately absent: retrying
+# those just burns the retry budget before the caller's fallback runs.
+RETRYABLE_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
+
+
+class TransientPurgeError(RuntimeError):
+    """A Cloudflare-side failure worth retrying — timeout, connection drop, 429, 5xx."""
 
 
 def kebab(name):
@@ -144,16 +182,29 @@ def purge(urls):
     purged = 0
     for i in range(0, len(urls), BATCH_SIZE):
         batch = urls[i:i + BATCH_SIZE]
-        response = requests.post(
-            f'https://api.cloudflare.com/client/v4/zones/{zone}/purge_cache',
-            headers={'Authorization': f'Bearer {token}'},
-            json={'files': batch},
-            timeout=10,
-        )
-        response.raise_for_status()
+        batch_no = i // BATCH_SIZE + 1
+        try:
+            response = requests.post(
+                f'https://api.cloudflare.com/client/v4/zones/{zone}/purge_cache',
+                headers={'Authorization': f'Bearer {token}'},
+                json={'files': batch},
+                timeout=10,
+            )
+        except requests.Timeout as e:
+            raise TransientPurgeError(f'batch {batch_no} timed out after 10s ({type(e).__name__})') from e
+        except requests.RequestException as e:
+            raise TransientPurgeError(f'batch {batch_no} connection failure: {type(e).__name__}') from e
+
+        # Report the status explicitly rather than via raise_for_status(), whose
+        # message embeds the request URL and would put the zone ID in the log.
+        if response.status_code in RETRYABLE_STATUSES:
+            raise TransientPurgeError(f'batch {batch_no} got HTTP {response.status_code} from Cloudflare')
+        if not response.ok:
+            raise RuntimeError(f'batch {batch_no} got HTTP {response.status_code} from Cloudflare')
+
         result = response.json()
         if not result.get('success'):
-            raise RuntimeError(f'batch {i // BATCH_SIZE + 1} rejected: {result.get("errors")}')
+            raise RuntimeError(f'batch {batch_no} rejected: {result.get("errors")}')
         purged += len(batch)
         print(f"\033[90m  [{purged}/{len(urls)}] purged\033[0m")
     return purged
@@ -182,6 +233,9 @@ def main():
 if __name__ == '__main__':
     try:
         main()
+    except TransientPurgeError as e:
+        print(f'\033[31m✗ Scoped purge failed (transient, retryable): {e}\033[0m')
+        sys.exit(EXIT_TRANSIENT)
     except Exception as e:
-        print(f'\033[31m✗ Scoped purge failed: {e}\033[0m')
-        sys.exit(1)
+        print(f'\033[31m✗ Scoped purge failed (permanent): {e}\033[0m')
+        sys.exit(EXIT_PERMANENT)
