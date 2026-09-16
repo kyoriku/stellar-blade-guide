@@ -4,6 +4,14 @@ Scoped Cloudflare purge for the seeded API surface.
 Usage:
   uv run python scripts/cache/purge_api_cache.py            # derive + purge
   uv run python scripts/cache/purge_api_cache.py --dry-run  # derive + list only
+  uv run python scripts/cache/purge_api_cache.py --all      # ignore the manifest,
+                                                            # purge the full surface
+  uv run python scripts/cache/purge_api_cache.py --run-id X # narrow to the changed
+                                                            # entities recorded by run X
+
+--run-id defaults to $SEED_RUN_ID, which prod_seed.py exports, so an orchestrated
+run needs no flag. Without either, there is no run to match a manifest against and
+the purge covers the full surface. --dry-run and --all compose with everything.
 
 Derives the full cached API URL space live (FastAPI route table x DB slugs x
 client navigation constants), batches purge calls at 30 URLs (Pro plan limit),
@@ -44,6 +52,8 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+
+from scripts.cache import purge_manifest
 
 load_dotenv()
 
@@ -136,14 +146,93 @@ def load_db_sources():
         'levels': sorted({kebab(lv) for lv in levels}),
         'walkthrough_pairs': sorted({(db_to_url[t], slug) for t, slug in wts}),
         'walkthrough_types': nav_types,
+        # Exposed so the narrowed path can map the manifest's raw DB
+        # mission_types through the same inversion the full path uses.
+        'db_type_to_url': db_to_url,
     }
 
 
-def derive_urls(routes, db, nav):
+# category_group -> navigation.ts section. NULL resolves as collectibles, the
+# same default app/services/collectibles.py applies.
+SECTION_FOR_GROUP = {
+    'collectibles': 'COLLECTIBLES',
+    'upgrades': 'UPGRADES',
+    'cosmetics': 'COSMETICS',
+    'materials': 'MATERIALS',
+}
+
+
+def scope_sources(changed, db, nav):
+    """Narrow the derivation inputs to the entities a seed actually changed.
+
+    derive_urls() is reused verbatim rather than reimplemented: handing it a
+    restricted `db`/`nav` yields exactly the URLs those entities reach. That
+    keeps one expander, so the narrowed path cannot drift from the full one and
+    an unrecognized route shape still raises on both.
+
+    The index-page dependency is handled per domain, not globally. A global
+    list is only stale when something it contains changed, so
+    `/api/collectibles/` is purged for any collectible-domain change and
+    `/api/walkthroughs/` for any walkthrough change — never the other one.
+    Otherwise every collectible-only seed would evict a warm walkthrough
+    index, which during a long editorial pass is every single run.
+
+    Anything unmappable raises, which the caller turns into a full purge.
+    """
+    levels = sorted({kebab(name) for name in changed['level_names']})
+
+    by_section = {section: set() for section in SECTION_FOR_GROUP.values()}
+    for slug, group in changed['type_slugs']:
+        section = SECTION_FOR_GROUP.get(group or 'collectibles')
+        if section is None:
+            raise RuntimeError(f'type {slug!r} has unknown category_group {group!r}')
+        if slug not in nav[section]:
+            raise RuntimeError(f'type slug {slug!r} is absent from navigation section {section}')
+        by_section[section].add(slug)
+
+    pairs, wtypes = set(), set()
+    for mission_type, slug in changed['pairs']:
+        url_type = db['db_type_to_url'].get(mission_type)
+        if url_type is None:
+            raise RuntimeError(f'walkthrough type {mission_type!r} has no navigation slug')
+        pairs.add((url_type, slug))
+        wtypes.add(url_type)
+
+    scoped_db = {
+        'levels': levels,
+        'walkthrough_pairs': sorted(pairs),
+        'walkthrough_types': sorted(wtypes),
+        'db_type_to_url': db['db_type_to_url'],
+    }
+    scoped_nav = {section: sorted(slugs) for section, slugs in by_section.items()}
+    scoped_nav['WALKTHROUGHS'] = sorted(wtypes)
+
+    # Which global indexes are actually stale. /api/collectibles/ spans every
+    # type, so any collectible-domain change (a level or a type page) stales
+    # it — deliberately not narrowed per category, since deciding when it is
+    # safely skippable would cost more than the one URL it saves. It is simply
+    # left out when nothing in its domain moved.
+    index_prefixes = set()
+    if levels or any(by_section.values()):
+        index_prefixes.update(('/api/collectibles', '/api/levels', '/api/upgrades',
+                               '/api/cosmetics', '/api/materials'))
+    if pairs:
+        index_prefixes.add('/api/walkthroughs')
+    return scoped_db, scoped_nav, index_prefixes
+
+
+def derive_urls(routes, db, nav, index_prefixes=None):
     """Expand every cached GET route into concrete URLs. A route under a
     cached prefix whose shape is not recognized raises (the caller falls back
     to a full purge) — new routes can appear automatically or fail loudly,
-    never be silently skipped."""
+    never be silently skipped.
+
+    index_prefixes gates the parameterless list routes (/api/collectibles/,
+    /api/walkthroughs/). None — the full path — emits every one. The narrowed
+    path passes the prefixes whose domain actually changed, so a
+    collectible-only seed no longer evicts the walkthrough index and vice
+    versa: a global list is only stale when something it contains changed.
+    """
     type_slugs = {
         '/api/collectibles': nav['COLLECTIBLES'],
         '/api/upgrades': nav['UPGRADES'],
@@ -159,7 +248,8 @@ def derive_urls(routes, db, nav):
         params = re.findall(r'\{(\w+)\}', path)
         prefix = '/' + '/'.join(path.split('/')[1:3])  # e.g. /api/levels
         if not params:
-            urls.append(path)
+            if index_prefixes is None or prefix in index_prefixes:
+                urls.append(path)
         elif params == ['level_name']:
             urls += [path.format(level_name=lv) for lv in db['levels']]
         elif params == ['walkthrough_type']:
@@ -210,24 +300,98 @@ def purge(urls):
     return purged
 
 
+def check_narrowed(narrowed, full_urls, changed):
+    """Guards for the narrowed set.
+
+    There is deliberately no lower bound here, which is the whole reason the
+    old single SANITY_FLOOR could not serve both paths: a purge covering one
+    edited collectible is legitimately three or four URLs. What must hold
+    instead is that narrowing only ever *removes* URLs relative to the full
+    surface, and that a manifest reporting changes never derives nothing.
+    """
+    extra = sorted(set(narrowed) - set(full_urls))
+    if extra:
+        raise RuntimeError(
+            f'narrowed set has {len(extra)} URL(s) the full surface does not, '
+            f'e.g. {extra[0]} — the changed-entity mapping is wrong')
+    if not narrowed:
+        raise RuntimeError('manifest reports changes but the narrowed set is empty')
+
+
+def _flag_value(args, name):
+    """Support both --run-id=X and --run-id X."""
+    for i, arg in enumerate(args):
+        if arg == name:
+            return args[i + 1] if i + 1 < len(args) else None
+        if arg.startswith(f'{name}='):
+            return arg.split('=', 1)[1]
+    return None
+
+
 def main():
-    dry_run = '--dry-run' in sys.argv[1:]
+    args = sys.argv[1:]
+    dry_run = '--dry-run' in args
+    force_all = '--all' in args
+    run_id = _flag_value(args, '--run-id') or purge_manifest.current_run_id()
+
     print('\033[36m=== Scoped API cache purge ===\033[0m')
     from app.main import app  # route table is the source of truth for shapes
     nav = parse_navigation()
     db = load_db_sources()
-    urls = derive_urls(app.routes, db, nav)
-    if len(urls) < SANITY_FLOOR:
-        raise RuntimeError(f'derived only {len(urls)} URLs (< {SANITY_FLOOR}) — refusing partial purge')
-    print(f'Derived {len(urls)} cached API URLs '
+
+    # The full surface is derived first regardless of scope: it is the floor
+    # check, and it is what the narrowed set is validated against. Deriving it
+    # also means an unrecognized route shape raises here, before any narrowing.
+    full_urls = derive_urls(app.routes, db, nav)
+    if len(full_urls) < SANITY_FLOOR:
+        raise RuntimeError(
+            f'derived only {len(full_urls)} URLs (< {SANITY_FLOOR}) — refusing partial purge')
+    print(f'Full surface: {len(full_urls)} cached API URLs '
           f'({len(db["levels"])} levels, {len(db["walkthrough_pairs"])} walkthroughs)')
+
+    urls, scope = full_urls, 'full surface'
+    if force_all:
+        print('  --all: purging the full surface by request')
+    else:
+        try:
+            changed = purge_manifest.load(run_id)
+            if not any(changed[k] for k in ('level_names', 'type_slugs', 'pairs')):
+                # An explicitly complete manifest with an empty change set is
+                # the one case that legitimately purges nothing. Absence of a
+                # manifest never reaches here — load() raises for that.
+                print('  manifest: no entities changed, nothing to purge')
+                urls, scope = [], 'no changes'
+            else:
+                scoped_db, scoped_nav, index_prefixes = scope_sources(changed, db, nav)
+                narrowed = derive_urls(app.routes, scoped_db, scoped_nav, index_prefixes)
+                check_narrowed(narrowed, full_urls, changed)
+                urls, scope = narrowed, 'changed entities'
+                print(f'  manifest: {len(changed["level_names"])} level(s), '
+                      f'{len(changed["type_slugs"])} type(s), '
+                      f'{len(changed["pairs"])} walkthrough(s) changed '
+                      f'→ {len(urls)} URLs')
+        except (purge_manifest.ManifestUnusable, RuntimeError) as e:
+            # Every ambiguity widens. Under-purging serves stale content for up
+            # to 30 days; over-purging costs a cold edge for a few hours.
+            print(f'\033[33m  widening to the full surface: {e}\033[0m')
+            urls, scope = full_urls, 'full surface'
+
+    # Always name the URLs, not just how many. prod_seed.py streams this into
+    # the run log, so the list is the record of exactly what was invalidated —
+    # without it you have to guess which pages to re-check at the edge.
+    print(f'Scope: {scope} — {len(urls)} URL(s)')
+    for u in urls:
+        print(f'  {u}')
+
     if dry_run:
-        for u in urls:
-            print(f'  {u}')
-        print(f'\033[33mDRY RUN: nothing purged ({len(urls)} URLs listed)\033[0m')
+        print(f'\033[33mDRY RUN: nothing purged\033[0m')
         return
+
     purged = purge(urls)
-    print(f'\033[32m✓ Purged {purged} API URLs; image cache left warm\033[0m')
+    # Spent either way: a full purge covers whatever the manifest described, so
+    # leaving it behind would let a later run re-purge a stale changed set.
+    purge_manifest.clear()
+    print(f'\033[32m✓ Purged {purged} API URLs ({scope}); image cache left warm\033[0m')
 
 
 if __name__ == '__main__':

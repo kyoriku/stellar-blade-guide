@@ -19,6 +19,7 @@ from app.db.database import get_db, AsyncSessionLocal
 from app.models.collectibles import Level, Location, CollectibleType, Collectible, CollectibleImage
 from app.core.cache import invalidate_cache_pattern
 from scripts.images.paths import normalize_image_path
+from scripts.cache import purge_manifest
 
 
 def load_all_seed_files():
@@ -80,12 +81,33 @@ async def seed_database():
         return
 
     added = 0
-    updated = 0
+    updated = 0      # existing rows that actually differ, not rows merely present
+    unchanged = 0
     deleted = 0
     errors = 0
 
+    run_id = purge_manifest.current_run_id()
+    purge_manifest.begin(purge_manifest.SECTION_COLLECTIBLES, run_id)
+    changed_levels = set()
+    changed_type_slugs = set()
+
     async with AsyncSessionLocal() as db:
         try:
+            # Snapshot image rows BEFORE the truncate below destroys them.
+            # Without this an image-only edit is undetectable: the collectible
+            # row itself is untouched, so is_modified() would say "unchanged"
+            # and the purge would skip a page whose pictures just changed.
+            prev_images = {}
+            for cid, url, alt, order in (await db.execute(select(
+                CollectibleImage.collectible_id,
+                CollectibleImage.cloudinary_url,
+                CollectibleImage.alt_text,
+                CollectibleImage.display_order,
+            ))).all():
+                prev_images.setdefault(cid, []).append((url, alt, order))
+            for rows in prev_images.values():
+                rows.sort()
+
             # STEP 2: Truncate images and reset identity to 1
             print(f"\n\033[96m━━━ STEP 2: Resetting Image IDs ━━━\033[0m")
             await db.execute(text("TRUNCATE TABLE collectible_images RESTART IDENTITY"))
@@ -202,7 +224,11 @@ async def seed_database():
                         existing.subtype = item.get("subtype")
                         existing.types = collectible_types
                         collectible_instance = existing
-                        updated += 1
+                        # Must be read here, before the batch commit below
+                        # flushes and resets attribute history. is_modified
+                        # compares each attribute against its loaded value, so
+                        # re-assigning an identical value is not a change.
+                        row_changed = db.is_modified(existing, include_collections=True)
                     else:
                         new_collectible = Collectible(
                             id=collectible_id,
@@ -219,8 +245,10 @@ async def seed_database():
                         collectible_instance = new_collectible
                         existing_collectibles[collectible_id] = new_collectible
                         added += 1
+                        row_changed = True
 
                     # Re-add images (table was truncated at start so no need to delete first)
+                    new_images = []
                     for img in item.get('images', []):
                         if not img.get('url'):
                             continue
@@ -231,6 +259,18 @@ async def seed_database():
                             display_order=img['order']
                         )
                         db.add(new_image)
+                        new_images.append(
+                            (new_image.cloudinary_url, new_image.alt_text, new_image.display_order))
+                    new_images.sort()
+
+                    if row_changed or new_images != prev_images.get(collectible_id, []):
+                        if existing:
+                            updated += 1
+                        changed_levels.add(level.name)
+                        changed_type_slugs.update(
+                            (t.slug, t.category_group) for t in collectible_types)
+                    else:
+                        unchanged += 1
 
                     batch_count += 1
                     if batch_count >= batch_size:
@@ -258,7 +298,22 @@ async def seed_database():
             
             if orphaned_ids:
                 print(f"  Found {len(orphaned_ids)} collectibles not in seed data")
-                
+
+                # Record what the deletions stale before the rows go away. A
+                # removed collectible changes its level page, its type pages and
+                # the global list exactly as an edited one does.
+                level_name_by_id = {lv.id: name for name, lv in levels.items()}
+                level_name_by_location = {
+                    loc.id: level_name_by_id.get(loc.level_id) for loc in locations.values()
+                }
+                for orphan_id in orphaned_ids:
+                    orphan = existing_collectibles[orphan_id]
+                    orphan_level = level_name_by_location.get(orphan.location_id)
+                    if orphan_level:
+                        changed_levels.add(orphan_level)
+                    changed_type_slugs.update(
+                        (t.slug, t.category_group) for t in orphan.types)
+
                 result = await db.execute(
                     delete(Collectible).where(Collectible.id.in_(orphaned_ids))
                 )
@@ -303,6 +358,7 @@ async def seed_database():
     print(f"\033[92m✓ SEEDING COMPLETE\033[0m")
     print(f"\033[92m  Added: {added}\033[0m")
     print(f"\033[92m  Updated: {updated}\033[0m")
+    print(f"\033[90m  Unchanged: {unchanged}\033[0m")
     if deleted > 0:
         print(f"\033[33m  Deleted: {deleted}\033[0m")
     else:
@@ -311,6 +367,21 @@ async def seed_database():
         print(f"\033[31m  Errors: {errors}\033[0m")
     else:
         print(f"\033[92m  Errors: {errors}\033[0m")
+
+    if errors:
+        # Items that errored were skipped mid-loop, so the changed set is
+        # incomplete. Leaving the section 'running' makes the purge widen to
+        # the full surface rather than trust a partial record.
+        print(f"\033[33m  Purge manifest: left incomplete ({errors} error(s)) "
+              f"— the purge will widen to the full surface\033[0m")
+    else:
+        purge_manifest.complete(
+            purge_manifest.SECTION_COLLECTIBLES, run_id,
+            level_names=changed_levels,
+            type_slugs=changed_type_slugs,
+        )
+        print(f"\033[92m  Purge manifest: {len(changed_levels)} level(s), "
+              f"{len(changed_type_slugs)} type(s) changed\033[0m")
     print(f"\033[96m{'━' * 60}\033[0m")
 
 

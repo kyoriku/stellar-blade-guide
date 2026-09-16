@@ -328,6 +328,13 @@ def main():
     env = os.environ.copy()
     env["DATABASE_URL"] = PROD_DATABASE_URL
     env["REDIS_URL"] = PROD_REDIS_URL
+    # Ties the two seeders and the purge into one run. The seeders stamp their
+    # changed-entity manifest with this; the purge inherits the same value from
+    # the environment and refuses to narrow unless the manifest it finds carries
+    # it, which is what stops a previous run's changed set being purged in place
+    # of this one's. It is also the log filename, so a log line and a manifest
+    # can be matched up afterwards.
+    env["SEED_RUN_ID"] = RUN_ID
 
     for label, cmd in STEPS:
         log.info(f"{CYAN}[RUNNING]{RESET} {label}")

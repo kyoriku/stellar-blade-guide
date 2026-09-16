@@ -73,6 +73,8 @@ server/seed-data
 server/scripts/images/prune-pending.json
 # sitemap lastmod state: url -> {hash, lastmod} sidecar for generate_sitemap.py
 server/scripts/sitemap-state.json
+# changed-entity manifest: what a seed run altered, consumed by purge_api_cache.py
+server/scripts/cache/purge-manifest.json
 # executed one-off schema migrations (local reference material)
 server/scripts/migrations/
 
