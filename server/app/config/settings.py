@@ -20,6 +20,14 @@ class Settings:
     # Cache TTL (in seconds)
     CACHE_TTL: int = int(os.getenv('CACHE_TTL', 2592000))  # 30 days — Redis + CDN s-maxage
     SWR_TTL: int = 604800  # 7 days — CDN stale-while-revalidate
+    # Search is the one cached content route with no invalidation path: its URLs
+    # carry an arbitrary ?q=, so they cannot be enumerated for a by-URL purge and
+    # /api/search is deliberately absent from purge_api_cache.py's CACHED_PREFIXES.
+    # With nothing able to evict it, the TTL is the ONLY bound on staleness, so
+    # this value is both the Redis TTL and the edge s-maxage — routers/search.py
+    # and middleware/security_headers.py both read it, because the two drifting
+    # apart is exactly how a stale result outlives its cache entry.
+    SEARCH_CACHE_TTL: int = 3600  # 1 hour — Redis + CDN s-maxage for /api/search
     
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: str = "100/minute"

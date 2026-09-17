@@ -58,6 +58,22 @@ def add_security_headers_middleware(app: FastAPI):
                 # even though no GET exists today, so a re-added one is covered.
                 if request.url.path.startswith(("/api/progress", "/api/auth", "/api/comments", "/api/health", "/api/notifications", "/api/users/me")):
                     response.headers["Cache-Control"] = "no-store"
+                elif request.url.path.startswith("/api/search"):
+                    # Every other cached route is purged by URL after a seed, so a
+                    # 30-day s-maxage is safe there. Search is not: its URLs carry
+                    # an arbitrary ?q= and cannot be enumerated, so it is absent
+                    # from CACHED_PREFIXES and nothing ever invalidates it. Results
+                    # are derived from content, so any seed stales them — and with
+                    # no purge to correct that, the TTL is the only bound. Matching
+                    # it to the Redis TTL caps the worst case at roughly two hours
+                    # (one in Redis, one at the edge) instead of a month.
+                    #
+                    # stale-while-revalidate is dropped for the same reason: 7 days
+                    # of sanctioned staleness has no invalidation path to end it.
+                    response.headers["Cache-Control"] = (
+                        f"public, max-age={settings.SEARCH_CACHE_TTL}, "
+                        f"s-maxage={settings.SEARCH_CACHE_TTL}"
+                    )
                 else:
                     response.headers[
                         "Cache-Control"] = f"public, max-age=3600, s-maxage={settings.CACHE_TTL}, stale-while-revalidate={settings.SWR_TTL}"
