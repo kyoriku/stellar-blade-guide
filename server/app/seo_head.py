@@ -27,6 +27,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
 from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
+from app.core.http_cache import etag_matches
 from app.db.database import AsyncSessionLocal
 from app.routers.walkthroughs import _normalize_type, _serialize_full, lookup_walkthrough
 
@@ -217,19 +218,6 @@ def render_head(head: dict) -> str:
     return '\n  '.join(lines)
 
 
-def _etag_matches(if_none_match: str, etag: str) -> bool:
-    """Weak-comparison If-None-Match per RFC 9110 (Cloudflare may add W/)."""
-    if if_none_match.strip() == '*':
-        return True
-    for candidate in if_none_match.split(','):
-        candidate = candidate.strip()
-        if candidate.startswith('W/'):
-            candidate = candidate[2:]
-        if candidate == etag:
-            return True
-    return False
-
-
 def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = None) -> None:
     """Serve the built SPA with per-route head tags spliced at the marker.
 
@@ -285,7 +273,7 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         body = f'{shell[0]}{render_head(head)}{shell[1]}'.encode('utf-8')
         etag = f'"{hashlib.md5(body).hexdigest()}"'
         if_none_match = request.headers.get('if-none-match')
-        if if_none_match and _etag_matches(if_none_match, etag):
+        if if_none_match and etag_matches(if_none_match, etag):
             return Response(status_code=304, headers={'ETag': etag})
 
         response = HTMLResponse(body, headers={'ETag': etag})

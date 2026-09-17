@@ -100,3 +100,76 @@ async def test_304_excludes_body_headers():
         assert r2.status_code == 304
         for header in EXCLUDED_304_HEADERS:
             assert header not in r2.headers
+
+
+# ── RFC 9110 weak comparison ─────────────────────────────────────────────────
+#
+# If-None-Match is compared weakly (RFC 9110 §8.8.3.2): strong comparison is
+# reserved for Range requests, where byte offsets must refer to the identical
+# representation. For a 304 it is enough that the representations are
+# semantically equivalent. A plain `==` gets three cases wrong, and each one
+# sends a client the full body it already holds.
+#
+# The SPA shell has always compared this way (app/seo_head.py); these pin that
+# the API middleware now shares that helper rather than doing its own equality.
+
+async def test_304_on_weakened_validator():
+    """`W/"abc"` is not string-equal to `"abc"`. An intermediary may weaken a
+    validator when it transforms a representation, and the weak form is what
+    comes back on the next revalidation."""
+    app = make_etag_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        etag = (await client.get("/api/test/")).headers["etag"]
+        r = await client.get("/api/test/", headers={"if-none-match": f"W/{etag}"})
+        assert r.status_code == 304
+
+
+async def test_304_on_comma_separated_list():
+    """A client holding several validators for a URL sends them as a list,
+    which matches nothing when compared as one whole string."""
+    app = make_etag_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        etag = (await client.get("/api/test/")).headers["etag"]
+        r = await client.get(
+            "/api/test/", headers={"if-none-match": f'"stale-one", {etag}, "other"'})
+        assert r.status_code == 304
+
+
+async def test_304_on_weakened_entry_inside_a_list():
+    app = make_etag_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        etag = (await client.get("/api/test/")).headers["etag"]
+        r = await client.get(
+            "/api/test/", headers={"if-none-match": f'"stale-one", W/{etag}'})
+        assert r.status_code == 304
+
+
+async def test_304_on_star():
+    """`*` asks 'anything you have'."""
+    app = make_etag_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.get("/api/test/")
+        r = await client.get("/api/test/", headers={"if-none-match": "*"})
+        assert r.status_code == 304
+
+
+async def test_200_when_no_validator_matches():
+    """Weak comparison must not become 'always match' — a client holding only
+    stale validators still needs the body."""
+    app = make_etag_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.get("/api/test/")
+        r = await client.get(
+            "/api/test/", headers={"if-none-match": '"nope", W/"also-nope"'})
+        assert r.status_code == 200
+        assert r.json() == {"data": "ok"}
+
+
+async def test_weak_prefix_is_not_stripped_from_the_middle_of_a_value():
+    """Only a leading `W/` marks weakness; the same characters inside an opaque
+    tag are part of the tag."""
+    app = make_etag_app()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.get("/api/test/")
+        r = await client.get("/api/test/", headers={"if-none-match": '"aW/bc"'})
+        assert r.status_code == 200
