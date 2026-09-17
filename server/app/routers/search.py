@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,9 +28,14 @@ async def search(
 
     cached = await get_cache(cache_key)
     if cached:
+        request.state.cache_status = "HIT"
         return cached
 
+    request.state.cache_status = "MISS"
+    db_start = time.time()
+
     results = await _execute_search(db, q_normalized, limit)
+    request.state.db_time = (time.time() - db_start) * 1000
     response = SearchResponse(query=q_normalized, total=len(results), results=results)
     await set_cache(cache_key, response.model_dump(), ttl=SEARCH_CACHE_TTL)
     return response

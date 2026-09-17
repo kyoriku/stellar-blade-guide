@@ -259,3 +259,48 @@ async def test_by_type_cache_key_is_raw_and_exact(walkthroughs_client, walkthrou
     r = await walkthroughs_client.get("/api/walkthroughs/MAIN-STORY")
     assert r.status_code == 404
     assert await fake_redis.keys("walkthroughs:type:*") == ["walkthroughs:type:main-story"]
+
+
+# ── access-log cache column ──────────────────────────────────────────────────
+
+@pytest_asyncio.fixture
+async def walkthroughs_probe_client(walkthroughs_db_session):
+    """As walkthroughs_client, plus a probe recording request.state the way the
+    access log reads it. Registered up front: Starlette refuses new middleware
+    once an app has started."""
+    app = FastAPI()
+    setup_rate_limiter(app)
+    app.include_router(walkthroughs_router, prefix="/api")
+    seen = {}
+
+    @app.middleware("http")
+    async def probe(request, call_next):
+        response = await call_next(request)
+        seen["cache_status"] = getattr(request.state, "cache_status", None)
+        return response
+
+    async def override_get_db():
+        yield walkthroughs_db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c, seen
+
+
+async def test_get_all_walkthroughs_reports_cache_status(
+    walkthroughs_probe_client, walkthroughs_db_session
+):
+    """This route is Redis-cached but used to log a blank cache column, which
+    reads as 'uncached' rather than saying which way the lookup went.
+
+    Seeded deliberately: get_cache treats an empty value as a miss, so an empty
+    result set would report MISS forever and prove nothing.
+    """
+    client, seen = walkthroughs_probe_client
+    await _seed_walkthrough(
+        walkthroughs_db_session, slug="cached", title="Cached", mission_type="main-story")
+    await client.get("/api/walkthroughs/")
+    assert seen["cache_status"] == "MISS"
+    await client.get("/api/walkthroughs/")
+    assert seen["cache_status"] == "HIT"

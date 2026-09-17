@@ -18,6 +18,7 @@ LOG_TZ = ZoneInfo("America/New_York")
 LOG_PATH_MAX = 256   # wide enough to keep a full sqlmap-style payload readable
 LOG_UA_MAX = 48      # parse_ua's browser branches have no cap of their own
 LOG_IP_MAX = 45      # longest textual IPv6 (incl. IPv4-mapped); header-derived, so untrusted
+LOG_COLO_MAX = 3     # IATA airport code; hard-sliced so the column never widens
 
 
 def sanitize_log_field(value: str, limit: int) -> str:
@@ -49,6 +50,28 @@ def parse_ua(ua: str) -> str:
     if 'Safari/' in ua and 'Chrome/' not in ua:
         return 'Safari/' + ua.split('Version/')[1].split(' ')[0] if 'Version/' in ua else 'Safari'
     return ua[:30]
+
+
+def parse_colo(cf_ray: str) -> str:
+    """Cloudflare datacenter (IATA code) from the CF-Ray request header.
+
+    CF-Ray is `<16 hex>-<COLO>`, so the colo is whatever follows the last
+    hyphen. It is the field that makes edge behaviour legible from an origin
+    log, which otherwise cannot see it at all: a URL reaching the origin
+    repeatedly *from the same colo* is eviction, while once each from many
+    colos is ordinary first-touch fill. Those look identical without it.
+
+    Blank when the header is absent — local dev, and Railway's health checks,
+    which arrive over the private mesh and never traverse Cloudflare.
+
+    Header-derived and therefore untrusted (origin_check blocks
+    direct-to-origin, but this is defence in depth), so it is escaped like
+    every other copied field and then hard-sliced: sanitize_log_field marks a
+    truncation with an ellipsis, which would widen a fixed-width column.
+    """
+    if '-' not in cf_ray:
+        return ''
+    return sanitize_log_field(cf_ray.rsplit('-', 1)[1], LOG_COLO_MAX)[:LOG_COLO_MAX]
 
 
 def color_status(status: int) -> str:
@@ -113,13 +136,17 @@ async def log_requests_middleware(request: Request, call_next):
     user_agent = request.headers.get("user-agent", "-")
     cache_status = getattr(request.state, "cache_status", None)
     db_time = getattr(request.state, "db_time", None)
+    colo = parse_colo(request.headers.get("cf-ray", ""))
 
-    # Fixed-width columns
+    # Fixed-width columns. The colo sits beside the Redis status because the two
+    # answer adjacent questions: which edge failed to serve this, and whether
+    # Redis caught it.
     log_parts = [
         f'{datetime.now(LOG_TZ).strftime("%m-%d %H:%M:%S")} · {client_ip:<15} → {request.method:<6}',
         color_status(response.status_code),
         color_duration(duration_ms),
         color_cache(cache_status) if cache_status else '    ',
+        f'{GRAY}{colo:<3}{RESET}' if colo else '   ',
         f'DB: {db_time:>3.0f}ms' if db_time else '         ',
     ]
 

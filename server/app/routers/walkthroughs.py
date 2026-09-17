@@ -57,12 +57,18 @@ async def get_all_walkthroughs(request: Request, db: AsyncSession = Depends(get_
     cache_key = "walkthroughs:all"
     cached_data = await get_cache(cache_key)
     if cached_data:
+        request.state.cache_status = "HIT"
         return cached_data
+
+    request.state.cache_status = "MISS"
+    db_start = time.time()
 
     result = await db.execute(
         select(WalkthroughModel).order_by(WalkthroughModel.display_order)
     )
     walkthroughs = result.scalars().all()
+
+    request.state.db_time = (time.time() - db_start) * 1000
 
     response = [_serialize_list_item(w) for w in walkthroughs]
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
