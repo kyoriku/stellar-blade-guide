@@ -3,6 +3,8 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
 
+from app.core.http_cache import etag_matches
+
 EXCLUDED_304_HEADERS = frozenset({
     "content-length", "content-encoding", "transfer-encoding"
 })
@@ -37,8 +39,13 @@ class ETagMiddleware(BaseHTTPMiddleware):
         # Generate ETag from body content
         etag = f'"{hashlib.md5(body).hexdigest()}"'
 
-        # Check if client already has this version
-        if request.headers.get("if-none-match") == etag:
+        # Check if client already has this version. Weak comparison per
+        # RFC 9110: a plain `==` misses W/-weakened validators, comma-separated
+        # lists and `*`, and each of those misses costs a full body where a 304
+        # would do. The SPA shell has always compared this way; this is the
+        # same helper.
+        if_none_match = request.headers.get("if-none-match")
+        if if_none_match and etag_matches(if_none_match, etag):
             return StarletteResponse(
                 status_code=304,
                 headers={
