@@ -501,3 +501,50 @@ async def test_level_cache_key_collapses_case_and_spaces(
         r = await collectibles_client.get(f"/api/levels/{spelling}")
         assert r.status_code == 200, spelling
     assert await fake_redis.keys("collectibles:level:*") == ["collectibles:level:eidos-7"]
+
+
+# ── access-log cache column ──────────────────────────────────────────────────
+
+@pytest_asyncio.fixture
+async def collectibles_probe_client(collectibles_db_session):
+    """As collectibles_client, plus a probe recording request.state the way the
+    access log reads it. Registered up front: Starlette refuses new middleware
+    once an app has started."""
+    app = FastAPI()
+    setup_rate_limiter(app)
+    app.include_router(collectibles_router, prefix="/api")
+    seen = {}
+
+    @app.middleware("http")
+    async def probe(request, call_next):
+        response = await call_next(request)
+        seen["cache_status"] = getattr(request.state, "cache_status", None)
+        return response
+
+    async def override_get_db():
+        yield collectibles_db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c, seen
+
+
+async def test_get_all_collectibles_reports_cache_status(
+    collectibles_probe_client, collectibles_db_session
+):
+    """This route is Redis-cached but used to log a blank cache column, which
+    reads as 'uncached' rather than saying which way the lookup went.
+
+    Seeded deliberately: get_cache treats an empty value as a miss, so an empty
+    result set would report MISS forever and prove nothing.
+    """
+    client, seen = collectibles_probe_client
+    level = await _seed_level(collectibles_db_session)
+    loc = await _seed_location(collectibles_db_session, level.id)
+    ctype = await _seed_type(collectibles_db_session, "Document", "collectibles", "documents")
+    await _seed_collectible(collectibles_db_session, loc.id, ctype)
+    await client.get("/api/collectibles/")
+    assert seen["cache_status"] == "MISS"
+    await client.get("/api/collectibles/")
+    assert seen["cache_status"] == "HIT"

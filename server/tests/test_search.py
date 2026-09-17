@@ -184,3 +184,48 @@ async def test_cache_hit_skips_execute(search_client, fake_redis, monkeypatch):
     assert response.status_code == 200
     assert response.json() == cached_data
     mock_execute.assert_not_called()
+
+
+# ── access-log cache column ──────────────────────────────────────────────────
+
+@pytest_asyncio.fixture
+async def search_probe_client():
+    """Search app with a probe recording request.state the way the access log
+    reads it. Registered before the first request, since Starlette refuses new
+    middleware once an app has started."""
+    app = FastAPI()
+    setup_rate_limiter(app)
+    app.include_router(search_route.router, prefix="/api")
+    seen = {}
+
+    @app.middleware("http")
+    async def probe(request, call_next):
+        response = await call_next(request)
+        seen["cache_status"] = getattr(request.state, "cache_status", None)
+        seen["db_time"] = getattr(request.state, "db_time", None)
+        return response
+
+    mock_db = AsyncMock()
+
+    async def override_get_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c, seen
+
+
+async def test_search_reports_cache_status_on_miss_then_hit(search_probe_client, monkeypatch):
+    """Without this the search line logs a blank cache column, which reads as
+    'not cached at all' rather than 'cached, and this is which way it went'."""
+    client, seen = search_probe_client
+    monkeypatch.setattr(search_route, "_execute_search", AsyncMock(return_value=[]))
+
+    await client.get("/api/search/?q=nano")
+    assert seen["cache_status"] == "MISS"
+    assert seen["db_time"] is not None
+
+    await client.get("/api/search/?q=nano")
+    assert seen["cache_status"] == "HIT"
+    assert seen["db_time"] is None

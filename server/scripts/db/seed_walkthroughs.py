@@ -19,6 +19,7 @@ from app.db.database import get_db
 from app.models.walkthroughs import Walkthrough
 from app.core.cache import invalidate_cache_pattern
 from scripts.images.paths import normalize_image_path, normalize_content_images
+from scripts.cache import purge_manifest
 
 
 def load_all_walkthrough_files():
@@ -80,9 +81,14 @@ async def seed_walkthroughs():
 
     print(f"\n\033[96m━━━ STEP 2: Seeding {len(walkthrough_data)} Walkthroughs ━━━\033[0m\n")
     added = 0
-    updated = 0
+    updated = 0      # existing rows that actually differ, not rows merely present
+    unchanged = 0
     deleted = 0
     errors = 0
+
+    run_id = purge_manifest.current_run_id()
+    purge_manifest.begin(purge_manifest.SECTION_WALKTHROUGHS, run_id)
+    changed_pairs = set()
 
     # Track which IDs are in the seed data
     seed_ids = set()
@@ -103,6 +109,11 @@ async def seed_walkthroughs():
                 existing = existing_walkthroughs.get(walkthrough_id)
 
                 if existing:
+                    # Both halves of this walkthrough's URL are mutable, so a
+                    # rename or a re-categorisation stales the OLD path as well
+                    # as the new one. Capture it before the assignments below
+                    # overwrite it, or the old URL keeps serving for 30 days.
+                    old_pair = (existing.mission_type, existing.slug)
                     # Update existing
                     existing.slug = item["slug"]
                     existing.title = item["title"]
@@ -115,8 +126,14 @@ async def seed_walkthroughs():
                     existing.display_order = item["display_order"]
                     existing.rewards = item.get("rewards")
                     existing.available_after = item.get("available_after")
-                    updated += 1
-                    print(f"\033[33m↻ Updated: {item['title']}\033[0m")
+                    # Read before the commit below resets attribute history.
+                    if db.is_modified(existing, include_collections=True):
+                        updated += 1
+                        changed_pairs.add(old_pair)
+                        changed_pairs.add((existing.mission_type, existing.slug))
+                        print(f"\033[33m↻ Updated: {item['title']}\033[0m")
+                    else:
+                        unchanged += 1
                 else:
                     # Add new
                     new_walkthrough = Walkthrough(
@@ -135,6 +152,7 @@ async def seed_walkthroughs():
                     )
                     db.add(new_walkthrough)
                     added += 1
+                    changed_pairs.add((item["mission_type"], item["slug"]))
                     print(f"\033[32m✓ Added: {item['title']}\033[0m")
 
                 await db.commit()
@@ -153,7 +171,12 @@ async def seed_walkthroughs():
         
         if orphaned_ids:
             print(f"  Found {len(orphaned_ids)} walkthroughs not in seed data")
-            
+
+            # Capture the URLs the deletions stale, before the rows go away.
+            for orphan_id in orphaned_ids:
+                orphan = existing_walkthroughs[orphan_id]
+                changed_pairs.add((orphan.mission_type, orphan.slug))
+
             # Delete orphaned walkthroughs
             result = await db.execute(
                 delete(Walkthrough).where(Walkthrough.id.in_(orphaned_ids))
@@ -186,10 +209,20 @@ async def seed_walkthroughs():
     print(f"\033[92m✓ SEEDING COMPLETE\033[0m")
     print(f"\033[92m  Added: {added}\033[0m")
     print(f"\033[92m  Updated: {updated}\033[0m")
+    print(f"\033[90m  Unchanged: {unchanged}\033[0m")
     if deleted > 0:
         print(f"\033[33m  Deleted: {deleted}\033[0m")
     else:
         print(f"\033[92m  Deleted: {deleted}\033[0m")
+    if errors:
+        # A skipped item means the changed set is incomplete; leaving the
+        # section 'running' makes the purge widen rather than trust it.
+        print(f"\033[33m  Purge manifest: left incomplete ({errors} error(s)) "
+              f"— the purge will widen to the full surface\033[0m")
+    else:
+        purge_manifest.complete(
+            purge_manifest.SECTION_WALKTHROUGHS, run_id, pairs=changed_pairs)
+        print(f"\033[92m  Purge manifest: {len(changed_pairs)} walkthrough URL(s) changed\033[0m")
     if errors:
         print(f"\033[31m  Errors: {errors}\033[0m")
     else:

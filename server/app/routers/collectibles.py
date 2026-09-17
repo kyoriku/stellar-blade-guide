@@ -73,7 +73,11 @@ async def get_all_collectibles(request: Request, db: AsyncSession = Depends(get_
     cache_key = "collectibles:all"
     cached_data = await get_cache(cache_key)
     if cached_data:
+        request.state.cache_status = "HIT"
         return cached_data
+
+    request.state.cache_status = "MISS"
+    db_start = time.time()
 
     stmt = select(Collectible).options(
         joinedload(Collectible.types),
@@ -83,6 +87,8 @@ async def get_all_collectibles(request: Request, db: AsyncSession = Depends(get_
 
     result = await db.execute(stmt)
     collectibles = result.unique().scalars().all()
+
+    request.state.db_time = (time.time() - db_start) * 1000
 
     response = [{
         **_serialize_collectible(c),

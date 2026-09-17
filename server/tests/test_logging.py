@@ -15,6 +15,7 @@ pattern, each test builds a bare app with only the layers under test, logging
 outermost as in main.py.
 """
 import logging
+import re
 
 import pytest
 from fastapi import FastAPI
@@ -25,7 +26,8 @@ import app.middleware.origin_check as origin_check_module
 from app.config.settings import settings
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.logging import (
-    LOG_IP_MAX, LOG_PATH_MAX, LOG_UA_MAX, add_logging_middleware, sanitize_log_field,
+    LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_UA_MAX, add_logging_middleware,
+    parse_colo, sanitize_log_field,
 )
 from app.middleware.origin_check import add_origin_check_middleware
 from app.seo_head import MARKER, register_spa
@@ -95,6 +97,14 @@ def api_log(caplog):
     with caplog.at_level(logging.INFO, logger="api"):
         yield caplog
     api_logger.propagate = previous
+
+
+ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(line):
+    """Column widths are only comparable with the colour codes removed."""
+    return ANSI_RE.sub("", line)
 
 
 def _access_lines(caplog):
@@ -239,3 +249,65 @@ async def test_spa_catch_all_unknown_api_path_names_itself(api_log, tmp_path):
     assert r.status_code == 404
     (line,) = _access_lines(api_log)
     assert "(no-route)" in line
+
+
+# ── Cloudflare colo column ───────────────────────────────────────────────────
+#
+# The origin log cannot see edge cache behaviour: a response Cloudflare serves
+# never reaches the app. The CF-Ray suffix is the one thing that makes it
+# legible after the fact — the same URL arriving repeatedly from the SAME colo
+# is eviction, while once each from many colos is ordinary first-touch fill.
+# Those two are indistinguishable without it. CF-Ray is a request header and so
+# is untrusted like every other copied field.
+
+def test_colo_is_the_suffix_after_the_last_hyphen():
+    assert parse_colo("8a1b2c3d4e5f6789-YYZ") == "YYZ"
+
+
+def test_colo_is_blank_when_the_header_is_absent():
+    """Local dev, and Railway health checks over the private mesh, which never
+    traverse Cloudflare."""
+    assert parse_colo("") == ""
+    assert parse_colo("no-trailing-hyphen-value") == "val"[:LOG_COLO_MAX]
+
+
+def test_colo_empty_suffix_is_blank():
+    assert parse_colo("8a1b2c3d4e5f6789-") == ""
+
+
+def test_colo_escape_byte_cannot_inject_ansi():
+    out = parse_colo("8a1b-\x1b[31mX")
+    assert "\x1b" not in out
+    assert out == "\\x1"
+
+
+def test_colo_line_break_cannot_forge_a_second_line():
+    out = parse_colo("8a1b-A\nB")
+    assert "\n" not in out
+    assert out == "A\\n"
+
+
+def test_colo_is_hard_sliced_so_the_column_never_widens():
+    """sanitize_log_field marks truncation with an ellipsis; a fixed-width
+    column cannot carry it, so parse_colo slices instead."""
+    out = parse_colo("8a1b-VERYLONGVALUE")
+    assert len(out) == LOG_COLO_MAX
+    assert "…" not in out
+
+
+async def test_colo_reaches_the_access_line(api_log):
+    app = _app_with()
+    async with _client(app) as c:
+        await c.get("/api/x", headers={"cf-ray": "8a1b2c3d4e5f6789-LHR"})
+    (line,) = _access_lines(api_log)
+    assert "LHR" in line
+
+
+async def test_missing_cf_ray_keeps_the_column_width(api_log):
+    """A request with no CF-Ray must still line up with one that has it."""
+    app = _app_with()
+    async with _client(app) as c:
+        await c.get("/api/x", headers={"cf-ray": "8a1b2c3d4e5f6789-LHR"})
+        await c.get("/api/x")
+    with_colo, without_colo = _access_lines(api_log)
+    assert len(_strip_ansi(with_colo)) == len(_strip_ansi(without_colo))
