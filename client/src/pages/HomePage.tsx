@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Book, Layers, Compass, Zap, Box, Sparkles, ChevronRight, ArrowRight, Map } from 'lucide-react'
-import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
+import { Book, Layers, Compass, Zap, Sparkles, ChevronRight, ArrowRight, Map } from 'lucide-react'
+import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation'
 import { LEVEL_IMAGES } from '../constants/categoryImages'
 import { buildSrcSet, thumbnailUrl } from '../utils/image'
 import { usePrefetch } from '../hooks/usePrefetch'
@@ -218,6 +218,7 @@ function HomePage() {
                 to="/collectibles"
                 count={COLLECTIBLES.length}
                 imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/tower-outer-wall/stellar-blade-20240809025324.webp"
+                featured
               />
               <CategoryCard
                 title="Upgrades"
@@ -235,14 +236,6 @@ function HomePage() {
                 count={COSMETICS.length}
                 imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.webp"
               />
-              <CategoryCard
-                title="Materials"
-                description="Supply Boxes, Supply Chests"
-                icon={<Box size={18} />}
-                to="/materials"
-                count={MATERIALS.length}
-                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/stellar-blade-20240514060129.webp"
-              />
             </div>
           </div>
         </div>
@@ -251,6 +244,12 @@ function HomePage() {
   )
 }
 
+// Regular cards sit two-up in the right column (four of the main grid's six tracks);
+// the featured card spans both card columns. Both overestimate between breakpoints,
+// since `container` caps below 100vw — harmless, it only picks a larger variant.
+const CARD_SIZES = '(min-width: 1024px) calc((100vw - 62px) / 3), calc(50vw - 18px)';
+const FEATURED_SIZES = '(min-width: 1024px) calc((100vw - 44px) * 2 / 3), calc(100vw - 24px)';
+
 interface CategoryCardProps {
   title: string;
   description: string;
@@ -258,26 +257,28 @@ interface CategoryCardProps {
   to: string;
   count: number;
   imageUrl: string;
+  /** Span both grid columns with a 12:5 banner crop (the first card of a three-card grid). */
+  featured?: boolean;
 }
 
-function CategoryCard({ title, description, icon, to, count, imageUrl }: CategoryCardProps) {
+function CategoryCard({ title, description, icon, to, count, imageUrl, featured = false }: CategoryCardProps) {
   return (
     <Link
       to={to}
-      className="group block"
+      className={featured ? 'group block col-span-2' : 'group block'}
     >
       <div className="bg-secondary border border-zinc-800 rounded-lg overflow-hidden h-full
                     hover:border-zinc-700 hover:bg-secondary/80 transition-all duration-200
                     hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
 
         {/* Image */}
-        <div className="aspect-4/3 sm:aspect-video relative overflow-hidden">
+        <div className={`${featured ? 'aspect-12/5 sm:aspect-3/1' : 'aspect-4/3 sm:aspect-video'} relative overflow-hidden`}>
           <img
             src={thumbnailUrl(imageUrl)}
             srcSet={buildSrcSet(imageUrl)}
-            sizes="(min-width: 1024px) calc((100vw - 62px) / 3), calc(50vw - 18px)"
+            sizes={featured ? FEATURED_SIZES : CARD_SIZES}
             alt={title}
-            className="w-full h-full object-cover"
+            className={featured ? 'w-full h-full object-cover object-[center_30%]' : 'w-full h-full object-cover'}
             loading="lazy"
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent" />
