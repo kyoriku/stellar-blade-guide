@@ -319,10 +319,12 @@ FRONTEND_URL = settings.FRONTEND_URL
 
 
 async def _get_or_create_oauth_user(
+    request: Request,
     db: AsyncSession,
     provider: str,
     provider_user_id: str,
     email: str,
+    email_verified: object,
     username: str,
     avatar_url: str | None,
 ) -> User:
@@ -330,6 +332,10 @@ async def _get_or_create_oauth_user(
     Find existing OAuth account → return its user.
     No OAuth account but email exists → link the provider to that account.
     Neither → create new user + OAuth account.
+    The last two only run for an email the provider has verified.
+
+    email_verified is whatever the provider's JSON held, judged here rather than
+    coerced by the caller.
     """
     # 1. Existing OAuth account
     result = await db.execute(
@@ -342,6 +348,26 @@ async def _get_or_create_oauth_user(
     if oauth_account:
         result = await db.execute(select(User).where(User.id == oauth_account.user_id))
         return result.scalar_one()
+
+    # From here on the email is the only thing tying this login to a user row, so
+    # it has to be one the provider vouches for. Unverified, anyone can put a
+    # victim's address on a provider account: the link below would hand them the
+    # victim's account, and the create further down would let them squat the
+    # address, so the victim's own later login links into an account the attacker
+    # also holds. Returning users never get here: they are matched on the
+    # provider's stable id above, and a flag that lapsed later must not lock them out.
+    #
+    # `is not True`, not falsiness: this is parsed JSON, and the string "false" is
+    # truthy. A missing flag is None, which fails closed.
+    if email_verified is not True:
+        request.state.reject_reason = "oauth-email-unverified"
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Your {provider.title()} account's email address isn't verified. "
+                f"Verify it with {provider.title()}, then try again."
+            ),
+        )
 
     # 2. Email already registered — link provider
     result = await db.execute(select(User).where(User.email == email))
@@ -475,7 +501,11 @@ async def google_callback(
     username = info.get("name", email.split("@")[0]).replace(" ", "_")
     avatar_url = info.get("picture")
 
-    user = await _get_or_create_oauth_user(db, "google", provider_user_id, email, username, avatar_url)
+    # The v2 userinfo endpoint spells it verified_email. email_verified is the
+    # OIDC claim name and is not what this endpoint returns.
+    user = await _get_or_create_oauth_user(
+        request, db, "google", provider_user_id, email, info.get("verified_email"), username, avatar_url,
+    )
 
     # Issue tokens then redirect to frontend with access token in query param
     # (Frontend reads it once on mount, stores in memory, then removes from URL)
@@ -564,7 +594,9 @@ async def discord_callback(
     avatar_hash = info.get("avatar")
     avatar_url = f"https://cdn.discordapp.com/avatars/{provider_user_id}/{avatar_hash}.png" if avatar_hash else None
 
-    user = await _get_or_create_oauth_user(db, "discord", provider_user_id, email, username, avatar_url)
+    user = await _get_or_create_oauth_user(
+        request, db, "discord", provider_user_id, email, info.get("verified"), username, avatar_url,
+    )
 
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token()

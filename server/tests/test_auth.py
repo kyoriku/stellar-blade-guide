@@ -27,6 +27,7 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, ASGITransport
 from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
@@ -464,6 +465,17 @@ class _FakeProvider:
 
     def __init__(self):
         self.calls = []
+        # Tests mutate this. It defaults to a verified email under both providers'
+        # spellings (Google's v2 endpoint says verified_email, Discord says
+        # verified), so a test that is not about the flag gets an ordinary login.
+        self.userinfo = {
+            "id": "provider-user-1",
+            "email": "oauth@example.com",
+            "verified_email": True,
+            "verified": True,
+            "name": "OAuth User",       # Google's field
+            "username": "oauthuser",    # Discord's field
+        }
 
     def __call__(self, **kwargs):  # httpx.AsyncClient(timeout=10)
         return self
@@ -480,12 +492,7 @@ class _FakeProvider:
 
     async def get(self, url, **kwargs):
         self.calls.append(("GET", url, {}))
-        return httpx.Response(200, json={
-            "id": "provider-user-1",
-            "email": "oauth@example.com",
-            "name": "OAuth User",       # Google's field
-            "username": "oauthuser",    # Discord's field
-        })
+        return httpx.Response(200, json=self.userinfo)
 
 
 @pytest_asyncio.fixture
@@ -524,7 +531,9 @@ async def oauth(auth_db_session, monkeypatch, fake_redis):
     add_logging_middleware(app)  # outermost, as in main.py
 
     async with AsyncClient(transport=ASGITransport(app), base_url="http://test") as c:
-        yield SimpleNamespace(client=c, app=app, seen=seen, provider=provider, redis=fake_redis)
+        yield SimpleNamespace(
+            client=c, app=app, seen=seen, provider=provider, redis=fake_redis, db=auth_db_session,
+        )
 
 
 @pytest.fixture
@@ -802,3 +811,163 @@ async def test_oauth_login_fails_closed_when_redis_is_down(oauth, provider, monk
 
     with pytest.raises(RedisConnectionError):
         await oauth.client.get(f"/api/auth/{provider}")
+
+
+# ── OAuth email linking: only a provider-verified email identifies anyone ─────
+#
+# The helper resolves a login in three steps: a known provider id, else an
+# existing user with the same email (link), else a new user (create). The last
+# two trust the email, so they only run for an email the provider has verified.
+# Unverified, anyone can put a victim's address on a provider account: the link
+# step would hand over the victim's account, and the create step would squat the
+# address so the victim's own later login links into it.
+
+VERIFIED_FLAG = {"google": "verified_email", "discord": "verified"}
+_MISSING = object()
+
+UNVERIFIED_DETAIL = {
+    "google": "Your Google account's email address isn't verified. Verify it with Google, then try again.",
+    "discord": "Your Discord account's email address isn't verified. Verify it with Discord, then try again.",
+}
+
+
+def _set_flag(o, provider: str, value) -> None:
+    """Only the provider under test is changed. The other provider's spelling
+    stays True in the payload, so a callback reading the wrong key would pass a
+    login these tests expect to be refused."""
+    if value is _MISSING:
+        o.provider.userinfo.pop(VERIFIED_FLAG[provider], None)
+    else:
+        o.provider.userinfo[VERIFIED_FLAG[provider]] = value
+
+
+async def _login(o, provider: str):
+    state = await _begin(o, provider)
+    return await o.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": state})
+
+
+async def _rows(o, model):
+    return (await o.db.execute(select(model))).scalars().all()
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_unverified_email_cannot_take_over_an_existing_account(oauth, provider, test_user):
+    """The regression test for the finding. The provider account carries the
+    victim's address but never proved it owns it."""
+    oauth.provider.userinfo["email"] = test_user.email
+    _set_flag(oauth, provider, False)
+
+    r = await _login(oauth, provider)
+
+    assert r.status_code == 400
+    assert r.json()["detail"] == UNVERIFIED_DETAIL[provider]
+    assert oauth.seen["reject_reason"] == "oauth-email-unverified"
+    # The flag lives in the userinfo, so both provider calls necessarily happened.
+    # What matters is that nothing was written or issued afterwards.
+    assert len(oauth.provider.calls) == 2
+    assert await _rows(oauth, OAuthAccount) == []
+    assert await oauth.redis.keys("refresh:*") == []
+    assert all("refresh_token" not in c for c in _set_cookies(r))
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_unverified_email_cannot_squat_an_address(oauth, provider):
+    """No account exists yet. Creating one would reserve the address for the
+    attacker, and the real owner's later login would link into it."""
+    _set_flag(oauth, provider, False)
+
+    r = await _login(oauth, provider)
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-email-unverified"
+    assert await _rows(oauth, User) == []
+    assert await _rows(oauth, OAuthAccount) == []
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+@pytest.mark.parametrize(
+    "value",
+    [False, None, _MISSING, "true", "false", 1],
+    ids=["False", "None", "missing", "str-true", "str-false", "int-1"],
+)
+async def test_oauth_verified_flag_is_judged_strictly(oauth, provider, value):
+    """Parsed JSON, so truthiness is the wrong test: the string "false" is truthy.
+    Only the boolean True passes, and an absent flag fails closed."""
+    _set_flag(oauth, provider, value)
+
+    r = await _login(oauth, provider)
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-email-unverified"
+    assert await _rows(oauth, User) == []
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_returning_user_is_not_locked_out_by_a_lapsed_flag(oauth, provider):
+    """A returning user is matched on the provider's stable id and the email is
+    never consulted, so the check must sit after that step, not before it."""
+    assert (await _login(oauth, provider)).status_code == 307
+
+    _set_flag(oauth, provider, False)
+    r = await _login(oauth, provider)
+
+    assert r.status_code == 307
+    assert oauth.seen["reject_reason"] is None
+    assert len(await _rows(oauth, User)) == 1
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_verified_email_links_to_the_existing_account_as_before(oauth, provider, test_user):
+    oauth.provider.userinfo["email"] = test_user.email
+
+    r = await _login(oauth, provider)
+
+    assert r.status_code == 307
+    token = r.headers["location"].split("token=", 1)[1]
+    assert jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])["sub"] == str(test_user.id)
+    (link,) = await _rows(oauth, OAuthAccount)
+    assert (link.user_id, link.provider) == (test_user.id, provider)
+
+    # The second login resolves on the provider id: no second link, no second user.
+    assert (await _login(oauth, provider)).status_code == 307
+    assert len(await _rows(oauth, OAuthAccount)) == 1
+    assert len(await _rows(oauth, User)) == 1
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_verified_new_user_is_created_as_before(oauth, provider):
+    r = await _login(oauth, provider)
+
+    assert r.status_code == 307
+    (user,) = await _rows(oauth, User)
+    assert user.email == "oauth@example.com"
+    assert user.password_hash is None
+    (link,) = await _rows(oauth, OAuthAccount)
+    assert (link.user_id, link.provider) == (user.id, provider)
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_unverified_rejection_names_itself_and_never_logs_the_email(oauth, provider, api_log):
+    oauth.provider.userinfo["email"] = "victim-MARKER@example.com"
+    _set_flag(oauth, provider, False)
+
+    await _login(oauth, provider)
+
+    lines = [rec.getMessage() for rec in api_log.records if rec.name == "api" and " → " in rec.getMessage()]
+    assert lines[-1].endswith("(oauth-email-unverified)\x1b[0m")
+    app_records = [rec for rec in api_log.records if not rec.name.startswith("httpx")]
+    assert app_records
+    assert all("MARKER" not in rec.getMessage() for rec in app_records)
+
+
+async def test_discord_without_an_email_keeps_its_existing_400(oauth):
+    """Pre-existing behaviour, pinned so the new check does not swallow it: this
+    is a presence test in the callback and runs before the helper is reached."""
+    oauth.provider.userinfo["email"] = None
+
+    r = await _login(oauth, "discord")
+
+    assert r.status_code == 400
+    assert r.json()["detail"] == "Discord account must have a verified email"
+    assert oauth.seen["reject_reason"] is None
+    assert await _rows(oauth, User) == []
