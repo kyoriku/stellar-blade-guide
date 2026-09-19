@@ -1,15 +1,23 @@
-import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
+import { oauthErrorNotice, type OAuthNotice } from '../utils/oauthError'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
+
+// Same box as the form error; a cancel is the user's own choice, so it is not red.
+const NOTICE_CLASSES: Record<OAuthNotice['tone'], string> = {
+  error: 'px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm',
+  neutral: 'px-4 py-3 rounded-lg bg-gray-800/60 border border-gray-700 text-gray-300 text-sm',
+}
 
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,15 +25,37 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // The API sends a refused OAuth callback here as ?oauth_error=<code>&provider=<name>.
+  // Both are read once, into state, because the effect below removes them from the URL.
+  const [oauthNotice, setOauthNotice] = useState<OAuthNotice | null>(() =>
+    oauthErrorNotice(searchParams.get('oauth_error'), searchParams.get('provider')),
+  )
+  // The provider button stored where the user came from, and only a successful
+  // provider login consumes it. A refusal reloads the page, so location.state is
+  // gone and a password sign-in would otherwise land on the home page.
+  const [returnAfterRefusal] = useState<string | null>(() =>
+    searchParams.has('oauth_error') ? localStorage.getItem('oauth_redirect') : null,
+  )
+
+  useEffect(() => {
+    // Without this a refresh, the back button or a bookmark shows the message again.
+    if (searchParams.has('oauth_error') || searchParams.has('provider')) {
+      // location.state is typed `any`; it is only passed through, never read here.
+      setSearchParams({}, { replace: true, state: location.state as unknown })
+    }
+  }, [searchParams, setSearchParams, location.state])
+
   // Redirect back to where the user came from, or home
-  const from = (location.state as { from?: string })?.from || '/'
+  const from = (location.state as { from?: string })?.from || returnAfterRefusal || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setOauthNotice(null)
     setIsSubmitting(true)
     try {
       await login(email, password)
+      localStorage.removeItem('oauth_redirect')
       void navigate(from, { replace: true })
     } catch (err) {
       setError(errorMessage(err, 'Login failed'))
@@ -98,9 +128,14 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-            {error && (
-              <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            {/* One slot: a form error replaces the OAuth notice, so there are never two boxes. */}
+            {error ? (
+              <div className={NOTICE_CLASSES.error}>
                 {error}
+              </div>
+            ) : oauthNotice && (
+              <div className={NOTICE_CLASSES[oauthNotice.tone]}>
+                {oauthNotice.text}
               </div>
             )}
 

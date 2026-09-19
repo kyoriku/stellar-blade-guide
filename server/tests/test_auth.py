@@ -452,10 +452,13 @@ AUTHORIZE_PREFIX = {
     ),
 }
 
-GENERIC_DETAIL = {
-    "google": "We couldn't complete Google sign-in. Please try again.",
-    "discord": "We couldn't complete Discord sign-in. Please try again.",
-}
+def _assert_refused(r, code: str, provider: str) -> None:
+    """A refused callback is a browser navigation, so it is a redirect to the login
+    page rather than a JSON body. 303, not the success path's 307, so the two stay
+    distinguishable on the access line. The exact match is the point: a coarse
+    public code and the provider name, and nothing from the request."""
+    assert r.status_code == 303
+    assert r.headers["location"] == f"http://test/login?oauth_error={code}&provider={provider}"
 
 
 class _FakeProvider:
@@ -476,6 +479,8 @@ class _FakeProvider:
             "name": "OAuth User",       # Google's field
             "username": "oauthuser",    # Discord's field
         }
+        self.token_status = 200
+        self.userinfo_status = 200
 
     def __call__(self, **kwargs):  # httpx.AsyncClient(timeout=10)
         return self
@@ -488,11 +493,11 @@ class _FakeProvider:
 
     async def post(self, url, **kwargs):
         self.calls.append(("POST", url, kwargs.get("data", {})))
-        return httpx.Response(200, json={"access_token": "provider-token"})
+        return httpx.Response(self.token_status, json={"access_token": "provider-token"})
 
     async def get(self, url, **kwargs):
         self.calls.append(("GET", url, {}))
-        return httpx.Response(200, json=self.userinfo)
+        return httpx.Response(self.userinfo_status, json=self.userinfo)
 
 
 @pytest_asyncio.fixture
@@ -546,6 +551,15 @@ def api_log(caplog):
     with caplog.at_level(logging.DEBUG):
         yield caplog
     api_logger.propagate = previous
+
+
+def _app_records(caplog):
+    """Records from the application's own loggers: `api` (the access log) and
+    `app.*`. The fixture forces DEBUG on everything so nothing is missed, which also
+    switches on the test client's request line (`httpx`) and the SQLite driver's
+    statement log (`aiosqlite`, parameters included). Neither is the app's doing, and
+    neither exists in production, which runs at INFO on asyncpg."""
+    return [rec for rec in caplog.records if rec.name == "api" or rec.name.startswith("app.")]
 
 
 def _key(provider: str, state: str) -> str:
@@ -621,8 +635,7 @@ async def test_oauth_callback_without_state_is_rejected(oauth, provider):
 
     r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code"})
 
-    assert r.status_code == 400
-    assert r.json()["detail"] == GENERIC_DETAIL[provider]
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-missing"
     assert oauth.provider.calls == []
     assert _set_cookies(r) == []  # the cookie never matched, so it is left alone
@@ -637,7 +650,7 @@ async def test_oauth_callback_with_wrong_state_is_rejected(oauth, provider):
         f"/api/auth/{provider}/callback", params={"code": "the-code", "state": "not-the-state"},
     )
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-mismatch"
     assert oauth.provider.calls == []
     # A forged callback must not be able to knock out the victim's own in-flight
@@ -658,7 +671,7 @@ async def test_oauth_valid_state_from_another_browser_is_rejected(oauth, provide
             f"/api/auth/{provider}/callback", params={"code": "attackers-code", "state": attacker_state},
         )
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-no-cookie"
     assert oauth.provider.calls == []
     assert "refresh_token" not in r.headers.get("set-cookie", "")
@@ -673,7 +686,7 @@ async def test_oauth_expired_state_is_rejected(oauth, provider):
 
     r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": state})
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-unknown"
     assert oauth.provider.calls == []
     (cleared,) = _set_cookies(r)  # it matched, so it is spent
@@ -691,7 +704,7 @@ async def test_oauth_never_issued_state_is_rejected_and_mints_no_key(oauth, prov
         headers={"Cookie": f"{OAUTH_STATE_COOKIE}=forged"},
     )
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-unknown"
     assert oauth.provider.calls == []
     assert await oauth.redis.keys("oauth_state:*") == []
@@ -713,7 +726,7 @@ async def test_oauth_replayed_state_is_rejected(oauth, provider):
         headers={"Cookie": f"{OAUTH_STATE_COOKIE}={state}"},
     )
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-replayed"
     assert len(oauth.provider.calls) == 2  # only the first request reached the provider
 
@@ -725,7 +738,7 @@ async def test_oauth_state_cannot_be_spent_at_the_other_provider(oauth, provider
 
     r = await oauth.client.get(f"/api/auth/{other}/callback", params={"code": "the-code", "state": state})
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", other)
     assert oauth.seen["reject_reason"] == "oauth-state-unknown"
     assert oauth.provider.calls == []
     assert await oauth.redis.get(_key(provider, state)) == "pending"
@@ -741,14 +754,11 @@ async def test_oauth_provider_error_is_rejected_without_leaking_it(oauth, provid
 
     r = await oauth.client.get(f"/api/auth/{provider}/callback", params=params)
 
-    assert r.status_code == 400
-    assert r.json()["detail"] == GENERIC_DETAIL[provider]
+    _assert_refused(r, "cancelled", provider)
     assert oauth.seen["reject_reason"] == "oauth-provider-error"
     assert oauth.provider.calls == []
-    assert "MARKER" not in r.text
-    # Every application logger, not only the access log. The `httpx` logger is the
-    # test client announcing its own outgoing URL, which is not the app's doing.
-    app_records = [rec for rec in api_log.records if not rec.name.startswith("httpx")]
+    assert "MARKER" not in r.headers["location"]
+    app_records = _app_records(api_log)
     assert app_records  # the access line was captured, so the check below is not vacuous
     assert all("MARKER" not in rec.getMessage() for rec in app_records)
 
@@ -766,7 +776,7 @@ async def test_oauth_provider_error_does_not_excuse_a_bad_state(oauth, provider)
             f"/api/auth/{provider}/callback", params={"error": "access_denied", "state": "whatever"},
         )
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-no-cookie"
 
 
@@ -778,7 +788,7 @@ async def test_oauth_non_ascii_state_is_a_mismatch_not_a_500(oauth, provider):
 
     r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": "étât"})
 
-    assert r.status_code == 400
+    _assert_refused(r, "expired", provider)
     assert oauth.seen["reject_reason"] == "oauth-state-mismatch"
 
 
@@ -825,12 +835,6 @@ async def test_oauth_login_fails_closed_when_redis_is_down(oauth, provider, monk
 VERIFIED_FLAG = {"google": "verified_email", "discord": "verified"}
 _MISSING = object()
 
-UNVERIFIED_DETAIL = {
-    "google": "Your Google account's email address isn't verified. Verify it with Google, then try again.",
-    "discord": "Your Discord account's email address isn't verified. Verify it with Discord, then try again.",
-}
-
-
 def _set_flag(o, provider: str, value) -> None:
     """Only the provider under test is changed. The other provider's spelling
     stays True in the payload, so a callback reading the wrong key would pass a
@@ -859,8 +863,7 @@ async def test_oauth_unverified_email_cannot_take_over_an_existing_account(oauth
 
     r = await _login(oauth, provider)
 
-    assert r.status_code == 400
-    assert r.json()["detail"] == UNVERIFIED_DETAIL[provider]
+    _assert_refused(r, "email-unverified", provider)
     assert oauth.seen["reject_reason"] == "oauth-email-unverified"
     # The flag lives in the userinfo, so both provider calls necessarily happened.
     # What matters is that nothing was written or issued afterwards.
@@ -878,7 +881,7 @@ async def test_oauth_unverified_email_cannot_squat_an_address(oauth, provider):
 
     r = await _login(oauth, provider)
 
-    assert r.status_code == 400
+    _assert_refused(r, "email-unverified", provider)
     assert oauth.seen["reject_reason"] == "oauth-email-unverified"
     assert await _rows(oauth, User) == []
     assert await _rows(oauth, OAuthAccount) == []
@@ -897,7 +900,7 @@ async def test_oauth_verified_flag_is_judged_strictly(oauth, provider, value):
 
     r = await _login(oauth, provider)
 
-    assert r.status_code == 400
+    _assert_refused(r, "email-unverified", provider)
     assert oauth.seen["reject_reason"] == "oauth-email-unverified"
     assert await _rows(oauth, User) == []
 
@@ -917,20 +920,25 @@ async def test_oauth_returning_user_is_not_locked_out_by_a_lapsed_flag(oauth, pr
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)
-async def test_oauth_verified_email_links_to_the_existing_account_as_before(oauth, provider, test_user):
-    oauth.provider.userinfo["email"] = test_user.email
+async def test_oauth_provider_to_provider_linking_is_unchanged(oauth, provider):
+    """An account with no password can only have been made by a provider login, so
+    its address was proven then. A second provider on the same address still links."""
+    other = "discord" if provider == "google" else "google"
+    assert (await _login(oauth, other)).status_code == 307
 
     r = await _login(oauth, provider)
 
     assert r.status_code == 307
-    token = r.headers["location"].split("token=", 1)[1]
-    assert jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])["sub"] == str(test_user.id)
-    (link,) = await _rows(oauth, OAuthAccount)
-    assert (link.user_id, link.provider) == (test_user.id, provider)
+    assert oauth.seen["reject_reason"] is None
+    (user,) = await _rows(oauth, User)
+    assert user.password_hash is None
+    links = await _rows(oauth, OAuthAccount)
+    assert sorted(link.provider for link in links) == ["discord", "google"]
+    assert {link.user_id for link in links} == {user.id}
 
-    # The second login resolves on the provider id: no second link, no second user.
+    # The next login resolves on the provider id: no third link, no second user.
     assert (await _login(oauth, provider)).status_code == 307
-    assert len(await _rows(oauth, OAuthAccount)) == 1
+    assert len(await _rows(oauth, OAuthAccount)) == 2
     assert len(await _rows(oauth, User)) == 1
 
 
@@ -955,19 +963,194 @@ async def test_oauth_unverified_rejection_names_itself_and_never_logs_the_email(
 
     lines = [rec.getMessage() for rec in api_log.records if rec.name == "api" and " → " in rec.getMessage()]
     assert lines[-1].endswith("(oauth-email-unverified)\x1b[0m")
-    app_records = [rec for rec in api_log.records if not rec.name.startswith("httpx")]
+    app_records = _app_records(api_log)
     assert app_records
     assert all("MARKER" not in rec.getMessage() for rec in app_records)
 
 
-async def test_discord_without_an_email_keeps_its_existing_400(oauth):
-    """Pre-existing behaviour, pinned so the new check does not swallow it: this
-    is a presence test in the callback and runs before the helper is reached."""
+async def test_discord_without_an_email_is_refused_with_its_own_reason(oauth):
+    """A presence test in the callback, before the helper is reached. It used to be
+    a reason-less 400; every refusal now names itself in the access log."""
     oauth.provider.userinfo["email"] = None
 
     r = await _login(oauth, "discord")
 
-    assert r.status_code == 400
-    assert r.json()["detail"] == "Discord account must have a verified email"
-    assert oauth.seen["reject_reason"] is None
+    _assert_refused(r, "email-missing", "discord")
+    assert oauth.seen["reject_reason"] == "oauth-email-missing"
     assert await _rows(oauth, User) == []
+
+
+# ── A provider login never links into an account that has a password ─────────
+#
+# Registration never proves the address, so a password on an account means only
+# that someone typed that address into the signup form. Linking a verified
+# provider login into it would join the proven owner of the mailbox, silently,
+# into an account someone else may hold the password to. The link is refused
+# instead, with no writes and no session changes; the mailbox owner can always
+# claim the account through Forgot password. An account with no password can only
+# have been made by a provider login, so provider to provider linking stays.
+
+async def _password_hash(o, user_id: int):
+    """A fresh column read. The app and the test share one session, so an ORM
+    attribute would show whatever the request left in the identity map."""
+    return (await o.db.execute(select(User.password_hash).where(User.id == user_id))).scalar_one()
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_link_into_a_password_account_is_refused(oauth, provider, test_user):
+    """The regression test for the finding."""
+    oauth.provider.userinfo["email"] = test_user.email
+    original_hash = await _password_hash(oauth, test_user.id)
+
+    r = await _login(oauth, provider)
+
+    _assert_refused(r, "has-password", provider)
+    assert oauth.seen["reject_reason"] == "oauth-email-has-password"
+    assert await _rows(oauth, OAuthAccount) == []
+    assert await _password_hash(oauth, test_user.id) == original_hash
+    assert await oauth.redis.keys("refresh:*") == []
+    assert all("refresh_token" not in c for c in _set_cookies(r))
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_refused_link_leaves_existing_sessions_alone(oauth, provider, test_user):
+    """No session changes: whoever is signed in with the password stays signed in."""
+    login = await oauth.client.post(
+        "/api/auth/login", json={"email": test_user.email, "password": "password123"},
+    )
+    assert login.status_code == 200
+    oauth.provider.userinfo["email"] = test_user.email
+
+    _assert_refused(await _login(oauth, provider), "has-password", provider)
+
+    assert (await oauth.client.post("/api/auth/refresh")).status_code == 200
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_returning_user_with_a_password_is_untouched(oauth, provider, test_user):
+    """A password account that already has this provider linked resolves on the
+    provider id, before the link step is ever reached."""
+    oauth.db.add(OAuthAccount(user_id=test_user.id, provider=provider, provider_user_id="provider-user-1"))
+    await oauth.db.commit()
+    oauth.provider.userinfo["email"] = test_user.email
+    original_hash = await _password_hash(oauth, test_user.id)
+
+    r = await _login(oauth, provider)
+
+    assert r.status_code == 307
+    assert oauth.seen["reject_reason"] is None
+    assert await _password_hash(oauth, test_user.id) == original_hash
+    assert len(await _rows(oauth, OAuthAccount)) == 1
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_any_password_blocks_a_new_link(oauth, provider, test_user):
+    """The rule is about the password, not about how many providers are linked: a
+    password account that already has one provider cannot gain the other."""
+    other = "discord" if provider == "google" else "google"
+    oauth.db.add(OAuthAccount(user_id=test_user.id, provider=other, provider_user_id="someone-else"))
+    await oauth.db.commit()
+    oauth.provider.userinfo["email"] = test_user.email
+
+    r = await _login(oauth, provider)
+
+    _assert_refused(r, "has-password", provider)
+    (link,) = await _rows(oauth, OAuthAccount)
+    assert link.provider == other
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_has_password_refusal_names_itself_and_never_logs_the_email(oauth, provider, test_user, api_log):
+    oauth.provider.userinfo["email"] = test_user.email
+
+    await _login(oauth, provider)
+
+    lines = [rec.getMessage() for rec in api_log.records if rec.name == "api" and " → " in rec.getMessage()]
+    # Still named on the access line even though it is a 303 now, not a 400:
+    # /api/auth lines always carry the reason.
+    assert "303" in lines[-1]
+    assert lines[-1].endswith("(oauth-email-has-password)\x1b[0m")
+    app_records = _app_records(api_log)
+    assert app_records
+    assert all(test_user.email not in rec.getMessage() for rec in app_records)
+
+
+# ── Refusals go to the login page, not to a JSON body ────────────────────────
+
+@pytest.mark.parametrize(
+    ("reason", "code"),
+    [
+        ("oauth-email-has-password", "has-password"),
+        ("oauth-email-unverified", "email-unverified"),
+        ("oauth-email-missing", "email-missing"),
+        ("oauth-provider-error", "cancelled"),
+        # One code for every state failure: the guard was built to say nothing
+        # about which check failed, and the URL is visible to the user.
+        ("oauth-state-missing", "expired"),
+        ("oauth-state-no-cookie", "expired"),
+        ("oauth-state-mismatch", "expired"),
+        ("oauth-state-unknown", "expired"),
+        ("oauth-state-replayed", "expired"),
+        ("oauth-code-missing", "failed"),
+        ("oauth-exchange-failed", "failed"),
+        ("oauth-userinfo-failed", "failed"),
+        ("something-added-later", "failed"),
+        (None, "failed"),
+    ],
+)
+def test_public_oauth_error_code(reason, code):
+    assert auth_routes._public_oauth_error(reason) == code
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_refusal_url_carries_nothing_from_the_request(oauth, provider):
+    """_assert_refused already matches the whole Location. This spells out why: every
+    request-controlled field is loaded with a marker and none of it reaches the URL."""
+    r = await oauth.client.get(
+        f"/api/auth/{provider}/callback",
+        params={"code": "MARKER", "state": "MARKER", "error": "MARKER", "error_description": "MARKER"},
+        headers={"Cookie": f"{OAUTH_STATE_COOKIE}=MARKER"},
+    )
+
+    _assert_refused(r, "expired", provider)
+    assert "MARKER" not in r.headers["location"]
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_callback_without_a_code_names_itself(oauth, provider):
+    state = await _begin(oauth, provider)
+
+    r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"state": state})
+
+    _assert_refused(r, "failed", provider)
+    assert oauth.seen["reject_reason"] == "oauth-code-missing"
+    assert oauth.provider.calls == []
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+@pytest.mark.parametrize(
+    ("attr", "reason", "calls"),
+    [("token_status", "oauth-exchange-failed", 1), ("userinfo_status", "oauth-userinfo-failed", 2)],
+)
+async def test_oauth_provider_refusing_us_names_itself(oauth, provider, attr, reason, calls):
+    setattr(oauth.provider, attr, 400)
+
+    r = await _login(oauth, provider)
+
+    _assert_refused(r, "failed", provider)
+    assert oauth.seen["reject_reason"] == reason
+    assert len(oauth.provider.calls) == calls
+    assert await _rows(oauth, User) == []
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_unconfigured_provider_stays_a_loud_501(oauth, provider, monkeypatch):
+    """Our configuration, not a refusal of the user: it is not dressed up as a
+    redirect to the login page."""
+    state = await _begin(oauth, provider)
+    monkeypatch.setattr(auth_routes, f"{provider.upper()}_CLIENT_ID", "")
+
+    r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": state})
+
+    assert r.status_code == 501
+    assert "not configured" in r.json()["detail"]

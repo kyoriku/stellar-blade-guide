@@ -2,6 +2,7 @@
 Authentication routes - register, login, refresh, logout, OAuth.
 """
 
+import functools
 import logging
 
 import httpx
@@ -332,7 +333,8 @@ async def _get_or_create_oauth_user(
     Find existing OAuth account → return its user.
     No OAuth account but email exists → link the provider to that account.
     Neither → create new user + OAuth account.
-    The last two only run for an email the provider has verified.
+    The last two only run for an email the provider has verified, and the link
+    is refused when the existing account has a password.
 
     email_verified is whatever the provider's JSON held, judged here rather than
     coerced by the caller.
@@ -369,10 +371,20 @@ async def _get_or_create_oauth_user(
             ),
         )
 
-    # 2. Email already registered — link provider
+    # 2. Email already registered: link the provider, unless the account has a password
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if user:
+        # A password means the account came from registration, and registration never
+        # proves the address. Linking would join the proven owner of this mailbox,
+        # silently, into an account someone else may hold the password to. Refuse
+        # instead: whoever registered signs in with the password, and the mailbox
+        # owner can always claim the account through Forgot password. An account with
+        # no password can only have been made by a provider login, so provider to
+        # provider linking is unaffected.
+        if user.password_hash is not None:
+            request.state.reject_reason = "oauth-email-has-password"
+            raise HTTPException(status_code=400, detail="This email is registered with a password.")
         db.add(OAuthAccount(user_id=user.id, provider=provider, provider_user_id=provider_user_id))
         await db.commit()
         return user
@@ -430,6 +442,52 @@ async def _require_oauth_state(request: Request, provider: str, state: str | Non
     )
 
 
+# What the login page is told about a refused callback. Deliberately coarser than
+# the access-log reason: the state guard was built to say nothing about which check
+# failed, and the URL is visible to the user. The client maps these codes to fixed
+# sentences and never renders the parameter itself.
+_PUBLIC_OAUTH_ERRORS = {
+    "oauth-email-has-password": "has-password",
+    "oauth-email-unverified": "email-unverified",
+    "oauth-email-missing": "email-missing",
+    "oauth-provider-error": "cancelled",
+}
+
+
+def _public_oauth_error(reason: str | None) -> str:
+    if reason in _PUBLIC_OAUTH_ERRORS:
+        return _PUBLIC_OAUTH_ERRORS[reason]
+    if reason and reason.startswith("oauth-state-"):
+        return "expired"
+    return "failed"
+
+
+def _refusals_redirect_to_login(provider: str):
+    """A refused callback is a browser navigation, so a JSON body strands the user
+    on a blank page with no way back. Send them to the login page with a code it
+    knows how to explain."""
+    def decorate(callback):
+        @functools.wraps(callback)
+        async def wrapper(*args, **kwargs):
+            try:
+                return await callback(*args, **kwargs)
+            except HTTPException as exc:
+                # 5xx is our fault or our config (the 501), not a refusal: leave it
+                # loud, and leave it to error_handler.
+                if exc.status_code >= 500:
+                    raise
+                reason = getattr(kwargs["request"].state, "reject_reason", None)
+                # Only a fixed code and a fixed provider name go into the URL.
+                # Nothing from the request is ever echoed there.
+                url = f"{FRONTEND_URL}/login?oauth_error={_public_oauth_error(reason)}&provider={provider}"
+                # 303, not the success path's 307, so a refusal stays distinguishable
+                # on the access line. exc.headers carries the state-cookie clear
+                # where the guard set one.
+                return RedirectResponse(url, status_code=303, headers=exc.headers)
+        return wrapper
+    return decorate
+
+
 # Google
 
 @router.get("/google")
@@ -450,6 +508,7 @@ async def google_login(request: Request):
 
 @router.get("/google/callback")
 @limiter.limit("20/minute")
+@_refusals_redirect_to_login("google")
 async def google_callback(
     request: Request,
     response: Response,
@@ -461,6 +520,7 @@ async def google_callback(
     await _require_oauth_state(request, "google", state, error)
 
     if not code:
+        request.state.reject_reason = "oauth-code-missing"
         raise HTTPException(status_code=400, detail="Bad request")
     
     if not GOOGLE_CLIENT_ID or not GOOGLE_REDIRECT_URI:
@@ -482,6 +542,7 @@ async def google_callback(
             },
         )
         if token_resp.status_code != 200:
+            request.state.reject_reason = "oauth-exchange-failed"
             raise HTTPException(status_code=400, detail="We couldn't complete Google sign-in. Please try again.")
 
         google_token = token_resp.json().get("access_token")
@@ -492,6 +553,7 @@ async def google_callback(
             headers={"Authorization": f"Bearer {google_token}"},
         )
         if userinfo_resp.status_code != 200:
+            request.state.reject_reason = "oauth-userinfo-failed"
             raise HTTPException(status_code=400, detail="We couldn't complete Google sign-in. Please try again.")
 
         info = userinfo_resp.json()
@@ -538,6 +600,7 @@ async def discord_login(request: Request):
 
 @router.get("/discord/callback")
 @limiter.limit("20/minute")
+@_refusals_redirect_to_login("discord")
 async def discord_callback(
     request: Request,
     response: Response,
@@ -549,6 +612,7 @@ async def discord_callback(
     await _require_oauth_state(request, "discord", state, error)
 
     if not code:
+        request.state.reject_reason = "oauth-code-missing"
         raise HTTPException(status_code=400, detail="Bad request")
 
     if not DISCORD_CLIENT_ID or not DISCORD_REDIRECT_URI:
@@ -571,6 +635,7 @@ async def discord_callback(
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         if token_resp.status_code != 200:
+            request.state.reject_reason = "oauth-exchange-failed"
             raise HTTPException(status_code=400, detail="We couldn't complete Discord sign-in. Please try again.")
 
         discord_token = token_resp.json().get("access_token")
@@ -581,6 +646,7 @@ async def discord_callback(
             headers={"Authorization": f"Bearer {discord_token}"},
         )
         if userinfo_resp.status_code != 200:
+            request.state.reject_reason = "oauth-userinfo-failed"
             raise HTTPException(status_code=400, detail="We couldn't complete Discord sign-in. Please try again.")
 
         info = userinfo_resp.json()
@@ -588,6 +654,7 @@ async def discord_callback(
     provider_user_id = info["id"]
     email = info.get("email")
     if not email:
+        request.state.reject_reason = "oauth-email-missing"
         raise HTTPException(status_code=400, detail="Discord account must have a verified email")
 
     username = info.get("username", email.split("@")[0])
