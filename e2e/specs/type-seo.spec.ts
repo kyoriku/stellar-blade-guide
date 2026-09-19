@@ -54,8 +54,8 @@ test.describe('type page seo', () => {
     ['cosmetics', 'drone-appearances'],
     ['cosmetics', 'lily-outfits'],
     ['cosmetics', 'adam-outfits'],
-    ['materials', 'supply-boxes'],
-    ['materials', 'supply-chests'],
+    ['collectibles', 'supply-boxes'],
+    ['collectibles', 'supply-chests'],
   ];
   for (const [category, slug] of PAGES) {
     test(`${slug} title count equals the live count line`, async ({ page }) => {
