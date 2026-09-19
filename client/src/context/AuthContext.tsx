@@ -36,7 +36,7 @@ interface AuthResponse {
 // access token is NEVER stored here; it stays in memory only.
 const USER_CACHE = 'sb_user'
 
-type CachedUser = Pick<AuthUser, 'id' | 'username' | 'avatar_url' | 'role'>
+type CachedUser = Pick<AuthUser, 'id' | 'username' | 'avatar_url' | 'role' | 'has_password'>
 
 function readCachedUser(): AuthUser | null {
   try {
@@ -139,8 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return
     try {
-      const { id, username, avatar_url, role } = user
-      localStorage.setItem(USER_CACHE, JSON.stringify({ id, username, avatar_url, role }))
+      // has_password is cached so a provider-only account's Settings is right on
+      // first paint instead of flashing a change-password form it cannot use.
+      const { id, username, avatar_url, role, has_password } = user
+      localStorage.setItem(USER_CACHE, JSON.stringify({ id, username, avatar_url, role, has_password }))
     } catch { /* localStorage unavailable / quota — non-fatal */ }
   }, [user])
 

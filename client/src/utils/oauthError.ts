@@ -46,6 +46,12 @@ const NOTICES: Record<string, (name: string | null) => OAuthNotice> = {
     text: name ? `${name} sign-in was cancelled.` : 'Sign-in was cancelled.',
     tone: 'neutral',
   }),
+  // Password login stays vague about a deactivated account. This can say it, because
+  // the person has just proven who they are to the provider.
+  deactivated: () => ({
+    text: 'This account has been deactivated.',
+    tone: 'error',
+  }),
   expired: () => ({
     text: 'That sign-in attempt expired or was interrupted. Please try again.',
     tone: 'error',

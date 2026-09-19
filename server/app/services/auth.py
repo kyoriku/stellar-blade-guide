@@ -74,6 +74,9 @@ def user_to_dict(user: User) -> dict:
         "avatar_url": user.avatar_url,
         "role": user.role,
         "created_at": user.created_at.isoformat(),
+        # The client cannot otherwise know, and Settings shows a change-password form
+        # that a provider-only account can never use.
+        "has_password": user.password_hash is not None,
     }
 
 

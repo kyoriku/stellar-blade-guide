@@ -10,6 +10,10 @@ export interface AuthUser {
   avatar_url: string | null
   role: 'user' | 'moderator' | 'admin'
   created_at: string
+  // False for an account that signs in with a provider only. Optional because a user
+  // restored from an sb_user cache written before this field existed does not have
+  // it; "unknown" must behave like "has one", which is what the UI always assumed.
+  has_password?: boolean
 }
 
 export interface AuthContextValue {

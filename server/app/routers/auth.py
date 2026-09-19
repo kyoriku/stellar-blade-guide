@@ -7,7 +7,7 @@ import logging
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
 
@@ -250,8 +250,11 @@ async def forgot_password(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Send a password reset email if the account exists.
-    Always returns 204 regardless — never reveal whether an email is registered.
+    Send a password reset email if the account has a password.
+
+    204 with an empty body for a password account, an unknown address and a
+    deactivated account alike, so those three cannot be told apart. The one
+    exception is a provider-only account, which is told so: see below.
     """
     result = await db.execute(select(User).where(User.email == body.email, User.is_active == True))
     user = result.scalar_one_or_none()
@@ -265,6 +268,13 @@ async def forgot_password(
         except Exception as e:
             logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
             # Don't expose email errors to the client
+    elif user:
+        # A provider-only account has no password, and never gets one: one account,
+        # one way in, which is also why no reset token is minted here. "Check your
+        # email" would leave this person waiting for a message that never comes, so
+        # the page is told the truth instead. It does reveal that the address has an
+        # account; register's "Email already registered" already tells anyone that.
+        return JSONResponse({"status": "no_password"})
 
 
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
@@ -320,6 +330,16 @@ DISCORD_REDIRECT_URI = settings.DISCORD_REDIRECT_URI
 FRONTEND_URL = settings.FRONTEND_URL
 
 
+def _refuse_if_deactivated(request: Request, user: User) -> None:
+    # Password login and /refresh already ignore a deactivated account. This path did
+    # not, so a deactivated user was handed tokens that failed everywhere, and in the
+    # link step gained a new provider link on the way. They have just proven who they
+    # are, so unlike password login this can say what is wrong.
+    if not user.is_active:
+        request.state.reject_reason = "oauth-account-inactive"
+        raise HTTPException(status_code=400, detail="This account has been deactivated.")
+
+
 async def _get_or_create_oauth_user(
     request: Request,
     db: AsyncSession,
@@ -350,7 +370,9 @@ async def _get_or_create_oauth_user(
     oauth_account = result.scalar_one_or_none()
     if oauth_account:
         result = await db.execute(select(User).where(User.id == oauth_account.user_id))
-        return result.scalar_one()
+        user = result.scalar_one()
+        _refuse_if_deactivated(request, user)
+        return user
 
     # From here on the email is the only thing tying this login to a user row, so
     # it has to be one the provider vouches for. Unverified, anyone can put a
@@ -376,6 +398,9 @@ async def _get_or_create_oauth_user(
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if user:
+        # First, or a deactivated password account would be told below to sign in with
+        # a password that will not work.
+        _refuse_if_deactivated(request, user)
         # A password means the account came from registration, and registration never
         # proves the address. Linking would join the proven owner of this mailbox,
         # silently, into an account someone else may hold the password to. Refuse
@@ -462,6 +487,7 @@ _PUBLIC_OAUTH_ERRORS = {
     "oauth-email-unverified": "email-unverified",
     "oauth-email-missing": "email-missing",
     "oauth-provider-error": "cancelled",
+    "oauth-account-inactive": "deactivated",
 }
 
 
