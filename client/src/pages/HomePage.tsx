@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Book, Layers, Compass, Zap, Box, Sparkles, ChevronRight, ArrowRight, Map } from 'lucide-react'
-import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
+import { Book, Layers, Compass, Zap, Sparkles, ChevronRight, ArrowRight, Map } from 'lucide-react'
+import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation'
 import { LEVEL_IMAGES } from '../constants/categoryImages'
 import { buildSrcSet, thumbnailUrl } from '../utils/image'
 import { usePrefetch } from '../hooks/usePrefetch'
@@ -210,38 +210,27 @@ function HomePage() {
               <h2 className="text-lg font-bold text-gray-100">Find by Type</h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <CategoryCard
                 title="Collectibles"
-                description="Cans, Documents, Memorysticks, Passcodes, Camps"
                 icon={<Compass size={18} />}
                 to="/collectibles"
-                count={COLLECTIBLES.length}
+                types={COLLECTIBLES}
                 imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/spire-4/tower-outer-wall/stellar-blade-20240809025324.webp"
               />
               <CategoryCard
                 title="Upgrades"
-                description="Beta Cores, Body Cores, Weapon Cores, Exospines, Gear, Tumbler Expansion Modules, Drone Upgrade Modules"
                 icon={<Zap size={18} />}
                 to="/upgrades"
-                count={UPGRADES.length}
+                types={UPGRADES}
                 imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/silent-street/stellar-blade-20240514035151.webp"
               />
               <CategoryCard
                 title="Cosmetics"
-                description="Nano Suits, Glasses, Earrings, Hairstyles, Drone Appearances, Lily Outfits, Adam Outfits"
                 icon={<Sparkles size={18} />}
                 to="/cosmetics"
-                count={COSMETICS.length}
+                types={COSMETICS}
                 imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260320183427.webp"
-              />
-              <CategoryCard
-                title="Materials"
-                description="Supply Boxes, Supply Chests"
-                icon={<Box size={18} />}
-                to="/materials"
-                count={MATERIALS.length}
-                imageUrl="https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/stellar-blade-20240514060129.webp"
               />
             </div>
           </div>
@@ -251,50 +240,81 @@ function HomePage() {
   )
 }
 
+// The image is two fifths of the card at every width, and the card is the whole container
+// below lg and four of the main grid's six tracks from lg. Between breakpoints this
+// overestimates, since `container` caps below 100vw, which only ever picks a larger variant.
+const SIZES = '(min-width: 1024px) calc((100vw - 47px) * 4 / 15), calc((100vw - 26px) * 2 / 5)';
+
+const NBSP = '\u00A0';
+// A small cyan dot painted in each type name's left padding. The padding plus the word space
+// before it make the gap between names, so the dot sits 4px (6px from sm) into the padding
+// to land midway. A background, not a glyph, because the padding is an exact width on every
+// system font and the list is clipped by exactly that width.
+const NAME_WITH_DOT =
+  'pl-3 sm:pl-4 bg-no-repeat bg-[length:8px_8px] bg-[position:0px_46%] sm:bg-[position:2px_46%] ' +
+  'bg-[radial-gradient(circle,var(--color-cyan-400)_1.25px,transparent_1.75px)]';
+
 interface CategoryCardProps {
   title: string;
-  description: string;
   icon: React.ReactNode;
   to: string;
-  count: number;
+  types: readonly { name: string }[];
   imageUrl: string;
 }
 
-function CategoryCard({ title, description, icon, to, count, imageUrl }: CategoryCardProps) {
+function CategoryCard({ title, icon, to, types, imageUrl }: CategoryCardProps) {
   return (
-    <Link
-      to={to}
-      className="group block"
-    >
-      <div className="bg-secondary border border-zinc-800 rounded-lg overflow-hidden h-full
+    <Link to={to} className="group block">
+      <div className="bg-secondary border border-zinc-800 rounded-lg overflow-hidden flex
                     hover:border-zinc-700 hover:bg-secondary/80 transition-all duration-200
                     hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
 
-        {/* Image */}
-        <div className="aspect-4/3 sm:aspect-video relative overflow-hidden">
+        {/* The image share and ratio are the walkthrough list's phone card
+            (WalkthroughsListPage) at every width, so the two lists read as one pattern, and
+            16:9 shows the whole screenshot. The ratio is a floor, not a fixed size: as a
+            stretched flex item the wrapper follows the row height, so on phones, where the
+            text panel is the taller of the two, the image crops to match it. */}
+        <div className="overflow-hidden shrink-0 w-2/5 aspect-video">
           <img
             src={thumbnailUrl(imageUrl)}
             srcSet={buildSrcSet(imageUrl)}
-            sizes="(min-width: 1024px) calc((100vw - 62px) / 3), calc(50vw - 18px)"
+            sizes={SIZES}
             alt={title}
             className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/10 to-transparent" />
-          <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 drop-shadow-lg">
-              <span className="text-cyan-400">{icon}</span>
-              <span className="text-sm font-semibold text-gray-100">{title}</span>
-            </div>
-            <span className="text-xs text-gray-200 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
-              {count} types
-            </span>
-          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-3">
-          <p className="text-sm text-gray-300 line-clamp-1">{description}</p>
+        <div className="flex-1 min-w-0 flex flex-col justify-center p-3 sm:gap-3 sm:p-4">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span className="text-cyan-400">{icon}</span>
+            <span className="text-base sm:text-lg font-semibold text-gray-100 group-hover:text-white transition-colors">{title}</span>
+            {/* From sm up only: the walkthrough list's phone card this mirrors has none. */}
+            <ArrowRight className="hidden sm:block w-4 h-4 text-gray-400 ml-auto group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all" />
+          </div>
+
+          {/* Screen readers get the plain comma list; the dotted one below is visual only. */}
+          <span className="sr-only">{types.map(t => t.name).join(', ')}</span>
+
+          {/* Every name carries its separator dot in its own left padding, and the list is
+              pulled left by that padding inside a clipping wrapper. Whichever name starts a
+              line has its dot land in the clipped strip, so no line starts or ends with a
+              separator and a clamped line always ends on a name. */}
+          <div aria-hidden="true" className="overflow-hidden mt-1 sm:mt-0">
+            {/* Only plain inline content goes inside the clamp. Safari's line clamp lays out
+                inline-blocks, zero-width breaks and positioned children wrongly (one line,
+                a stray ellipsis), so names are kept whole with no-break spaces instead of
+                nowrap boxes, items are separated by real spaces, and the dot is a background
+                on the padding instead of a glyph in a fixed-width box. Two lines at every
+                width: on phones that holds the walkthrough list card's height, and below
+                1280 it keeps the three text blocks equal where Upgrades would need a third. */}
+            <p className="-ml-3 sm:-ml-4 text-sm text-gray-300 line-clamp-2">
+              {types.flatMap(t => [
+                <span key={t.name} className={NAME_WITH_DOT}>{t.name.replace(/ /g, NBSP)}</span>,
+                ' ',
+              ])}
+            </p>
+          </div>
         </div>
       </div>
     </Link>

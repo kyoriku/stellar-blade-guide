@@ -1,6 +1,6 @@
 """
 Tests for the collectibles route endpoints: level-grouped by type, category sub-routes
-(upgrades, cosmetics, materials), levels-by-name, and cross-category isolation.
+(upgrades, cosmetics), levels-by-name, and cross-category isolation.
 
 All endpoints are public (no auth). Uses a local fixture chain because Collectible.description
 is sqlalchemy.dialects.postgresql.JSONB — SQLiteTypeCompiler has no visit_JSONB handler, so
@@ -32,8 +32,7 @@ from app.models.collectibles import (
     collectible_type_mappings,  # noqa: F401 — registers junction table with Base metadata
 )
 from app.routers.collectibles import (
-    collectibles_router, upgrades_router, cosmetics_router,
-    materials_router, levels_router,
+    collectibles_router, upgrades_router, cosmetics_router, levels_router,
 )
 
 MINIMAL_DESCRIPTION = {"type": "text", "content": "Test description"}
@@ -97,7 +96,6 @@ async def collectibles_client(collectibles_db_session):
     app.include_router(collectibles_router, prefix="/api")
     app.include_router(upgrades_router, prefix="/api")
     app.include_router(cosmetics_router, prefix="/api")
-    app.include_router(materials_router, prefix="/api")
     app.include_router(levels_router, prefix="/api")
 
     async def override_get_db():
@@ -286,19 +284,6 @@ async def test_get_cosmetics_by_type_returns_results(
     await _seed_collectible(collectibles_db_session, loc.id, ctype)
 
     r = await collectibles_client.get("/api/cosmetics/hairstyles")
-    assert r.status_code == 200
-    assert len(r.json()) == 1
-
-
-async def test_get_materials_by_type_returns_results(
-    collectibles_client, collectibles_db_session
-):
-    level = await _seed_level(collectibles_db_session)
-    loc = await _seed_location(collectibles_db_session, level.id)
-    ctype = await _seed_type(collectibles_db_session, "Can", "materials", "cans")
-    await _seed_collectible(collectibles_db_session, loc.id, ctype)
-
-    r = await collectibles_client.get("/api/materials/cans")
     assert r.status_code == 200
     assert len(r.json()) == 1
 

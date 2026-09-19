@@ -10,8 +10,8 @@ import CollectibleSection from '../components/CollectibleSection'
 import ErrorPage from './ErrorPage'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
-import { COLLECTIBLES, UPGRADES, MATERIALS, COSMETICS } from '../constants/navigation'
-import { COLLECTIBLE_IMAGES, UPGRADE_IMAGES, COSMETIC_IMAGES, MATERIAL_IMAGES } from '../constants/categoryImages'
+import { COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation'
+import { COLLECTIBLE_IMAGES, UPGRADE_IMAGES, COSMETIC_IMAGES } from '../constants/categoryImages'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
@@ -39,20 +39,17 @@ function CollectibleTypeDetailPage() {
 
   // Detect category from URL
   const category = location.pathname.startsWith('/upgrades') ? 'upgrades'
-    : location.pathname.startsWith('/materials') ? 'materials'
-      : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
-        : 'collectibles';
+    : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
+      : 'collectibles';
 
   // Validate type exists
   const collectibleTypes = COLLECTIBLES.map(c => c.slug);
   const upgradeTypes = UPGRADES.map(u => u.slug);
-  const materialTypes = MATERIALS.map(m => m.slug);
   const cosmeticTypes = COSMETICS.map(c => c.slug);
 
   const validTypes = category === 'upgrades' ? upgradeTypes
-    : category === 'materials' ? materialTypes
-      : category === 'cosmetics' ? cosmeticTypes
-        : collectibleTypes;
+    : category === 'cosmetics' ? cosmeticTypes
+      : collectibleTypes;
 
   const isValidType = validTypes.some(type =>
     type.toLowerCase().replace(/\s+/g, '-') === typeName
@@ -73,9 +70,8 @@ function CollectibleTypeDetailPage() {
 
   // Find current and next type - use the appropriate array based on category
   const typeArray = category === 'upgrades' ? upgradeTypes
-    : category === 'materials' ? materialTypes
-      : category === 'cosmetics' ? cosmeticTypes
-        : collectibleTypes;
+    : category === 'cosmetics' ? cosmeticTypes
+      : collectibleTypes;
 
   const currentIndex = typeArray.findIndex(type => type === typeName);
   const nextType = currentIndex >= 0 && currentIndex < typeArray.length - 1
@@ -283,7 +279,6 @@ function CollectibleTypeDetailPage() {
   );
 
   const categoryImageMap = category === 'upgrades' ? UPGRADE_IMAGES
-    : category === 'materials' ? MATERIAL_IMAGES
     : category === 'cosmetics' ? COSMETIC_IMAGES
     : COLLECTIBLE_IMAGES;
   const collectibleOgImage = typeName && categoryImageMap[typeName]
@@ -363,9 +358,8 @@ function CollectibleTypeDetailPage() {
   }, [sortedLevelData, sortMode, activeLevelName, displayTypeName]);
 
   const categoryLabel = category === 'upgrades' ? 'All Upgrades'
-    : category === 'materials' ? 'All Materials'
-      : category === 'cosmetics' ? 'All Cosmetics'
-        : 'All Collectibles'
+    : category === 'cosmetics' ? 'All Cosmetics'
+      : 'All Collectibles'
 
   const handleTocNavigate = useCallback((href: string) => {
     const targetId = href.substring(1);
@@ -394,7 +388,7 @@ function CollectibleTypeDetailPage() {
   }, [sortedLevelData, sortMode, setActiveSection]);
 
   // Check for invalid type FIRST (before loading state). isValidType is the
-  // real gate (it also 404s cross-category URLs like /materials/passcodes);
+  // real gate (it also 404s cross-category URLs like /upgrades/passcodes);
   // the isTypeSlug clauses are runtime-redundant and exist to narrow typeName
   // for the TYPE_SEO lookup.
   if (!isValidType || !typeName || !isTypeSlug(typeName)) {

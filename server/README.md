@@ -148,7 +148,7 @@ All routes are mounted under `/api` and rate limited per route.
 | `/api/health` | liveness check (also reports Redis connectivity) |
 | `/api/levels` | a level's collectibles grouped by location |
 | `/api/collectibles` | collectibles by type |
-| `/api/upgrades`, `/api/cosmetics`, `/api/materials` | category-scoped collectible reads (five routers defined in `routers/collectibles.py`) |
+| `/api/upgrades`, `/api/cosmetics` | category-scoped collectible reads (four routers defined in `routers/collectibles.py`) |
 | `/api/walkthroughs` | walkthroughs by mission type and slug |
 | `/api/search` | full-text search across collectibles, walkthroughs, and levels (`pg_trgm` + `tsvector`, scores merged) |
 | `/api/auth` | register / login / logout, token refresh, OAuth (Google, Discord), password reset |

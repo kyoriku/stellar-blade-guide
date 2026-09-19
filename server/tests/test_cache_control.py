@@ -113,7 +113,7 @@ async def test_search_is_still_publicly_cacheable(headers_client):
 
 @pytest.mark.parametrize("path", [
     "/api/collectibles/", "/api/levels/xion", "/api/walkthroughs/",
-    "/api/upgrades/gear", "/api/cosmetics/glasses", "/api/materials/supply-boxes",
+    "/api/upgrades/gear", "/api/cosmetics/glasses", "/api/collectibles/supply-boxes",
 ])
 async def test_purgeable_content_routes_keep_the_long_ttl(headers_client, path):
     """These are enumerable and purged by URL after every seed, so a 30-day

@@ -88,6 +88,8 @@ async def seed_database():
                 CollectibleType(name='Document', category_group='collectibles', display_order=3, slug='documents'),
                 CollectibleType(name='Memorystick', category_group='collectibles', display_order=4, slug='memorysticks'),
                 CollectibleType(name='Passcode', category_group='collectibles', display_order=5, slug='passcodes'),
+                CollectibleType(name='Supply Box', category_group='collectibles', display_order=6, slug='supply-boxes'),
+                CollectibleType(name='Supply Chest', category_group='collectibles', display_order=7, slug='supply-chests'),
 
                 # Upgrades category
                 CollectibleType(name='Beta Core', category_group='upgrades', display_order=1, slug='beta-cores'),
@@ -106,10 +108,6 @@ async def seed_database():
                 CollectibleType(name='Lily Outfit', category_group='cosmetics', display_order=5, slug='lily-outfits'),
                 CollectibleType(name='Adam Outfit', category_group='cosmetics', display_order=6, slug='adam-outfits'),
                 CollectibleType(name='Hairstyle', category_group='cosmetics', display_order=7, slug='hairstyles'),
-
-                # Materials category
-                CollectibleType(name='Supply Box', category_group='materials', display_order=1, slug='supply-boxes'),
-                CollectibleType(name='Supply Chest', category_group='materials', display_order=2, slug='supply-chests'),
             ]
             session.add_all(types_data)
 

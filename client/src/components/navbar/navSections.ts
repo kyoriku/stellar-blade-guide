@@ -1,14 +1,14 @@
 import type { LucideIcon } from 'lucide-react'
-import { Book, Map, Package, Zap, Sparkles, Box } from 'lucide-react'
-import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, COSMETICS, MATERIALS } from '../../constants/navigation'
+import { Book, Map, Package, Zap, Sparkles } from 'lucide-react'
+import { WALKTHROUGHS, LEVELS, COLLECTIBLES, UPGRADES, COSMETICS } from '../../constants/navigation'
 
-export type SectionKey = 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics' | 'materials'
+export type SectionKey = 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics'
 
 // Discriminated prefetch routing — maps 1:1 to the functions returned by usePrefetch().
 export type PrefetchSpec =
   | { kind: 'walkthrough' }
   | { kind: 'level' }
-  | { kind: 'type'; category: 'collectibles' | 'upgrades' | 'cosmetics' | 'materials' }
+  | { kind: 'type'; category: 'collectibles' | 'upgrades' | 'cosmetics' }
 
 export interface NavSection {
   key: SectionKey
@@ -28,5 +28,4 @@ export const NAV_SECTIONS: readonly NavSection[] = [
   { key: 'collectibles', label: 'Collectibles', icon: Package, basePath: '/collectibles', items: COLLECTIBLES, prefetch: { kind: 'type', category: 'collectibles' }, itemActiveMatch: 'exact', scrollable: false, mobileMaxH: 'max-h-[1000px]' },
   { key: 'upgrades', label: 'Upgrades', icon: Zap, basePath: '/upgrades', items: UPGRADES, prefetch: { kind: 'type', category: 'upgrades' }, itemActiveMatch: 'exact', scrollable: false, mobileMaxH: 'max-h-[1000px]' },
   { key: 'cosmetics', label: 'Cosmetics', icon: Sparkles, basePath: '/cosmetics', items: COSMETICS, prefetch: { kind: 'type', category: 'cosmetics' }, itemActiveMatch: 'exact', scrollable: false, mobileMaxH: 'max-h-[1000px]' },
-  { key: 'materials', label: 'Materials', icon: Box, basePath: '/materials', items: MATERIALS, prefetch: { kind: 'type', category: 'materials' }, itemActiveMatch: 'exact', scrollable: false, mobileMaxH: 'max-h-[1000px]' },
 ] as const

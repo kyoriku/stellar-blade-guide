@@ -60,7 +60,7 @@ load_dotenv()
 # The apex is canonical (www 301s to it), so one host covers the cached space.
 PUBLIC_BASE = 'https://stellarbladeguide.com'
 CACHED_PREFIXES = ('/api/walkthroughs', '/api/levels', '/api/collectibles',
-                   '/api/upgrades', '/api/cosmetics', '/api/materials')
+                   '/api/upgrades', '/api/cosmetics')
 BATCH_SIZE = 30      # Pro plan: purge-by-URL takes at most 30 per call
 SANITY_FLOOR = 50    # a smaller result means the derivation broke somewhere and
                      # the caller must full-purge. Note the drift: 50 was set
@@ -107,7 +107,7 @@ def parse_navigation():
                  if not line.strip().startswith('//')
                  if (s := re.search(r"slug:\s*'([^']+)'", line))]
         sections[name] = slugs
-    for required in ('WALKTHROUGHS', 'COLLECTIBLES', 'UPGRADES', 'COSMETICS', 'MATERIALS'):
+    for required in ('WALKTHROUGHS', 'COLLECTIBLES', 'UPGRADES', 'COSMETICS'):
         if not sections.get(required):
             raise RuntimeError(f'navigation.ts parse: section {required} empty or missing')
     return sections
@@ -153,12 +153,15 @@ def load_db_sources():
 
 
 # category_group -> navigation.ts section. NULL resolves as collectibles, the
-# same default app/services/collectibles.py applies.
+# same default app/services/collectibles.py applies. 'materials' is retired
+# (its two types moved into collectibles, Sept 2026) and kept only as an alias:
+# a manifest written by a seed that ran against a not-yet-flipped DB then still
+# narrows to the collectibles section instead of widening the whole purge.
 SECTION_FOR_GROUP = {
     'collectibles': 'COLLECTIBLES',
     'upgrades': 'UPGRADES',
     'cosmetics': 'COSMETICS',
-    'materials': 'MATERIALS',
+    'materials': 'COLLECTIBLES',
 }
 
 
@@ -215,7 +218,7 @@ def scope_sources(changed, db, nav):
     index_prefixes = set()
     if levels or any(by_section.values()):
         index_prefixes.update(('/api/collectibles', '/api/levels', '/api/upgrades',
-                               '/api/cosmetics', '/api/materials'))
+                               '/api/cosmetics'))
     if pairs:
         index_prefixes.add('/api/walkthroughs')
     return scoped_db, scoped_nav, index_prefixes
@@ -237,7 +240,6 @@ def derive_urls(routes, db, nav, index_prefixes=None):
         '/api/collectibles': nav['COLLECTIBLES'],
         '/api/upgrades': nav['UPGRADES'],
         '/api/cosmetics': nav['COSMETICS'],
-        '/api/materials': nav['MATERIALS'],
     }
     urls = []
     for route in routes:

@@ -24,7 +24,6 @@ function Navbar() {
     levels: false,
     collectibles: false,
     upgrades: false,
-    materials: false,
     cosmetics: false,
   });
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,9 +70,11 @@ function Navbar() {
   // Focus restore target when the drawer is dismissed via the backdrop —
   // inert blurs the drawer's focused element to <body> otherwise.
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const [openDropdown, setOpenDropdown] = useState<null | 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'materials' | 'cosmetics'>(null);
+  // The desktop links, handed to the search so its input can size itself around them.
+  const navLinksRef = useRef<HTMLDivElement>(null);
+  const [openDropdown, setOpenDropdown] = useState<null | 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics'>(null);
 
-  const handleMouseEnter = (menu: 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'materials' | 'cosmetics') => {
+  const handleMouseEnter = (menu: 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics') => {
     setOpenDropdown(menu);
   };
 
@@ -81,12 +82,11 @@ function Navbar() {
   // currently browsing auto-expands (for sibling nav). Home, index pages, and
   // any non-category route leave every section closed — no arbitrary default.
   const getActiveSectionFromPath = (pathname: string) => {
-    const closed = { walkthroughs: false, levels: false, collectibles: false, upgrades: false, materials: false, cosmetics: false };
+    const closed = { walkthroughs: false, levels: false, collectibles: false, upgrades: false, cosmetics: false };
     if (pathname.startsWith('/walkthroughs/')) return { ...closed, walkthroughs: true };
     if (pathname.startsWith('/levels/')) return { ...closed, levels: true };
     if (pathname.startsWith('/collectibles/')) return { ...closed, collectibles: true };
     if (pathname.startsWith('/upgrades/')) return { ...closed, upgrades: true };
-    if (pathname.startsWith('/materials/')) return { ...closed, materials: true };
     if (pathname.startsWith('/cosmetics/')) return { ...closed, cosmetics: true };
     return closed;
   };
@@ -94,13 +94,12 @@ function Navbar() {
   // Single-open accordion: opening a section collapses any other (mirrors the
   // desktop dropdowns, where only one menu is open at a time). Tapping the
   // already-open section closes it.
-  const toggleSection = (section: 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'materials' | 'cosmetics') => {
+  const toggleSection = (section: 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics') => {
     setOpenSections(prev => ({
       walkthroughs: false,
       levels: false,
       collectibles: false,
       upgrades: false,
-      materials: false,
       cosmetics: false,
       [section]: !prev[section],
     }));
@@ -112,8 +111,7 @@ function Navbar() {
       : location.pathname.startsWith('/collectibles') ? 'collectibles'
         : location.pathname.startsWith('/upgrades') ? 'upgrades'
           : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
-            : location.pathname.startsWith('/materials') ? 'materials'
-              : null;
+            : null;
 
   // Resolve the prefetch function for a section from its discriminated config.
   const prefetchFor = (s: NavSection) => (slug: string) => {
@@ -243,8 +241,11 @@ function Navbar() {
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-1">
+            {/* Desktop Navigation, grouped with the logo. Spread by justify-between the links
+                sat between a wide logo and a narrow control cluster, off the page centre in
+                a direction that flipped with the logo's width. On the left, the free space
+                falls between the links and the controls, which is where the search opens. */}
+            <div ref={navLinksRef} className="hidden lg:flex items-center space-x-1 ml-6 mr-auto">
               {NAV_SECTIONS.map((s) => (
                 <DesktopDropdown
                   key={s.key}
@@ -262,7 +263,7 @@ function Navbar() {
 
             {/* Auth UI */}
             <div className="flex items-center gap-1">
-              <SearchTrigger onExpand={() => setOpenDropdown(null)} />
+              <SearchTrigger onExpand={() => setOpenDropdown(null)} avoidRef={navLinksRef} />
               {isAuthenticated && user ? (
                 <NotificationBell />
               ) : isRestoring ? (

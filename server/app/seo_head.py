@@ -47,7 +47,6 @@ _CATEGORY_SECTIONS = {
     'collectibles': _SEO['types']['collectibles'],
     'upgrades': _SEO['types']['upgrades'],
     'cosmetics': _SEO['types']['cosmetics'],
-    'materials': _SEO['types']['materials'],
 }
 
 

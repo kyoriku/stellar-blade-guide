@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import type { RefObject } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { useSearch } from '../hooks/useSearch'
@@ -6,10 +7,19 @@ import { SearchResults } from './SearchResults'
 
 interface SearchTriggerProps {
   onExpand?: () => void
+  /** The nav links the open input may overlay; its width snaps so it never cuts one mid-word. */
+  avoidRef?: RefObject<HTMLElement | null>
 }
 
-export function SearchTrigger({ onExpand }: SearchTriggerProps) {
+// Queries are short, so the input is narrower than the results panel under it.
+const INPUT_WIDTH = 256
+// Below this the box is too small to type in, so it grows over a link instead of shrinking.
+const MIN_INPUT_WIDTH = 176
+const LINK_GAP = 4
+
+export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [inputWidth, setInputWidth] = useState(INPUT_WIDTH)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -19,6 +29,34 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
   onExpandRef.current = onExpand
   const navigate = useNavigate()
   const { data, isLoading, isError, error } = useSearch(query)
+
+  // The input opens leftward over the navbar. Where its edge lands against the links
+  // depends on the system font's label widths, so it is measured: if the default width
+  // would cut a link, shrink to stop short of it, or grow to cover it whole when
+  // shrinking would leave too little room to type.
+  useLayoutEffect(() => {
+    if (!isExpanded) return
+    const measure = () => {
+      const box = containerRef.current
+      const links = avoidRef?.current
+      let width = INPUT_WIDTH
+      if (box && links) {
+        const right = box.getBoundingClientRect().right
+        const edge = right - INPUT_WIDTH
+        const cut = [...links.children]
+          .map(c => c.getBoundingClientRect())
+          .find(r => r.left < edge && edge < r.right)
+        if (cut) {
+          const shrunk = right - (cut.right + LINK_GAP)
+          width = Math.round(shrunk >= MIN_INPUT_WIDTH ? shrunk : right - (cut.left - LINK_GAP))
+        }
+      }
+      setInputWidth(width)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [isExpanded, avoidRef])
 
   // Reset activeIndex when query changes
   useEffect(() => {
@@ -101,7 +139,7 @@ export function SearchTrigger({ onExpand }: SearchTriggerProps) {
   return (
     <div ref={containerRef} className="hidden lg:block relative">
       <div className="w-9 h-10" aria-hidden="true" />
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-88 z-50">
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 z-50" style={{ width: inputWidth }}>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           <input

@@ -59,7 +59,7 @@ test.describe('navbar mobile search', () => {
       page.getByRole('button', { name: label }).filter({ visible: true });
     await expect(sectionButton('Walkthroughs')).toHaveAttribute('aria-expanded', 'true');
     await expect(sectionButton('Walkthroughs').locator('svg.lucide-chevron-right')).toHaveClass(/rotate-90/);
-    for (const label of ['Levels', 'Collectibles', 'Upgrades', 'Cosmetics', 'Materials']) {
+    for (const label of ['Levels', 'Collectibles', 'Upgrades', 'Cosmetics']) {
       await expect(sectionButton(label)).toHaveAttribute('aria-expanded', 'false');
       const content = sectionButton(label).locator('xpath=following-sibling::div[1]');
       await expect(content).toHaveClass(/max-h-0/);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { COLLECTIBLES, UPGRADES, COSMETICS, MATERIALS } from './navigation'
+import { COLLECTIBLES, UPGRADES, COSMETICS } from './navigation'
 import { TYPE_SEO, isTypeSlug } from './typeSeo'
 import { TYPE_DESCRIPTIONS } from './typeDescriptions'
 
@@ -8,7 +8,7 @@ import { TYPE_DESCRIPTIONS } from './typeDescriptions'
 // hardcoded to the seeded dataset; the e2e type-seo spec pins them against the
 // live count line, so a data correction must update both together.
 
-const ALL_TYPES = [...COLLECTIBLES, ...UPGRADES, ...COSMETICS, ...MATERIALS]
+const ALL_TYPES = [...COLLECTIBLES, ...UPGRADES, ...COSMETICS]
 
 describe('TYPE_SEO', () => {
   it('covers every type slug with non-empty copy', () => {

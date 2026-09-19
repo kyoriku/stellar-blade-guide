@@ -40,7 +40,6 @@ STATIC_PAGES = [
     ('/collectibles', '0.8', 'weekly'),
     ('/upgrades', '0.8', 'weekly'),
     ('/cosmetics', '0.8', 'weekly'),
-    ('/materials', '0.8', 'weekly'),
     ('/walkthroughs', '0.8', 'weekly'),
     ('/blood-rain', '0.7', 'monthly'),
     ('/disclaimer', '0.3', 'monthly'),
@@ -67,6 +66,8 @@ TYPE_ROUTE_MAP = {
     'Document': ('collectibles', 'documents'),
     'Memorystick': ('collectibles', 'memorysticks'),
     'Passcode': ('collectibles', 'passcodes'),
+    'Supply Box': ('collectibles', 'supply-boxes'),
+    'Supply Chest': ('collectibles', 'supply-chests'),
     # Upgrades
     'Beta Core': ('upgrades', 'beta-cores'),
     'Body Core': ('upgrades', 'body-cores'),
@@ -75,11 +76,6 @@ TYPE_ROUTE_MAP = {
     'Gear': ('upgrades', 'gear'),
     'Tumbler Expansion Module': ('upgrades', 'tumbler-expansion-modules'),
     'Drone Upgrade Module': ('upgrades', 'drone-upgrade-modules'),
-    # Materials
-    'Supply Box': ('materials', 'supply-boxes'),
-    'Supply Chest': ('materials', 'supply-chests'),
-    'Locked Chest': ('materials', 'locked-chests'),
-    # 'Item': ('materials', 'items'),
     # Cosmetics
     'Nano Suit': ('cosmetics', 'nano-suits'),
     'Glasses': ('cosmetics', 'glasses'),
@@ -217,8 +213,8 @@ def generate_sitemap():
 
     # Collectible type pages — grouped by category, composed of that type's
     # collectibles with their level/location grouping
-    type_count = {'collectibles': 0, 'upgrades': 0, 'materials': 0, 'cosmetics': 0}
-    category_pages = {'collectibles': [], 'upgrades': [], 'materials': [], 'cosmetics': []}
+    type_count = {'collectibles': 0, 'upgrades': 0, 'cosmetics': 0}
+    category_pages = {'collectibles': [], 'upgrades': [], 'cosmetics': []}
     location_meta = {lo['id']: lo for lo in db['locations']}
     level_meta = {lv['id']: lv for lv in db['levels']}
 
@@ -240,7 +236,7 @@ def generate_sitemap():
         category_pages[category].append((path, content_hash(typed)))
         type_count[category] += 1
 
-    for category in ['collectibles', 'upgrades', 'cosmetics', 'materials']:
+    for category in ['collectibles', 'upgrades', 'cosmetics']:
         for path, h in category_pages[category]:
             pages.append((path, '0.8', 'weekly'))
             hashes[path] = h
@@ -310,7 +306,6 @@ def generate_sitemap():
     print(f"  Collectibles: {type_count['collectibles']}")
     print(f"  Upgrades: {type_count['upgrades']}")
     print(f"  Cosmetics: {type_count['cosmetics']}")
-    print(f"  Materials: {type_count['materials']}")
     print(f"  Walkthrough pages: {len(seen_types) + len(db['walkthroughs'])}")
     print(f"  Dynamic pages stamped today: {changed}/{len(pages)}")
     print(f"State sidecar: {STATE_FILE}")

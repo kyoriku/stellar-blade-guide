@@ -11,7 +11,6 @@ CONTENT_PATTERNS = [
     "collectibles:*",
     "cosmetics:*",
     "upgrades:*",
-    "materials:*",
     "walkthroughs:*",
 ]
 

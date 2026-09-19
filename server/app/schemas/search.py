@@ -3,7 +3,7 @@ from typing import Optional
 
 
 class SearchResult(BaseModel):
-    kind: str           # "collectibles"|"upgrades"|"cosmetics"|"materials"|"walkthrough"|"level"
+    kind: str           # "collectibles"|"upgrades"|"cosmetics"|"walkthrough"|"level"
     id: int
     title: str
     snippet: Optional[str]   # description excerpt, subtitle, or None

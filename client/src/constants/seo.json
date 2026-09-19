@@ -19,7 +19,7 @@
     },
     "/collectibles": {
       "title": "All Collectibles & Where to Find Them",
-      "description": "Browse all 5 collectible types in Stellar Blade. Find every Document, Can, Memorystick, and more with screenshots and locations."
+      "description": "Browse all 7 collectible types in Stellar Blade. Find every Document, Can, Memorystick, Supply Box, and more with screenshots and locations."
     },
     "/upgrades": {
       "title": "All Upgrades: Cores, Exospines & Gear",
@@ -28,10 +28,6 @@
     "/cosmetics": {
       "title": "All Cosmetics: Outfits, Glasses & More",
       "description": "Browse all 7 cosmetic types in Stellar Blade. Find every Nano Suit, Earring, and pair of Glasses with screenshots and locations."
-    },
-    "/materials": {
-      "title": "All Supply Box & Chest Locations",
-      "description": "All 151 Supply Boxes and 42 Supply Chests in Stellar Blade with screenshots and locations."
     }
   },
   "levels": {
@@ -112,6 +108,16 @@
         "title": "All 91 Camp Locations",
         "description": "Complete guide to all 91 Camps in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
         "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-7/construction-zone/stellar-blade-20240514060358.webp"
+      },
+      "supply-boxes": {
+        "title": "All 151 Supply Box Locations",
+        "description": "Complete guide to all 151 Supply Boxes in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240722050837.webp"
+      },
+      "supply-chests": {
+        "title": "All 42 Supply Chest Locations",
+        "description": "Complete guide to all 42 Supply Chests in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
+        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240716064542.webp"
       }
     },
     "upgrades": {
@@ -186,18 +192,6 @@
         "title": "All 8 Adam Outfit Locations",
         "description": "All 8 Adam Outfits in Stellar Blade across Base, NG+, and DLC. Filter by cycle, sort A–Z, with screenshots and location guides.",
         "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/default/default/stellar-blade-20260402231429.webp"
-      }
-    },
-    "materials": {
-      "supply-boxes": {
-        "title": "All 151 Supply Box Locations",
-        "description": "Complete guide to all 151 Supply Boxes in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
-        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240722050837.webp"
-      },
-      "supply-chests": {
-        "title": "All 42 Supply Chest Locations",
-        "description": "Complete guide to all 42 Supply Chests in Stellar Blade. Every location with screenshots and detailed descriptions to help you find them all.",
-        "image": "https://img.stellarbladeguide.com/stellar-blade/collectibles/eidos-9/fallen-overpass/stellar-blade-20240716064542.webp"
       }
     }
   },
