@@ -34,6 +34,7 @@ import app.core.auth as core_auth
 import app.core.cache as core_cache
 import app.routers.auth as auth_routes
 from app.db.database import Base, get_db
+from app.core.usernames import username_problem
 from app.middleware.logging import add_logging_middleware
 from app.services.oauth_state import OAUTH_STATE_COOKIE, OAUTH_STATE_TTL
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
@@ -1154,3 +1155,86 @@ async def test_oauth_unconfigured_provider_stays_a_loud_501(oauth, provider, mon
 
     assert r.status_code == 501
     assert "not configured" in r.json()["detail"]
+
+
+# ── Provider names go through the site's username rule ───────────────────────
+#
+# Registration and Settings validate a typed name. The OAuth create step used to store
+# the provider's display name unchecked, so a name ending in a zero-width space was a
+# different string from an existing username, passed the uniqueness check, and rendered
+# exactly like it in a comment thread. The cleaner and the rule are pinned on their own
+# in test_usernames.py; these pin what the create step does with them.
+
+NAME_FIELD = {"google": "name", "discord": "username"}
+
+
+async def _usernames(o) -> list[str]:
+    return list((await o.db.execute(select(User.username).order_by(User.id))).scalars())
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_cannot_create_an_invisible_duplicate_of_an_existing_name(oauth, provider, test_user):
+    """The regression test for the finding."""
+    oauth.provider.userinfo[NAME_FIELD[provider]] = f"{test_user.username}\u200b"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    assert await _usernames(oauth) == ["testuser", "testuser1"]
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_generated_name_never_differs_from_an_existing_one_only_by_case(oauth, provider, test_user):
+    """The site is choosing this name, so it costs the user nothing to keep it from
+    landing as "TestUser" beside an existing "testuser"."""
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "TestUser"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    assert await _usernames(oauth) == ["testuser", "TestUser1"]
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_username_is_never_taken_from_the_email(oauth, provider):
+    """A username is public and the email is shown to nobody but its owner. The old
+    fallback published the address's local part when the provider sent no name."""
+    oauth.provider.userinfo.pop(NAME_FIELD[provider])
+    oauth.provider.userinfo["email"] = "distinctive-local-part@example.com"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    (username,) = await _usernames(oauth)
+    assert username.startswith("user_")
+    assert "distinctive" not in username
+    assert username_problem(username) is None
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_created_name_is_one_settings_would_accept(oauth, provider):
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "\U0001f3ae  O'Brien.  \U0001f3ae"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    (username,) = await _usernames(oauth)
+    assert username == "O_Brien"
+    assert username_problem(username) is None
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_returning_user_is_never_renamed(oauth, provider):
+    """Only the create step names anyone. Whatever the provider calls them later, a
+    returning user keeps the name they have."""
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "First Name"
+    assert (await _login(oauth, provider)).status_code == 307
+
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "someone else\u200b"
+    assert (await _login(oauth, provider)).status_code == 307
+
+    assert await _usernames(oauth) == ["First_Name"]
+
+
+@pytest.mark.parametrize(("provider", "stored"), [("google", "OAuth_User"), ("discord", "oauthuser")])
+async def test_oauth_ordinary_names_are_stored_exactly_as_before(oauth, provider, stored):
+    """Nothing moves for an ordinary name: Google's spaces still become underscores,
+    Discord's username is kept as is."""
+    assert (await _login(oauth, provider)).status_code == 307
+    assert await _usernames(oauth) == [stored]

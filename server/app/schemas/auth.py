@@ -3,6 +3,8 @@ from typing import Annotated
 from email_validator import validate_email, EmailNotValidError
 from pydantic import AfterValidator, BaseModel, field_validator
 
+from app.core.usernames import username_problem
+
 
 # Validated email type used by all auth request models. Mirrors what Pydantic's
 # EmailStr did (strip + email-validator + normalized form, so stored/looked-up
@@ -27,10 +29,9 @@ class RegisterRequest(BaseModel):
     @classmethod
     def username_valid(cls, v: str) -> str:
         v = v.strip()
-        if len(v) < 3 or len(v) > 50:
-            raise ValueError("Username must be between 3 and 50 characters")
-        if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError("Username may only contain letters, numbers, hyphens, and underscores")
+        problem = username_problem(v)
+        if problem:
+            raise ValueError(problem)
         return v
 
     @field_validator("password")

@@ -1,11 +1,12 @@
-// Mirrors the server-side username rule (`username_valid` in
-// server/app/schemas/users.py, duplicated in server/app/schemas/auth.py): 3–50 characters,
+// Mirrors the server-side username rule (`username_problem` in
+// server/app/core/usernames.py, used by registration, Settings and the OAuth create
+// step): 3–50 characters,
 // only letters / numbers / hyphens / underscores, with at least one alphanumeric.
 //
 // Uses Unicode property escapes (\p{L}, \p{N}) to match Python's str.isalnum(),
 // which accepts non-ASCII letters and digits — a plain [a-zA-Z0-9] check would
 // wrongly reject valid names like "José" or "你好". Keep in sync with the server
-// validators; the server remains the final authority.
+// rule; the server remains the final authority.
 const USERNAME_CHARS = /^[\p{L}\p{N}_-]+$/u;
 const HAS_ALNUM = /[\p{L}\p{N}]/u;
 

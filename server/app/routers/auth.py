@@ -9,7 +9,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.config.settings import settings
 from app.db.database import get_db
@@ -27,6 +27,7 @@ from app.core.auth import (
 from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
+from app.core.usernames import username_from_provider
 from app.services.auth import (
     hash_password,
     verify_password,
@@ -326,7 +327,7 @@ async def _get_or_create_oauth_user(
     provider_user_id: str,
     email: str,
     email_verified: object,
-    username: str,
+    username: str | None,
     avatar_url: str | None,
 ) -> User:
     """
@@ -390,13 +391,23 @@ async def _get_or_create_oauth_user(
         return user
 
     # 3. Brand new user
-    # Ensure username is unique by appending a suffix if needed
-    base_username = username[:45]
+    # The provider's name is whatever the person typed there, so it goes through the
+    # same rule as a name typed here. Unchecked, a display name ending in a zero-width
+    # space is a different string from an existing username, passes the uniqueness
+    # check below, and renders exactly like it in a comment thread.
+    base_username = username_from_provider(username)
     final_username = base_username
     suffix = 1
     while True:
-        result = await db.execute(select(User).where(User.username == final_username))
-        if not result.scalar_one_or_none():
+        # Case-insensitive here, and only here: the site is choosing this name, so it
+        # costs the user nothing to keep it from landing as "Kyoriku" beside an
+        # existing "kyoriku". Lowered on both sides by the database so the comparison
+        # does not depend on Python and Postgres agreeing about non-ASCII case.
+        # .first(), because two existing rows may already differ only by case.
+        result = await db.execute(
+            select(User).where(func.lower(User.username) == func.lower(final_username))
+        )
+        if not result.scalars().first():
             break
         final_username = f"{base_username}{suffix}"
         suffix += 1
@@ -560,7 +571,10 @@ async def google_callback(
 
     provider_user_id = info["id"]
     email = info["email"]
-    username = info.get("name", email.split("@")[0]).replace(" ", "_")
+    # Raw on purpose. The create step cleans it, and only when it creates: a
+    # returning user is never renamed. No fallback to the email, which would publish
+    # part of the address as a public username.
+    username = info.get("name")
     avatar_url = info.get("picture")
 
     # The v2 userinfo endpoint spells it verified_email. email_verified is the
@@ -657,7 +671,7 @@ async def discord_callback(
         request.state.reject_reason = "oauth-email-missing"
         raise HTTPException(status_code=400, detail="Discord account must have a verified email")
 
-    username = info.get("username", email.split("@")[0])
+    username = info.get("username")
     avatar_hash = info.get("avatar")
     avatar_url = f"https://cdn.discordapp.com/avatars/{provider_user_id}/{avatar_hash}.png" if avatar_hash else None
 

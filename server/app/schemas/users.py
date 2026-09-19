@@ -2,6 +2,8 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, field_validator
 
+from app.core.usernames import username_problem
+
 
 class UserResponse(BaseModel):
     id: int
@@ -25,10 +27,9 @@ class UpdateProfileRequest(BaseModel):
         if v is None:
             return v
         v = v.strip()
-        if len(v) < 3 or len(v) > 50:
-            raise ValueError("Username must be between 3 and 50 characters")
-        if not v.replace("_", "").replace("-", "").isalnum():
-            raise ValueError("Username may only contain letters, numbers, hyphens, and underscores")
+        problem = username_problem(v)
+        if problem:
+            raise ValueError(problem)
         return v
 
 
