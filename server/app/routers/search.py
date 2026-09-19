@@ -28,11 +28,16 @@ async def search(
     db: AsyncSession = Depends(get_db),
 ):
     q_normalized = q.strip().lower()
+    # Opt-in access-log field (rendered by log_requests_middleware). Set before the
+    # lookup so a 500 still names the query that caused it.
+    request.state.search_query = q_normalized
     cache_key = f"search:{q_normalized}:{limit}"
 
     cached = await get_cache(cache_key)
     if cached:
         request.state.cache_status = "HIT"
+        # .get, not ["total"]: a log nicety must never be able to 500 the route.
+        request.state.search_total = cached.get("total")
         return cached
 
     request.state.cache_status = "MISS"
@@ -41,5 +46,6 @@ async def search(
     results = await _execute_search(db, q_normalized, limit)
     request.state.db_time = (time.time() - db_start) * 1000
     response = SearchResponse(query=q_normalized, total=len(results), results=results)
+    request.state.search_total = response.total
     await set_cache(cache_key, response.model_dump(), ttl=SEARCH_CACHE_TTL)
     return response

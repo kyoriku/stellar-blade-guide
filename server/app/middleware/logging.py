@@ -14,11 +14,14 @@ LOG_TZ = ZoneInfo("America/New_York")
 # access line, so it is neutralised first. Starlette's request.url.path already
 # drops \t \r \n (urlsplit), but every other control / line-break character —
 # ESC for ANSI injection, NUL, VT/FF, NEL, U+2028/9 — survives percent-decoding
-# and would otherwise land on the terminal / Railway stream verbatim.
+# and would otherwise land on the terminal / Railway stream verbatim. The search
+# text is handed over by its route (request.state) rather than read here, but it
+# is the user's input all the same.
 LOG_PATH_MAX = 256   # wide enough to keep a full sqlmap-style payload readable
 LOG_UA_MAX = 48      # parse_ua's browser branches have no cap of their own
 LOG_IP_MAX = 45      # longest textual IPv6 (incl. IPv4-mapped); header-derived, so untrusted
 LOG_COLO_MAX = 3     # IATA airport code; hard-sliced so the column never widens
+LOG_QUERY_MAX = 40   # search text; the API allows 100 and the line is already wide
 
 
 def sanitize_log_field(value: str, limit: int) -> str:
@@ -165,6 +168,17 @@ async def log_requests_middleware(request: Request, call_next):
         )
         if reason:
             log_line += f' {GRAY}({reason}){RESET}'
+
+    # Search text is opt-in: the search route sets request.state.search_query and
+    # this layer never reads the query string itself — the OAuth callbacks carry
+    # their authorization `code` there, so a generic rule would log credentials.
+    # Always the last field, so everything after `q=` is the user's text and a
+    # query cannot impersonate a later column.
+    search_query = getattr(request.state, "search_query", None)
+    if search_query is not None:
+        search_total = getattr(request.state, "search_total", None)
+        count = f'n={search_total:<2} ' if search_total is not None else ''
+        log_line += f' | {count}q={sanitize_log_field(search_query, LOG_QUERY_MAX)}'
 
     if response.status_code >= 500:
         logger.error(log_line)

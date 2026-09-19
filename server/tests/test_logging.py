@@ -18,7 +18,7 @@ import logging
 import re
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from httpx import ASGITransport, AsyncClient
 
@@ -26,8 +26,8 @@ import app.middleware.origin_check as origin_check_module
 from app.config.settings import settings
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.logging import (
-    LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_UA_MAX, add_logging_middleware,
-    parse_colo, sanitize_log_field,
+    LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX,
+    add_logging_middleware, parse_colo, sanitize_log_field,
 )
 from app.middleware.origin_check import add_origin_check_middleware
 from app.seo_head import MARKER, register_spa
@@ -311,3 +311,93 @@ async def test_missing_cf_ray_keeps_the_column_width(api_log):
         await c.get("/api/x")
     with_colo, without_colo = _access_lines(api_log)
     assert len(_strip_ansi(with_colo)) == len(_strip_ansi(without_colo))
+
+
+# ── search text: opt-in from the route, never read from the query string ─────
+#
+# The search line carries what was searched and how many results it found
+# (`n=0` is the content-gap signal). The scoping is structural, not a path
+# check: the middleware never reads a query string, it only renders what a
+# handler hands over on request.state. That matters because search is NOT the
+# only route with query params — the OAuth callbacks receive their
+# authorization `code` there, and a generic rule would log credentials.
+
+def _search_app(query, total=None, status=200):
+    """Stand-in for the search route: hands `query` (and `total`) to the access
+    log the way the real handler does."""
+    app = FastAPI()
+    add_logging_middleware(app)
+
+    @app.get("/api/search/")
+    async def fake_search(request: Request):
+        request.state.search_query = query
+        if total is not None:
+            request.state.search_total = total
+        return JSONResponse({"ok": True}, status_code=status)
+
+    return app
+
+
+async def test_query_string_is_never_logged_without_opt_in(api_log):
+    """The test that fails if this feature is ever 'generalised'."""
+    async with _client(_app_with()) as c:
+        await c.get("/api/auth/google/callback", params={"code": "SECRET-CODE", "q": "also-not-logged"})
+    (line,) = _access_lines(api_log)
+    assert "SECRET-CODE" not in line
+    assert "also-not-logged" not in line
+    assert "q=" not in line
+
+
+async def test_search_text_and_total_reach_the_access_line(api_log):
+    async with _client(_search_app("supply box", total=0)) as c:
+        # The URL's own q is deliberately different: what is logged is what the
+        # route handed over, not anything read from the query string.
+        await c.get("/api/search/", params={"q": "FROM-THE-URL"})
+    (line,) = _access_lines(api_log)
+    assert line.endswith("| /api/search/ | n=0  q=supply box")
+    assert "FROM-THE-URL" not in line
+
+
+async def test_search_total_is_padded_so_the_text_lines_up(api_log):
+    """limit caps at 50, so two characters; q= lands in one column down a burst."""
+    async with _client(_search_app("nano", total=0)) as c:
+        await c.get("/api/search/")
+    async with _client(_search_app("nano", total=12)) as c:
+        await c.get("/api/search/")
+    one_digit, two_digit = (_strip_ansi(line) for line in _access_lines(api_log))
+    assert two_digit.endswith("| n=12 q=nano")
+    assert one_digit.index(" q=") == two_digit.index(" q=")
+
+
+async def test_search_text_without_a_total_still_logs(api_log):
+    """The handler sets the text before the lookup and the total after it, so a
+    failure in between still names the query that caused it."""
+    async with _client(_search_app("supply box")) as c:
+        await c.get("/api/search/")
+    (line,) = _access_lines(api_log)
+    assert line.endswith("| /api/search/ | q=supply box")
+    assert "n=" not in line
+
+
+async def test_search_text_is_neutralised_and_capped(api_log):
+    hostile = "ab" + ANSI_PROBE + "\u2028" + "z" * 100
+    async with _client(_search_app(hostile, total=0)) as c:
+        await c.get("/api/search/")
+    (line,) = _access_lines(api_log)
+    assert len(line.splitlines()) == 1
+    assert ANSI_PROBE not in line
+    field = line.split(" q=", 1)[1]
+    assert field.startswith("ab\\x1b[2J\\u2028z")
+    assert field.endswith("…")
+    assert len(field) == LOG_QUERY_MAX + 1
+
+
+async def test_search_text_is_the_last_field_so_it_cannot_impersonate_one(api_log):
+    forged = "x | UA: Googlebot (referer)"
+    async with _client(_search_app(forged, status=500)) as c:  # >= 400 appends the UA
+        await c.get("/api/search/", headers={"user-agent": "Firefox/1.0"})
+    (line,) = _access_lines(api_log)
+    # The real UA is written before the search text...
+    assert line.index("UA: Firefox/1.0") < line.index(" q=")
+    # ...and everything after `q=` is the user's, verbatim, to end of line.
+    assert line.endswith(f"q={forged}")
