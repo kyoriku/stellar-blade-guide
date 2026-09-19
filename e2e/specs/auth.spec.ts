@@ -92,4 +92,60 @@ test.describe('auth', () => {
     await progressLoaded;
     await expect(accountMenu(page)).toBeVisible();
   });
+
+  // ── OAuth refusals land on /login with a code ────────────────────────────────
+  // The API redirects a refused provider callback to /login?oauth_error=<code>
+  // &provider=<name> instead of rendering JSON. The redirect itself needs a real
+  // provider, so it is pinned by the API's own tests; these pin what the page does
+  // with the parameters. Both are attacker-writable, so the page only ever looks
+  // them up: the sentences are pinned in client/src/utils/oauthError.test.ts.
+
+  const HAS_PASSWORD =
+    "This email is registered with a password. Sign in with your password, or use Forgot password if you don't know it.";
+
+  test('an OAuth refusal shows its sentence in the form error slot and cleans the URL', async ({ page }) => {
+    await page.goto('/login?oauth_error=has-password&provider=google');
+    await expect(page.locator('form div.text-red-400')).toHaveText(HAS_PASSWORD);
+    // Stripped, so a refresh or a bookmark does not show it again.
+    await expect(page).toHaveURL(/\/login$/);
+    await page.reload();
+    await expect(page.locator('form div.text-red-400')).toHaveCount(0);
+  });
+
+  test('a failed password attempt replaces the OAuth notice, never a second box', async ({ page }) => {
+    await page.goto('/login?oauth_error=has-password&provider=google');
+    await expect(page.locator('form div.text-red-400')).toHaveText(HAS_PASSWORD);
+    await page.getByLabel('Email').fill(user!.email);
+    await page.getByLabel('Password').fill('definitely-wrong-password');
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    const boxes = page.locator('form div.text-red-400');
+    await expect(boxes).toHaveCount(1);
+    await expect(boxes).not.toHaveText(HAS_PASSWORD);
+  });
+
+  test('a cancel is not red, and an unknown code still says something', async ({ page }) => {
+    await page.goto('/login?oauth_error=cancelled&provider=discord');
+    await expect(page.locator('form div.text-gray-300')).toHaveText('Discord sign-in was cancelled.');
+    await expect(page.locator('form div.text-red-400')).toHaveCount(0);
+
+    await page.goto('/login?oauth_error=%3Cb%3Enonsense&provider=%3Cb%3Enobody');
+    await expect(page.locator('form div.text-red-400')).toHaveText(
+      "We couldn't complete sign-in. Please try again."
+    );
+  });
+
+  test('a password sign-in after a refusal returns to where the provider button was pressed', async ({ page }) => {
+    // The provider button stores the return path and only a successful provider
+    // login consumes it. A refusal reloads the page, so without the fallback the
+    // password sign-in would land on the home page.
+    await page.goto('/login');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
+    await page.goto('/login?oauth_error=has-password&provider=google');
+    await page.getByLabel('Email').fill(user!.email);
+    await page.getByLabel('Password').fill(user!.password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(accountMenu(page)).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBeNull();
+  });
 });
