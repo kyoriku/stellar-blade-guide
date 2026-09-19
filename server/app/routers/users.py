@@ -93,7 +93,7 @@ async def delete_me(
 
 
 CYCLE_DISPLAY_ORDER = ("Base", "NG+", "NG++", "DLC")
-CATEGORY_DISPLAY_ORDER = ("collectibles", "upgrades", "cosmetics", "materials")
+CATEGORY_DISPLAY_ORDER = ("collectibles", "upgrades", "cosmetics")
 
 
 @router.get("/me/stats", response_model=UserStatsResponse)

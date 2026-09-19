@@ -68,7 +68,7 @@ class UserStatsResponse(BaseModel):
     total: OverallStat
     # Category rollups count each collectible once per category group (a
     # dual-typed item's two types share a group, so summing the type rows
-    # would double-count it). The four categories partition the catalog.
+    # would double-count it). The three categories partition the catalog.
     categories: List[CategoryStat]
     types: List[TypeStat]
     levels: List[LevelStat]

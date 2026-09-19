@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 collectibles_router = APIRouter(prefix="/collectibles", tags=["collectibles"])
 upgrades_router = APIRouter(prefix="/upgrades", tags=["upgrades"])
 cosmetics_router = APIRouter(prefix="/cosmetics", tags=["cosmetics"])
-materials_router = APIRouter(prefix="/materials", tags=["materials"])
 levels_router = APIRouter(prefix="/levels", tags=["levels"])
 
 
@@ -119,10 +118,3 @@ async def get_upgrades_by_type(type_name: str, request: Request, db: AsyncSessio
 async def get_cosmetics_by_type(type_name: str, request: Request, db: AsyncSession = Depends(get_db)):
     """Get cosmetics by type."""
     return await _get_items_by_type(type_name, "cosmetics", request, db)
-
-
-@materials_router.get("/{type_name}")
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
-async def get_materials_by_type(type_name: str, request: Request, db: AsyncSession = Depends(get_db)):
-    """Get materials by type."""
-    return await _get_items_by_type(type_name, "materials", request, db)

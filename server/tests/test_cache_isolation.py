@@ -18,14 +18,13 @@ from app.core.auth import _refresh_key
 
 # Every glob the seed/clear flow passes to invalidate_cache_pattern. Keep in
 # sync with the sources — a new content namespace added there belongs here:
-#   scripts/cache/clear_content_cache.py   (collectibles/cosmetics/upgrades/materials/walkthroughs)
+#   scripts/cache/clear_content_cache.py   (collectibles/cosmetics/upgrades/walkthroughs)
 #   scripts/db/seed_collectibles.py        (+ search)
 #   scripts/db/seed_walkthroughs.py        (walkthrough*)
 CONTENT_PATTERNS = [
     "collectibles:*",
     "cosmetics:*",
     "upgrades:*",
-    "materials:*",
     "walkthroughs:*",
     "search:*",
     "walkthrough*",

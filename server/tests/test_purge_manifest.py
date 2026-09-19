@@ -138,10 +138,9 @@ def test_clear_removes_and_is_idempotent():
 # scope_sources() / check_narrowed()
 
 NAV = {
-    'COLLECTIBLES': ['cans', 'memorysticks'],
+    'COLLECTIBLES': ['cans', 'memorysticks', 'supply-boxes'],
     'UPGRADES': ['gear'],
     'COSMETICS': ['glasses'],
-    'MATERIALS': ['supply-boxes'],
     'WALKTHROUGHS': ['main-story', 'side-quests'],
 }
 DB = {
@@ -235,6 +234,15 @@ def test_db_mission_type_is_mapped_to_the_request_slug():
 def test_unknown_category_group_raises():
     with pytest.raises(RuntimeError, match='unknown category_group'):
         scope_sources({**EMPTY, 'type_slugs': [('cans', 'nonsense')]}, DB, NAV)
+
+
+def test_retired_materials_group_narrows_to_collectibles():
+    """Supply Boxes/Chests moved into collectibles; a manifest written by a seed
+    that ran against a not-yet-flipped DB still says 'materials'. It must reach
+    the moved page instead of widening to the full surface."""
+    urls = narrowed_for(type_slugs=[('supply-boxes', 'materials')])
+    assert '/api/collectibles/supply-boxes' in urls
+    assert not any('/api/materials/' in u for u in urls)
 
 
 def test_type_slug_absent_from_navigation_raises():

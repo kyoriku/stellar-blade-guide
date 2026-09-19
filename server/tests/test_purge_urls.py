@@ -21,7 +21,6 @@ NAV = {
     'COLLECTIBLES': ['cans', 'memorysticks'],
     'UPGRADES': ['gear'],
     'COSMETICS': ['glasses'],
-    'MATERIALS': ['supply-boxes'],
 }
 
 
@@ -38,14 +37,13 @@ BASE_ROUTES = [
     route('/api/collectibles/{type_name}'),
     route('/api/upgrades/{type_name}'),
     route('/api/cosmetics/{type_name}'),
-    route('/api/materials/{type_name}'),
 ]
 
 
 def test_full_expansion_counts():
     urls = derive_urls(BASE_ROUTES, DB, NAV)
-    # 1 + 2 + 2 + 2 + 1 + 2 + 1 + 1 + 1
-    assert len(urls) == 13
+    # 1 + 2 + 2 + 2 + 1 + 2 + 1 + 1
+    assert len(urls) == 12
     assert f'{PUBLIC_BASE}/api/levels/eidos-7' in urls
     assert f'{PUBLIC_BASE}/api/walkthroughs/side-quests/looking-at-you' in urls
     assert f'{PUBLIC_BASE}/api/collectibles/memorysticks' in urls

@@ -172,8 +172,8 @@ async def test_tag_order_and_splice(client):
 
 
 async def test_cross_category_type_gets_404_head(client):
-    # The client 404s /materials/passcodes (wrong category); the head must too.
-    r = await client.get('/materials/passcodes')
+    # The client 404s /upgrades/passcodes (wrong category); the head must too.
+    r = await client.get('/upgrades/passcodes')
     assert f'<title data-seo="server">404 Page Not Found{SUFFIX}</title>' in r.text
     assert 'content="noindex, nofollow"' in r.text
 
@@ -369,10 +369,10 @@ async def test_real_files_bypass_injection(client):
 def test_seo_json_sections_complete():
     assert set(SEO) == {'site', 'home', 'index', 'levels', 'types',
                         'walkthroughTypes', 'pages', 'noindex', 'notFound'}
-    assert len(SEO['index']) == 6
+    assert len(SEO['index']) == 5
     assert len(SEO['levels']) == 10
     assert {k: len(v) for k, v in SEO['types'].items()} == {
-        'collectibles': 5, 'upgrades': 7, 'cosmetics': 7, 'materials': 2}
+        'collectibles': 7, 'upgrades': 7, 'cosmetics': 7}
     assert len(SEO['walkthroughTypes']) == 5
     assert len(SEO['pages']) == 4
     assert len(SEO['noindex']) == 7

@@ -142,7 +142,7 @@ def _group_by_level(collectibles, type_id: int = 0) -> list:
 
 
 async def _get_items_by_type(type_name: str, category: str, request: Request, db: AsyncSession):
-    """Shared handler for all category type endpoints (collectibles, upgrades, cosmetics, materials)."""
+    """Shared handler for all category type endpoints (collectibles, upgrades, cosmetics)."""
     cache_key = f"{category}:type:{cache_slug(type_name)}"
     cached_data = await get_cache(cache_key)
     if cached_data:
