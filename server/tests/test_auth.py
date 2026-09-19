@@ -13,6 +13,12 @@ all token operations hit the same in-memory FakeRedis.
 
 from __future__ import annotations
 
+import logging
+from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
+
+import httpx
+import pytest
 import pytest_asyncio
 import jwt
 from datetime import datetime, timedelta, timezone
@@ -20,10 +26,15 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, ASGITransport
+from redis.exceptions import ConnectionError as RedisConnectionError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
+import app.core.cache as core_cache
+import app.routers.auth as auth_routes
 from app.db.database import Base, get_db
+from app.middleware.logging import add_logging_middleware
+from app.services.oauth_state import OAUTH_STATE_COOKIE, OAUTH_STATE_TTL
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
 from app.middleware.rate_limit import setup_rate_limiter
 from app.middleware.exception_handlers import add_exception_handlers
@@ -410,3 +421,384 @@ async def test_protected_expired_token_returns_401(auth_client, test_user):
         headers={"Authorization": f"Bearer {expired_token}"},
     )
     assert r.status_code == 401
+
+
+# ── OAuth state (login CSRF) ─────────────────────────────────────────────────
+#
+# Without `state`, an attacker can start a login, keep their own authorization
+# code, and get a victim's browser to finish the callback with it: the victim is
+# now signed in to the attacker's account. The fix has two halves and these tests
+# pin both. The cookie binds the flow to the browser that started it; Redis is
+# the record of validity (expiry, single use, which provider). A valid Redis
+# record on its own is NOT enough, which is what the no-cookie test is for.
+#
+# Both providers run through one helper, so every test runs for both.
+
+PROVIDERS = ["google", "discord"]
+
+AUTHORIZE_PREFIX = {
+    # Everything before &state= must stay byte-identical to what the providers
+    # were sent before this change.
+    "google": (
+        "https://accounts.google.com/o/oauth2/v2/auth"
+        "?client_id=test-google-id&redirect_uri=http://test/api/auth/google/callback"
+        "&response_type=code&scope=openid%20email%20profile&access_type=offline&state="
+    ),
+    "discord": (
+        "https://discord.com/api/oauth2/authorize"
+        "?client_id=test-discord-id&redirect_uri=http://test/api/auth/discord/callback"
+        "&response_type=code&scope=identify%20email&state="
+    ),
+}
+
+GENERIC_DETAIL = {
+    "google": "We couldn't complete Google sign-in. Please try again.",
+    "discord": "We couldn't complete Discord sign-in. Please try again.",
+}
+
+
+class _FakeProvider:
+    """Recording stand-in for the httpx.AsyncClient the callbacks open. Answers
+    the token exchange and the userinfo read for either provider, and keeps every
+    call, so 'the provider was never contacted' is simply `calls == []`."""
+
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, **kwargs):  # httpx.AsyncClient(timeout=10)
+        return self
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    async def post(self, url, **kwargs):
+        self.calls.append(("POST", url, kwargs.get("data", {})))
+        return httpx.Response(200, json={"access_token": "provider-token"})
+
+    async def get(self, url, **kwargs):
+        self.calls.append(("GET", url, {}))
+        return httpx.Response(200, json={
+            "id": "provider-user-1",
+            "email": "oauth@example.com",
+            "name": "OAuth User",       # Google's field
+            "username": "oauthuser",    # Discord's field
+        })
+
+
+@pytest_asyncio.fixture
+async def oauth(auth_db_session, monkeypatch, fake_redis):
+    # store_refresh_token on the success path goes through core_auth's by-value
+    # binding. The state helpers read app.core.cache.redis_client at call time, so
+    # conftest's autouse patch already covers them.
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
+
+    # The router copies its provider config at import, and CI has no server/.env.
+    for name, value in {
+        "GOOGLE_CLIENT_ID": "test-google-id",
+        "GOOGLE_CLIENT_SECRET": "test-google-secret",
+        "GOOGLE_REDIRECT_URI": "http://test/api/auth/google/callback",
+        "DISCORD_CLIENT_ID": "test-discord-id",
+        "DISCORD_CLIENT_SECRET": "test-discord-secret",
+        "DISCORD_REDIRECT_URI": "http://test/api/auth/discord/callback",
+        "FRONTEND_URL": "http://test",
+    }.items():
+        monkeypatch.setattr(auth_routes, name, value)
+
+    # Swap the router's own `httpx` name rather than httpx.AsyncClient itself, so
+    # the test client below keeps the real one.
+    provider = _FakeProvider()
+    monkeypatch.setattr(auth_routes, "httpx", SimpleNamespace(AsyncClient=provider))
+
+    app = _make_auth_app(auth_db_session)
+    seen = {}
+
+    @app.middleware("http")
+    async def probe(request, call_next):
+        response = await call_next(request)
+        seen["reject_reason"] = getattr(request.state, "reject_reason", None)
+        return response
+
+    add_logging_middleware(app)  # outermost, as in main.py
+
+    async with AsyncClient(transport=ASGITransport(app), base_url="http://test") as c:
+        yield SimpleNamespace(client=c, app=app, seen=seen, provider=provider, redis=fake_redis)
+
+
+@pytest.fixture
+def api_log(caplog):
+    """The `api` logger does not propagate in production; force it on so caplog's
+    root handler sees access lines (same fixture as test_logging.py)."""
+    api_logger = logging.getLogger("api")
+    previous = api_logger.propagate
+    api_logger.propagate = True
+    with caplog.at_level(logging.DEBUG):
+        yield caplog
+    api_logger.propagate = previous
+
+
+def _key(provider: str, state: str) -> str:
+    return f"oauth_state:{provider}:{state}"
+
+
+async def _begin(o, provider: str) -> str:
+    """Start a login in o.client's browser: returns the state, leaves the cookie
+    in the jar."""
+    r = await o.client.get(f"/api/auth/{provider}")
+    assert r.status_code == 307
+    return parse_qs(urlsplit(r.headers["location"]).query)["state"][0]
+
+
+def _set_cookies(response) -> list[str]:
+    return response.headers.get_list("set-cookie")
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_login_sends_state_and_pins_it_to_the_browser(oauth, provider):
+    r = await oauth.client.get(f"/api/auth/{provider}")
+    assert r.status_code == 307
+
+    location = r.headers["location"]
+    assert location.startswith(AUTHORIZE_PREFIX[provider])
+    state = location[len(AUTHORIZE_PREFIX[provider]):]
+    assert len(state) >= 43  # token_urlsafe(32)
+
+    (cookie,) = _set_cookies(r)
+    assert cookie.startswith(f"{OAUTH_STATE_COOKIE}={state};")
+    assert "HttpOnly" in cookie
+    assert "SameSite=lax" in cookie  # Strict would be withheld on the provider's redirect back
+    assert "Path=/api/auth" in cookie
+    # One number for both halves: the cookie cannot outlive the record or vice versa.
+    assert f"Max-Age={OAUTH_STATE_TTL}" in cookie
+
+    assert await oauth.redis.get(_key(provider, state)) == "pending"
+    assert 0 < await oauth.redis.ttl(_key(provider, state)) <= OAUTH_STATE_TTL
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_callback_with_valid_state_logs_in_exactly_as_before(oauth, provider):
+    state = await _begin(oauth, provider)
+
+    r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": state})
+
+    assert r.status_code == 307
+    assert oauth.seen["reject_reason"] is None
+    prefix = "http://test/oauth/callback?token="
+    assert r.headers["location"].startswith(prefix)
+    payload = jwt.decode(r.headers["location"][len(prefix):], SECRET_KEY, algorithms=[ALGORITHM])
+    assert payload["type"] == "access"
+
+    refresh_cookie, state_cookie = _set_cookies(r)
+    assert refresh_cookie.startswith("refresh_token=")
+    assert "HttpOnly" in refresh_cookie and "Path=/api/auth" in refresh_cookie
+    assert state_cookie.startswith(f'{OAUTH_STATE_COOKIE}="";') and "Max-Age=0" in state_cookie
+
+    # Exactly the two provider calls, carrying the code that was presented.
+    (exchange, userinfo) = oauth.provider.calls
+    assert exchange[0] == "POST" and exchange[2]["code"] == "the-code"
+    assert userinfo[0] == "GET"
+
+    assert await oauth.redis.get(_key(provider, state)) == "used"
+
+    # The session it minted is an ordinary one.
+    assert (await oauth.client.post("/api/auth/refresh")).status_code == 200
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_callback_without_state_is_rejected(oauth, provider):
+    state = await _begin(oauth, provider)
+
+    r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code"})
+
+    assert r.status_code == 400
+    assert r.json()["detail"] == GENERIC_DETAIL[provider]
+    assert oauth.seen["reject_reason"] == "oauth-state-missing"
+    assert oauth.provider.calls == []
+    assert _set_cookies(r) == []  # the cookie never matched, so it is left alone
+    assert await oauth.redis.get(_key(provider, state)) == "pending"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_callback_with_wrong_state_is_rejected(oauth, provider):
+    state = await _begin(oauth, provider)
+
+    r = await oauth.client.get(
+        f"/api/auth/{provider}/callback", params={"code": "the-code", "state": "not-the-state"},
+    )
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-mismatch"
+    assert oauth.provider.calls == []
+    # A forged callback must not be able to knock out the victim's own in-flight
+    # login: their cookie and their pending state both survive it.
+    assert _set_cookies(r) == []
+    assert await oauth.redis.get(_key(provider, state)) == "pending"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_valid_state_from_another_browser_is_rejected(oauth, provider):
+    """The regression test for the bug. The attacker's state is genuinely valid
+    and unused in Redis; what the victim's browser lacks is the cookie. A design
+    that only checked the server-side record would pass this request."""
+    attacker_state = await _begin(oauth, provider)
+
+    async with AsyncClient(transport=ASGITransport(oauth.app), base_url="http://test") as victim:
+        r = await victim.get(
+            f"/api/auth/{provider}/callback", params={"code": "attackers-code", "state": attacker_state},
+        )
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-no-cookie"
+    assert oauth.provider.calls == []
+    assert "refresh_token" not in r.headers.get("set-cookie", "")
+    assert await oauth.redis.get(_key(provider, attacker_state)) == "pending"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_expired_state_is_rejected(oauth, provider):
+    state = await _begin(oauth, provider)
+    # Fast-forward past the TTL: the record is gone, the browser still has its cookie.
+    await oauth.redis.delete(_key(provider, state))
+
+    r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": state})
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-unknown"
+    assert oauth.provider.calls == []
+    (cleared,) = _set_cookies(r)  # it matched, so it is spent
+    assert cleared.startswith(f'{OAUTH_STATE_COOKIE}="";')
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_never_issued_state_is_rejected_and_mints_no_key(oauth, provider):
+    """Cookie and state agree, but the server never issued them. Pins XX on the
+    consume: without it this request would CREATE the key, and KEEPTTL on a new key
+    means no TTL, so junk callbacks would mint immortal keys."""
+    r = await oauth.client.get(
+        f"/api/auth/{provider}/callback",
+        params={"code": "the-code", "state": "forged"},
+        headers={"Cookie": f"{OAUTH_STATE_COOKIE}=forged"},
+    )
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-unknown"
+    assert oauth.provider.calls == []
+    assert await oauth.redis.keys("oauth_state:*") == []
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_replayed_state_is_rejected(oauth, provider):
+    state = await _begin(oauth, provider)
+    first = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": state})
+    assert first.status_code == 307
+
+    # The success cleared the cookie from the jar, so re-present it as a raw
+    # header: clearing a cookie is a request to the browser, and the server-side
+    # tombstone is what actually enforces single use.
+    oauth.client.cookies.clear()
+    r = await oauth.client.get(
+        f"/api/auth/{provider}/callback",
+        params={"code": "a-fresh-code", "state": state},
+        headers={"Cookie": f"{OAUTH_STATE_COOKIE}={state}"},
+    )
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-replayed"
+    assert len(oauth.provider.calls) == 2  # only the first request reached the provider
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_state_cannot_be_spent_at_the_other_provider(oauth, provider):
+    other = "discord" if provider == "google" else "google"
+    state = await _begin(oauth, provider)
+
+    r = await oauth.client.get(f"/api/auth/{other}/callback", params={"code": "the-code", "state": state})
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-unknown"
+    assert oauth.provider.calls == []
+    assert await oauth.redis.get(_key(provider, state)) == "pending"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_provider_error_is_rejected_without_leaking_it(oauth, provider, api_log):
+    """The user cancelled at the provider. `error` and `error_description` are
+    request-controlled, so only their presence is used: the values reach neither
+    the response nor any log line."""
+    state = await _begin(oauth, provider)
+    params = {"error": "access_denied-MARKER", "error_description": "cancelled-MARKER", "state": state}
+
+    r = await oauth.client.get(f"/api/auth/{provider}/callback", params=params)
+
+    assert r.status_code == 400
+    assert r.json()["detail"] == GENERIC_DETAIL[provider]
+    assert oauth.seen["reject_reason"] == "oauth-provider-error"
+    assert oauth.provider.calls == []
+    assert "MARKER" not in r.text
+    # Every application logger, not only the access log. The `httpx` logger is the
+    # test client announcing its own outgoing URL, which is not the app's doing.
+    app_records = [rec for rec in api_log.records if not rec.name.startswith("httpx")]
+    assert app_records  # the access line was captured, so the check below is not vacuous
+    assert all("MARKER" not in rec.getMessage() for rec in app_records)
+
+    # The abandoned flow is cleaned up: state spent, cookie cleared.
+    assert await oauth.redis.get(_key(provider, state)) == "used"
+    (cleared,) = _set_cookies(r)
+    assert cleared.startswith(f'{OAUTH_STATE_COOKIE}="";')
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_provider_error_does_not_excuse_a_bad_state(oauth, provider):
+    """Anyone can send ?error=. It only counts once the state has verified."""
+    async with AsyncClient(transport=ASGITransport(oauth.app), base_url="http://test") as stranger:
+        r = await stranger.get(
+            f"/api/auth/{provider}/callback", params={"error": "access_denied", "state": "whatever"},
+        )
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-no-cookie"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_non_ascii_state_is_a_mismatch_not_a_500(oauth, provider):
+    """hmac.compare_digest raises TypeError on non-ASCII str, and the state is
+    whatever the client sent. Pins the .encode()."""
+    await _begin(oauth, provider)
+
+    r = await oauth.client.get(f"/api/auth/{provider}/callback", params={"code": "the-code", "state": "étât"})
+
+    assert r.status_code == 400
+    assert oauth.seen["reject_reason"] == "oauth-state-mismatch"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_rejection_names_itself_in_the_access_log_and_nothing_else(oauth, provider, api_log):
+    state = await _begin(oauth, provider)
+
+    await oauth.client.get(
+        f"/api/auth/{provider}/callback", params={"code": "SECRET-CODE", "state": "WRONG-STATE"},
+    )
+
+    lines = [rec.getMessage() for rec in api_log.records if rec.name == "api" and " → " in rec.getMessage()]
+    assert lines[-1].endswith("(oauth-state-mismatch)\x1b[0m")
+    for line in lines:
+        assert "SECRET-CODE" not in line
+        assert "WRONG-STATE" not in line
+        assert state not in line
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_login_fails_closed_when_redis_is_down(oauth, provider, monkeypatch):
+    """Same convention as the refresh-token helpers: the error is not swallowed, so
+    error_handler turns it into a 503. A login that went ahead without a recorded
+    state could never complete anyway."""
+    class _DownRedis:
+        async def setex(self, *args, **kwargs):
+            raise RedisConnectionError("redis is down")
+
+    monkeypatch.setattr(core_cache, "redis_client", _DownRedis())
+
+    with pytest.raises(RedisConnectionError):
+        await oauth.client.get(f"/api/auth/{provider}")

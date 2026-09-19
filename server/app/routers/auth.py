@@ -37,6 +37,14 @@ from app.services.auth import (
     RESET_TOKEN_TTL,
     _send_reset_email,
 )
+from app.services.oauth_state import (
+    COOKIE_UNTOUCHED_REASONS,
+    issue_oauth_state,
+    consume_oauth_state,
+    set_oauth_state_cookie,
+    clear_oauth_state_cookie,
+    clear_oauth_state_cookie_headers,
+)
 from app.schemas.auth import (
     RegisterRequest,
     LoginRequest,
@@ -365,6 +373,37 @@ async def _get_or_create_oauth_user(
     return user
 
 
+async def _oauth_authorize_redirect(provider: str, authorize_url: str, params: str) -> RedirectResponse:
+    """Shared by both login routes: mint the state, add it to the provider URL,
+    and pin it to this browser."""
+    state = await issue_oauth_state(provider)
+    # token_urlsafe output is already URL-safe, so it is appended as is and the
+    # rest of the URL stays byte-identical to what the providers have always seen.
+    redirect = RedirectResponse(f"{authorize_url}?{params}&state={state}")
+    set_oauth_state_cookie(redirect, state)
+    return redirect
+
+
+async def _require_oauth_state(request: Request, provider: str, state: str | None, error: str | None) -> None:
+    """Shared by both callbacks, and the first thing each one does: nothing else
+    about the request is trusted, and the provider is never contacted, until the
+    state verifies."""
+    reason = await consume_oauth_state(request, provider, state)
+    if reason is None and error:
+        # The user cancelled at the provider, or it refused. Only presence is
+        # tested: `error` and `error_description` are request-controlled, so their
+        # values go nowhere, not the log and not the response.
+        reason = "oauth-provider-error"
+    if reason is None:
+        return
+    request.state.reject_reason = reason
+    raise HTTPException(
+        status_code=400,
+        detail=f"We couldn't complete {provider.title()} sign-in. Please try again.",
+        headers=None if reason in COOKIE_UNTOUCHED_REASONS else clear_oauth_state_cookie_headers(),
+    )
+
+
 # Google
 
 @router.get("/google")
@@ -380,7 +419,7 @@ async def google_login(request: Request):
         f"&scope=openid%20email%20profile"
         f"&access_type=offline"
     )
-    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{params}")
+    return await _oauth_authorize_redirect("google", "https://accounts.google.com/o/oauth2/v2/auth", params)
 
 
 @router.get("/google/callback")
@@ -389,8 +428,12 @@ async def google_callback(
     request: Request,
     response: Response,
     code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
+    await _require_oauth_state(request, "google", state, error)
+
     if not code:
         raise HTTPException(status_code=400, detail="Bad request")
     
@@ -442,6 +485,7 @@ async def google_callback(
 
     redirect = RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback?token={access_token}")
     set_refresh_cookie(redirect, f"{user.id}:{refresh_token}")
+    clear_oauth_state_cookie(redirect)
     return redirect
 
 
@@ -459,7 +503,7 @@ async def discord_login(request: Request):
         f"&response_type=code"
         f"&scope=identify%20email"
     )
-    return RedirectResponse(f"https://discord.com/api/oauth2/authorize?{params}")
+    return await _oauth_authorize_redirect("discord", "https://discord.com/api/oauth2/authorize", params)
 
 
 @router.get("/discord/callback")
@@ -468,8 +512,12 @@ async def discord_callback(
     request: Request,
     response: Response,
     code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
+    await _require_oauth_state(request, "discord", state, error)
+
     if not code:
         raise HTTPException(status_code=400, detail="Bad request")
 
@@ -524,4 +572,5 @@ async def discord_callback(
 
     redirect = RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback?token={access_token}")
     set_refresh_cookie(redirect, f"{user.id}:{refresh_token}")
+    clear_oauth_state_cookie(redirect)
     return redirect
