@@ -15,6 +15,7 @@ from fastapi import HTTPException
 from app.models.users import User
 from app.core.colours import CYAN, GRAY, RED, YELLOW, RESET
 from app.config.settings import settings
+from app.services.auth import user_to_dict
 
 logger = logging.getLogger(__name__)
 
@@ -43,14 +44,9 @@ _MODERATION_RETRY_STATUSES = {401, 403, 408, 429}
 
 
 def user_to_response(user: User) -> dict:
-    return {
-        "id": user.id,
-        "email": user.email,
-        "username": user.username,
-        "avatar_url": user.avatar_url,
-        "role": user.role,
-        "created_at": user.created_at.isoformat(),
-    }
+    # One builder. This used to be a second copy of the same dict, which would have
+    # drifted the day only one of them learned a new field.
+    return user_to_dict(user)
 
 def _resolve_host(hostname: str) -> list[str]:
     """DNS-resolve a hostname to its addresses. Module-level so tests can stub it."""

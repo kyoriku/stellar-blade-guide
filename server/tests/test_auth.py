@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
@@ -34,13 +35,15 @@ import app.core.auth as core_auth
 import app.core.cache as core_cache
 import app.routers.auth as auth_routes
 from app.db.database import Base, get_db
+from app.core.usernames import username_problem
 from app.middleware.logging import add_logging_middleware
 from app.services.oauth_state import OAUTH_STATE_COOKIE, OAUTH_STATE_TTL
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
 from app.middleware.rate_limit import setup_rate_limiter
 from app.middleware.exception_handlers import add_exception_handlers
 from app.routers.auth import router as auth_router
-from app.services.auth import hash_password
+from app.services.auth import hash_password, user_to_dict
+from app.services.users import user_to_response
 from app.core.auth import get_current_user, SECRET_KEY, ALGORITHM
 
 
@@ -1084,6 +1087,7 @@ async def test_oauth_has_password_refusal_names_itself_and_never_logs_the_email(
         ("oauth-email-unverified", "email-unverified"),
         ("oauth-email-missing", "email-missing"),
         ("oauth-provider-error", "cancelled"),
+        ("oauth-account-inactive", "deactivated"),
         # One code for every state failure: the guard was built to say nothing
         # about which check failed, and the URL is visible to the user.
         ("oauth-state-missing", "expired"),
@@ -1154,3 +1158,256 @@ async def test_oauth_unconfigured_provider_stays_a_loud_501(oauth, provider, mon
 
     assert r.status_code == 501
     assert "not configured" in r.json()["detail"]
+
+
+# ── Provider names go through the site's username rule ───────────────────────
+#
+# Registration and Settings validate a typed name. The OAuth create step used to store
+# the provider's display name unchecked, so a name ending in a zero-width space was a
+# different string from an existing username, passed the uniqueness check, and rendered
+# exactly like it in a comment thread. The cleaner and the rule are pinned on their own
+# in test_usernames.py; these pin what the create step does with them.
+
+NAME_FIELD = {"google": "name", "discord": "username"}
+
+
+async def _usernames(o) -> list[str]:
+    return list((await o.db.execute(select(User.username).order_by(User.id))).scalars())
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_cannot_create_an_invisible_duplicate_of_an_existing_name(oauth, provider, test_user):
+    """The regression test for the finding."""
+    oauth.provider.userinfo[NAME_FIELD[provider]] = f"{test_user.username}\u200b"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    assert await _usernames(oauth) == ["testuser", "testuser1"]
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_generated_name_never_differs_from_an_existing_one_only_by_case(oauth, provider, test_user):
+    """The site is choosing this name, so it costs the user nothing to keep it from
+    landing as "TestUser" beside an existing "testuser"."""
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "TestUser"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    assert await _usernames(oauth) == ["testuser", "TestUser1"]
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_username_is_never_taken_from_the_email(oauth, provider):
+    """A username is public and the email is shown to nobody but its owner. The old
+    fallback published the address's local part when the provider sent no name."""
+    oauth.provider.userinfo.pop(NAME_FIELD[provider])
+    oauth.provider.userinfo["email"] = "distinctive-local-part@example.com"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    (username,) = await _usernames(oauth)
+    assert username.startswith("user_")
+    assert "distinctive" not in username
+    assert username_problem(username) is None
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_created_name_is_one_settings_would_accept(oauth, provider):
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "\U0001f3ae  O'Brien.  \U0001f3ae"
+
+    assert (await _login(oauth, provider)).status_code == 307
+
+    (username,) = await _usernames(oauth)
+    assert username == "O_Brien"
+    assert username_problem(username) is None
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_returning_user_is_never_renamed(oauth, provider):
+    """Only the create step names anyone. Whatever the provider calls them later, a
+    returning user keeps the name they have."""
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "First Name"
+    assert (await _login(oauth, provider)).status_code == 307
+
+    oauth.provider.userinfo[NAME_FIELD[provider]] = "someone else\u200b"
+    assert (await _login(oauth, provider)).status_code == 307
+
+    assert await _usernames(oauth) == ["First_Name"]
+
+
+@pytest.mark.parametrize(("provider", "stored"), [("google", "OAuth_User"), ("discord", "oauthuser")])
+async def test_oauth_ordinary_names_are_stored_exactly_as_before(oauth, provider, stored):
+    """Nothing moves for an ordinary name: Google's spaces still become underscores,
+    Discord's username is kept as is."""
+    assert (await _login(oauth, provider)).status_code == 307
+    assert await _usernames(oauth) == [stored]
+
+
+# ── One account, one way in: a provider-only account has no password ─────────
+#
+# Forgot password used to tell a provider-only address to check its email and then send
+# nothing, and Settings showed it a change-password form it could never use. The fix is
+# to say what is true, not to add a door: the address is told it has no password, no
+# reset token is minted, and the user object says whether a password exists. "Has a
+# password" therefore stays exactly "came from registration", which is the premise of
+# the has-password link refusal above.
+
+@pytest.fixture
+def reset_mail(monkeypatch, fake_redis):
+    """The router binds its Redis client and its sender by value, so conftest's patch of
+    app.core.cache.redis_client does not reach them. Nothing here may reach Resend."""
+    sender = AsyncMock()
+    monkeypatch.setattr(auth_routes, "_send_reset_email", sender)
+    monkeypatch.setattr(auth_routes, "redis_client", fake_redis)
+    return sender
+
+
+async def _forgot(o, email: str):
+    return await o.client.post("/api/auth/forgot-password", json={"email": email})
+
+
+async def _deactivate(o, user) -> None:
+    """Through the ORM object, not a bulk UPDATE: the app shares this session, and a
+    bulk update would leave the identity map saying the account is still active."""
+    user.is_active = False
+    await o.db.commit()
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_forgot_password_tells_a_provider_only_address_it_has_no_password(oauth, provider, reset_mail):
+    """The regression test for the dead end. Nothing is sent and, above all, no token is
+    minted: there must be nothing a provider-only account could redeem for a password."""
+    assert (await _login(oauth, provider)).status_code == 307
+
+    r = await _forgot(oauth, "oauth@example.com")
+
+    assert r.status_code == 200
+    assert r.json() == {"status": "no_password"}
+    reset_mail.assert_not_awaited()
+    assert await oauth.redis.keys("password_reset:*") == []
+
+
+async def test_forgot_password_still_sends_a_password_account_its_link(oauth, test_user, reset_mail):
+    """Unchanged behaviour, never tested before."""
+    r = await _forgot(oauth, test_user.email)
+
+    assert r.status_code == 204
+    assert r.content == b""
+    reset_mail.assert_awaited_once()
+    email, token = reset_mail.await_args.args
+    assert email == test_user.email
+    assert await oauth.redis.get(f"password_reset:{token}") == str(test_user.id)
+
+
+async def test_forgot_password_stays_generic_for_unknown_and_deactivated(oauth, test_user, reset_mail):
+    """Only a live provider-only account is told anything. An unknown address and a
+    deactivated account of either kind get the same empty 204 a password account gets,
+    so none of those can be told apart."""
+    assert (await _login(oauth, "google")).status_code == 307
+    provider_only = (await oauth.db.execute(select(User).where(User.email == "oauth@example.com"))).scalar_one()
+    await _deactivate(oauth, provider_only)
+    await _deactivate(oauth, test_user)
+
+    for email in ("nobody@example.com", test_user.email, "oauth@example.com"):
+        r = await _forgot(oauth, email)
+        assert (r.status_code, r.content) == (204, b"")
+
+    reset_mail.assert_not_awaited()
+    assert await oauth.redis.keys("password_reset:*") == []
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_a_provider_only_account_cannot_get_a_password(oauth, provider, reset_mail):
+    """Every route to a password is closed from this side: change-password refuses an
+    account with no hash, and forgot-password minted nothing to redeem."""
+    r = await _login(oauth, provider)
+    access_token = r.headers["location"].split("token=", 1)[1]
+
+    changed = await oauth.client.post(
+        "/api/auth/change-password",
+        json={"current_password": "anything-at-all", "new_password": "a-new-password-1"},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert changed.status_code == 400
+    assert "no password" in changed.json()["detail"]
+
+    await _forgot(oauth, "oauth@example.com")
+    assert await oauth.redis.keys("password_reset:*") == []
+    (user,) = await _rows(oauth, User)
+    assert await _password_hash(oauth, user.id) is None
+
+
+async def test_the_user_object_says_whether_a_password_exists(oauth, test_user):
+    registered = await oauth.client.post(
+        "/api/auth/register",
+        json={"email": "fresh@example.com", "username": "fresh_user", "password": "password123"},
+    )
+    assert registered.json()["user"]["has_password"] is True
+
+    logged_in = await oauth.client.post(
+        "/api/auth/login", json={"email": test_user.email, "password": "password123"},
+    )
+    assert logged_in.json()["user"]["has_password"] is True
+
+    # A provider-created account, read the way the SPA reads it: through refresh.
+    oauth.client.cookies.clear()
+    assert (await _login(oauth, "google")).status_code == 307
+    refreshed = await oauth.client.post("/api/auth/refresh")
+    assert refreshed.json()["user"]["has_password"] is False
+
+
+async def test_there_is_one_builder_of_the_user_object(test_user):
+    """PATCH /api/users/me used to return a second, identical copy of this dict, which
+    would have drifted the day only one of them learned a new field."""
+    assert user_to_response(test_user) == user_to_dict(test_user)
+    assert user_to_response(test_user)["has_password"] is True
+
+
+# ── OAuth refuses a deactivated account, in both steps ───────────────────────
+#
+# Password login and /refresh already ignore a deactivated account. The OAuth path did
+# not: a deactivated user was handed tokens that then failed everywhere, and in the link
+# step gained a new provider link on the way.
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_refuses_a_deactivated_returning_user(oauth, provider):
+    """The regression test for the finding."""
+    assert (await _login(oauth, provider)).status_code == 307
+    (user,) = await _rows(oauth, User)
+    await _deactivate(oauth, user)
+    sessions_before = await oauth.redis.keys("refresh:*")
+
+    r = await _login(oauth, provider)
+
+    _assert_refused(r, "deactivated", provider)
+    assert oauth.seen["reject_reason"] == "oauth-account-inactive"
+    # No tokens are minted for an account that could not use them.
+    assert await oauth.redis.keys("refresh:*") == sessions_before
+    assert all("refresh_token" not in c for c in _set_cookies(r))
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_deactivated_account_gains_no_new_link(oauth, provider):
+    other = "discord" if provider == "google" else "google"
+    assert (await _login(oauth, other)).status_code == 307
+    (user,) = await _rows(oauth, User)
+    await _deactivate(oauth, user)
+
+    r = await _login(oauth, provider)
+
+    _assert_refused(r, "deactivated", provider)
+    (link,) = await _rows(oauth, OAuthAccount)
+    assert link.provider == other
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_oauth_deactivated_beats_has_password(oauth, provider, test_user):
+    """Otherwise a deactivated password account would be told to sign in with a
+    password that will not work."""
+    await _deactivate(oauth, test_user)
+    oauth.provider.userinfo["email"] = test_user.email
+
+    r = await _login(oauth, provider)
+
+    _assert_refused(r, "deactivated", provider)
+    assert oauth.seen["reject_reason"] == "oauth-account-inactive"

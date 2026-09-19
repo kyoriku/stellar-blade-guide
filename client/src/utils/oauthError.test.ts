@@ -42,8 +42,15 @@ describe('oauthErrorNotice', () => {
     })
   })
 
+  it('says a deactivated account is deactivated', () => {
+    expect(oauthErrorNotice('deactivated', 'google')).toEqual({
+      text: 'This account has been deactivated.',
+      tone: 'error',
+    })
+  })
+
   it('gives every known code an error tone except cancelled', () => {
-    for (const code of ['has-password', 'email-unverified', 'email-missing', 'expired', 'failed']) {
+    for (const code of ['has-password', 'email-unverified', 'email-missing', 'deactivated', 'expired', 'failed']) {
       expect(oauthErrorNotice(code, 'google')?.tone).toBe('error')
     }
   })
@@ -62,7 +69,7 @@ describe('oauthErrorNotice', () => {
 
   it('never echoes either parameter', () => {
     const hostile = '<img src=x onerror=alert(1)>'
-    for (const code of ['has-password', 'email-unverified', 'email-missing', 'cancelled', 'expired', 'failed', hostile]) {
+    for (const code of ['has-password', 'email-unverified', 'email-missing', 'deactivated', 'cancelled', 'expired', 'failed', hostile]) {
       const notice = oauthErrorNotice(code, hostile)
       expect(notice?.text).not.toContain(hostile)
       expect(notice?.text).not.toContain('<')

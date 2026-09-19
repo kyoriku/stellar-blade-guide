@@ -7,9 +7,9 @@ import logging
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.config.settings import settings
 from app.db.database import get_db
@@ -27,6 +27,7 @@ from app.core.auth import (
 from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
+from app.core.usernames import username_from_provider
 from app.services.auth import (
     hash_password,
     verify_password,
@@ -249,8 +250,11 @@ async def forgot_password(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Send a password reset email if the account exists.
-    Always returns 204 regardless — never reveal whether an email is registered.
+    Send a password reset email if the account has a password.
+
+    204 with an empty body for a password account, an unknown address and a
+    deactivated account alike, so those three cannot be told apart. The one
+    exception is a provider-only account, which is told so: see below.
     """
     result = await db.execute(select(User).where(User.email == body.email, User.is_active == True))
     user = result.scalar_one_or_none()
@@ -264,6 +268,13 @@ async def forgot_password(
         except Exception as e:
             logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
             # Don't expose email errors to the client
+    elif user:
+        # A provider-only account has no password, and never gets one: one account,
+        # one way in, which is also why no reset token is minted here. "Check your
+        # email" would leave this person waiting for a message that never comes, so
+        # the page is told the truth instead. It does reveal that the address has an
+        # account; register's "Email already registered" already tells anyone that.
+        return JSONResponse({"status": "no_password"})
 
 
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
@@ -319,6 +330,16 @@ DISCORD_REDIRECT_URI = settings.DISCORD_REDIRECT_URI
 FRONTEND_URL = settings.FRONTEND_URL
 
 
+def _refuse_if_deactivated(request: Request, user: User) -> None:
+    # Password login and /refresh already ignore a deactivated account. This path did
+    # not, so a deactivated user was handed tokens that failed everywhere, and in the
+    # link step gained a new provider link on the way. They have just proven who they
+    # are, so unlike password login this can say what is wrong.
+    if not user.is_active:
+        request.state.reject_reason = "oauth-account-inactive"
+        raise HTTPException(status_code=400, detail="This account has been deactivated.")
+
+
 async def _get_or_create_oauth_user(
     request: Request,
     db: AsyncSession,
@@ -326,7 +347,7 @@ async def _get_or_create_oauth_user(
     provider_user_id: str,
     email: str,
     email_verified: object,
-    username: str,
+    username: str | None,
     avatar_url: str | None,
 ) -> User:
     """
@@ -349,7 +370,9 @@ async def _get_or_create_oauth_user(
     oauth_account = result.scalar_one_or_none()
     if oauth_account:
         result = await db.execute(select(User).where(User.id == oauth_account.user_id))
-        return result.scalar_one()
+        user = result.scalar_one()
+        _refuse_if_deactivated(request, user)
+        return user
 
     # From here on the email is the only thing tying this login to a user row, so
     # it has to be one the provider vouches for. Unverified, anyone can put a
@@ -375,6 +398,9 @@ async def _get_or_create_oauth_user(
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if user:
+        # First, or a deactivated password account would be told below to sign in with
+        # a password that will not work.
+        _refuse_if_deactivated(request, user)
         # A password means the account came from registration, and registration never
         # proves the address. Linking would join the proven owner of this mailbox,
         # silently, into an account someone else may hold the password to. Refuse
@@ -390,13 +416,23 @@ async def _get_or_create_oauth_user(
         return user
 
     # 3. Brand new user
-    # Ensure username is unique by appending a suffix if needed
-    base_username = username[:45]
+    # The provider's name is whatever the person typed there, so it goes through the
+    # same rule as a name typed here. Unchecked, a display name ending in a zero-width
+    # space is a different string from an existing username, passes the uniqueness
+    # check below, and renders exactly like it in a comment thread.
+    base_username = username_from_provider(username)
     final_username = base_username
     suffix = 1
     while True:
-        result = await db.execute(select(User).where(User.username == final_username))
-        if not result.scalar_one_or_none():
+        # Case-insensitive here, and only here: the site is choosing this name, so it
+        # costs the user nothing to keep it from landing as "Kyoriku" beside an
+        # existing "kyoriku". Lowered on both sides by the database so the comparison
+        # does not depend on Python and Postgres agreeing about non-ASCII case.
+        # .first(), because two existing rows may already differ only by case.
+        result = await db.execute(
+            select(User).where(func.lower(User.username) == func.lower(final_username))
+        )
+        if not result.scalars().first():
             break
         final_username = f"{base_username}{suffix}"
         suffix += 1
@@ -451,6 +487,7 @@ _PUBLIC_OAUTH_ERRORS = {
     "oauth-email-unverified": "email-unverified",
     "oauth-email-missing": "email-missing",
     "oauth-provider-error": "cancelled",
+    "oauth-account-inactive": "deactivated",
 }
 
 
@@ -560,7 +597,10 @@ async def google_callback(
 
     provider_user_id = info["id"]
     email = info["email"]
-    username = info.get("name", email.split("@")[0]).replace(" ", "_")
+    # Raw on purpose. The create step cleans it, and only when it creates: a
+    # returning user is never renamed. No fallback to the email, which would publish
+    # part of the address as a public username.
+    username = info.get("name")
     avatar_url = info.get("picture")
 
     # The v2 userinfo endpoint spells it verified_email. email_verified is the
@@ -657,7 +697,7 @@ async def discord_callback(
         request.state.reject_reason = "oauth-email-missing"
         raise HTTPException(status_code=400, detail="Discord account must have a verified email")
 
-    username = info.get("username", email.split("@")[0])
+    username = info.get("username")
     avatar_hash = info.get("avatar")
     avatar_url = f"https://cdn.discordapp.com/avatars/{provider_user_id}/{avatar_hash}.png" if avatar_hash else None
 

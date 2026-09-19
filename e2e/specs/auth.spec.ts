@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { readFixtures, type Fixtures } from '../helpers/db';
+import { readFixtures, pgPool, type Fixtures } from '../helpers/db';
 import { nextTestIp, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
 let fx: Fixtures;
@@ -147,5 +147,64 @@ test.describe('auth', () => {
     await expect(page).toHaveURL(/\/levels\/eidos-7$/);
     await expect(accountMenu(page)).toBeVisible();
     expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBeNull();
+  });
+
+  // ── One account, one way in: a provider-only account has no password ─────────
+  // A provider login cannot be driven from here, so the suite's password user is
+  // turned into a provider-only one by blanking its hash, which is exactly what the
+  // API reports as has_password: false. The hash is restored in a finally, because
+  // the suite deletes its users by logging in with the password.
+
+  const NO_PASSWORD_SETTINGS = 'This account signs in with Google or Discord and has no password.';
+  const NO_PASSWORD_FORGOT = 'This email signs in with Google or Discord and has no password.';
+
+  async function asProviderOnly(email: string, run: () => Promise<void>): Promise<void> {
+    const pool = pgPool();
+    try {
+      const { rows } = await pool.query<{ password_hash: string }>(
+        'SELECT password_hash FROM users WHERE email = $1', [email]
+      );
+      const hash = rows[0].password_hash;
+      await pool.query('UPDATE users SET password_hash = NULL WHERE email = $1', [email]);
+      try {
+        await run();
+      } finally {
+        await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [hash, email]);
+      }
+    } finally {
+      await pool.end();
+    }
+  }
+
+  test('Settings shows a provider-only account a sentence, not a change-password form', async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    await expect(page.getByText('Current password')).toBeVisible();
+
+    await asProviderOnly(user!.email, async () => {
+      await page.reload();
+      await expect(page.getByText(NO_PASSWORD_SETTINGS)).toBeVisible();
+      await expect(page.getByText('Current password')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Update password' })).toHaveCount(0);
+    });
+  });
+
+  test('Forgot password tells a provider-only address the truth, and nobody else anything', async ({ page }) => {
+    // An unknown address: the generic answer, as for a password or deactivated account.
+    // (A real password account is not submitted here: in dev that would call Resend.)
+    await page.goto('/forgot-password');
+    await page.getByLabel('Email').fill(`nobody-${fx.token}@example.com`);
+    await page.getByRole('button', { name: /send/i }).click();
+    await expect(page.getByText('Check your email')).toBeVisible();
+    await expect(page.getByText(NO_PASSWORD_FORGOT)).toHaveCount(0);
+
+    await asProviderOnly(user!.email, async () => {
+      await page.goto('/forgot-password');
+      await page.getByLabel('Email').fill(user!.email);
+      await page.getByRole('button', { name: /send/i }).click();
+      await expect(page.getByText(NO_PASSWORD_FORGOT)).toBeVisible();
+      await expect(page.getByText('Check your email')).toHaveCount(0);
+    });
   });
 });

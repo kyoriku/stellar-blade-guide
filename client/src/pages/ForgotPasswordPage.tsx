@@ -9,6 +9,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [noPassword, setNoPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,12 +17,19 @@ export default function ForgotPasswordPage() {
     setError(null)
     setIsSubmitting(true)
     try {
-      await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      // Always show success — never reveal whether email exists
+      // Every address gets the same empty 204, so the page cannot tell a password
+      // account from an unknown or deactivated one. The one exception is an account
+      // that signs in with a provider: it has no password to reset, and the API says
+      // so rather than let this page promise an email that will never come.
+      if (res.status === 200) {
+        const data = (await res.json()) as { status?: string }
+        setNoPassword(data.status === 'no_password')
+      }
       setSubmitted(true)
     } catch (err) {
       setError(errorMessage(err, 'Something went wrong. Please try again.'))
@@ -48,7 +56,17 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="bg-secondary border border-gray-800 rounded-xl p-6 shadow-xl">
-          {submitted ? (
+          {submitted && noPassword ? (
+            <div className="text-center py-4">
+              <div className="w-12 h-12 rounded-full bg-gray-800/60 border border-gray-700 flex items-center justify-center mx-auto mb-4">
+                <KeyRound className="w-6 h-6 text-gray-300" />
+              </div>
+              <h2 className="text-gray-100 font-semibold mb-2">No password to reset</h2>
+              <p className="text-gray-400 text-sm">
+                This email signs in with Google or Discord and has no password.
+              </p>
+            </div>
+          ) : submitted ? (
             <div className="text-center py-4">
               <div className="w-12 h-12 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -59,7 +77,7 @@ export default function ForgotPasswordPage() {
               <p className="text-gray-400 text-sm">
                 If an account exists for <span className="text-gray-200">{email}</span>, you'll receive a reset link within a few minutes.
               </p>
-              <p className="text-gray-400 text-xs mt-3">The link expires in 15 minutes.</p>
+              <p className="text-gray-400 text-xs mt-3">The link expires in 1 hour.</p>
             </div>
           ) : (
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
