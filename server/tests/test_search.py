@@ -203,6 +203,8 @@ async def search_probe_client():
         response = await call_next(request)
         seen["cache_status"] = getattr(request.state, "cache_status", None)
         seen["db_time"] = getattr(request.state, "db_time", None)
+        seen["search_query"] = getattr(request.state, "search_query", None)
+        seen["search_total"] = getattr(request.state, "search_total", None)
         return response
 
     mock_db = AsyncMock()
@@ -229,3 +231,55 @@ async def test_search_reports_cache_status_on_miss_then_hit(search_probe_client,
     await client.get("/api/search/?q=nano")
     assert seen["cache_status"] == "HIT"
     assert seen["db_time"] is None
+
+
+# ── access-log search text ───────────────────────────────────────────────────
+#
+# The logging middleware never reads the query string: the OAuth callbacks carry
+# their authorization `code` there, so search opts in by handing its own text
+# over on request.state. These pin the hand-off; the rendering (sanitising, the
+# 40-char cap, last-field placement) is pinned in test_logging.py.
+
+async def test_search_hands_normalised_query_and_total_to_the_access_log(search_probe_client, monkeypatch):
+    """The logged text is the cache-key text, so identical lines mean an identical
+    key. The HIT branch reads the total back out of the cached dict — a separate
+    code path from the MISS branch, hence both requests."""
+    client, seen = search_probe_client
+    monkeypatch.setattr(search_route, "_execute_search", AsyncMock(return_value=[]))
+
+    await client.get("/api/search/", params={"q": "  NaNo "})
+    assert seen["cache_status"] == "MISS"
+    assert seen["search_query"] == "nano"
+    assert seen["search_total"] == 0
+
+    await client.get("/api/search/", params={"q": "  NaNo "})
+    assert seen["cache_status"] == "HIT"
+    assert seen["search_query"] == "nano"
+    assert seen["search_total"] == 0
+
+
+async def test_search_total_counts_results(search_probe_client, monkeypatch):
+    client, seen = search_probe_client
+    results = [
+        SearchResult(
+            kind="cosmetics", id=i, title=f"Nano Suit {i}", snippet=None,
+            navigation_url="/cosmetics/nano-suits", score=0.5,
+        )
+        for i in range(3)
+    ]
+    monkeypatch.setattr(search_route, "_execute_search", AsyncMock(return_value=results))
+
+    await client.get("/api/search/?q=nano+suit")
+    assert seen["search_query"] == "nano suit"
+    assert seen["search_total"] == 3
+
+
+async def test_rejected_search_hands_nothing_to_the_access_log(search_probe_client):
+    """Accepted blind spot: validation (and the rate limiter) answer before the
+    handler body runs, so a 422/429 line carries no search text."""
+    client, seen = search_probe_client
+
+    r = await client.get("/api/search/?q=a")
+    assert r.status_code == 422
+    assert seen["search_query"] is None
+    assert seen["search_total"] is None
