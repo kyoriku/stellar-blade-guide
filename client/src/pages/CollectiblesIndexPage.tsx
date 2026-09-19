@@ -9,7 +9,7 @@ const CONFIG: CategoryIndexConfig = {
   title: 'Collectibles',
   seoTitle: seo.index['/collectibles'].title,
   metaDescription: seo.index['/collectibles'].description,
-  intro: 'All collectible types in Stellar Blade including Cans, Documents, Memorysticks, Passcodes, and Camps. Found throughout every level with screenshots and detailed locations.',
+  intro: 'All collectible types in Stellar Blade including Cans, Documents, Memorysticks, Passcodes, Camps, Supply Boxes, and Supply Chests. Found throughout every level with screenshots and detailed locations.',
   structuredDataHeadline: 'Stellar Blade Collectibles',
   structuredDataDescription: `Browse all ${COLLECTIBLES.length} collectible types in Stellar Blade.`,
   itemListName: 'Stellar Blade Collectible Types',

@@ -134,7 +134,7 @@ export interface Walkthrough {
 }
 
 export interface SearchResult {
-  kind: 'collectibles' | 'upgrades' | 'cosmetics' | 'materials' | 'walkthrough' | 'level'
+  kind: 'collectibles' | 'upgrades' | 'cosmetics' | 'walkthrough' | 'level'
   id: number
   title: string
   snippet: string | null
@@ -253,13 +253,6 @@ export const api = {
       `${API_BASE_URL}/upgrades/${encodeURIComponent(typeName)}`
     );
     return handleResponse<LevelWithLocations[]>(response, 'upgrades by type');
-  },
-
-  getMaterialsByType: async (typeName: string): Promise<LevelWithLocations[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/materials/${encodeURIComponent(typeName)}`
-    );
-    return handleResponse<LevelWithLocations[]>(response, 'materials by type');
   },
 
   getCosmeticsByType: async (typeName: string): Promise<LevelWithLocations[]> => {

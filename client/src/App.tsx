@@ -7,7 +7,6 @@ import WalkthroughsIndexPage from './pages/WalkthroughsIndexPage'
 import LevelsIndexPage from './pages/LevelsIndexPage'
 import CollectiblesIndexPage from './pages/CollectiblesIndexPage'
 import UpgradesIndexPage from './pages/UpgradesIndexPage'
-import MaterialsIndexPage from './pages/MaterialsIndexPage'
 import CosmeticsIndexPage from './pages/CosmeticsIndexPage'
 
 // Detail pages
@@ -58,8 +57,6 @@ function App() {
           <Route path="collectibles/:typeName" element={<CollectibleTypeDetailPage />} />
           <Route path="upgrades" element={<UpgradesIndexPage />} />
           <Route path="upgrades/:typeName" element={<CollectibleTypeDetailPage />} />
-          <Route path="materials" element={<MaterialsIndexPage />} />
-          <Route path="materials/:typeName" element={<CollectibleTypeDetailPage />} />
           <Route path="cosmetics" element={<CosmeticsIndexPage />} />
           <Route path="cosmetics/:typeName" element={<CollectibleTypeDetailPage />} />
 

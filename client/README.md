@@ -37,7 +37,7 @@ src/
   main.tsx           entry: provider stack (ErrorBoundary > QueryClientProvider > Toast > Auth)
   App.tsx            all routes (BrowserRouter), nested under RootLayout
   index.css          Tailwind import + custom utility classes (brand colours, scrollbars)
-  pages/             route components: six thin index pages over the shared CategoryIndexPage,
+  pages/             route components: five thin index pages over the shared CategoryIndexPage,
                      three scroll-spy detail pages (walkthrough, level, collectible type),
                      plus auth/account, legal, and error pages
   components/        reusable UI: the shared index page and cards, image gallery, table of
@@ -57,7 +57,7 @@ public/              robots.txt, static sitemap.xml, favicons, README screenshot
                      from Cloudflare R2 at img.stellarbladeguide.com)
 ```
 
-Route shape: `/walkthroughs/:type/:slug`, `/levels/:levelName`, and `/collectibles|upgrades|materials|cosmetics/:typeName`. The four collectible categories share one detail page (`CollectibleTypeDetailPage`), and `useActiveSection` drives the scroll-spy table of contents on all three detail pages.
+Route shape: `/walkthroughs/:type/:slug`, `/levels/:levelName`, and `/collectibles|upgrades|cosmetics/:typeName`. The three collectible categories share one detail page (`CollectibleTypeDetailPage`), and `useActiveSection` drives the scroll-spy table of contents on all three detail pages.
 
 ## Data fetching
 

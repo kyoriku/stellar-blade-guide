@@ -27,6 +27,8 @@ export const COLLECTIBLES = [
   { slug: 'memorysticks', name: 'Memorysticks' },
   { slug: 'passcodes', name: 'Passcodes' },
   { slug: 'camps', name: 'Camps' },
+  { slug: 'supply-boxes', name: 'Supply Boxes' },
+  { slug: 'supply-chests', name: 'Supply Chests' },
 ] as const;
 
 export const UPGRADES = [
@@ -49,15 +51,8 @@ export const COSMETICS = [
   { slug: 'adam-outfits', name: 'Adam Outfits' },
 ] as const;
 
-export const MATERIALS = [
-  { slug: 'supply-boxes', name: 'Supply Boxes' },
-  { slug: 'supply-chests', name: 'Supply Chests' },
-  // { slug: 'items', name: 'Items' },
-] as const;
-
 export type WalkthroughSlug = typeof WALKTHROUGHS[number]['slug'];
 export type LevelSlug = typeof LEVELS[number]['slug'];
 export type CollectibleSlug = typeof COLLECTIBLES[number]['slug'];
 export type UpgradeSlug = typeof UPGRADES[number]['slug'];
 export type CosmeticSlug = typeof COSMETICS[number]['slug'];
-export type MaterialSlug = typeof MATERIALS[number]['slug'];

@@ -3,7 +3,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 
 // Keep in sync with the prefetch functions in hooks/usePrefetch.ts — each
 // entry here must map to an existing prefetchQuery call with a matching key.
-const PREFETCHABLE_CATEGORIES = ['collectibles', 'upgrades', 'materials', 'cosmetics'] as const;
+const PREFETCHABLE_CATEGORIES = ['collectibles', 'upgrades', 'cosmetics'] as const;
 type Category = typeof PREFETCHABLE_CATEGORIES[number];
 
 function parsePrefetchTarget(to: string) {

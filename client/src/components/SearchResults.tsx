@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Compass, Zap, Sparkles, Box, BookOpen, Map } from 'lucide-react'
+import { Compass, Zap, Sparkles, BookOpen, Map } from 'lucide-react'
 import type { SearchResponse } from '../services/api'
 import { errorMessage } from '../services/api'
 import { usePrefetch } from '../hooks/usePrefetch'
@@ -18,7 +18,6 @@ const KIND_ICONS = {
   collectibles: Compass,
   upgrades:     Zap,
   cosmetics:    Sparkles,
-  materials:    Box,
   walkthrough:  BookOpen,
   level:        Map,
 } as const
@@ -27,7 +26,7 @@ function parsePrefetchTarget(result: { kind: string; navigation_url: string }) {
   try {
     const [urlPart, anchor] = result.navigation_url.split('#')
     const parts = urlPart.split('/').filter(Boolean)
-    const isCollectibleKind = ['collectibles', 'upgrades', 'cosmetics', 'materials'].includes(result.kind)
+    const isCollectibleKind = ['collectibles', 'upgrades', 'cosmetics'].includes(result.kind)
     if (isCollectibleKind && parts.length >= 2)
       return { kind: 'collectible' as const, category: parts[0], typeSlug: parts[1], anchor }
     if (result.kind === 'walkthrough' && parts.length >= 3)

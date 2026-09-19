@@ -16,4 +16,3 @@ export const LEVEL_IMAGES: Record<string, string> = imagesOf(seo.levels);
 export const COLLECTIBLE_IMAGES: Record<string, string> = imagesOf(seo.types.collectibles);
 export const UPGRADE_IMAGES: Record<string, string> = imagesOf(seo.types.upgrades);
 export const COSMETIC_IMAGES: Record<string, string> = imagesOf(seo.types.cosmetics);
-export const MATERIAL_IMAGES: Record<string, string> = imagesOf(seo.types.materials);

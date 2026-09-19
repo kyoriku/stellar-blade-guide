@@ -17,9 +17,6 @@ export function useCollectiblesByType(typeName: string, category: string = 'coll
       if (category === 'upgrades') {
         return api.getUpgradesByType(typeName);
       }
-      if (category === 'materials') {
-        return api.getMaterialsByType(typeName);
-      }
       if (category === 'cosmetics') {
         return api.getCosmeticsByType(typeName);
       }

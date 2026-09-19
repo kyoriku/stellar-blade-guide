@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 // Map is aliased: the bare icon name would shadow the global Map constructor
 // used by the row-builder helpers.
-import { Box, CircleEllipsis, Compass, Map as MapIcon, Repeat, Sparkles, Zap } from 'lucide-react'
+import { CircleEllipsis, Compass, Map as MapIcon, Repeat, Sparkles, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
@@ -11,7 +11,7 @@ import CompletionRing from '../components/CompletionRing'
 import { useUserStats, weightedFound } from '../hooks/useUserStats'
 import { useProgress } from '../hooks/useProgress'
 import { usePrefetch } from '../hooks/usePrefetch'
-import { COLLECTIBLES, UPGRADES, COSMETICS, MATERIALS } from '../constants/navigation'
+import { COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation'
 import { pct, typeRows, levelRows, nonLevelRows, cycleRows } from '../utils/progressRows'
 import type { Stat } from '../utils/progressRows'
 
@@ -28,7 +28,6 @@ const CATEGORY_META = [
   { key: 'collectibles', label: 'Collectibles', Icon: Compass, nav: COLLECTIBLES },
   { key: 'upgrades', label: 'Upgrades', Icon: Zap, nav: UPGRADES },
   { key: 'cosmetics', label: 'Cosmetics', Icon: Sparkles, nav: COSMETICS },
-  { key: 'materials', label: 'Materials', Icon: Box, nav: MATERIALS },
 ] as const
 
 const dualTypeFootnote = (
@@ -219,8 +218,12 @@ export default function ProgressPage() {
               </div>
             </section>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {CATEGORY_META.map(({ key, label, Icon, nav }) => (
+            {/* Full-width cards, not a card grid: three categories leave an
+                empty cell in two columns, and three columns need a 1062px
+                container, which also packs 21 rows of numbers into one band. */}
+            {CATEGORY_META.map(({ key, label, Icon, nav }) => {
+              const rows = typeRows(stats?.types, key, nav)
+              return (
                 <SectionCard
                   key={key}
                   Icon={Icon}
@@ -232,8 +235,8 @@ export default function ProgressPage() {
                     />
                   }
                 >
-                  <div className="space-y-4">
-                    {typeRows(stats?.types, key, nav).map(r => {
+                  <TwoColRows count={rows.length}>
+                    {rows.map(r => {
                       const slug = r.slug
                       return (
                         <StatRow
@@ -245,10 +248,10 @@ export default function ProgressPage() {
                         />
                       )
                     })}
-                  </div>
+                  </TwoColRows>
                 </SectionCard>
-              ))}
-            </div>
+              )
+            })}
             {dualTypeFootnote}
 
             <SectionCard Icon={MapIcon} title="By Level">

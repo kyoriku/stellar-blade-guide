@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Compass, Zap, Sparkles, Box } from 'lucide-react';
-import { COLLECTIBLES, UPGRADES, COSMETICS, MATERIALS } from '../constants/navigation';
+import { Compass, Zap, Sparkles } from 'lucide-react';
+import { COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation';
 import { usePrefetch } from '../hooks/usePrefetch';
 
 function getTypeInfo(type: string) {
@@ -12,9 +12,6 @@ function getTypeInfo(type: string) {
 
   const cosmetic = COSMETICS.find(c => c.name.startsWith(type));
   if (cosmetic) return { Icon: Sparkles, to: `/cosmetics/${cosmetic.slug}`, slug: cosmetic.slug, category: 'cosmetics' };
-
-  const material = MATERIALS.find(m => m.name.startsWith(type));
-  if (material) return { Icon: Box, to: `/materials/${material.slug}`, slug: material.slug, category: 'materials' };
 
   return { Icon: Compass, to: null, slug: null, category: null };
 }
