@@ -6,9 +6,11 @@ import { parseDescription } from '../utils/parseDescription'
 interface WalkthroughContentProps {
   content: WalkthroughContentType;
   onImageClick: (imageUrl: string) => void;
+  /** This section's gallery is above the fold — see ImageGallery's `priority`. */
+  priority?: boolean;
 }
 
-function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) {
+function WalkthroughContent({ content, onImageClick, priority }: WalkthroughContentProps) {
   const galleryImages = content.images.map(img => ({
     id: img.order,
     url: img.url,
@@ -148,6 +150,7 @@ function WalkthroughContent({ content, onImageClick }: WalkthroughContentProps) 
           <ImageGallery
             images={galleryImages}
             onImageClick={onImageClick}
+            priority={priority}
           />
         )}
       </div>

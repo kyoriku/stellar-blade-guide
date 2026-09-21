@@ -7,9 +7,16 @@ import { thumbnailUrl, buildSrcSet, predictRenderedWidth, SINGLE_SIZES, GRID_SIZ
 interface ImageGalleryProps {
   images: CollectibleImage[];
   onImageClick?: (imageUrl: string) => void;
+  /**
+   * This gallery is above the fold on arrival. Every image in it loads eagerly
+   * and paints at full opacity over its own skeleton; the first also gets
+   * fetchpriority="high". Opt-in per gallery, because callers render one
+   * gallery per item and only the first is worth prioritising.
+   */
+  priority?: boolean;
 }
 
-function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
+function ImageGallery({ images = [], onImageClick, priority = false }: ImageGalleryProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(() => {
     const validCount = images.filter(img => img.url && img.alt).length;
     if (!validCount) return new Set<number>();
@@ -39,8 +46,13 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
 
   return (
     <div className={`grid gap-3 ${isSingle ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
-      {validImages.map((image) => {
+      {validImages.map((image, idx) => {
         const isLoaded = loadedImages.has(image.id);
+        const eager = priority;
+        const highPriority = priority && idx === 0;
+        // Only the opacity class — the skeleton still unmounts on load, so an
+        // eager image paints over its pulse instead of over an empty box.
+        const shown = isLoaded || eager;
 
         return (
           <div
@@ -50,8 +62,13 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
             onMouseEnter={() => setHoveredImage(image.id)}
             onMouseLeave={() => setHoveredImage(null)}
           >
+            {/* An eager image drops the skeleton's z-10 and positions itself
+                instead, so DOM order alone stacks skeleton -> image -> hover.
+                No new z-index: position:relative with z-index:auto creates no
+                stacking context, so the image still paints below fixed chrome
+                like the mobile TOC. */}
             {!isLoaded && (
-              <div className="absolute inset-0 z-10 rounded-lg bg-gray-700 animate-pulse flex items-center justify-center">
+              <div className={`absolute inset-0 ${eager ? '' : 'z-10 '}rounded-lg bg-gray-700 animate-pulse flex items-center justify-center`}>
                 <ImageIcon className="w-10 h-10 text-gray-600" />
               </div>
             )}
@@ -61,9 +78,10 @@ function ImageGallery({ images = [], onImageClick }: ImageGalleryProps) {
               srcSet={buildSrcSet(image.url)}
               sizes={sizes}
               alt={image.alt}
-              className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+              className={`${eager ? 'relative ' : ''}w-full h-full object-cover transition-opacity duration-300 ${shown ? 'opacity-100' : 'opacity-0'}`}
               onLoad={(e) => handleImageLoad(image.id, e)}
-              loading="lazy"
+              loading={eager ? 'eager' : 'lazy'}
+              fetchPriority={highPriority ? 'high' : undefined}
             />
 
             {isLoaded && (
