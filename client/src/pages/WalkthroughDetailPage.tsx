@@ -17,6 +17,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/image'
 import { walkthroughTypeName } from '../utils/walkthroughTypeName'
+import { serverWalkthroughTitle } from '../utils/serverHead'
 import { WALKTHROUGH_IMAGES } from '../constants/categoryImages'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -93,13 +94,17 @@ function WalkthroughDetailPage() {
     : null;
 
   if (isLoading) {
-    // The real title arrives with the data; until then the mission-type name
-    // keeps the tab and head tags populated.
+    // On a full page load the server already injected this walkthrough's real
+    // title, so reuse it rather than flashing the mission-type name in the tab
+    // and heading. It is null after a client-side navigation, on a shell with
+    // no injected head, and on every head that is not a walkthrough row — in
+    // which case the mission-type name keeps the tab and head tags populated.
     const typeDisplay = walkthroughTypeName(type!);
+    const serverTitle = serverWalkthroughTitle(location.pathname, typeDisplay);
     return (
       <div className="min-h-main bg-primary">
         <SEO
-          title={`${typeDisplay} Walkthrough`}
+          title={serverTitle ? `${serverTitle} Walkthrough` : `${typeDisplay} Walkthrough`}
           description={`${typeDisplay} walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.`}
           canonical={`/walkthroughs/${type}/${slug}`}
           ogImage={WALKTHROUGH_IMAGES[type!] ? ogImageUrl(WALKTHROUGH_IMAGES[type!]) : undefined}
@@ -115,7 +120,13 @@ function WalkthroughDetailPage() {
             <div className="flex-1 min-w-0">
               {/* Page header skeleton */}
               <div className="mb-8">
-                <div className="h-9 md:h-10 w-96 bg-gray-700 rounded-lg animate-pulse" />
+                {serverTitle ? (
+                  <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">
+                    {serverTitle}
+                  </h1>
+                ) : (
+                  <div className="h-9 md:h-10 w-96 bg-gray-700 rounded-lg animate-pulse" />
+                )}
                 <div className="h-6 w-80 bg-gray-700 rounded mt-2 animate-pulse" />
                 {type !== 'main-story' && (
                   <div className="h-5 w-72 bg-gray-700/50 rounded mt-2 animate-pulse" />
@@ -138,8 +149,9 @@ function WalkthroughDetailPage() {
                 </ul>
               </div>
 
-              {/* Walkthrough content skeletons */}
-              <section className="mb-16 space-y-4">
+              {/* Walkthrough content skeletons — mb-4 matches the loaded
+                  section, so nothing below it shifts when data lands. */}
+              <section className="mb-4 space-y-4">
                 <WalkthroughContentSkeleton />
                 <WalkthroughContentSkeleton />
                 <WalkthroughContentSkeleton />
@@ -179,6 +191,12 @@ function WalkthroughDetailPage() {
   // Shared by the meta description and both structured-data descriptions so
   // all three always agree.
   const hasBossFight = walkthrough.content.some(block => block.is_boss);
+
+  // The first gallery on the page is above the fold, so it loads eagerly. This
+  // is the section that actually has images, not necessarily the first one —
+  // findIndex returning -1 on an imageless walkthrough matches nothing, which
+  // is what we want.
+  const firstGalleryIdx = walkthrough.content.findIndex(c => c.images?.length > 0);
   const pageDescription = `${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with ${hasBossFight ? 'screenshots, tips, and boss strategies' : 'screenshots and tips'}.`;
 
   return (
@@ -285,7 +303,7 @@ function WalkthroughDetailPage() {
 
             {/* Content sections */}
             <section className="mb-4 space-y-4">
-              {walkthrough.content.map((content) => (
+              {walkthrough.content.map((content, index) => (
                 <div
                   key={`${walkthrough.slug}-${content.order}`}
                   id={content.section_title ? slugifySection(content.section_title) : `section-${content.order}`}
@@ -293,6 +311,7 @@ function WalkthroughDetailPage() {
                 >
                   <WalkthroughContent
                     content={content}
+                    priority={index === firstGalleryIdx}
                     onImageClick={handleImageClick}
                   />
                 </div>
