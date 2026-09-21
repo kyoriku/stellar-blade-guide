@@ -125,6 +125,18 @@ function LevelDetailPage() {
       .filter(loc => loc.collectibles.length > 0);
   }, [locationData, cycleFilter]);
 
+  // The first gallery on the page is above the fold, so it loads eagerly. Keyed
+  // by id rather than index because the list is two levels deep and each
+  // section only sees its own slice. An imageless first card is skipped —
+  // ImageGallery renders nothing for one — and an all-imageless page yields
+  // undefined, which matches no collectible.
+  const priorityId = useMemo(
+    () => filteredLocationData
+      .flatMap(loc => loc.collectibles)
+      .find(c => c.images?.length > 0)?.id,
+    [filteredLocationData]
+  );
+
   const filteredTotal = useMemo(() =>
     filteredLocationData.reduce((sum, loc) =>
       sum + loc.collectibles.reduce((s, c) => s + (c.quantity || 1), 0), 0),
@@ -347,6 +359,7 @@ function LevelDetailPage() {
                   levelName={displayLevelName}
                   collectibles={location.collectibles}
                   onImageClick={handleImageClick}
+                  priorityId={priorityId}
                   isCompleted={isCompleted}
                   isToggling={isToggling}
                   onToggleProgress={toggle}

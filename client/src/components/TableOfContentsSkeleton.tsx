@@ -14,7 +14,7 @@ function TableOfContentsSkeleton() {
         <ul className="space-y-1">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
             <li key={i} className="group">
-              <div className="flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg border-l-2 border-transparent">
+              <div className="flex items-center gap-2 text-sm font-medium py-2 rounded-lg border-l-2 border-transparent">
                 <div className="w-4 h-4 bg-gray-700 rounded animate-pulse"></div>
                 <div
                   className="h-4 bg-gray-700 rounded animate-pulse flex-1"
@@ -25,8 +25,6 @@ function TableOfContentsSkeleton() {
           ))}
         </ul>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
     </nav>
   );
 }

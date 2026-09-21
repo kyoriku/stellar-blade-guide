@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { List, ChevronRight } from 'lucide-react'
 import { scrollToSection, type TocLink } from '../utils/toc'
 
@@ -28,41 +27,24 @@ function TableOfContents({ links, currentLevel, activeSection, onNavigate }: Tab
 
           return (
             <li key={index} className="group">
-              {linkGroup.mainLink.startsWith('#') ? (
-                <a
-                  href={linkGroup.mainLink}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleMainLinkClick(linkGroup.mainLink);
-                  }}
-                  className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                    ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/10'
-                    : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
-                    }`}
-                >
-                  <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
-                    }`} />
-                  <span className="flex-1">{linkGroup.title}</span>
-                </a>
-              ) : (
-                <Link
-                  to={linkGroup.mainLink}
-                  className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                    ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/10'
-                    : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
-                    }`}
-                  onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'instant' });
-                  }}
-                >
-                  <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
-                    }`} />
-                  <span className="flex-1">{linkGroup.title}</span>
-                </Link>
-              )}
+              <a
+                href={linkGroup.mainLink}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleMainLinkClick(linkGroup.mainLink);
+                }}
+                className={`flex items-center gap-2 text-sm font-medium py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
+                  ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/10'
+                  : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
+                  }`}
+              >
+                <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : 'group-hover:translate-x-0.5'
+                  }`} />
+                <span className="flex-1">{linkGroup.title}</span>
+              </a>
 
               {linkGroup.subLinks && (
-                <ul className="ml-4 space-y-1 overflow-hidden">
+                <ul className="ml-2 space-y-1 overflow-hidden">
                   {linkGroup.subLinks.map((subLink, subIndex) => {
                     const isActiveSubLink = activeSection === subLink.href.substring(1);
 
@@ -114,8 +96,6 @@ function TableOfContents({ links, currentLevel, activeSection, onNavigate }: Tab
       </div>
 
       {linksContent}
-
-      {/* <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div> */}
     </nav>
   );
 }

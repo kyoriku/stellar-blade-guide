@@ -5,6 +5,7 @@ export interface SubLink {
 }
 
 export interface TocLink {
+  /** Always a `#hash`; the TOCs preventDefault and scroll to it in-page. */
   mainLink: string;
   title: string;
   subLinks?: SubLink[];

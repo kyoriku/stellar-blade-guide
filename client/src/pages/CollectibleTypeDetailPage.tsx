@@ -203,6 +203,26 @@ function CollectibleTypeDetailPage() {
     }];
   }, [filteredBySubtype, sortMode]);
 
+  // The first gallery on the page is above the fold, so it loads eagerly. Read
+  // from the sorted, filtered data so it follows the cycle, subtype and A-Z
+  // controls. Keyed by id rather than index because the list is two levels deep
+  // and each section only sees its own slice. An imageless first card is
+  // skipped (weapon-cores opens with one), and an all-imageless page yields
+  // undefined, which matches no collectible.
+  // Plain loops rather than flatMap/find: sortedLevelData is a union of the
+  // default and A-Z shapes (the latter carries _levelName/_locationName), and
+  // the array methods cannot resolve a call signature across that union. The
+  // loops only touch id and images, which both shapes share.
+  const priorityId = useMemo(() => {
+    for (const level of sortedLevelData) {
+      for (const loc of level.locations) {
+        for (const c of loc.collectibles) {
+          if (c.images?.length > 0) return c.id;
+        }
+      }
+    }
+  }, [sortedLevelData]);
+
   // In A-Z mode the flat article cards drive the highlight as well as the
   // section wrappers; selector order preserves the original observe order.
   const [activeSection, setActiveSection] = useActiveSection(
@@ -607,6 +627,7 @@ function CollectibleTypeDetailPage() {
                       levelName={sortMode === 'alphabetical' ? '' : level.level_name}
                       collectibles={location.collectibles}
                       onImageClick={handleImageClick}
+                      priorityId={priorityId}
                       hideTypeBadge
                       itemLabel={displayTypeName}
                       isCompleted={isCompleted}

@@ -21,6 +21,8 @@ interface CollectibleSectionProps {
   onImageClick?: (imageUrl: string) => void;
   hideTypeBadge?: boolean;
   itemLabel?: string;
+  /** Collectible whose gallery is above the fold — see ImageGallery's `priority`. */
+  priorityId?: number;
   isCompleted?: (id: number) => boolean;
   isToggling?: (id: number) => boolean;
   onToggleProgress?: (id: number) => void;
@@ -39,6 +41,7 @@ function CollectibleSection({
   collectibles,
   onImageClick,
   hideTypeBadge = false,
+  priorityId,
   isCompleted,
   isToggling,
   onToggleProgress,
@@ -169,6 +172,7 @@ function CollectibleSection({
               <ImageGallery
                 images={collectible.images}
                 onImageClick={onImageClick}
+                priority={collectible.id === priorityId}
               />
             </div>
           </article>
