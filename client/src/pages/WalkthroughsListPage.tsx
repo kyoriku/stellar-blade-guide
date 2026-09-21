@@ -38,9 +38,15 @@ export default function WalkthroughsListPage() {
           ogImage={listOgImage}
         />
         <div className="container mx-auto px-3 py-8">
+          {/* The heading needs no fetch — displayType comes from the URL. Only
+              the count in the sentence below is genuinely unknown, so that is
+              all that stays a placeholder. */}
           <div className="mb-8">
-            <div className="h-9 md:h-10 w-64 bg-gray-700 rounded-lg animate-pulse" />
-            <div className="h-5 w-40 bg-gray-700/50 rounded mt-2 animate-pulse" />
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayType}</h1>
+            <div className="mt-2 max-w-3xl space-y-1.5">
+              <div className="h-6 bg-gray-700/50 rounded animate-pulse" />
+              <div className="h-6 w-3/4 bg-gray-700/50 rounded animate-pulse" />
+            </div>
           </div>
           {/* Card skeletons on desktop */}
           <div className="hidden md:grid gap-4 grid-cols-2 lg:grid-cols-3">
