@@ -19,7 +19,10 @@ test.describe('walkthrough loading-state seo', () => {
     await page.unroute('**/api/walkthroughs/main-story');
     await page.reload();
     // List titles are state-invariant; the loaded page must show the same one.
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // Gate on the count sentence, not the h1 — the loading branch renders the
+    // real h1 too, so a heading gate would resolve before the query lands and
+    // the assertion below would re-check the loading-state title.
+    await expect(page.getByText(/\d+ Main Story walkthroughs for Stellar Blade/)).toBeVisible();
     await expect(page).toHaveTitle('Main Story Walkthroughs | Stellar Blade Guide');
   });
 

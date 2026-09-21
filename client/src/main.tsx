@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { ApiError } from './services/api'
 import { AuthProvider } from './context/AuthContext.tsx'
 import { ToastProvider } from './context/ToastContext.tsx'
+import { captureServerHead } from './utils/serverHead'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,10 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+// Read the injected values before the strip below discards them — the
+// walkthrough detail skeleton reuses the real title instead of a placeholder.
+captureServerHead();
 
 // Server-injected head tags (server/app/seo_head.py) are for crawlers; React
 // owns the head after mount. Without this, the server's <title> stays first in
