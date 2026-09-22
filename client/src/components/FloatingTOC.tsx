@@ -24,6 +24,10 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
   // in that commit rather than in a frame that can interleave with it.
   const pendingJump = useRef<string | null>(null)
 
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const [listScrolls, setListScrolls] = useState(false)
+
   const open = useCallback(() => setIsOpen(true), [])
 
   const close = useCallback(() => setIsOpen(false), [])
@@ -45,6 +49,28 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
     if (!href) return
     pendingJump.current = null
     scrollToSection(href)
+  }, [isOpen])
+
+  // pan-y is only safe while the list has somewhere to scroll. overscroll-behavior
+  // contain only blocks chaining at a real scroll boundary, so on a list that fits
+  // there is no boundary and pan-y hands the drag straight to the page behind.
+  // Measured from the element rather than counted from links, because sorting,
+  // filtering and the scroll-spy all change the list's height. Measuring here runs
+  // before paint, so the first frame is already correct; the observer keeps it true
+  // if the content or the 70vh box changes while the drawer is open.
+  useLayoutEffect(() => {
+    if (!isOpen) return
+    const scroller = scrollerRef.current
+    const list = listRef.current
+    if (!scroller || !list) return
+
+    const measure = () => setListScrolls(scroller.scrollHeight > scroller.clientHeight)
+    measure()
+
+    const observer = new ResizeObserver(measure)
+    observer.observe(scroller)
+    observer.observe(list)
+    return () => observer.disconnect()
   }, [isOpen])
 
   const handleLinkClick = (href: string) => {
@@ -102,13 +128,19 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
 
         {/* Drawer content */}
         <div
+          ref={scrollerRef}
           className="overflow-y-auto custom-scrollbar px-3 py-3"
           // pan-y opts this list back in, since touch-action on the shell above
-          // governs descendants; overscroll-behavior stops it chaining to the
-          // page at either end.
-          style={{ maxHeight: 'calc(70vh - 56px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+          // governs descendants — but only once it has somewhere to scroll, or
+          // the drag chains to the page. overscroll-behavior stops it chaining
+          // at either end when it does scroll.
+          style={{
+            maxHeight: 'calc(70vh - 56px)',
+            overscrollBehavior: 'contain',
+            touchAction: listScrolls ? 'pan-y' : 'none',
+          }}
         >
-          <ul className="space-y-1">
+          <ul ref={listRef} className="space-y-1">
             {links.map((linkGroup, index) => {
               const isCurrentLevel = currentLevel === linkGroup.title
 
