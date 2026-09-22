@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { thumbnailUrl, ogImageUrl, buildSrcSet, GALLERY_WIDTHS } from './image'
+import {
+  thumbnailUrl,
+  ogImageUrl,
+  buildSrcSet,
+  GALLERY_WIDTHS,
+  isValidGalleryImage,
+  gallerySizes,
+  SINGLE_SIZES,
+  GRID_SIZES,
+} from './image'
 
 // Fixture must stay in the site/ namespace: the image pipeline's manifest check
 // (generate_variants.py) scans all client source for collectibles/walkthroughs
@@ -41,5 +50,52 @@ describe('buildSrcSet', () => {
     GALLERY_WIDTHS.forEach((w, i) => {
       expect(entries[i]).toBe(`${thumbnailUrl(R2, w)} ${w}w`)
     })
+  })
+})
+
+// url and alt are both required strings on CollectibleImage, so the invalid
+// cases are empty strings rather than missing fields — no cast needed.
+describe('isValidGalleryImage', () => {
+  it('accepts an image with both a url and an alt', () => {
+    expect(isValidGalleryImage({ url: R2, alt: 'a camp' })).toBe(true)
+  })
+
+  it('rejects an empty alt', () => {
+    expect(isValidGalleryImage({ url: R2, alt: '' })).toBe(false)
+  })
+
+  it('rejects an empty url', () => {
+    expect(isValidGalleryImage({ url: '', alt: 'a camp' })).toBe(false)
+  })
+
+  it('rejects both empty', () => {
+    expect(isValidGalleryImage({ url: '', alt: '' })).toBe(false)
+  })
+})
+
+// usePrefetch and ImageGallery both derive `sizes` from this. If they ever
+// disagree the prefetch warms a srcset candidate the gallery never requests,
+// which is what the shared predicate above exists to prevent.
+describe('gallerySizes', () => {
+  it('uses the single-image sizes for one valid image', () => {
+    expect(gallerySizes([{ url: R2, alt: 'one' }])).toBe(SINGLE_SIZES)
+  })
+
+  it('uses the grid sizes for two valid images', () => {
+    expect(gallerySizes([
+      { url: R2, alt: 'one' },
+      { url: R2, alt: 'two' },
+    ])).toBe(GRID_SIZES)
+  })
+
+  it('counts only renderable images, so an alt-less second image still reads as single', () => {
+    expect(gallerySizes([
+      { url: R2, alt: 'one' },
+      { url: R2, alt: '' },
+    ])).toBe(SINGLE_SIZES)
+  })
+
+  it('uses the grid sizes for an empty gallery', () => {
+    expect(gallerySizes([])).toBe(GRID_SIZES)
   })
 })
