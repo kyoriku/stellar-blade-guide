@@ -16,7 +16,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
-import { afterKeyboardSettles } from '../utils/keyboardSettle'
+import { afterKeyboardSettles, kbdLog } from '../utils/keyboardSettle'
 import { useProgress } from '../hooks/useProgress'
 import { useActiveSection } from '../hooks/useActiveSection'
 import SEO from '../components/SEO';
@@ -251,12 +251,25 @@ function CollectibleTypeDetailPage() {
   // 69611c4 introduced to kill a cross-page anchor flash.
   useLayoutEffect(() => {
     if (!(levelData.length > 0 && location.hash)) return;
+    kbdLog('hash effect', { hash: location.hash, rows: levelData.length });
     return afterKeyboardSettles(() => {
       const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-      if (!el) return;
+      if (!el) {
+        kbdLog('no target element — nothing scrolls');
+        return;
+      }
       const offset = 80;
-      const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+      const from = window.pageYOffset;
+      const top = el.getBoundingClientRect().top + from - offset;
+      // TEMPORARY: delta tells us whether a real scroll happened at all — the
+      // "near-top was clean" reading may just have been a zero-distance jump.
+      kbdLog('SCROLL', { from: Math.round(from), to: Math.round(top), delta: Math.round(top - from) });
       window.scrollTo({ top, behavior: 'instant' });
+      // TEMPORARY: second sample once the keyboard animation must be over. If
+      // diff moved between SCROLL and here, the viewport was still travelling
+      // when we scrolled — detection was right and the settle signal is wrong.
+      // If both read the same, we measured before it had started.
+      setTimeout(() => kbdLog('AFTER +350ms', { intendedTop: Math.round(top) }), 350);
     });
   }, [levelData, location.hash]);
 
