@@ -20,7 +20,7 @@ export default function ProtectedRoute({
   if (isLoading) {
     if (renderWhileRestoring) return <>{children}</>
     return (
-      <div className="bg-primary flex items-center justify-center" style={{ minHeight: 'calc(100vh - 174px)' }}>
+      <div className="bg-primary flex items-center justify-center" style={{ minHeight: 'var(--min-height-main)' }}>
         <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
       </div>
     )

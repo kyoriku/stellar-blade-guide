@@ -34,7 +34,10 @@ test.describe('navbar mobile search', () => {
     // Drawer closed on navigation. It hides via -translate-x-full/opacity-0
     // (never display:none), which Playwright still treats as "visible" — so
     // assert the class, not visibility.
-    const drawer = input.locator('xpath=ancestor::div[contains(@class, "fixed")][1]');
+    // Target the drawer by the id the toggle's aria-controls names, not by
+    // "nearest fixed ancestor" — that walk only avoided matching the navbar
+    // because the navbar is a <nav> and the XPath said div.
+    const drawer = page.locator('#mobile-menu');
     await expect(drawer).toHaveClass(/-translate-x-full/);
     await expect(page.getByRole('button', { name: 'Toggle menu' })).toHaveAttribute('aria-expanded', 'false');
 

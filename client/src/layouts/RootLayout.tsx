@@ -31,7 +31,10 @@ function RootLayout() {
     <div className="flex flex-col min-h-screen bg-primary">
       <ScrollToTop />
       <Navbar />
-      <div className="flex-1">
+      {/* Stands in for the fixed navbar, which is out of flow. Sits here rather
+          than on each page's min-h-main so it covers every route, including any
+          future page that forgets that class. */}
+      <div className="flex-1 pt-(--nav-height)">
         <Outlet />
       </div>
       <Footer />
