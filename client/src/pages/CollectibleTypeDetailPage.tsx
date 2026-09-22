@@ -480,7 +480,7 @@ function CollectibleTypeDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-primary">
+    <div className="min-h-main bg-primary">
       {seo}
       <StructuredData
         type="CollectionPage"
