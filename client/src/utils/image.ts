@@ -19,6 +19,22 @@ export const GRID_SIZES =
   '(max-width: 1535px) 454px, ' +
   '582px';
 
+// One definition of "this image will render". The gallery lays out from it and
+// gallerySizes derives `sizes` from it, so they must never drift: if they did,
+// the gallery would lay out one set of images while telling the browser the
+// sizes for another — a single full-width image asking for a half-width
+// candidate. Both fields are required strings, so this is an emptiness check.
+export function isValidGalleryImage(image: { url: string; alt: string }): boolean {
+  return Boolean(image.url && image.alt);
+}
+
+// The prefetcher and ImageGallery must derive `sizes` identically — disagreeing
+// picks a different srcset candidate, and the prefetch then warms a file the
+// gallery never requests.
+export function gallerySizes(images: { url: string; alt: string }[]): string {
+  return images.filter(isValidGalleryImage).length === 1 ? SINGLE_SIZES : GRID_SIZES;
+}
+
 const R2_BASE = 'https://img.stellarbladeguide.com/';
 
 // R2 URLs get a -w{N} filename suffix (every size exists as its own object;

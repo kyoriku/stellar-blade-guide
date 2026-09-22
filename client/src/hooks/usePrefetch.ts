@@ -1,14 +1,47 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { api, type LevelWithLocations, type LocationWithCollectibles, type Walkthrough } from '../services/api'
 import { buildSlugMap } from '../utils/slugify'
-import { buildSrcSet, thumbnailUrl, SINGLE_SIZES, GRID_SIZES, GALLERY_WIDTHS } from '../utils/image'
+import { buildSrcSet, gallerySizes } from '../utils/image'
 import { loadedUrlCache } from '../utils/imageCache'
 
 const ABOVE_FOLD_PREFETCH_COUNT = 3;
 const WALKTHROUGH_ABOVE_FOLD_COUNT = 2;
 const prefetchedImageUrls = new Set<string>();
+// Held until each image settles so nothing can be collected mid-flight. The
+// load handler is the only writer to loadedUrlCache.
+const inFlightImages = new Set<HTMLImageElement>();
 
-function prefetchImage(anchor: string | undefined, collectibles: { id: number; title: string; images: { url: string }[] }[]) {
+// Warms one image through a detached <img> carrying the gallery's own srcset
+// and sizes, so the browser runs its real candidate selection against the live
+// viewport and we never have to guess which file it will pick. Nothing is
+// written to loadedUrlCache until the bytes have actually arrived — a
+// speculative entry would make the destination gallery skip its loading state
+// and show an empty box for the whole download.
+function warmImage(url: string, sizes: string) {
+  if (prefetchedImageUrls.has(url)) return;
+  prefetchedImageUrls.add(url);
+
+  const img = new Image();
+  // sizes before srcset: assigning srcset is what queues candidate selection.
+  img.sizes = sizes;
+  // No src: when srcset carries w descriptors the spec ignores src for
+  // selection, so srcset + sizes alone reproduces what ImageGallery's <img>
+  // resolves to.
+  img.srcset = buildSrcSet(url);
+
+  const release = () => inFlightImages.delete(img);
+  img.onload = () => {
+    // currentSrc is the candidate the browser actually chose and finished
+    // downloading — the same string ImageGallery records for its own loads,
+    // and the only thing its seeding lookup can match.
+    loadedUrlCache.add(img.currentSrc);
+    release();
+  };
+  img.onerror = release;
+  inFlightImages.add(img);
+}
+
+function prefetchImage(anchor: string | undefined, collectibles: { id: number; title: string; images: { url: string; alt: string }[] }[]) {
   let targets: typeof collectibles;
   if (anchor) {
     const slugMap = buildSlugMap(collectibles);
@@ -20,19 +53,10 @@ function prefetchImage(anchor: string | undefined, collectibles: { id: number; t
   }
 
   for (const collectible of targets) {
-    const imageCount = collectible.images.length;
-    if (!imageCount) continue;
-    const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
+    if (!collectible.images.length) continue;
+    const sizes = gallerySizes(collectible.images);
     for (const image of collectible.images) {
-      if (prefetchedImageUrls.has(image.url)) continue;
-      prefetchedImageUrls.add(image.url);
-      GALLERY_WIDTHS.forEach(w => loadedUrlCache.add(thumbnailUrl(image.url, w)));
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.imageSrcset = buildSrcSet(image.url);
-      link.imageSizes = sizes;
-      document.head.appendChild(link);
+      warmImage(image.url, sizes);
     }
   }
 }
@@ -43,39 +67,11 @@ function prefetchWalkthroughImages(walkthrough: Walkthrough) {
     if (sectionCount >= WALKTHROUGH_ABOVE_FOLD_COUNT) break;
     const sectionImages = section.images ?? [];
     if (!sectionImages.length) continue;
-    const imageCount = sectionImages.length;
-    const sizes = imageCount === 1 ? SINGLE_SIZES : GRID_SIZES;
+    const sizes = gallerySizes(sectionImages);
     for (const image of sectionImages) {
-      if (prefetchedImageUrls.has(image.url)) continue;
-      prefetchedImageUrls.add(image.url);
-      GALLERY_WIDTHS.forEach(w => loadedUrlCache.add(thumbnailUrl(image.url, w)));
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.imageSrcset = buildSrcSet(image.url);
-      link.imageSizes = sizes;
-      document.head.appendChild(link);
+      warmImage(image.url, sizes);
     }
     sectionCount++;
-  }
-}
-
-// Module-level (not inside usePrefetch) so it shares the prefetchedImageUrls dedup Set
-// with prefetchImage and prefetchWalkthroughImages. Search results supply plain URL strings
-// rather than typed image objects, so the existing helpers can't be reused directly.
-export function prefetchImageUrls(urls: string[]) {
-  if (!urls.length) return;
-  const sizes = urls.length === 1 ? SINGLE_SIZES : GRID_SIZES;
-  for (const url of urls) {
-    if (prefetchedImageUrls.has(url)) continue;
-    prefetchedImageUrls.add(url);
-    GALLERY_WIDTHS.forEach(w => loadedUrlCache.add(thumbnailUrl(url, w)));
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.imageSrcset = buildSrcSet(url);
-    link.imageSizes = sizes;
-    document.head.appendChild(link);
   }
 }
 
