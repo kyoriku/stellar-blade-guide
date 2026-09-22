@@ -404,8 +404,12 @@ function Navbar() {
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => { setIsOpen(false); menuButtonRef.current?.focus(); }}
+          // Starts below the navbar. At z-40 it loses to the nav either way, so
+          // a mismatch here is invisible while the nav is taller than this
+          // value — but it would show as a strip of bare page if the nav ever
+          // got shorter. Inline rather than a class so it beats inset-0 above.
           style={{
-            top: '64px',
+            top: 'var(--nav-height)',
             animation: 'fadeIn 0.2s ease-out'
           }}
         />
@@ -419,7 +423,10 @@ function Navbar() {
         ref={mobileMenuRef}
         inert={!isOpen}
         className={`lg:hidden fixed left-0 right-0 bottom-0 bg-primary transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
-        style={{ top: '64px' }}
+        // Must be the full navbar height, border included: this shares the
+        // nav's z-50 and comes later in the DOM, so it paints over anything it
+        // overlaps. At a hardcoded 64 it covered the nav's 1px bottom border.
+        style={{ top: 'var(--nav-height)' }}
       >
         <div className="h-full flex flex-col">
           {/* Search Bar - Sticky */}
