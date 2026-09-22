@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { List, ChevronRight, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { scrollToSection, type TocLink } from '../utils/toc'
@@ -10,34 +10,23 @@ interface FloatingTOCProps {
   onNavigate?: (href: string) => void
 }
 
-let savedScrollY = 0
-
-function lockScroll() {
-  savedScrollY = window.scrollY
-  document.body.style.position = 'fixed'
-  document.body.style.top = `-${savedScrollY}px`
-  document.body.style.width = '100%'
-}
-
-function unlockScroll() {
-  document.body.style.position = ''
-  document.body.style.top = ''
-  document.body.style.width = ''
-  window.scrollTo({ top: savedScrollY, behavior: 'instant' })
-}
-
+// Scrolling is held by touch-action on the backdrop and the drawer shell (which
+// together cover the viewport), not by pinning the body. Pinning put
+// position:fixed on the element holding every article and image, which on iOS
+// promotes a composited layer as tall as the document — created and destroyed
+// on every open and close, in the same frame as a jump. That killed the tab on
+// long pages. Nothing here writes scroll position, so opening the drawer cannot
+// move the page and there is nothing to restore.
 export default function FloatingTOC({ links, currentLevel, activeSection, onNavigate }: FloatingTOCProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const open = useCallback(() => {
-    lockScroll()
-    setIsOpen(true)
-  }, [])
+  // Set on a link tap and consumed once the drawer has closed, so the jump runs
+  // in that commit rather than in a frame that can interleave with it.
+  const pendingJump = useRef<string | null>(null)
 
-  const close = useCallback(() => {
-    unlockScroll()
-    setIsOpen(false)
-  }, [])
+  const open = useCallback(() => setIsOpen(true), [])
+
+  const close = useCallback(() => setIsOpen(false), [])
 
   // Close on Escape key
   useEffect(() => {
@@ -47,15 +36,21 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
     return () => window.removeEventListener('keydown', handleKey)
   }, [isOpen, close])
 
-  // Cleanup on unmount in case component unmounts while open
-  useEffect(() => {
-    return () => { if (isOpen) unlockScroll() }
+  // Runs only once the drawer is closed, so nothing can throw the jump back.
+  // useLayoutEffect rather than useEffect so the scroll lands before the
+  // browser paints — no frame shows the old offset with the drawer already gone.
+  useLayoutEffect(() => {
+    if (isOpen) return
+    const href = pendingJump.current
+    if (!href) return
+    pendingJump.current = null
+    scrollToSection(href)
   }, [isOpen])
 
   const handleLinkClick = (href: string) => {
     onNavigate?.(href)
-    close()
-    requestAnimationFrame(() => scrollToSection(href))
+    pendingJump.current = href
+    setIsOpen(false)
   }
 
   return (
@@ -74,6 +69,10 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
       {isOpen && (
         <div
           className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          // Holds the page still without pinning the body. touch-action only
+          // suppresses browser-handled gestures, so the tap-to-close below
+          // still fires.
+          style={{ touchAction: 'none' }}
           onClick={close}
         />
       )}
@@ -82,7 +81,10 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
       <div
         className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-secondary border-t border-gray-700 rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'
           }`}
-        style={{ maxHeight: '70vh' }}
+        // The shell and the backdrop together cover the viewport, so this is
+        // the other half of holding the page still — a drag on the header must
+        // not scroll what is behind it.
+        style={{ maxHeight: '70vh', touchAction: 'none' }}
       >
         {/* Drawer header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700">
@@ -101,7 +103,10 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
         {/* Drawer content */}
         <div
           className="overflow-y-auto custom-scrollbar px-3 py-3"
-          style={{ maxHeight: 'calc(70vh - 56px)', overscrollBehavior: 'contain' }}
+          // pan-y opts this list back in, since touch-action on the shell above
+          // governs descendants; overscroll-behavior stops it chaining to the
+          // page at either end.
+          style={{ maxHeight: 'calc(70vh - 56px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
         >
           <ul className="space-y-1">
             {links.map((linkGroup, index) => {
