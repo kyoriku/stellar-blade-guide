@@ -16,6 +16,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
+import { afterKeyboardSettles } from '../utils/keyboardSettle'
 import { useProgress } from '../hooks/useProgress'
 import { useActiveSection } from '../hooks/useActiveSection'
 import SEO from '../components/SEO';
@@ -242,16 +243,21 @@ function CollectibleTypeDetailPage() {
     setSortMode('default');
   }
 
-  // Scroll to hash on load once data is ready
+  // Scroll to hash on load once data is ready. Deferred past the soft keyboard:
+  // a search result tap dismisses it one commit before this runs (the drawer
+  // going inert blurs the input), so without the wait a long jump lands while
+  // the visual viewport is still moving and the fixed navbar slides. With no
+  // keyboard up this runs synchronously, keeping the pre-paint timing that
+  // 69611c4 introduced to kill a cross-page anchor flash.
   useLayoutEffect(() => {
-    if (levelData.length > 0 && location.hash) {
+    if (!(levelData.length > 0 && location.hash)) return;
+    return afterKeyboardSettles(() => {
       const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-      if (el) {
-        const offset = 80;
-        const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
-        window.scrollTo({ top, behavior: 'instant' });
-      }
-    }
+      if (!el) return;
+      const offset = 80;
+      const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+      window.scrollTo({ top, behavior: 'instant' });
+    });
   }, [levelData, location.hash]);
 
   // Collect all images when data loads
