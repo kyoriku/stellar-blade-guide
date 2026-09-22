@@ -20,6 +20,22 @@ export function isKeyboardOpen(layoutHeight: number, visualHeight: number): bool
   return layoutHeight - visualHeight >= KEYBOARD_MIN_INSET;
 }
 
+// TEMPORARY diagnostic — remove before merging. Answers whether this helper is
+// waiting at all, or whether the height check has already gone false by the time
+// it runs.
+const t0 = performance.now();
+export function kbdLog(event: string, detail: Record<string, unknown> = {}) {
+  const viewport = window.visualViewport;
+  console.log('[kbd]', event, {
+    ms: Math.round(performance.now() - t0),
+    innerHeight: window.innerHeight,
+    visualHeight: viewport ? Math.round(viewport.height) : null,
+    diff: viewport ? Math.round(window.innerHeight - viewport.height) : null,
+    scrollY: Math.round(window.scrollY),
+    ...detail,
+  });
+}
+
 /**
  * Run `scroll` once the soft keyboard has finished animating away.
  *
@@ -29,31 +45,45 @@ export function isKeyboardOpen(layoutHeight: number, visualHeight: number): bool
  */
 export function afterKeyboardSettles(scroll: () => void): () => void {
   const viewport = window.visualViewport;
+  kbdLog('called', { hasViewport: !!viewport });
+
   if (!viewport || !isKeyboardOpen(window.innerHeight, viewport.height)) {
+    kbdLog('SYNC — no keyboard detected, scrolling immediately');
     scroll();
     return () => { };
   }
 
+  kbdLog('WAIT — keyboard detected, deferring scroll');
   let quiet: ReturnType<typeof setTimeout>;
+  let resizes = 0;
 
   const cancel = () => {
     clearTimeout(quiet);
     clearTimeout(cap);
-    viewport.removeEventListener('resize', restart);
+    viewport.removeEventListener('resize', onResize);
   };
-  const finish = () => {
+  const finish = (reason: string) => {
+    kbdLog(`FINISH via ${reason}`, { resizes });
     cancel();
     scroll();
   };
   // Every resize pushes the finish line out; the cap below bounds the total.
-  const restart = () => {
+  const armQuiet = () => {
     clearTimeout(quiet);
-    quiet = setTimeout(finish, SETTLE_QUIET_MS);
+    quiet = setTimeout(() => finish('quiet'), SETTLE_QUIET_MS);
+  };
+  const onResize = () => {
+    resizes += 1;
+    kbdLog('resize', { resizes });
+    armQuiet();
   };
 
-  const cap = setTimeout(finish, SETTLE_CAP_MS);
-  viewport.addEventListener('resize', restart);
-  restart();
+  const cap = setTimeout(() => finish('cap'), SETTLE_CAP_MS);
+  viewport.addEventListener('resize', onResize);
+  armQuiet();
 
-  return cancel;
+  return () => {
+    kbdLog('CANCELLED before scrolling', { resizes });
+    cancel();
+  };
 }

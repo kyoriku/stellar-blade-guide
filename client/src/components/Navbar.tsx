@@ -13,6 +13,7 @@ import CompletionRing from './CompletionRing'
 import { NAV_SECTIONS } from './navbar/navSections'
 import type { NavSection } from './navbar/navSections'
 import DesktopDropdown from './navbar/DesktopDropdown'
+import { kbdLog } from '../utils/keyboardSettle'
 import MobileAccordionSection from './navbar/MobileAccordionSection'
 
 function Navbar() {
@@ -449,6 +450,11 @@ function Navbar() {
                 placeholder="Search collectibles, walkthroughs, levels..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                // TEMPORARY diagnostic — remove before merging. Shows when the
+                // input actually loses focus relative to the hash effect, which
+                // is what decides whether a height check can work at all.
+                onFocus={() => kbdLog('input FOCUS')}
+                onBlur={() => kbdLog('input BLUR')}
                 className="w-full pl-11 pr-10 py-3 bg-secondary/50 border border-gray-600 rounded-xl text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all text-base"
               />
               {searchQuery && (
