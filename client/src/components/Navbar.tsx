@@ -220,9 +220,17 @@ function Navbar() {
         }
       `}</style>
 
-      <nav className={`sticky top-0 z-50 transition-all duration-300 px-3 lg:px-0 ${scrolled
-        ? 'bg-[rgba(1,4,9,0.9)] backdrop-blur-xl shadow-lg shadow-black/20 border-b border-gray-800'
-        : 'bg-nav backdrop-blur-md border-b border-gray-800/50'
+      {/* No backdrop-filter in either state: unscrolled it was invisible behind an
+          alpha-1 background, and scrolled it made no visible difference at 0.9 —
+          while on iOS it had to re-sample the page behind the bar after every
+          scroll, which is a candidate for the flash on large instant jumps.
+          The border is constant, so it sits outside the conditional and outside the
+          transition; the shadow is what marks the scrolled state. The transition
+          lists only the properties that still change — transition-all was also
+          animating the lg:px-0 padding on every breakpoint crossing. */}
+      <nav className={`sticky top-0 z-50 border-b border-gray-800 transition-[background-color,box-shadow] duration-300 px-3 lg:px-0 ${scrolled
+        ? 'bg-[rgba(1,4,9,0.97)] shadow-lg shadow-black/20'
+        : 'bg-nav'
         }`}>
 
         <div className="container mx-auto">
@@ -409,8 +417,14 @@ function Navbar() {
       >
         <div className="h-full flex flex-col">
           {/* Search Bar - Sticky */}
-          <div className={`sticky top-0 z-10 px-4 py-3 flex-shrink-0 transition-all duration-200 ${searchScrolled
-            ? 'bg-primary/95 backdrop-blur-xl border-b border-gray-800 shadow-lg'
+          {/* No backdrop-filter, same reasoning as the nav: unscrolled bg-primary is
+              alpha-1 so the blur was invisible, and at /95 it has 5% to work with.
+              Keeping a blurred layer on screen would also make the iOS flash test
+              one-way. The transition covers the two paint-only properties; the
+              border is left out because it toggles 0 -> 1px, and transition-all was
+              animating that width as a 200ms layout jiggle. */}
+          <div className={`sticky top-0 z-10 px-4 py-3 flex-shrink-0 transition-[background-color,box-shadow] duration-200 ${searchScrolled
+            ? 'bg-primary/95 border-b border-gray-800 shadow-lg'
             : 'bg-primary'
             }`}>
             <div className="relative">
