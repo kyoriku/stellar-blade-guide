@@ -1,7 +1,21 @@
 @import "tailwindcss";
 
+/* The navbar's height: h-16 (64px) plus its unconditional 1px border-b. The
+   navbar is `fixed`, so this is also the size of the spacer that stands in for
+   it in flow. Three things depend on the number — RootLayout's spacer padding,
+   --min-height-main below, and ProtectedRoute's restore spinner — so it is
+   defined once, here. Declared outside @theme so Tailwind cannot prune it as an
+   unused theme key. */
+:root {
+  --nav-height: 65px;
+}
+
 @theme {
-  --min-height-main: calc(100vh - 174px);
+  /* Viewport minus the chrome above and below the page: the navbar, and the
+     desktop footer (109px = 1px border + py-8 + a 44px row). The footer term is
+     desktop-only — below md: the footer wraps to roughly 189px, so short pages
+     already overflow the fold slightly. Pre-existing, unrelated to the navbar. */
+  --min-height-main: calc(100vh - var(--nav-height) - 109px);
 }
 
 .min-h-main {
@@ -75,4 +89,35 @@
 
 .animate-drop-in {
   animation: dropIn 0.2s ease-out;
+}
+
+/* The navbar is fixed on screen, which on paper means Firefox repeats it on
+   every page and Chrome floats it over the content, with the spacer reserving a
+   blank band on top. Nothing else in the app absorbs that, so it is handled
+   here. */
+@media print {
+  /* Drives both RootLayout's spacer padding and the navbar term in
+     --min-height-main, so zeroing it removes the reserved band in one place. */
+  :root {
+    --nav-height: 0px;
+  }
+
+  /* Every fixed layer is a screen-only affordance — the Contents drawer and its
+     launcher, both back-to-top buttons, toasts, modals, the lightbox. The
+     navbar is the one exception and comes back below. Selecting on Tailwind's
+     utility class is deliberate: these elements share nothing else. */
+  .fixed {
+    display: none;
+  }
+
+  nav.fixed {
+    display: block;
+    position: static;
+  }
+
+  /* 100vh resolves against the page box in print, so this only pads the last
+     page out with whitespace. */
+  .min-h-main {
+    min-height: 0;
+  }
 }

@@ -12,11 +12,12 @@ export interface TocLink {
 }
 
 /**
- * Scroll to an in-page anchor, offset for the sticky navbar, replacing (not
- * pushing) the URL hash so back-button behavior is unchanged. Callers that
- * scroll-lock the body (FloatingTOC) must unlock first and defer this call
- * (e.g. via requestAnimationFrame) so the element position is measured
- * against the restored scroll state.
+ * Scroll to an in-page anchor, replacing (not pushing) the URL hash so
+ * back-button behavior is unchanged. The 80px offset clears the fixed navbar
+ * (65px) with room to spare; it is a viewport offset, so it is unaffected by
+ * the navbar being out of flow. Any caller that scroll-locks the body must
+ * unlock before calling this, or the element position is measured against a
+ * pinned document — FloatingTOC no longer locks, but the constraint stands.
  */
 export function scrollToSection(href: string) {
   const element = document.getElementById(href.substring(1));
