@@ -15,8 +15,12 @@ function MobileAccordionSection({ section, isOpen, onToggle, onNavigate, prefetc
   const { icon: Icon, label, basePath, items, itemActiveMatch, mobileMaxH } = section;
   const contentId = `mobile-nav-${label.toLowerCase()}`;
 
+  // Divider is solid, not /50: at half opacity over bg-primary it renders
+  // #161d28, 1.12:1 against the drawer — fainter than the user dropdown's
+  // equivalent internal divider, which lands at 1.29:1. Solid gray-800 matches
+  // that exactly, and the nav's outer border (1.40:1) still reads as heavier.
   return (
-    <div className="border-b border-gray-800/50">
+    <div className="border-b border-gray-800">
       <button
         onClick={onToggle}
         aria-expanded={isOpen}

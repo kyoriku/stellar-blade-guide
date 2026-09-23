@@ -102,7 +102,14 @@ export function SearchResults({
   }
 
   return (
-    <div className="py-1">
+    // Desktop only, and the breakpoint is not arbitrary: the two consumers are
+    // split on it — SearchTrigger is `hidden lg:block`, the mobile drawer is
+    // `lg:hidden`. Desktop needs this because SearchResults sits directly
+    // against the dropdown's `rounded-xl overflow-hidden` panel, so without it
+    // the first and last row's `mx-1 rounded-lg` hover background collides with
+    // the panel's corners. Mobile supplies its own `px-4 py-2` wrapper, so here
+    // it only doubled up.
+    <div className="lg:py-1">
       {data.results.map((result, i) => {
         const Icon = KIND_ICONS[result.kind]
         const isActive = i === activeIndex
