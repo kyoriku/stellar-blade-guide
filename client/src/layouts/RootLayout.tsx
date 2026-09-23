@@ -31,9 +31,10 @@ function RootLayout() {
     <div className="flex flex-col min-h-screen bg-primary">
       <ScrollToTop />
       <Navbar />
-      {/* No spacer: the navbar is sticky, so it occupies its own height in flow
-          and the content below already starts beneath it. */}
-      <div className="flex-1">
+      {/* Stands in for the fixed navbar, which is out of flow. Sits here rather
+          than on each page's min-h-main so it covers every route, including any
+          future page that forgets that class. */}
+      <div className="flex-1 pt-(--nav-height)">
         <Outlet />
       </div>
       <Footer />
