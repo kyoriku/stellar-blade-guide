@@ -39,10 +39,74 @@ export function kbdLog(event: string, detail: Record<string, unknown> = {}) {
     ms: Math.round(performance.now() - t0),
     innerHeight: window.innerHeight,
     visualHeight: viewport ? Math.round(viewport.height) : null,
-    diff: viewport ? Math.round(window.innerHeight - viewport.height) : null,
+    // Named `legacyDiff` because this is the quantity isKeyboardOpen still
+    // uses, and in Chrome for iOS it reads 0 with the keyboard fully up —
+    // not because nothing is happening, but because Chrome shrinks the web
+    // view's frame, so innerHeight falls with visualHeight. A field called
+    // plain `diff` sitting at 0 in the one browser that shows the bug is
+    // exactly what would mislead the next person reading a log.
+    legacyDiff: viewport ? Math.round(window.innerHeight - viewport.height) : null,
     scrollY: Math.round(window.scrollY),
     ...detail,
   });
+}
+
+// TEMPORARY diagnostic — remove with the rest of the kbdLog instrumentation.
+//
+// Answers the one question no event listener can: how long after blur does the
+// viewport actually START moving? Safari fires a single resize at the very end
+// of the dismissal, so "no event yet" is indistinguishable from "the animation
+// has not begun" — and that distinction decides whether deferring the scroll
+// can possibly help. Only per-frame sampling separates them.
+//
+// This is the only requestAnimationFrame in the file and it is deliberate:
+// 69611c4 removed a rAF from the hash-SCROLL path to kill a cross-page anchor
+// flash. Nothing here touches that path; this only reads.
+const SAMPLE_MS = 600;
+let sampling = false;
+
+export function sampleViewportFrames(label: string) {
+  const viewport = window.visualViewport;
+  // A blur can arrive while a run is still going; the second would interleave
+  // its frames with the first and make both unreadable.
+  if (!viewport || sampling) return;
+  sampling = true;
+
+  const start = performance.now();
+  const frames: Array<{ ms: number; visualHeight: number; innerHeight: number }> = [];
+
+  const tick = () => {
+    const ms = Math.round(performance.now() - start);
+    frames.push({
+      ms,
+      visualHeight: Math.round(viewport.height),
+      innerHeight: window.innerHeight,
+    });
+    if (ms < SAMPLE_MS) {
+      requestAnimationFrame(tick);
+      return;
+    }
+
+    sampling = false;
+    const first = frames[0];
+    const last = frames[frames.length - 1];
+    const movedVisual = frames.find(f => f.visualHeight !== first.visualHeight);
+    const movedInner = frames.find(f => f.innerHeight !== first.innerHeight);
+    // firstVisualChangeMs is the answer. A null means the viewport never moved
+    // inside the window — the dismissal is slower than SAMPLE_MS, or it never
+    // happened. Whether innerHeight moves too is what separates the two browser
+    // models: Safari holds it flat, Chrome for iOS moves it in lockstep.
+    console.log(`[kbd] viewport frames after ${label}`, {
+      firstVisualChangeMs: movedVisual ? movedVisual.ms : null,
+      firstInnerChangeMs: movedInner ? movedInner.ms : null,
+      visualHeight: `${first.visualHeight} → ${last.visualHeight}`,
+      innerHeight: `${first.innerHeight} → ${last.innerHeight}`,
+      frames: frames.length,
+    });
+    console.table(frames);
+  };
+
+  requestAnimationFrame(tick);
 }
 
 /**
