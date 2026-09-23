@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { DependencyList, Dispatch, SetStateAction } from 'react';
 
-// -80px top clears the sticky navbar (65px) with room to spare, matching the
+// -80px top clears the fixed navbar (65px) with room to spare, matching the
 // anchor scrolling in utils/toc.ts and the pages' hash-scroll effects; -80%
 // bottom makes the "active" band the top fifth of the viewport. Measured
-// against the viewport (root: null), so it is the same number whether the bar
-// is in flow or not.
+// against the viewport (root: null), so the navbar leaving flow doesn't move it.
 const OBSERVER_OPTIONS: IntersectionObserverInit = {
   root: null,
   rootMargin: '-80px 0px -80% 0px',
