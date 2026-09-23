@@ -13,9 +13,9 @@ export interface TocLink {
 
 /**
  * Scroll to an in-page anchor, replacing (not pushing) the URL hash so
- * back-button behavior is unchanged. The 80px offset clears the fixed navbar
- * (65px) with room to spare; it is a viewport offset, so it is unaffected by
- * the navbar being out of flow. Any caller that scroll-locks the body must
+ * back-button behavior is unchanged. The 80px offset clears the sticky navbar
+ * (65px) with room to spare; it is a viewport offset, so it is the same number
+ * whether the bar is in flow or not. Any caller that scroll-locks the body must
  * unlock before calling this, or the element position is measured against a
  * pinned document — FloatingTOC no longer locks, but the constraint stands.
  */

@@ -229,13 +229,16 @@ function Navbar() {
           transition; the shadow is what marks the scrolled state. The transition
           lists only the properties that still change — transition-all was also
           animating the lg:px-0 padding on every breakpoint crossing. */}
-      {/* fixed, not sticky: a sticky bar's position is derived from the scroll
-          offset every frame, so on iOS it can be drawn a frame stale after a
-          large instant jump — which was the flash. inset-x-0 is not optional;
-          Tailwind's `fixed` sets only `position`, and without it the bar would
-          shrink-to-fit its container child instead of spanning the viewport.
-          Leaving flow means RootLayout carries a --nav-height spacer. */}
-      <nav className={`fixed inset-x-0 top-0 z-50 border-b border-gray-800 transition-[background-color,box-shadow] duration-300 px-3 lg:px-0 ${scrolled
+      {/* sticky, not fixed. 48cb2d2 made this `fixed` to stop a flash on large
+          instant jumps, and it did — but a fixed bar is positioned against the
+          layout viewport, which Chrome for iOS resizes when the soft keyboard
+          opens and closes. That made the bar visibly slide whenever a keyboard
+          dismissal and a big scroll landed together, which sticky never did:
+          sticky positions against the scroll container, so a keyboard-driven
+          viewport resize cannot move it.
+          Being back in flow means no --nav-height spacer in RootLayout, and no
+          inset-x-0 here — an in-flow block already spans its container. */}
+      <nav className={`sticky top-0 z-50 border-b border-gray-800 transition-[background-color,box-shadow] duration-300 px-3 lg:px-0 ${scrolled
         ? 'bg-[rgba(1,4,9,0.97)] shadow-lg shadow-black/20'
         : 'bg-nav'
         }`}>

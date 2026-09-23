@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 /* The navbar's height: h-16 (64px) plus its unconditional 1px border-b. The
-   navbar is `fixed`, so this is also the size of the spacer that stands in for
-   it in flow. Three things depend on the number — RootLayout's spacer padding,
-   --min-height-main below, and ProtectedRoute's restore spinner — so it is
-   defined once, here. Declared outside @theme so Tailwind cannot prune it as an
-   unused theme key. */
+   navbar is sticky, so it takes this space in flow and nothing stands in for
+   it — but the mobile drawer and its backdrop are `fixed` and have to start
+   below it, and --min-height-main below has to subtract it. Defined once, here,
+   because a hardcoded 64 in the drawer used to cover the nav's 1px border.
+   Declared outside @theme so Tailwind cannot prune it as an unused theme key. */
 :root {
   --nav-height: 65px;
 }
@@ -91,28 +91,18 @@
   animation: dropIn 0.2s ease-out;
 }
 
-/* The navbar is fixed on screen, which on paper means Firefox repeats it on
-   every page and Chrome floats it over the content, with the spacer reserving a
-   blank band on top. Nothing else in the app absorbs that, so it is handled
-   here. */
+/* Screen-only chrome that would otherwise land on paper. The navbar itself no
+   longer needs handling here — sticky prints in flow like any other element,
+   unlike the fixed bar this block was originally written for — but everything
+   else below still does. */
 @media print {
-  /* Drives both RootLayout's spacer padding and the navbar term in
-     --min-height-main, so zeroing it removes the reserved band in one place. */
-  :root {
-    --nav-height: 0px;
-  }
-
-  /* Every fixed layer is a screen-only affordance — the Contents drawer and its
-     launcher, both back-to-top buttons, toasts, modals, the lightbox. The
-     navbar is the one exception and comes back below. Selecting on Tailwind's
-     utility class is deliberate: these elements share nothing else. */
+  /* Every fixed layer is a screen-only affordance — the mobile drawer and its
+     backdrop, the Contents drawer and its launcher, both back-to-top buttons,
+     toasts, modals, the lightbox. Selecting on Tailwind's utility class is
+     deliberate: these elements share nothing else. The navbar is no longer
+     among them, so it no longer needs an exception. */
   .fixed {
     display: none;
-  }
-
-  nav.fixed {
-    display: block;
-    position: static;
   }
 
   /* 100vh resolves against the page box in print, so this only pads the last
