@@ -18,7 +18,6 @@ import MobileAccordionSection from './navbar/MobileAccordionSection'
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [searchScrolled, setSearchScrolled] = useState(false);
   const [openSections, setOpenSections] = useState({
     walkthroughs: false,
     levels: false,
@@ -65,7 +64,6 @@ function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   // Focus restore target when the drawer is dismissed via the backdrop —
   // inert blurs the drawer's focused element to <body> otherwise.
@@ -129,20 +127,6 @@ function Navbar() {
   };
 
   useEffect(() => {
-    const handleMobileScroll = () => {
-      if (mobileMenuRef.current) {
-        setSearchScrolled(mobileMenuRef.current.scrollTop > 20);
-      }
-    };
-
-    const menuElement = mobileMenuRef.current;
-    if (menuElement) {
-      menuElement.addEventListener('scroll', handleMobileScroll);
-      return () => menuElement.removeEventListener('scroll', handleMobileScroll);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -164,7 +148,6 @@ function Navbar() {
       setTimeout(() => searchInputRef.current?.focus(), 300);
     } else {
       document.body.style.overflow = 'unset';
-      setSearchScrolled(false);
       if (!searchQuery) {
         setOpenSections(getActiveSectionFromPath(location.pathname));
       }
@@ -425,7 +408,6 @@ function Navbar() {
           stay in the tab order and a11y tree while invisible */}
       <div
         id="mobile-menu"
-        ref={mobileMenuRef}
         inert={!isOpen}
         className={`lg:hidden fixed left-0 right-0 bottom-0 bg-primary transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
         // Must be the full navbar height, border included: this shares the
@@ -435,16 +417,25 @@ function Navbar() {
       >
         <div className="h-full flex flex-col">
           {/* Search Bar - Sticky */}
-          {/* No backdrop-filter, same reasoning as the nav: unscrolled bg-primary is
-              alpha-1 so the blur was invisible, and at /95 it has 5% to work with.
-              Keeping a blurred layer on screen would also make the iOS flash test
-              one-way. The transition covers the two paint-only properties; the
-              border is left out because it toggles 0 -> 1px, and transition-all was
-              animating that width as a 200ms layout jiggle. */}
-          <div className={`sticky top-0 z-10 px-4 py-3 flex-shrink-0 transition-[background-color,box-shadow] duration-200 ${searchScrolled
-            ? 'bg-primary/95 border-b border-gray-800 shadow-lg'
-            : 'bg-primary'
-            }`}>
+          {/* The border is unconditional: it used to appear only once a
+              `searchScrolled` state went true, but that state could never become
+              true — its scroll listener was bound to #mobile-menu, which has no
+              overflow, while the real scroller is the sibling below. Wrong since
+              the element was written, so the scrolled styling had never rendered.
+              Kept as a permanent separator rather than rewired, since the search
+              field wants dividing from the results either way. Solid gray-800 to
+              match the accordion section dividers below it — see the note in
+              MobileAccordionSection for why those are solid rather than /50.
+              Nothing here changes any more, so there is no transition: the
+              background is static and the shadow is gone. (The dropped
+              `bg-primary/95` was doubly dead — `.bg-primary` is a hand-written
+              rule in index.css, not a theme colour, so Tailwind never generated
+              the /95 variant at all. The nav above hits the same thing and works
+              around it with an arbitrary value, `bg-[rgba(1,4,9,0.97)]`.)
+              `sticky top-0` is also inert — the scroller is this element's
+              sibling, not its ancestor, so nothing ever passes underneath it —
+              but it is left alone here deliberately. */}
+          <div className="sticky top-0 z-10 px-4 py-3 flex-shrink-0 bg-primary border-b border-gray-800">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
@@ -482,7 +473,12 @@ function Navbar() {
           <div className="overflow-y-auto mobile-menu-scrollbar flex-1">
             <div className="space-y-1">
               {searchQuery ? (
-                <div className="px-4 py-2">
+                // Closing divider matches the one under the search field and the
+                // accordion sections, so the results read as a bounded block
+                // rather than running into the auth section below. Mobile only —
+                // desktop renders SearchResults inside its own bordered panel
+                // (SearchTrigger.tsx:163), which already closes it.
+                <div className="px-4 py-2 border-b border-gray-800">
                   <SearchResults
                     query={searchQuery}
                     data={mobileSearchData}
