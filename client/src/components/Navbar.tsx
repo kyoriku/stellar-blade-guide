@@ -142,20 +142,42 @@ function Navbar() {
     }
   }, [location]);
 
+  // The lock and the autofocus belong to the drawer being open and nothing else.
+  // searchQuery used to be in the deps, so a 12-character query unlocked and
+  // re-locked the viewport 12 times and left 12 focus timers pending. The lock
+  // matters more than it looks: the drawer is a sibling of the nav at
+  // top: var(--nav-height), so the top 65px strip is uncovered, and the sticky
+  // search header below is not a scroll container either — on a tall phone the
+  // scroller usually has nothing to scroll, so a drag in the body reaches the
+  // page too. Nothing but this holds those.
+  // Close and unmount both leave through the cleanup, so 'unset' lives in one
+  // place rather than three.
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      setTimeout(() => searchInputRef.current?.focus(), 300);
-    } else {
-      document.body.style.overflow = 'unset';
-      if (!searchQuery) {
-        setOpenSections(getActiveSectionFromPath(location.pathname));
-      }
-    }
-
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = setTimeout(() => searchInputRef.current?.focus(), 300);
     return () => {
+      clearTimeout(focusTimer);
       document.body.style.overflow = 'unset';
     };
+  }, [isOpen]);
+
+  // Resets the accordion when the drawer closes with no query in flight — the
+  // close-without-navigating case (hamburger, backdrop), which the location
+  // effect above cannot see.
+  //
+  // searchQuery IS load-bearing in these deps, despite looking like the same
+  // per-keystroke churn the effect above was split away from. Navigating from a
+  // search result takes three commits: isOpen flips in the first, the pathname
+  // in the second, and setSearchQuery('') is called from inside a passive effect
+  // so the query only reaches '' in the third. Without searchQuery as a dep
+  // nothing re-runs in that third commit and the accordion never resets —
+  // navbar-search.spec.ts catches exactly this. Re-running per keystroke is
+  // harmless here: the guard returns before doing anything while the drawer is
+  // open. It was only the lock and the focus timer that could not afford it.
+  useEffect(() => {
+    if (isOpen || searchQuery) return;
+    setOpenSections(getActiveSectionFromPath(location.pathname));
   }, [isOpen, location.pathname, searchQuery]);
 
   return (
@@ -469,8 +491,15 @@ function Navbar() {
             )}
           </div>
 
-          {/* Scrollable Content */}
-          <div className="overflow-y-auto mobile-menu-scrollbar flex-1">
+          {/* Scrollable Content. overscroll-contain stops a drag past either end
+              chaining to the page behind — the one leak path here that has a real
+              scroll boundary. It does nothing when this list fits its box, which
+              on a tall phone is the common case with the accordion collapsed, so
+              the body lock is still what holds those drags. Making those airtight
+              needs FloatingTOC's measured touch-action treatment, which is its
+              own change: pan-y on a list with nowhere to scroll hands the drag
+              straight to the page. */}
+          <div className="overflow-y-auto overscroll-contain mobile-menu-scrollbar flex-1">
             <div className="space-y-1">
               {searchQuery ? (
                 // Closing divider matches the one under the search field and the
