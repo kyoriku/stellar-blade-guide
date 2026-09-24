@@ -64,7 +64,6 @@ function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
   // Focus restore target when the drawer is dismissed via the backdrop —
   // inert blurs the drawer's focused element to <body> otherwise.
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -142,24 +141,26 @@ function Navbar() {
     }
   }, [location]);
 
-  // The lock and the autofocus belong to the drawer being open and nothing else.
-  // searchQuery used to be in the deps, so a 12-character query unlocked and
-  // re-locked the viewport 12 times and left 12 focus timers pending. The lock
-  // matters more than it looks: the drawer is a sibling of the nav at
+  // The lock belongs to the drawer being open and nothing else. searchQuery used
+  // to be in the deps, so a 12-character query unlocked and re-locked the
+  // viewport once per character.
+  //
+  // It matters more than it looks: the drawer is a sibling of the nav at
   // top: var(--nav-height), so the top 65px strip is uncovered, and the sticky
   // search header below is not a scroll container either — on a tall phone the
   // scroller usually has nothing to scroll, so a drag in the body reaches the
   // page too. Nothing but this holds those.
-  // Close and unmount both leave through the cleanup, so 'unset' lives in one
-  // place rather than three.
+  //
+  // There is deliberately no autofocus. It used to open the drawer with a
+  // setTimeout focus() and never worked on iOS: WebKit gates the input session
+  // on m_userIsInteracting, which is scoped to the event-dispatch frame and is
+  // not forwarded through DOMTimer, so a timer-driven focus() gets a caret and
+  // no keyboard. Confirmed on device. Removed rather than fixed — the keyboard
+  // should not jump up on open.
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = 'hidden';
-    const focusTimer = setTimeout(() => searchInputRef.current?.focus(), 300);
-    return () => {
-      clearTimeout(focusTimer);
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   // Resets the accordion when the drawer closes with no query in flight — the
@@ -461,7 +462,6 @@ function Navbar() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
-                ref={searchInputRef}
                 name='text'
                 type="text"
                 placeholder="Search collectibles, walkthroughs, levels..."
