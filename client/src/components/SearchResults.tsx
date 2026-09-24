@@ -71,13 +71,19 @@ export function SearchResults({
 
   if (isLoading) {
     return (
-      <div className="py-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3 animate-pulse">
-            <div className="h-7 w-7 bg-gray-700 rounded-full flex-shrink-0" />
-            <div className="flex-1 space-y-1.5">
-              <div className="h-4 bg-gray-700 rounded w-3/4" />
-              <div className="h-3 bg-gray-700/60 rounded w-1/2" />
+      // Every box here mirrors the loaded row below, so the list does not shift
+      // when results land: same wrapper padding, same lg:px-4/lg:mx-1, same
+      // items-start + mt-0.5 on the icon. The bar heights are deliberately
+      // shorter than the text they stand for (a skeleton bar should not fill its
+      // line box), so space-y-2.5 makes up the difference: 16 + 10 + 12 matches
+      // the real 20 + 2 + 16. Models a row WITH a snippet, which most have.
+      <div className="lg:py-1">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-start gap-3 lg:px-4 lg:mx-1 py-3 animate-pulse">
+            <div className="h-7 w-7 bg-gray-700 rounded-full flex-shrink-0 mt-0.5" />
+            <div className="flex-1 space-y-2.5">
+              <div className="h-4 bg-gray-700 rounded w-1/2" />
+              <div className="h-3 bg-gray-700/60 rounded w-3/4" />
             </div>
           </div>
         ))}
@@ -119,7 +125,7 @@ export function SearchResults({
             to={result.navigation_url}
             onClick={onResultClick}
             onMouseEnter={() => handleMouseEnter(result)}
-            className={`group flex items-start gap-3 px-4 py-3 transition-colors rounded-lg mx-1 ${
+            className={`group flex items-start gap-3 lg:px-4 py-3 transition-colors rounded-lg lg:mx-1 ${
               isActive ? 'bg-gray-800/70' : 'hover:bg-gray-800/50'
             }`}
           >
