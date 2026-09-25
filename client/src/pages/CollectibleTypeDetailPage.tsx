@@ -492,7 +492,12 @@ function CollectibleTypeDetailPage() {
         <div className="flex gap-8">
           {/* Sidebar with TOC */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-4 pb-4">
+            {/* Clears the fixed navbar — see the note in LevelDetailPage. Derived
+                from --nav-height so it cannot drift, and so print keeps today's
+                16px. This is the page where the budgets bind: at a 700px window
+                the TOC's scroller actually scrolls and only ~26px sits below the
+                Back to top button. */}
+            <div className="sticky top-[calc(var(--nav-height)+2rem)] pb-4">
               <TableOfContents
                 links={tocLinks}
                 currentLevel={typeName}

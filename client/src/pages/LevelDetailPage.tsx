@@ -285,7 +285,21 @@ function LevelDetailPage() {
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">
           <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-4 pb-4">
+            {/* Clears the fixed navbar. At top-4 the panel's first 49px sat
+                behind the bar, clipping its corner and half the heading — the
+                nav is z-50 and this wrapper is z-auto, so the bar wins on paint.
+                The bar genuinely occupies that space (the logo spans the same
+                x-range as this panel), so raising z-index would just obscure the
+                logo instead.
+                2rem, not 1rem, because it matches the container's own py-8: the
+                flex row already starts at nav + 32px, so pinning there means the
+                panel NEVER moves — no travel between its flow position and the
+                pin. Measured 0px at every scroll offset. Derived from
+                --nav-height so it cannot drift, and so print (where that
+                variable is 0) keeps the original 32px.
+                TableOfContents' two max-h budgets give back the same 81px this
+                gains, or the panel runs off the bottom. */}
+            <div className="sticky top-[calc(var(--nav-height)+2rem)] pb-4">
               <TableOfContents
                 links={tocLinks}
                 currentLevel={levelName}

@@ -242,7 +242,8 @@ function WalkthroughDetailPage() {
         <div className="flex gap-8">
           {/* Sidebar */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="sticky top-4 pb-4">
+            {/* Clears the fixed navbar — see the note in LevelDetailPage. */}
+            <div className="sticky top-[calc(var(--nav-height)+2rem)] pb-4">
               <TableOfContents
                 links={tocLinks}
                 activeSection={activeSection}
