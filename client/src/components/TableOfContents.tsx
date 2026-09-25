@@ -20,7 +20,15 @@ function TableOfContents({ links, currentLevel, activeSection, onNavigate }: Tab
   };
 
   const linksContent = (
-    <div className="overflow-y-auto max-h-[calc(100vh-12rem)] custom-scrollbar pr-2 pb-3">
+    <div
+      // Must stay exactly 96px below the nav's cap (13rem vs 7rem): that is this
+      // panel's chrome above and below the scroller (measured 95px, 1px slack),
+      // and it is what keeps THIS the binding cap, so the nav's overflow-hidden
+      // never truncates instead of letting the list scroll.
+      // The extra 1rem over the old 12rem, plus --nav-height, is the 81px the
+      // page wrapper's sticky offset gained when it moved below the navbar.
+      className="overflow-y-auto max-h-[calc(100vh-13rem-var(--nav-height))] custom-scrollbar pr-2 pb-3"
+    >
       <ul className="space-y-1">
         {links.map((linkGroup, index) => {
           const isCurrentLevel = currentLevel === linkGroup.title;
@@ -87,7 +95,13 @@ function TableOfContents({ links, currentLevel, activeSection, onNavigate }: Tab
   );
 
   return (
-    <nav className="bg-secondary rounded-lg p-3 max-h-[calc(100vh-6rem)] overflow-hidden border border-gray-800 shadow-xl">
+    <nav
+      // The page wrapper pins this below the navbar at nav + 2rem, so the budget
+      // gives back the same 81px: 1rem of the 7rem, plus --nav-height. The
+      // remaining 6rem covers the Back to top button and the wrapper's pb-4
+      // beneath the panel.
+      className="bg-secondary rounded-lg p-3 max-h-[calc(100vh-7rem-var(--nav-height))] overflow-hidden border border-gray-800 shadow-xl"
+    >
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
         <div className="p-2 bg-cyan-500/10 rounded-lg">
           <List className="w-5 h-5 text-cyan-400" />
