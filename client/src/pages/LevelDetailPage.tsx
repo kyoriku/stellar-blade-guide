@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
@@ -81,13 +81,19 @@ function LevelDetailPage() {
     }
   }, [locationData]);
 
-  const handleImageClick = (imageUrl: string) => {
+  // Memoized so memo(CollectibleSection) can bail out — a plain declaration here
+  // was a fresh closure every render, which defeated the memo on this page the
+  // same way an unstable `toggle` did on both. The dep MUST stay [allImages]:
+  // with an empty list the findIndex below closes over the initial empty array,
+  // returns -1 for every image, and the lightbox silently stops opening. No e2e
+  // covers the lightbox, so that would ship unnoticed.
+  const handleImageClick = useCallback((imageUrl: string) => {
     const index = allImages.findIndex(img => img.src === imageUrl);
     if (index !== -1) {
       setLightboxIndex(index);
       setLightboxOpen(true);
     }
-  };
+  }, [allImages]);
 
   const displayLevelName = levelName?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
 

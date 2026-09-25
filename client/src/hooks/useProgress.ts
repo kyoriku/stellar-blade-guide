@@ -168,6 +168,15 @@ export function useProgress() {
     },
   })
 
+  // Depend on `mutate`, never on the wrapper. useMutation returns a fresh object
+  // every render (`return { ...result, mutate, ... }`), so `writeMutation` in the
+  // dep list below defeated this useCallback entirely — toggle got a new identity
+  // on every render, which is what stopped memo(CollectibleSection) ever bailing
+  // out. `mutate` itself is useCallback'd on a useState-held observer, so it is
+  // stable for the hook's life. Reading anything else off the wrapper here
+  // (isPending, status) would silently reintroduce the problem.
+  const { mutate: writeProgress } = writeMutation
+
   const toggle = useCallback((collectibleId: number) => {
     if (isAuthenticated) {
       // Intent is read from the query cache (not render state) at click time:
@@ -177,7 +186,7 @@ export function useProgress() {
       const current = queryClient.getQueryData<number[]>(['progress']) ?? []
       const desired = !current.includes(collectibleId)
       setPendingIds(prev => new Set(prev).add(collectibleId))
-      writeMutation.mutate({ collectibleId, desired })
+      writeProgress({ collectibleId, desired })
     } else {
       setGuestIds(prev => {
         const next = new Set(prev)
@@ -190,8 +199,13 @@ export function useProgress() {
         return next
       })
     }
-  }, [isAuthenticated, writeMutation, queryClient])
+  }, [isAuthenticated, writeProgress, queryClient])
 
+  // isCompleted and isToggling are deliberately NOT stabilised: their identity
+  // changing is what repaints a checkbox and disables it mid-write, and
+  // e2e/specs/progress.spec.ts asserts both. isAuthenticated stays a real dep
+  // for the same kind of reason — stabilising it away would let a just-logged-in
+  // user's click fall into the guest localStorage branch above.
   const isCompleted = useCallback((id: number) => completedIds.has(id), [completedIds])
   const isToggling = useCallback((id: number) => pendingIds.has(id), [pendingIds])
 
