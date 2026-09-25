@@ -1,6 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { List, ChevronRight, X } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { scrollToSection, type TocLink } from '../utils/toc'
 
 interface FloatingTOCProps {
@@ -146,31 +145,17 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
 
               return (
                 <li key={index} className="group">
-                  {linkGroup.mainLink.startsWith('#') ? (
-                    <a
-                      href={linkGroup.mainLink}
-                      onClick={(e) => { e.preventDefault(); handleLinkClick(linkGroup.mainLink) }}
-                      className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                          ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400'
-                          : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
-                        }`}
-                    >
-                      <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : ''}`} />
-                      <span className="flex-1">{linkGroup.title}</span>
-                    </a>
-                  ) : (
-                    <Link
-                      to={linkGroup.mainLink}
-                      onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); close() }}
-                      className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
-                          ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400'
-                          : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
-                        }`}
-                    >
-                      <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : ''}`} />
-                      <span className="flex-1">{linkGroup.title}</span>
-                    </Link>
-                  )}
+                  <a
+                    href={linkGroup.mainLink}
+                    onClick={(e) => { e.preventDefault(); handleLinkClick(linkGroup.mainLink) }}
+                    className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
+                        ? 'bg-gradient-to-r from-cyan-600/20 to-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400'
+                        : 'text-gray-200 hover:text-white hover:bg-gray-700/50 border-l-2 border-transparent hover:border-gray-600'
+                      }`}
+                  >
+                    <ChevronRight className={`w-4 h-4 transition-all duration-200 ${isCurrentLevel ? 'rotate-90 text-cyan-400' : ''}`} />
+                    <span className="flex-1">{linkGroup.title}</span>
+                  </a>
 
                   {linkGroup.subLinks && (
                     <ul className="ml-4 space-y-1 mt-1">
