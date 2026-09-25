@@ -416,7 +416,13 @@ function WalkthroughDetailPage() {
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}
         animation={{ fade: 150, swipe: 150 }}
-        carousel={{ padding: isMobile ? "0%" : "4%" }}
+        // preload 1, not the library default of 2: slides are the full-size
+        // masters (3840x2160, ~33MB each once decoded), so the default's
+        // five-slide window costs ~166MB. These URLs are never shared with the
+        // gallery tiles, which load -w variants, so each preloaded slide is a
+        // cold fetch too. Keep padding in this same object — a bare
+        // carousel={{ preload: 1 }} would drop the override.
+        carousel={{ preload: 1, padding: isMobile ? "0%" : "4%" }}
         styles={{
           container: {
             backgroundColor: "rgba(0, 0, 0, 0.75)",
