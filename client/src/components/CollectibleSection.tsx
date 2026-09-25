@@ -20,7 +20,6 @@ interface CollectibleSectionProps {
   collectibles: AnnotatedCollectible[];
   onImageClick?: (imageUrl: string) => void;
   hideTypeBadge?: boolean;
-  itemLabel?: string;
   /** Collectible whose gallery is above the fold — see ImageGallery's `priority`. */
   priorityId?: number;
   isCompleted?: (id: number) => boolean;
