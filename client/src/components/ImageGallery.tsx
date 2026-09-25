@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { type CollectibleImage } from '../services/api'
 import { ZoomIn, Image as ImageIcon } from 'lucide-react'
 import { loadedUrlCache } from '../utils/imageCache'
@@ -126,4 +126,11 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
   );
 }
 
-export default ImageGallery;
+// Memoized because a progress toggle legitimately re-renders every section —
+// isCompleted/isToggling change identity to repaint one checkbox — and without
+// this each of those rebuilds all 429 galleries on Wasteland, 1,716 buildSrcSet
+// strings among them. All three props are already stable at the call sites once
+// the pages' handlers are memoized, so the default shallow compare is enough.
+// Note this is inert on walkthrough pages: WalkthroughContent rebuilds its
+// images array inline every render, so the boundary never bails there.
+export default memo(ImageGallery);
