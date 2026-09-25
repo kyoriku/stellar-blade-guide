@@ -629,7 +629,6 @@ function CollectibleTypeDetailPage() {
                       onImageClick={handleImageClick}
                       priorityId={priorityId}
                       hideTypeBadge
-                      itemLabel={displayTypeName}
                       isCompleted={isCompleted}
                       isToggling={isToggling}
                       onToggleProgress={toggle}
