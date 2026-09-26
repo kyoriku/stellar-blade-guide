@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { API_BASE_URL, readError } from '../services/api'
 import { useToast } from './ToastContext'
 import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
+import { NOTIFICATIONS_KEY } from '../hooks/useNotifications'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
 // for unauthenticated visitors. Worst case: cleared localStorage causes one
@@ -75,6 +76,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // RESTORE_MAX_MS bound below — a confirmed session is never torn down by it.
   const confirmedRef = useRef(false)
 
+  const queryClient = useQueryClient()
+
+  // Every per-user query, dropped wherever a session ends or changes hands. The
+  // ['progress'] and ['notifications'] keys are unscoped, so without this the next
+  // account on the same tab would be served the previous one's data until it went
+  // stale; removal rather than invalidation means none of it is ever painted.
+  const clearUserQueries = useCallback(() => {
+    queryClient.removeQueries({ queryKey: ['progress'] })
+    queryClient.removeQueries({ queryKey: ['user-stats'] })
+    queryClient.removeQueries({ queryKey: NOTIFICATIONS_KEY })
+  }, [queryClient])
+
   // Restore the session from the HttpOnly refresh cookie. This is the single
   // refresh code path — mount restore, the 14-min interval, the focus handler,
   // the reactive 401 retry in useAuth, and the OAuth callback all go through
@@ -103,6 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             confirmedRef.current = false // this session is over — the next optimistic restore is unconfirmed again
             localStorage.removeItem(SESSION_FLAG)
             localStorage.removeItem(USER_CACHE)
+            // Before React renders the signed-out state, so the next account on
+            // this tab starts from an empty cache and a per-user fetch this 401
+            // interrupted is cancelled instead of erroring under the toast.
+            clearUserQueries()
             showToast('Your session expired. Please log in again.')
           }
           return null
@@ -128,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const p = run()
     refreshInFlightRef.current = p
     return p
-  }, [showToast]) // stable (ToastContext useCallback), so refreshToken identity holds
+  }, [showToast, clearUserQueries]) // both stable, so refreshToken identity holds
 
   // Mirror only the display fields into localStorage whenever the user is set,
   // so the next reload hydrates the avatar/bell instantly (the refresh
@@ -254,23 +271,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(SESSION_FLAG, '1')
   }, [])
 
-  const queryClient = useQueryClient()
-
   // Identity-change guard: whenever the signed-in id changes to a DIFFERENT
   // id — login after a 401-dead session, registering a second account while
   // signed in, any path that skips logout — per-user query data from the
-  // previous identity must be dropped, or the unscoped ['progress'] key
-  // serves the old account's completion set until its staleTime lapses.
+  // previous identity must be dropped, or the unscoped keys serve the old
+  // account's completion set and reply list until their staleTime lapses.
+  // A backstop only: it runs after the render that changed the identity, so
+  // the definitive teardowns (the 401 branch and logout) clear before it.
   const prevUserIdRef = useRef<number | null>(null)
   useEffect(() => {
     const id = user?.id ?? null
     if (id === null) return // signed out: logout/teardown handles its own clearing
     if (prevUserIdRef.current !== null && id !== prevUserIdRef.current) {
-      queryClient.removeQueries({ queryKey: ['progress'] })
-      queryClient.removeQueries({ queryKey: ['user-stats'] })
+      clearUserQueries()
     }
     prevUserIdRef.current = id
-  }, [user, queryClient])
+  }, [user, clearUserQueries])
 
   const logout = useCallback(async () => {
     try {
@@ -285,14 +301,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(SESSION_FLAG)
       localStorage.removeItem(USER_CACHE)
       // Per-user query data must not survive into a different account's
-      // session on this tab: ['progress'] is an unscoped key with a 5-minute
-      // staleTime, so without this a second sign-in inherits the previous
-      // account's completion set (navbar ring, stats hero, checkboxes) until
-      // it lapses. ['user-stats'] is id-scoped but dropped as the same hygiene.
-      queryClient.removeQueries({ queryKey: ['progress'] })
-      queryClient.removeQueries({ queryKey: ['user-stats'] })
+      // session on this tab: a second sign-in would inherit the previous
+      // account's completion set (navbar ring, stats hero, checkboxes) and
+      // reply list (the bell) until their staleTime lapsed.
+      clearUserQueries()
     }
-  }, [queryClient])
+  }, [clearUserQueries])
 
   // Unconfirmed-session bound: while a refresh runs for a session the server
   // has not yet confirmed, the UI is rendering optimistically (cached identity,
