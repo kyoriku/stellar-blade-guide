@@ -27,12 +27,14 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
+from app.config.settings import settings
 from app.core.security import limiter
 from app.db.database import Base, get_db
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
 from app.middleware.error_handler import add_error_handler_middleware
 from app.middleware.rate_limit import setup_rate_limiter
 from app.routers.auth import router as auth_router
+from app.services.auth import hash_password
 
 
 def _make_app(db_session: AsyncSession) -> FastAPI:
@@ -107,6 +109,46 @@ async def test_redis_timeout_on_refresh_returns_503(resilience_client, fake_redi
     # An outage must never clear anyone's cookie — only the refresh route's
     # definitive 401 rejections carry the delete-cookie header.
     assert "refresh_token" not in r.headers.get("set-cookie", "")
+
+
+@pytest_asyncio.fixture
+async def resilience_user(resilience_db_session):
+    user = User(
+        email="resilience@example.com",
+        username="resilience",
+        password_hash=hash_password("password123"),
+    )
+    resilience_db_session.add(user)
+    await resilience_db_session.commit()
+    await resilience_db_session.refresh(user)
+    return user
+
+
+async def test_script_error_on_demote_returns_503_without_clearing_cookie(
+    resilience_client, resilience_user, fake_redis, monkeypatch
+):
+    # The demote is one EVALSHA; a Redis fault there must be the same 503 as a
+    # fault on the GET, with the cookie and the key left exactly as they were.
+    r_login = await resilience_client.post("/api/auth/login", json={
+        "email": resilience_user.email,
+        "password": "password123",
+    })
+    assert r_login.status_code == 200
+    user_id_str, raw_token = r_login.cookies["refresh_token"].split(":", 1)
+    key = core_auth._refresh_key(int(user_id_str), raw_token)
+
+    async def _timeout(*args, **kwargs):
+        raise RedisTimeoutError("Timeout reading from socket")
+
+    monkeypatch.setattr(fake_redis, "evalsha", _timeout)
+
+    r = await resilience_client.post("/api/auth/refresh")
+    assert r.status_code == 503
+    assert r.headers["retry-after"] == "30"
+    assert r.json()["error"] == "Service temporarily unavailable"
+    assert "refresh_token" not in r.headers.get("set-cookie", "")
+    # The script never ran, so nothing was clamped.
+    assert await fake_redis.ttl(key) > settings.REFRESH_GRACE_SECONDS
 
 
 async def test_non_redis_error_still_returns_500(resilience_client):

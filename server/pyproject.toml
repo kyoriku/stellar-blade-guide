@@ -33,7 +33,7 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "aiosqlite>=0.20",
-    "fakeredis>=2.20",
+    "fakeredis[lua]>=2.20",
     "boto3>=1.43.46",
 ]
 
