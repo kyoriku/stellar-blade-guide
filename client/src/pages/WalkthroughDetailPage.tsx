@@ -71,7 +71,7 @@ function WalkthroughDetailPage() {
     if (walkthrough && location.hash) {
       const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
       if (el) {
-        const offset = 80;
+        const offset = 97;
         const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({ top, behavior: 'instant' });
       }
@@ -134,7 +134,7 @@ function WalkthroughDetailPage() {
               </div>
 
               {/* Objectives skeleton */}
-              <div className="mb-4 p-4 bg-secondary rounded-lg border border-gray-800">
+              <div className="mb-8 p-4 bg-secondary rounded-lg border border-gray-800">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-5 h-5 bg-purple-400/50 rounded animate-pulse"></div>
                   <div className="h-7 w-32 bg-gray-700 rounded animate-pulse"></div>
@@ -151,7 +151,7 @@ function WalkthroughDetailPage() {
 
               {/* Walkthrough content skeletons — mb-4 matches the loaded
                   section, so nothing below it shifts when data lands. */}
-              <section className="mb-4 space-y-4">
+              <section className="mb-8 space-y-8">
                 <WalkthroughContentSkeleton />
                 <WalkthroughContentSkeleton />
                 <WalkthroughContentSkeleton />
@@ -273,7 +273,7 @@ function WalkthroughDetailPage() {
 
             {/* Objectives */}
             {walkthrough.objectives && walkthrough.objectives.length > 0 && (
-              <div id="objectives" className="mb-4 p-4 bg-secondary rounded-lg border border-gray-800">
+              <div id="objectives" className="mb-8 p-4 bg-secondary rounded-lg border border-gray-800">
                 <div className="flex items-center gap-2 mb-3">
                   <List className="w-5 h-5 text-purple-400" />
                   <h2 className="text-lg font-semibold text-gray-100">Objectives</h2>
@@ -303,7 +303,7 @@ function WalkthroughDetailPage() {
             </div>
 
             {/* Content sections */}
-            <section className="mb-4 space-y-4">
+            <section className="mb-8 space-y-8">
               {walkthrough.content.map((content, index) => (
                 <div
                   key={`${walkthrough.slug}-${content.order}`}
@@ -321,7 +321,7 @@ function WalkthroughDetailPage() {
 
             {/* Rewards */}
             {walkthrough.rewards && walkthrough.rewards.length > 0 && (
-              <div className="mb-16 p-4 bg-secondary rounded-lg border border-gray-800">
+              <div className="mb-8 p-4 bg-secondary rounded-lg border border-gray-800">
                 <div className="flex items-center gap-2 mb-3">
                   <Gift className="w-5 h-5 text-emerald-400" />
                   <h2 className="text-lg font-semibold text-gray-100">Rewards</h2>
@@ -338,7 +338,7 @@ function WalkthroughDetailPage() {
             )}
 
             {/* Footer navigation */}
-            <div className="mt-16 pt-8 border-t border-gray-800">
+            <div className="mt-8 pt-8 border-t border-gray-800">
               <div className="flex flex-col sm:flex-row justify-between items-stretch gap-3">
                 {/* Next Walkthrough - first on mobile, right on desktop */}
                 {nextWalkthrough ? (

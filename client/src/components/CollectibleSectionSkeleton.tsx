@@ -14,7 +14,7 @@ function CollectibleSectionSkeleton({
   hideTypeBadge = false,
 }: CollectibleSectionSkeletonProps) {
   return (
-    <section id={id} className="mb-16 scroll-mt-4">
+    <section id={id} className="mb-8 scroll-mt-4">
       <div className="flex items-center gap-3 mb-4">
         {locationName ? (
           <span className="text-lg text-gray-400 whitespace-nowrap">{locationName}</span>
@@ -24,7 +24,7 @@ function CollectibleSectionSkeleton({
         <div className="h-px flex-1 bg-gradient-to-r from-gray-700 to-transparent" />
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-8">
         {Array.from({ length: cardCount }).map((_, index) => (
           <article
             key={index}

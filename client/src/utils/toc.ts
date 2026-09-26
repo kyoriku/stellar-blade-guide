@@ -31,7 +31,7 @@ export interface TocLink {
 export function scrollToSection(href: string) {
   const element = document.getElementById(href.substring(1));
   if (element) {
-    const offset = 80;
+    const offset = 97;
     const elementPosition = element.getBoundingClientRect().top;
     const offsetPosition = elementPosition + window.pageYOffset - offset;
 
