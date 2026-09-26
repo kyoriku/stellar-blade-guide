@@ -206,10 +206,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [accessToken, refreshToken])
 
-  const prevAuthRef = useRef(false)
+  // Keyed on the token's rising edge, not on identity presence: a cached
+  // identity renders before the refresh lands, so an identity-keyed edge read
+  // as "already signed in" and a sync that failed at login was never retried.
+  // Re-firing after a transient token drop is harmless: the sync is additive
+  // and skipped when sb_progress is empty.
+  const prevSyncedRef = useRef(false)
 
   useEffect(() => {
-    if (!isLoading && user && !prevAuthRef.current) {
+    const canSync = !!user && accessToken !== null
+    if (canSync && !prevSyncedRef.current) {
       // 'sb_progress' must match STORAGE_KEY in hooks/useProgress.ts — drift
       // means guest progress silently never merges (or never clears) on login.
       const local = localStorage.getItem('sb_progress')
@@ -242,8 +248,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch { /* corrupt sb_progress JSON — nothing to sync */ }
       }
     }
-    prevAuthRef.current = !!user
-  }, [user, isLoading, accessToken, showToast, queryClient])
+    prevSyncedRef.current = canSync
+  }, [user, accessToken, showToast, queryClient])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
