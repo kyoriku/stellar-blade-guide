@@ -247,7 +247,7 @@ function CollectibleTypeDetailPage() {
     if (levelData.length > 0 && location.hash) {
       const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
       if (el) {
-        const offset = 80;
+        const offset = 97;
         const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({ top, behavior: 'instant' });
       }
@@ -651,7 +651,7 @@ function CollectibleTypeDetailPage() {
             )}
 
             {/* Footer navigation */}
-            <div className="mt-16 pt-8 border-t border-gray-800">
+            <div className="mt-8 pt-8 border-t border-gray-800">
               <div className="flex flex-col sm:flex-row justify-between items-stretch gap-3">
                 {/* Next Type - first on mobile, right on desktop */}
                 {nextType ? (

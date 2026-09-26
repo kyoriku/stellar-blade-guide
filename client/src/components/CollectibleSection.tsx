@@ -47,7 +47,7 @@ function CollectibleSection({
 }: CollectibleSectionProps) {
   if (!collectibles || collectibles.length === 0) {
     return (
-      <section id={id} className="mb-16 scroll-mt-4">
+      <section id={id} className="mb-8 scroll-mt-4">
         {title && (
           <div className="flex items-center gap-3 mb-5">
             <span className="text-lg text-gray-400 whitespace-nowrap">
@@ -66,7 +66,7 @@ function CollectibleSection({
   }
 
   return (
-    <section id={id} className="mb-16 scroll-mt-4">
+    <section id={id} className="mb-8 scroll-mt-4">
       {title && (
         <div className="flex items-center gap-3 mb-4">
           <span className="text-lg text-gray-300 whitespace-nowrap">
@@ -77,7 +77,7 @@ function CollectibleSection({
           <div className="h-px flex-1 bg-linear-to-r from-gray-700 to-transparent" />        </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-8">
         {collectibles.map((collectible) => (
           <article
             key={collectible.id}

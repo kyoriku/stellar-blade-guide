@@ -55,9 +55,9 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
   const totalCount = comments.reduce((sum, c) => sum + 1 + (c.replies?.length ?? 0), 0)
 
   return (
-    <section className="my-8 pt-16 border-t border-gray-800">
+    <section className="my-8 pt-8 border-t border-gray-800">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-4">
         <MessageSquare className="w-5 h-5 text-cyan-400" />
         <h2 className="text-lg font-semibold text-white">
           Comments
@@ -68,7 +68,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
       </div>
 
       {/* Post a comment */}
-      <div className="mb-8">
+      <div className="mb-4">
         <CommentForm onSubmit={postComment} />
       </div>
 
