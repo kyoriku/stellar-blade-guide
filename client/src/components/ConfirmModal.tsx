@@ -32,10 +32,23 @@ export default function ConfirmModal({
     return () => document.removeEventListener('keydown', handleKey)
   }, [isOpen, onCancel])
 
-  // Lock body scroll
+  // Lock body scroll. The early return is load-bearing, not tidiness: the
+  // `if (!isOpen) return null` below sits AFTER this effect, and Comment is
+  // recursive, so every comment and every reply on a page mounts its own closed
+  // ConfirmModal and runs this. An `else` branch writing 'unset' therefore let
+  // dialogs that are not open clear somebody else's lock — concretely, the nav
+  // drawer's (Navbar.tsx:162, the only other writer): open the drawer on a
+  // phone, let the comments query resolve, and each newly mounted Comment
+  // silently unlocked the page behind it. Closed instances must touch nothing.
+  //
+  // Keeping overflow:hidden rather than FloatingTOC's touch-action: one gesture
+  // still leaks at open, but that is a property of acquiring any lock
+  // mid-gesture. This returns null while closed, so at touchstart there is no
+  // element to carry touch-action and iOS has already given the scroll to the
+  // document. See docs/search-drawer-findings.md.
   useEffect(() => {
-    if (isOpen) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = 'unset'
+    if (!isOpen) return
+    document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = 'unset' }
   }, [isOpen])
 
