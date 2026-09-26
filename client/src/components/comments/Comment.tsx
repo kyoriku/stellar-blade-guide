@@ -50,7 +50,10 @@ export default function Comment({
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
-  const isOwner = user?.id === comment.user?.id
+  // A comment whose author deleted their account arrives with user null, and a
+  // guest is null too: undefined === undefined would hand every visitor its
+  // Edit and Delete.
+  const isOwner = !!comment.user && user?.id === comment.user.id
   const isMod = user?.role === 'moderator' || user?.role === 'admin'
   const canModify = isOwner || isMod
   const hasReplies = comment.replies && comment.replies.length > 0
