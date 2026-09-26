@@ -7,7 +7,8 @@ import { NETWORK_ERROR_MESSAGE } from '../services/api'
 const HOME_LINK_CLASSES = 'inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200';
 
 interface ErrorPageProps {
-  code?: number;
+  // null: nothing to number, a crash in the browser rather than an HTTP answer.
+  code?: number | null;
   title?: string;
   message?: string;
   onRetry?: () => void;
@@ -62,13 +63,15 @@ function ErrorPage({
   const Icon = defaults.icon;
   // The root ErrorBoundary (main.tsx) sits above BrowserRouter, so its fallback
   // renders this page with no Router in context, where <Link> throws and React
-  // empties the root to a blank page. A plain anchor keeps the way out usable.
+  // empties the root to a blank page. A plain anchor keeps the way out usable,
+  // and the page fills the viewport itself: min-h-main is sized for the space
+  // between a navbar and footer that are not rendered there.
   const inRouter = useInRouterContext();
 
   return (
-    <div className="min-h-main bg-primary flex items-center justify-center px-4">
+    <div className={`${inRouter ? 'min-h-main' : 'min-h-dvh'} bg-primary flex items-center justify-center px-4`}>
       <SEO
-        title={offline ? (title || defaults.title) : `${code} ${title || defaults.title}`}
+        title={offline || code === null ? (title || defaults.title) : `${code} ${title || defaults.title}`}
         description={message || defaults.message}
         noindex
       />
@@ -82,7 +85,7 @@ function ErrorPage({
           </div>
         </div>
 
-        {!offline && <h1 className="text-6xl font-bold text-gray-100 mb-4">{code}</h1>}
+        {!offline && code !== null && <h1 className="text-6xl font-bold text-gray-100 mb-4">{code}</h1>}
         <h2 className="text-2xl font-semibold text-gray-300 mb-4">
           {title || defaults.title}
         </h2>
