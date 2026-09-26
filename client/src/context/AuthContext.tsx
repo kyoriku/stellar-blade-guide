@@ -224,16 +224,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 Authorization: `Bearer ${accessToken}`,
               },
               body: JSON.stringify({ collectible_ids: ids }),
-            }).then(res => {
-              if (res.ok) localStorage.removeItem('sb_progress')
-              else showToast("Couldn't sync your saved progress. It's still saved on this device.")
+            }).then(async res => {
+              if (!res.ok) {
+                showToast("Couldn't sync your saved progress. It's still saved on this device.")
+                return
+              }
+              localStorage.removeItem('sb_progress')
+              // The sign-in commit fired GET /progress and the stats query before
+              // this effect ran, so their cached answers predate the merge. Cancel
+              // first: a load still in flight would otherwise be reused as-is.
+              await queryClient.cancelQueries({ queryKey: ['progress'] })
+              await queryClient.cancelQueries({ queryKey: ['user-stats'] })
+              void queryClient.invalidateQueries({ queryKey: ['progress'] })
+              void queryClient.invalidateQueries({ queryKey: ['user-stats'] })
             }).catch(() => showToast("Couldn't sync your saved progress. It's still saved on this device."))
           }
         } catch { /* corrupt sb_progress JSON — nothing to sync */ }
       }
     }
     prevAuthRef.current = !!user
-  }, [user, isLoading, accessToken, showToast])
+  }, [user, isLoading, accessToken, showToast, queryClient])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
