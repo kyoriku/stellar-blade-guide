@@ -304,12 +304,15 @@ function Navbar() {
                 // Static placeholder mirroring the avatar button's footprint
                 // EXACTLY (gap-2 + the w-3.5 chevron) — the right-anchored
                 // cluster must not shift if the real avatar replaces it.
-                <div aria-hidden className="hidden lg:flex items-center gap-2 px-2 py-1.5">
+                // Keyed apart from the menu: both are divs in this slot, and
+                // unkeyed React reused this chevron slot as the dropdown panel,
+                // whose transition then animated it from opaque to closed in view.
+                <div key="restoring" aria-hidden className="hidden lg:flex items-center gap-2 px-2 py-1.5">
                   <div className="w-7 h-7 rounded-full bg-gray-700" />
                   <div className="w-3.5 h-3.5" />
                 </div>
               ) : isAuthenticated && user ? (
-                <div className="relative hidden lg:block" ref={userDropdownRef}>
+                <div key="account" className="relative hidden lg:block" ref={userDropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(p => !p)}
                     aria-label="Account menu"
@@ -537,8 +540,9 @@ function Navbar() {
                 {isRestoring ? (
                   // Defensive-only window (hint present, no cached identity):
                   // static neutral row mirroring the signed-in shape so it
-                  // resolves in place (no bell on mobile).
-                  <div aria-hidden className="flex items-center gap-3 px-2 py-2">
+                  // resolves in place (no bell on mobile). Keyed apart from the
+                  // menu for the same reason as the desktop pair above.
+                  <div key="restoring" aria-hidden className="flex items-center gap-3 px-2 py-2">
                     <div className="w-8 h-8 rounded-full bg-gray-700 shrink-0" />
                     <div className="min-w-0 space-y-1.5">
                       <div className="h-3 w-24 rounded bg-gray-700" />
@@ -546,7 +550,7 @@ function Navbar() {
                     </div>
                   </div>
                 ) : isAuthenticated && user ? (
-                  <div className="space-y-2">
+                  <div key="account" className="space-y-2">
                     <div className="flex items-center gap-3 px-2 py-2">
                       <div className="w-8 h-8 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {user.avatar_url
