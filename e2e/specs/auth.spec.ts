@@ -149,6 +149,70 @@ test.describe('auth', () => {
     expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBeNull();
   });
 
+  // ── The callback page after provider consent ─────────────────────────────────
+  // A provider cannot be driven here, but the callback page can: the API's
+  // success redirect is /oauth/callback?token=<presence gate> with the refresh
+  // cookie set on that same response, so a cookie planted through the API plus
+  // the URL reproduces the landing exactly.
+
+  /** Sign in through the API so the context holds a live refresh cookie. */
+  async function apiLoginCookie(page: Page, u: TestUser, testIp: string): Promise<void> {
+    const res = await page.request.post('/api/auth/login', {
+      data: { email: u.email, password: u.password },
+      headers: { 'x-real-ip': testIp },
+    });
+    if (res.status() !== 200) throw new Error(`login failed: ${res.status()} ${await res.text()}`);
+  }
+
+  test('a provider callback returns to the stored page', async ({ page }) => {
+    // Also pins StrictMode idempotency: the Vite dev server runs StrictMode, and
+    // a second effect run that read oauth_redirect after the first removed it
+    // used to send every dev sign-in home.
+    await apiLoginCookie(page, user!, ip);
+    await page.goto('/login');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
+    await page.goto('/oauth/callback?token=x');
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(accountMenu(page)).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem('sb_has_session'))).toBe('1');
+  });
+
+  test('a transient refresh failure after provider consent says so and keeps the cookie retryable', async ({ page }) => {
+    await apiLoginCookie(page, user!, ip);
+    await page.goto('/login');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
+    // Only the callback's own refresh fails; the retry below must reach the server.
+    await page.route(
+      '**/api/auth/refresh',
+      (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Service temporarily unavailable"}' }),
+      { times: 1 }
+    );
+    await page.goto('/oauth/callback?token=x');
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.locator('form div.text-red-400')).toHaveText("We couldn't complete sign-in. Please try again.");
+    expect(await page.evaluate(() => localStorage.getItem('sb_has_session'))).toBe('1');
+    expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBe('/levels/eidos-7');
+
+    // The cookie the provider flow set was never used, and the hint left set
+    // lets the next load finish the sign-in with it.
+    const refreshed = page.waitForResponse(
+      (r) => r.url().includes('/api/auth/refresh') && r.status() === 200
+    );
+    await page.reload();
+    await refreshed;
+    await expect(accountMenu(page)).toBeVisible();
+  });
+
+  test('a refresh the server refuses after provider consent gets the toast only', async ({ page }) => {
+    // No cookie (beforeEach cleared it), so the refresh is a definitive 401.
+    await page.goto('/oauth/callback?token=x');
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByText('Your session expired. Please log in again.')).toBeVisible();
+    await expect(page.locator('form div.text-red-400')).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('sb_has_session'))).toBeNull();
+  });
+
   // ── One account, one way in: a provider-only account has no password ─────────
   // A provider login cannot be driven from here, so the suite's password user is
   // turned into a provider-only one by blanking its hash, which is exactly what the
@@ -206,5 +270,98 @@ test.describe('auth', () => {
       await expect(page.getByText(NO_PASSWORD_FORGOT)).toBeVisible();
       await expect(page.getByText('Check your email')).toHaveCount(0);
     });
+  });
+});
+
+// ── Return paths ─────────────────────────────────────────────────────────────
+// Every Sign in and Create account link stores where the visitor was, and the
+// login page's single read site decides where a sign-in lands. The register
+// page used to ignore it and always land on the home page, its provider
+// buttons never stored anything, and the navbar's links record the auth pages
+// themselves when pressed there.
+test.describe('return paths', () => {
+  let ip: string;
+  let user: TestUser;
+  let created: TestUser | null = null;
+  let seq = 0;
+
+  test.beforeAll(() => {
+    fx = readFixtures();
+  });
+
+  test.beforeEach(async ({ page, context }) => {
+    ip = nextTestIp();
+    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    user = makeUser(fx.token, `r${++seq}`);
+    await apiRegister(page, user, ip);
+    await context.clearCookies();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await apiDeleteUser(page, user, ip);
+    if (created) {
+      await apiDeleteUser(page, created, ip);
+      created = null;
+    }
+  });
+
+  // A second account per test, registered through the form; afterEach deletes it.
+  async function registerViaForm(page: Page): Promise<void> {
+    created = makeUser(fx.token, `r${seq}c`);
+    // The URL changes before the router's transition swaps the page, and the
+    // login page has an Email field too: wait for the register form itself.
+    await expect(page.getByRole('heading', { name: 'Create account', level: 1 })).toBeVisible();
+    await page.getByLabel('Email').fill(created.email);
+    await page.getByLabel('Username').fill(created.username);
+    await page.getByLabel('Password').fill(created.password);
+    await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  }
+
+  test('an account created from the comment prompt returns to the thread', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await page.getByRole('link', { name: 'create an account' }).click();
+    await expect(page).toHaveURL(/\/register$/);
+    await registerViaForm(page);
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(accountMenu(page)).toBeVisible();
+  });
+
+  test('switching from Sign in to Create one keeps the return path', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await navSignIn(page).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole('link', { name: 'Create one' }).click();
+    await expect(page).toHaveURL(/\/register$/);
+    await registerViaForm(page);
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+  });
+
+  test('a provider press on the register page stores where the visitor came from and retires a stale value', async ({ page }) => {
+    // No provider can be driven here. A blank 200 lets the top-level navigation
+    // complete, so the page never reaches the callback and the key is left as written.
+    await page.route('**/api/auth/google', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '' })
+    );
+    await page.goto('/levels/eidos-7');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/collectibles'));
+    await page.getByRole('link', { name: 'create an account' }).click();
+    // By text, not role: the control used to be a plain anchor, and the pin is
+    // the stored value, so the negative run must reach that assertion.
+    await page.getByText('Continue with Google', { exact: true }).click();
+    await page.waitForURL(/\/api\/auth\/google$/);
+    expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBe('/levels/eidos-7');
+  });
+
+  test('the navbar Sign in on an auth page does not bring the user back to it', async ({ page }) => {
+    await page.goto('/register');
+    await navSignIn(page).click();
+    await expect(page).toHaveURL(/\/login$/);
+    // Same transition race in the other direction: the register form has an Email field too.
+    await expect(page.getByRole('heading', { name: 'Welcome back', level: 1 })).toBeVisible();
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password').fill(user.password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(accountMenu(page)).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
   });
 });

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
@@ -8,6 +9,7 @@ import { API_BASE_URL, readError, errorMessage } from '../services/api'
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
   const token = searchParams.get('token')
 
   const [password, setPassword] = useState('')
@@ -43,6 +45,11 @@ export default function ResetPasswordPage() {
         throw new Error(await readError(res, 'Failed to reset password'))
       }
       setSuccess(true)
+      // The reset revoked every session, this browser's included, but the token
+      // in memory stays valid for up to 15 minutes. Tear down now so the navbar
+      // reads signed out at once and the next rotation cannot surface the
+      // revocation minutes later as an unexplained "session expired".
+      if (user) void logout()
       setTimeout(() => navigate('/login', { replace: true }), 3000)
     } catch (err) {
       setError(errorMessage(err, 'Failed to reset password'))

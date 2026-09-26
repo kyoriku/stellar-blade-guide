@@ -27,7 +27,16 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return <ErrorPage code={500} />;
+      // A crash in the browser, not a server answer, so no status numeral; a
+      // reload is the honest retry, since the boundary has no state to reset.
+      return (
+        <ErrorPage
+          code={null}
+          title="Something went wrong"
+          message="This page hit an error it couldn't recover from. Try again, or head back home."
+          onRetry={() => window.location.reload()}
+        />
+      );
     }
 
     return this.props.children;

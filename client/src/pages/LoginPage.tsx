@@ -4,6 +4,7 @@ import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
 import { oauthErrorNotice, type OAuthNotice } from '../utils/oauthError'
+import { returnPath } from '../utils/returnPath'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 
@@ -45,8 +46,9 @@ export default function LoginPage() {
     }
   }, [searchParams, setSearchParams, location.state])
 
-  // Redirect back to where the user came from, or home
-  const from = (location.state as { from?: string })?.from || returnAfterRefusal || '/'
+  // Redirect back to where the user came from, or home. The navbar's Sign in
+  // renders on the auth pages too, so the stored path can be one of them.
+  const from = returnPath((location.state as { from?: string })?.from || returnAfterRefusal)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -202,7 +204,7 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="text-center text-gray-400 text-sm mt-6">
           Don't have an account?{' '}
-          <Link to="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+          <Link to="/register" state={{ from }} className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
             Create one
           </Link>
         </p>
