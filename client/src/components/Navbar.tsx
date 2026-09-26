@@ -598,6 +598,7 @@ function Navbar() {
                     </Link>
                     <Link
                       to="/register"
+                      state={{ from: location.pathname }}
                       onClick={() => setIsOpen(false)}
                       className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-500/40 transition-all duration-200 text-sm font-medium"
                     >

@@ -208,3 +208,96 @@ test.describe('auth', () => {
     });
   });
 });
+
+// ── Return paths ─────────────────────────────────────────────────────────────
+// Every Sign in and Create account link stores where the visitor was, and the
+// login page's single read site decides where a sign-in lands. The register
+// page used to ignore it and always land on the home page, its provider
+// buttons never stored anything, and the navbar's links record the auth pages
+// themselves when pressed there.
+test.describe('return paths', () => {
+  let ip: string;
+  let user: TestUser;
+  let created: TestUser | null = null;
+  let seq = 0;
+
+  test.beforeAll(() => {
+    fx = readFixtures();
+  });
+
+  test.beforeEach(async ({ page, context }) => {
+    ip = nextTestIp();
+    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    user = makeUser(fx.token, `r${++seq}`);
+    await apiRegister(page, user, ip);
+    await context.clearCookies();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await apiDeleteUser(page, user, ip);
+    if (created) {
+      await apiDeleteUser(page, created, ip);
+      created = null;
+    }
+  });
+
+  // A second account per test, registered through the form; afterEach deletes it.
+  async function registerViaForm(page: Page): Promise<void> {
+    created = makeUser(fx.token, `r${seq}c`);
+    // The URL changes before the router's transition swaps the page, and the
+    // login page has an Email field too: wait for the register form itself.
+    await expect(page.getByRole('heading', { name: 'Create account', level: 1 })).toBeVisible();
+    await page.getByLabel('Email').fill(created.email);
+    await page.getByLabel('Username').fill(created.username);
+    await page.getByLabel('Password').fill(created.password);
+    await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  }
+
+  test('an account created from the comment prompt returns to the thread', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await page.getByRole('link', { name: 'create an account' }).click();
+    await expect(page).toHaveURL(/\/register$/);
+    await registerViaForm(page);
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(accountMenu(page)).toBeVisible();
+  });
+
+  test('switching from Sign in to Create one keeps the return path', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await navSignIn(page).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole('link', { name: 'Create one' }).click();
+    await expect(page).toHaveURL(/\/register$/);
+    await registerViaForm(page);
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+  });
+
+  test('a provider press on the register page stores where the visitor came from and retires a stale value', async ({ page }) => {
+    // No provider can be driven here. A blank 200 lets the top-level navigation
+    // complete, so the page never reaches the callback and the key is left as written.
+    await page.route('**/api/auth/google', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '' })
+    );
+    await page.goto('/levels/eidos-7');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/collectibles'));
+    await page.getByRole('link', { name: 'create an account' }).click();
+    // By text, not role: the control used to be a plain anchor, and the pin is
+    // the stored value, so the negative run must reach that assertion.
+    await page.getByText('Continue with Google', { exact: true }).click();
+    await page.waitForURL(/\/api\/auth\/google$/);
+    expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBe('/levels/eidos-7');
+  });
+
+  test('the navbar Sign in on an auth page does not bring the user back to it', async ({ page }) => {
+    await page.goto('/register');
+    await navSignIn(page).click();
+    await expect(page).toHaveURL(/\/login$/);
+    // Same transition race in the other direction: the register form has an Email field too.
+    await expect(page.getByRole('heading', { name: 'Welcome back', level: 1 })).toBeVisible();
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password').fill(user.password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(accountMenu(page)).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
+  });
+});
