@@ -13,6 +13,7 @@ all token operations hit the same in-memory FakeRedis.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -34,6 +35,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 import app.core.auth as core_auth
 import app.core.cache as core_cache
 import app.routers.auth as auth_routes
+from app.config.settings import settings
 from app.db.database import Base, get_db
 from app.core.usernames import username_problem
 from app.middleware.logging import add_logging_middleware
@@ -304,7 +306,7 @@ async def test_refresh_rotation_demotes_old_token_with_grace_ttl(auth_client, te
     user_id_str, raw_token = old_value.split(":", 1)
     key = core_auth._refresh_key(int(user_id_str), raw_token)
     ttl = await fake_redis.ttl(key)
-    assert 0 < ttl <= core_auth.ROTATION_GRACE_SECONDS
+    assert 0 < ttl <= settings.REFRESH_GRACE_SECONDS
 
     # A client that never received the rotation response (tab closed mid-refresh,
     # network drop) retries with the old cookie and recovers. Clear the jar — it
@@ -342,6 +344,72 @@ async def test_refresh_after_grace_expiry_returns_401(auth_client, test_user, fa
     assert r2.json()["detail"] == "Refresh token invalid or expired"
 
 
+async def test_demote_is_atomic_under_concurrent_calls(fake_redis, monkeypatch):
+    # Two refreshes racing on one cookie must not both read the full TTL: the
+    # second demote has to see the grace value the first one wrote.
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
+    key = core_auth._refresh_key(1, "racing-token")
+    await fake_redis.setex(key, 7 * 24 * 3600, "1")
+
+    first, second = await asyncio.gather(
+        core_auth.demote_refresh_token(1, "racing-token"),
+        core_auth.demote_refresh_token(1, "racing-token"),
+    )
+
+    grace = settings.REFRESH_GRACE_SECONDS
+    assert sorted([first > grace, second > grace]) == [False, True]
+    assert 0 < await fake_redis.ttl(key) <= grace
+
+
+async def test_demote_leaves_value_untouched_and_returns_minus_two_when_gone(fake_redis, monkeypatch):
+    # Later steps keep session state in the value; the demote must never read
+    # or write it, and a key that is already gone must stay gone.
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
+    key = core_auth._refresh_key(1, "opaque-token")
+    await fake_redis.setex(key, 7 * 24 * 3600, "opaque-value")
+    grace = settings.REFRESH_GRACE_SECONDS
+
+    assert await core_auth.demote_refresh_token(1, "opaque-token") > grace
+    assert 0 < await fake_redis.ttl(key) <= grace
+    assert await fake_redis.get(key) == "opaque-value"
+
+    await fake_redis.delete(key)
+    assert await core_auth.demote_refresh_token(1, "opaque-token") == -2
+    assert await fake_redis.exists(key) == 0
+
+
+async def test_refresh_key_revoked_mid_refresh_returns_401_and_clears_cookie(
+    auth_client, test_user, fake_redis, monkeypatch
+):
+    # A logout, logout-all, password change or reset that lands after the
+    # route's GET but before the demote must not be undone by a fresh mint.
+    r_login = await auth_client.post("/api/auth/login", json={
+        "email": test_user.email,
+        "password": "password123",
+    })
+    user_id_str, raw_token = r_login.cookies["refresh_token"].split(":", 1)
+    key = core_auth._refresh_key(int(user_id_str), raw_token)
+
+    real_validate = auth_routes.validate_refresh_token
+
+    async def validate_then_revoke(user_id, token):
+        live = await real_validate(user_id, token)
+        await fake_redis.delete(key)  # the revocation lands here
+        return live
+
+    monkeypatch.setattr(auth_routes, "validate_refresh_token", validate_then_revoke)
+
+    r = await auth_client.post("/api/auth/refresh")
+    assert r.status_code == 401
+    assert r.json()["detail"] == "Refresh token invalid or expired"
+    cookie = r.headers.get("set-cookie", "")
+    assert cookie.startswith("refresh_token=")
+    assert "Max-Age=0" in cookie
+    assert "Path=/api/auth" in cookie
+    # Nothing was minted for the evicted session.
+    assert await fake_redis.keys(f"refresh:{user_id_str}:*") == []
+
+
 # ── Logout ────────────────────────────────────────────────────────────────────
 
 async def test_logout_returns_204(auth_client, test_user):
@@ -370,7 +438,7 @@ async def test_logout_all_sweeps_demoted_grace_token(auth_client, test_user, fak
     # The old token is now demoted (grace TTL), not gone.
     user_id_str, raw_token = old_value.split(":", 1)
     demoted_key = core_auth._refresh_key(int(user_id_str), raw_token)
-    assert 0 < await fake_redis.ttl(demoted_key) <= core_auth.ROTATION_GRACE_SECONDS
+    assert 0 < await fake_redis.ttl(demoted_key) <= settings.REFRESH_GRACE_SECONDS
 
     r = await auth_client.post(
         "/api/auth/logout-all",

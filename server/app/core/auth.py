@@ -4,6 +4,7 @@ import logging
 import jwt
 import hashlib
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
@@ -82,23 +83,46 @@ async def revoke_refresh_token(user_id: int, token: str) -> None:
     await redis_client.delete(key)
 
 
-# On rotation the old token is demoted, not deleted: if the rotation response
-# never reaches the client (tab closed mid-refresh, network drop), the browser
-# is left holding the old cookie — the grace window lets its retry succeed
-# instead of permanently bricking the session. Duration lives in settings
-# (REFRESH_GRACE_SECONDS); this module-level name is the internal alias.
-ROTATION_GRACE_SECONDS = settings.REFRESH_GRACE_SECONDS
+# On rotation the old token is demoted, not deleted, so a browser that never
+# received the rotation response can retry inside the grace window instead of
+# being bricked. One script rather than TTL then EXPIRE: two refreshes racing
+# on one cookie could both read the full TTL between the awaits and both mint.
+_DEMOTE_LUA = """
+local ttl = redis.call('TTL', KEYS[1])
+if ttl == -2 then
+  return -2
+end
+redis.call('EXPIRE', KEYS[1], ARGV[1])
+return ttl
+"""
 
 
 async def demote_refresh_token(user_id: int, token: str) -> int:
-    """Clamp a rotated-out token's TTL to the grace window. Returns the token's
-    TTL *before* clamping (seconds), so the caller can tell a first-time
-    rotation (full ~7-day TTL) from a superseded token being retried within the
-    grace window (TTL already <= the window). -2 if the key is already gone."""
+    """Clamp a rotated-out token's TTL to the grace window, atomically, and
+    return its TTL before clamping: -2 if the key was already gone, in which
+    case nothing is written. The value is never read or written. The script
+    object is built per call so the tests' per-fixture patch of redis_client
+    reaches it; the grace is read from settings at call time for the same
+    reason."""
     key = _refresh_key(user_id, token)
-    prior_ttl = await redis_client.ttl(key)
-    await redis_client.expire(key, ROTATION_GRACE_SECONDS)
-    return prior_ttl
+    script = redis_client.register_script(_DEMOTE_LUA)
+    return int(await script(keys=[key], args=[settings.REFRESH_GRACE_SECONDS]))
+
+
+class RotationOutcome(str, Enum):
+    GONE = "gone"                # the key vanished between the route's GET and the demote
+    GRACE_RETRY = "grace_retry"  # a superseded token retried inside its grace window
+    ROTATED = "rotated"          # a first-time rotation
+
+
+def classify_rotation(prior_ttl: int) -> RotationOutcome:
+    """Name what demote_refresh_token's return means, so the route dispatches on
+    an outcome instead of comparing TTLs inline."""
+    if prior_ttl == -2:
+        return RotationOutcome.GONE
+    if 0 < prior_ttl <= settings.REFRESH_GRACE_SECONDS:
+        return RotationOutcome.GRACE_RETRY
+    return RotationOutcome.ROTATED
 
 
 async def revoke_all_refresh_tokens(user_id: int) -> None:

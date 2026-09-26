@@ -23,6 +23,8 @@ from app.core.auth import (
     demote_refresh_token,
     revoke_all_refresh_tokens,
     get_current_user,
+    RotationOutcome,
+    classify_rotation,
 )
 from app.core.cache import redis_client
 from app.core.security import limiter
@@ -142,7 +144,7 @@ async def refresh(
         )
 
     if not await validate_refresh_token(user_id, refresh_token):
-        request.state.auth_fail_reason = "revoked-or-expired"
+        request.state.auth_fail_reason = f"revoked-or-expired:{user_id}"
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token invalid or expired",
@@ -163,12 +165,22 @@ async def refresh(
     # so a client that never received this response can retry (logout and
     # password changes still hard-revoke).
     prior_ttl = await demote_refresh_token(user_id, refresh_token)
-    # A TTL already within the grace window means this was a superseded token
-    # being retried (lost Set-Cookie / killed tab / wake double-fire), not a
-    # fresh rotation — surface it so these benign recoveries are observable
-    # instead of hiding inside the normal 200 stream.
-    if 0 < prior_ttl <= settings.REFRESH_GRACE_SECONDS:
-        request.state.auth_grace_refresh = True
+    outcome = classify_rotation(prior_ttl)
+    if outcome is RotationOutcome.GONE:
+        # The key vanished between the GET above and the demote, so a logout,
+        # logout-all, password change or reset landed first; minting here would
+        # hand the evicted session a fresh 7-day token.
+        request.state.auth_fail_reason = f"revoked-mid-refresh:{user_id}"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token invalid or expired",
+            headers=clear_refresh_cookie_headers(),
+        )
+    if outcome is RotationOutcome.GRACE_RETRY:
+        # A superseded token retried inside its grace window (lost Set-Cookie,
+        # killed tab, wake double-fire), not a fresh rotation; logged so these
+        # benign recoveries stay visible. A prior TTL at the grace value itself
+        # is a concurrent duplicate of a rotation that just happened.
         logger.info(f"{CYAN}Grace-window refresh for user {user_id} (token had {prior_ttl}s left){RESET}")
     return await _issue_tokens(user, response)
 
