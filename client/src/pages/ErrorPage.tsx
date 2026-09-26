@@ -1,7 +1,10 @@
-import { Link } from 'react-router-dom'
+import { Link, useInRouterContext } from 'react-router-dom'
 import { Home, AlertCircle, Clock, ServerCrash, RefreshCw, WifiOff } from 'lucide-react'
 import SEO from '../components/SEO'
 import { NETWORK_ERROR_MESSAGE } from '../services/api'
+
+// Shared by the two home-link variants below so they cannot drift apart.
+const HOME_LINK_CLASSES = 'inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200';
 
 interface ErrorPageProps {
   code?: number;
@@ -57,6 +60,10 @@ function ErrorPage({
 
   const defaults = getDefaults();
   const Icon = defaults.icon;
+  // The root ErrorBoundary (main.tsx) sits above BrowserRouter, so its fallback
+  // renders this page with no Router in context, where <Link> throws and React
+  // empties the root to a blank page. A plain anchor keeps the way out usable.
+  const inRouter = useInRouterContext();
 
   return (
     <div className="min-h-main bg-primary flex items-center justify-center px-4">
@@ -93,13 +100,17 @@ function ErrorPage({
               Try Again
             </button>
           )}
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200"
-          >
-            <Home className="w-4 h-4" />
-            Back to Home
-          </Link>
+          {inRouter ? (
+            <Link to="/" className={HOME_LINK_CLASSES}>
+              <Home className="w-4 h-4" />
+              Back to Home
+            </Link>
+          ) : (
+            <a href="/" className={HOME_LINK_CLASSES}>
+              <Home className="w-4 h-4" />
+              Back to Home
+            </a>
+          )}
         </div>
       </div>
     </div>

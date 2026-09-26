@@ -46,7 +46,13 @@ function getLocalProgress(): Set<number> {
 }
 
 function setLocalProgress(ids: Set<number>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+  } catch {
+    // Runs inside the setGuestIds updater, which React replays during render,
+    // so refused or full storage would crash the page rather than lose one
+    // save; the toggle still holds in memory for this page's life.
+  }
 }
 
 export function useProgress() {

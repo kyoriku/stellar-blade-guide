@@ -51,6 +51,17 @@ function readCachedUser(): AuthUser | null {
   }
 }
 
+// Read in the provider's first render, above any boundary whose fallback can
+// render, so a browser that refuses site storage (Safari "Block all cookies", a
+// per-site cookie block) must read as signed out rather than blank the page.
+function hasSessionHint(): boolean {
+  try {
+    return !!localStorage.getItem(SESSION_FLAG)
+  } catch {
+    return false
+  }
+}
+
 // Provider
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readCachedUser())
@@ -61,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // including focus-recovery — so it can drive the "restoring" navbar state.
   // Seeded from the hint so a returning user's first paint already reads as
   // restoring, with no one-frame Sign-in flash before the mount refresh starts.
-  const [isRefreshing, setIsRefreshing] = useState(() => !!localStorage.getItem(SESSION_FLAG))
+  const [isRefreshing, setIsRefreshing] = useState(() => hasSessionHint())
   const { showToast } = useToast()
 
   // Single-flight guard: concurrent refreshes would race the server's token
@@ -166,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Silent refresh on mount — skip entirely if no session flag is set,
   // meaning this visitor has never logged in (or has since logged out).
   useEffect(() => {
-    if (!localStorage.getItem(SESSION_FLAG)) {
+    if (!hasSessionHint()) {
       setIsLoading(false)
       return
     }
@@ -193,7 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const refreshIfNeeded = () => {
       if (document.visibilityState !== 'visible') return
-      if (!localStorage.getItem(SESSION_FLAG)) return // genuinely logged out — nothing to recover
+      if (!hasSessionHint()) return // genuinely logged out — nothing to recover
       const tokenMissing = !accessToken               // dropped by a transient failure → recover now
       const stale = Date.now() - lastRefreshRef.current > REFRESH_ON_FOCUS_STALE_MS
       if (tokenMissing || stale) void refreshToken()
@@ -218,9 +229,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (canSync && !prevSyncedRef.current) {
       // 'sb_progress' must match STORAGE_KEY in hooks/useProgress.ts — drift
       // means guest progress silently never merges (or never clears) on login.
-      const local = localStorage.getItem('sb_progress')
-      if (local) {
-        try {
+      try {
+        const local = localStorage.getItem('sb_progress')
+        if (local) {
           const ids = JSON.parse(local) as number[]
           if (ids.length > 0) {
             fetch(`${API_BASE_URL}/progress/sync`, {
@@ -245,8 +256,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               void queryClient.invalidateQueries({ queryKey: ['user-stats'] })
             }).catch(() => showToast("Couldn't sync your saved progress. It's still saved on this device."))
           }
-        } catch { /* corrupt sb_progress JSON — nothing to sync */ }
-      }
+        }
+      } catch { /* storage refused or corrupt sb_progress JSON: nothing to sync */ }
     }
     prevSyncedRef.current = canSync
   }, [user, accessToken, showToast, queryClient])
@@ -355,7 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // placeholder for this window instead of flashing "Sign in"; restoreExpired
   // suppresses it after a bound teardown so the fallback is the real
   // signed-out state.
-  const isRestoring = !!localStorage.getItem(SESSION_FLAG) && user === null && isRefreshing && !restoreExpired
+  const isRestoring = hasSessionHint() && user === null && isRefreshing && !restoreExpired
 
   return (
     <AuthContext.Provider value={{
