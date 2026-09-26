@@ -149,6 +149,70 @@ test.describe('auth', () => {
     expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBeNull();
   });
 
+  // ── The callback page after provider consent ─────────────────────────────────
+  // A provider cannot be driven here, but the callback page can: the API's
+  // success redirect is /oauth/callback?token=<presence gate> with the refresh
+  // cookie set on that same response, so a cookie planted through the API plus
+  // the URL reproduces the landing exactly.
+
+  /** Sign in through the API so the context holds a live refresh cookie. */
+  async function apiLoginCookie(page: Page, u: TestUser, testIp: string): Promise<void> {
+    const res = await page.request.post('/api/auth/login', {
+      data: { email: u.email, password: u.password },
+      headers: { 'x-real-ip': testIp },
+    });
+    if (res.status() !== 200) throw new Error(`login failed: ${res.status()} ${await res.text()}`);
+  }
+
+  test('a provider callback returns to the stored page', async ({ page }) => {
+    // Also pins StrictMode idempotency: the Vite dev server runs StrictMode, and
+    // a second effect run that read oauth_redirect after the first removed it
+    // used to send every dev sign-in home.
+    await apiLoginCookie(page, user!, ip);
+    await page.goto('/login');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
+    await page.goto('/oauth/callback?token=x');
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(accountMenu(page)).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem('sb_has_session'))).toBe('1');
+  });
+
+  test('a transient refresh failure after provider consent says so and keeps the cookie retryable', async ({ page }) => {
+    await apiLoginCookie(page, user!, ip);
+    await page.goto('/login');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
+    // Only the callback's own refresh fails; the retry below must reach the server.
+    await page.route(
+      '**/api/auth/refresh',
+      (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Service temporarily unavailable"}' }),
+      { times: 1 }
+    );
+    await page.goto('/oauth/callback?token=x');
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.locator('form div.text-red-400')).toHaveText("We couldn't complete sign-in. Please try again.");
+    expect(await page.evaluate(() => localStorage.getItem('sb_has_session'))).toBe('1');
+    expect(await page.evaluate(() => localStorage.getItem('oauth_redirect'))).toBe('/levels/eidos-7');
+
+    // The cookie the provider flow set was never used, and the hint left set
+    // lets the next load finish the sign-in with it.
+    const refreshed = page.waitForResponse(
+      (r) => r.url().includes('/api/auth/refresh') && r.status() === 200
+    );
+    await page.reload();
+    await refreshed;
+    await expect(accountMenu(page)).toBeVisible();
+  });
+
+  test('a refresh the server refuses after provider consent gets the toast only', async ({ page }) => {
+    // No cookie (beforeEach cleared it), so the refresh is a definitive 401.
+    await page.goto('/oauth/callback?token=x');
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByText('Your session expired. Please log in again.')).toBeVisible();
+    await expect(page.locator('form div.text-red-400')).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('sb_has_session'))).toBeNull();
+  });
+
   // ── One account, one way in: a provider-only account has no password ─────────
   // A provider login cannot be driven from here, so the suite's password user is
   // turned into a provider-only one by blanking its hash, which is exactly what the
