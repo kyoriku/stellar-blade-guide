@@ -213,6 +213,48 @@ test.describe('auth', () => {
     expect(await page.evaluate(() => localStorage.getItem('sb_has_session'))).toBeNull();
   });
 
+  test('the account menu appears closed after provider sign-in', async ({ page }) => {
+    // The restoring placeholder and the menu are both divs in the same navbar
+    // slot. Unkeyed, React reused the placeholder's chevron slot as the dropdown
+    // panel, whose transition-all then animated it from opaque and 14px wide to
+    // closed, in plain view, for 200ms. The first read is synchronous at the
+    // moment the button appears, so it is deterministic either way: a panel
+    // mounted closed reads 0/hidden, a reused node reads the transition's start
+    // value, 1/visible.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __panel: { opacity: string; visibility: string }[] };
+      w.__panel = [];
+      const mo = new MutationObserver(() => {
+        const btn = document.querySelector('button[aria-label="Account menu"]');
+        const panel = btn?.nextElementSibling;
+        if (!btn || !panel || w.__panel.length) return;
+        const read = () => {
+          const cs = getComputedStyle(panel);
+          w.__panel.push({ opacity: cs.opacity, visibility: cs.visibility });
+        };
+        read();
+        let n = 0;
+        const tick = () => { read(); if (++n < 20) requestAnimationFrame(tick); };
+        requestAnimationFrame(tick);
+        mo.disconnect();
+      });
+      mo.observe(document, { childList: true, subtree: true });
+    });
+    await apiLoginCookie(page, user!, ip);
+    await page.goto('/login');
+    await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
+    await page.goto('/oauth/callback?token=x');
+    await expect(accountMenu(page)).toBeVisible();
+    await page.waitForFunction(() => (window as unknown as { __panel: unknown[] }).__panel.length >= 21);
+    const samples = await page.evaluate(
+      () => (window as unknown as { __panel: { opacity: string; visibility: string }[] }).__panel
+    );
+    for (const s of samples) {
+      expect(s.opacity).toBe('0');
+      expect(s.visibility).toBe('hidden');
+    }
+  });
+
   // ── One account, one way in: a provider-only account has no password ─────────
   // A provider login cannot be driven from here, so the suite's password user is
   // turned into a provider-only one by blanking its hash, which is exactly what the
