@@ -62,6 +62,10 @@ class Settings:
     # stolen cookie replayed against a rotating victim gains <= this window,
     # nothing against an idle one.
     REFRESH_GRACE_SECONDS: int = int(os.getenv('REFRESH_GRACE_SECONDS', 60))
+    # Absolute session lifetime, counted from the login: a session is refused at its
+    # first refresh past this age, however often it rotated. The idle window above
+    # slides on every rotation, so without this an open tab would never sign in again.
+    SESSION_MAX_AGE_DAYS: int = int(os.getenv('SESSION_MAX_AGE_DAYS', 90))
     FRONTEND_URL: str = os.getenv('FRONTEND_URL', 'https://stellarbladeguide.com')
 
     # OpenAI

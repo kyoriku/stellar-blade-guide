@@ -20,6 +20,8 @@ SQLite, and app.core.auth's redis_client binding patched to the shared FakeRedis
 
 from __future__ import annotations
 
+import time
+
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
@@ -148,6 +150,37 @@ async def test_script_error_on_demote_returns_503_without_clearing_cookie(
     assert r.json()["error"] == "Service temporarily unavailable"
     assert "refresh_token" not in r.headers.get("set-cookie", "")
     # The script never ran, so nothing was clamped.
+    assert await fake_redis.ttl(key) > settings.REFRESH_GRACE_SECONDS
+
+
+async def test_redis_error_on_session_cap_delete_returns_503_without_clearing_cookie(
+    resilience_client, resilience_user, fake_redis, monkeypatch
+):
+    # The cap's DEL is a Redis write like any other: a fault there is the same 503,
+    # with the key, its value and the cookie left for the retry to decide.
+    r_login = await resilience_client.post("/api/auth/login", json={
+        "email": resilience_user.email,
+        "password": "password123",
+    })
+    assert r_login.status_code == 200
+    user_id_str, raw_token = r_login.cookies["refresh_token"].split(":", 1)
+    key = core_auth._refresh_key(int(user_id_str), raw_token)
+    expired = core_auth.encode_session_value(
+        int(time.time()) - settings.SESSION_MAX_AGE_DAYS * 24 * 60 * 60 - 1
+    )
+    assert await fake_redis.set(key, expired, xx=True, keepttl=True)
+
+    async def _timeout(*args, **kwargs):
+        raise RedisTimeoutError("Timeout reading from socket")
+
+    monkeypatch.setattr(fake_redis, "delete", _timeout)
+
+    r = await resilience_client.post("/api/auth/refresh")
+    assert r.status_code == 503
+    assert r.headers["retry-after"] == "30"
+    assert r.json()["error"] == "Service temporarily unavailable"
+    assert "refresh_token" not in r.headers.get("set-cookie", "")
+    assert await fake_redis.get(key) == expired
     assert await fake_redis.ttl(key) > settings.REFRESH_GRACE_SECONDS
 
 
