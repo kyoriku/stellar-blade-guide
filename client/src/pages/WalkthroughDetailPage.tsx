@@ -102,7 +102,7 @@ function WalkthroughDetailPage() {
     const typeDisplay = walkthroughTypeName(type!);
     const serverTitle = serverWalkthroughTitle(location.pathname, typeDisplay);
     return (
-      <div className="min-h-main bg-primary">
+      <div className="flex-1 bg-primary">
         <SEO
           title={serverTitle ? `${serverTitle} Walkthrough` : `${typeDisplay} Walkthrough`}
           description={`${typeDisplay} walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.`}
@@ -200,7 +200,7 @@ function WalkthroughDetailPage() {
   const pageDescription = `${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with ${hasBossFight ? 'screenshots, tips, and boss strategies' : 'screenshots and tips'}.`;
 
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       <SEO
         title={`${walkthrough.title} Walkthrough`}
         description={pageDescription}

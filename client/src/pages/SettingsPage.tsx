@@ -179,7 +179,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-main bg-primary py-12 px-4">
+    <div className="flex-1 bg-primary pt-12 px-4">
       <SEO
         title={seo.noindex['/settings'].title}
         description={seo.noindex['/settings'].description}

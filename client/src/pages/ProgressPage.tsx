@@ -156,7 +156,7 @@ export default function ProgressPage() {
   const cycs = cycleRows(stats?.cycles)
 
   return (
-    <div className="min-h-main bg-primary py-12 px-4">
+    <div className="flex-1 bg-primary pt-12 px-4">
       {/* Tab title mirrors the menu label; the h1 carries the fuller name —
           same split as Settings ("Settings" / "Account Settings"). */}
       <SEO title={seo.noindex['/progress'].title} description={seo.noindex['/progress'].description} noindex />

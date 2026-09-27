@@ -60,8 +60,14 @@ function LevelDetailPage() {
     if (locationData.length > 0 && location.hash) {
       const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
       if (el) {
+        // Inline content links target a card, but its "Level · Location" header
+        // sits 44px above, outside the card — landing the card puts that header
+        // behind the navbar. For the first card in a section, scroll the section
+        // instead. Later cards are unaffected (their header is far above).
+        const section = el.closest('section[id]');
+        const target = section?.querySelector('article') === el ? section : el;
         const offset = 97;
-        const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
+        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
         window.scrollTo({ top, behavior: 'instant' });
       }
     }
@@ -217,7 +223,7 @@ function LevelDetailPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-main bg-primary">
+      <div className="flex-1 bg-primary">
         {seo}
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
@@ -273,7 +279,7 @@ function LevelDetailPage() {
   }
 
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       {seo}
       <StructuredData
         type="CollectionPage"

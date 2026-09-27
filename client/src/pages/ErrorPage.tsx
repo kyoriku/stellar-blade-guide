@@ -64,12 +64,12 @@ function ErrorPage({
   // The root ErrorBoundary (main.tsx) sits above BrowserRouter, so its fallback
   // renders this page with no Router in context, where <Link> throws and React
   // empties the root to a blank page. A plain anchor keeps the way out usable,
-  // and the page fills the viewport itself: min-h-main is sized for the space
+  // and the page fills the viewport itself: flex-1 is sized for the space
   // between a navbar and footer that are not rendered there.
   const inRouter = useInRouterContext();
 
   return (
-    <div className={`${inRouter ? 'min-h-main' : 'min-h-dvh'} bg-primary flex items-center justify-center px-4`}>
+    <div className={`${inRouter ? 'flex-1' : 'min-h-dvh'} bg-primary flex items-center justify-center px-4`}>
       <SEO
         title={offline || code === null ? (title || defaults.title) : `${code} ${title || defaults.title}`}
         description={message || defaults.message}
@@ -85,10 +85,13 @@ function ErrorPage({
           </div>
         </div>
 
-        {!offline && code !== null && <h1 className="text-6xl font-bold text-gray-100 mb-4">{code}</h1>}
-        <h2 className="text-2xl font-semibold text-gray-300 mb-4">
+        {/* The status number is a label, not the heading — it is absent on the
+            offline and unknown-code branches, which would otherwise have no h1
+            at all. The title carries the heading on every branch. */}
+        {!offline && code !== null && <div className="text-6xl font-bold text-gray-100 mb-4">{code}</div>}
+        <h1 className="text-2xl font-semibold text-gray-300 mb-4">
           {title || defaults.title}
-        </h2>
+        </h1>
         <p className="text-gray-400 mb-8">
           {message || defaults.message}
         </p>

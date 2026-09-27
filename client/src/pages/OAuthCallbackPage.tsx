@@ -47,7 +47,7 @@ export default function OAuthCallbackPage() {
   }, [navigate, refreshToken, searchParams])
 
   return (
-    <div className="min-h-main bg-primary flex items-center justify-center">
+    <div className="flex-1 bg-primary flex items-center justify-center">
       <SEO title={seo.noindex['/oauth/callback'].title} description={seo.noindex['/oauth/callback'].description} noindex />
       <div className="text-center">
         <div className="inline-block w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mb-4" />

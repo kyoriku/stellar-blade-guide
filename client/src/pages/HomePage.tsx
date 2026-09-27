@@ -23,7 +23,7 @@ function HomePage() {
   const { prefetchLevel, prefetchWalkthroughsByType } = usePrefetch()
 
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       <SEO
         title=""
         description={seo.home.description}
