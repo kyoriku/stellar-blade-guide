@@ -38,7 +38,13 @@ function RootLayout() {
       {/* Spacer for the out-of-flow fixed navbar, plus the gap above the footer,
           carried here so no page repeats them. Pages fill with flex-1, so the
           layout never needs to know the footer's height. */}
-      <div className="flex flex-1 flex-col pt-(--nav-height) pb-16">
+      {/* Phones only: the footer is a fifth of a phone screen, so on a short page
+          it crowds the content and pulls it well above centre. Filling the
+          viewport puts it below the fold instead. Desktop keeps the ordinary
+          behaviour, where a short page simply ends and shows its footer. The
+          navbar spacer and the footer gap are both inside this border box, so
+          100svh needs no arithmetic. */}
+      <div className="flex flex-1 flex-col max-lg:min-h-svh print:min-h-0 pt-(--nav-height) pb-16">
         <Outlet />
       </div>
       <Footer />

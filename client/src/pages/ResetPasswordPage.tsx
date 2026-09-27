@@ -20,7 +20,7 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="flex-1 bg-primary flex items-center justify-center px-4">
+      <div className="flex-1 bg-primary flex items-center justify-center px-4 py-12">
         <div className="text-center">
           <p className="text-red-400 mb-4">Invalid or missing reset token.</p>
           <Link to="/forgot-password" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm">
@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex-1 bg-primary flex items-center justify-center px-4 pt-12">
+    <div className="flex-1 bg-primary flex items-center justify-center px-4 py-12">
       <SEO
         title={seo.noindex['/reset-password'].title}
         description={seo.noindex['/reset-password'].description}
