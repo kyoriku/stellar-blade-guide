@@ -22,7 +22,7 @@ const linkClass = "text-cyan-400 underline decoration-cyan-400/30 underline-offs
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       <SEO title={seo.pages['/privacy'].title} description={seo.pages['/privacy'].description} />
       <div className="container mx-auto px-3 py-8 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Privacy Policy</h1>

@@ -5,7 +5,7 @@ import SectionHeader from '../components/SectionHeader'
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       <SEO title={seo.pages['/terms'].title} description={seo.pages['/terms'].description} />
       <div className="container mx-auto px-3 py-8 max-w-4xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Terms of Service</h1>

@@ -33,7 +33,7 @@ function CategoryIndexPage({ config }: { config: CategoryIndexConfig }) {
   const { basePath, title, items, images, fallbackIcon: FallbackIcon } = config;
 
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       <SEO
         title={config.seoTitle ?? title}
         description={config.metaDescription}

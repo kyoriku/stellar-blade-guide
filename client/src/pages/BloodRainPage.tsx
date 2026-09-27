@@ -123,7 +123,7 @@ function StatusTag({ confirmed }: { confirmed: boolean }) {
 
 export default function BloodRainPage() {
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       <SEO
         title={seo.pages['/blood-rain'].title}
         description={seo.pages['/blood-rain'].description}

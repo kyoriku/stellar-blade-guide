@@ -28,13 +28,20 @@ function RootLayout() {
   }, [location.pathname, isAuthenticated, accessToken, refetch, queryClient])
 
   return (
-    <div className="flex flex-col min-h-screen bg-primary">
+    <div
+      // svh, not dvh: dvh grows when the mobile bars collapse, which would scroll
+      // a page sized between the two viewports and snap it back to the top.
+      // The pb-20 clears the floating controls off the footer's last line, keyed
+      // on their presence so no route list can go stale; max-lg is their own
+      // breakpoint, and they stay in the DOM above it.
+      className="flex flex-col min-h-svh bg-primary print:min-h-0 max-lg:[&:has([data-floating-control])>footer]:pb-20"
+    >
       <ScrollToTop />
       <Navbar />
-      {/* Stands in for the fixed navbar, which is out of flow. Sits here rather
-          than on each page's min-h-main so it covers every route, including any
-          future page that forgets that class. */}
-      <div className="flex-1 pt-(--nav-height)">
+      {/* Spacer for the out-of-flow fixed navbar, plus the gap above the footer,
+          carried here so no page repeats them. Pages fill with flex-1, so the
+          layout never needs to know the footer's height. */}
+      <div className="flex flex-1 flex-col pt-(--nav-height) pb-16">
         <Outlet />
       </div>
       <Footer />

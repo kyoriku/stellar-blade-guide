@@ -2,25 +2,17 @@
 
 /* The navbar's height: h-16 (64px) plus its unconditional 1px border-b. The
    navbar is `fixed`, so this is also the size of the spacer that stands in for
-   it in flow. Three things depend on the number — RootLayout's spacer padding,
-   --min-height-main below, and ProtectedRoute's restore spinner — so it is
+   it in flow — RootLayout's top padding, the mobile drawer's offset and every
+   sticky `top` that has to clear the navbar all derive from it, so it is
    defined once, here. Declared outside @theme so Tailwind cannot prune it as an
-   unused theme key. */
+   unused theme key.
+
+   There is deliberately no matching footer constant. Page height used to be
+   `100vh - navbar - footer`, which went stale every time the footer gained a
+   link and could not be right at both widths at once. RootLayout is a flex
+   column pinned to min-h-svh instead, so the page area measures itself. */
 :root {
   --nav-height: 65px;
-}
-
-@theme {
-  /* Viewport minus the chrome above and below the page: the navbar, and the
-     desktop footer (109px = 1px border + py-8 + a 44px row). The footer term is
-     desktop-only — below md: the footer wraps to roughly 189px, so short pages
-     already overflow the fold slightly. Pre-existing, unrelated to the navbar. */
-  --min-height-main: calc(100vh - var(--nav-height) - 109px);
-}
-
-.min-h-main {
-  padding-bottom: 4rem;
-  /* pb-16 */
 }
 
 /* Custom Scrollbar */
@@ -96,8 +88,8 @@
    blank band on top. Nothing else in the app absorbs that, so it is handled
    here. */
 @media print {
-  /* Drives both RootLayout's spacer padding and the navbar term in
-     --min-height-main, so zeroing it removes the reserved band in one place. */
+  /* Drives RootLayout's spacer padding and every sticky offset, so zeroing it
+     removes the reserved band in one place. */
   :root {
     --nav-height: 0px;
   }
@@ -113,11 +105,5 @@
   nav.fixed {
     display: block;
     position: static;
-  }
-
-  /* 100vh resolves against the page box in print, so this only pads the last
-     page out with whitespace. */
-  .min-h-main {
-    min-height: 0;
   }
 }

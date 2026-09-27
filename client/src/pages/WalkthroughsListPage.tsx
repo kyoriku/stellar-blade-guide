@@ -30,7 +30,7 @@ export default function WalkthroughsListPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-main bg-primary">
+      <div className="flex-1 bg-primary">
         <SEO
           title={`${displayType} Walkthroughs`}
           description={`Complete ${displayType} walkthroughs for Stellar Blade. Detailed guides with step-by-step instructions and screenshots.`}
@@ -80,7 +80,7 @@ export default function WalkthroughsListPage() {
   }
 
   return (
-    <div className="min-h-main bg-primary">
+    <div className="flex-1 bg-primary">
       <SEO
         title={`${displayType} Walkthroughs`}
         description={`Complete ${displayType} walkthroughs for Stellar Blade. ${walkthroughs.length} detailed guides with step-by-step instructions and screenshots.`}
