@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { List, ChevronRight, X } from 'lucide-react'
 import { scrollToSection, type TocLink } from '../utils/toc'
+import { useFloatingControl } from '../hooks/useFloatingControl'
 
 interface FloatingTOCProps {
   links: TocLink[]
@@ -18,6 +19,9 @@ interface FloatingTOCProps {
 // move the page and there is nothing to restore.
 export default function FloatingTOC({ links, currentLevel, activeSection, onNavigate }: FloatingTOCProps) {
   const [isOpen, setIsOpen] = useState(false)
+
+  // Clears the footer's last line of this button — see Footer's pb-20 variant.
+  useFloatingControl()
 
   // Set on a link tap and consumed once the drawer has closed, so the jump runs
   // in that commit rather than in a frame that can interleave with it.
@@ -83,9 +87,6 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
       {/* Floating button — only visible on mobile */}
       <button
         onClick={open}
-        // Tells RootLayout to clear the footer's last line of this button — see
-        // the max-lg:[&:has(...)] class there.
-        data-floating-control
         className="lg:hidden fixed bottom-6 right-4 z-40 flex items-center gap-2 px-4 py-2.5 bg-secondary border border-gray-700 hover:border-cyan-500/50 rounded-full shadow-lg shadow-black/40 text-sm font-medium text-gray-200 hover:text-white transition-all duration-200"
         aria-label="Open table of contents"
       >
