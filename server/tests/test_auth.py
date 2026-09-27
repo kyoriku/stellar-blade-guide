@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlsplit
@@ -410,6 +411,156 @@ async def test_refresh_key_revoked_mid_refresh_returns_401_and_clears_cookie(
     assert await fake_redis.keys(f"refresh:{user_id_str}:*") == []
 
 
+# ── Absolute session lifetime ─────────────────────────────────────────────────
+#
+# The refresh key's value carries the session's start, and every rotation copies it
+# into the successor, so a session ends SESSION_MAX_AGE_DAYS after its login however
+# often it rotated. Values are rewritten with SET XX KEEPTTL so the TTL under test
+# is the one the route set.
+
+def _session_key(cookie_value: str) -> str:
+    user_id_str, raw_token = cookie_value.split(":", 1)
+    return core_auth._refresh_key(int(user_id_str), raw_token)
+
+
+async def _rewrite_value(redis, key: str, value: str) -> None:
+    assert await redis.set(key, value, xx=True, keepttl=True)
+
+
+def _cap_seconds() -> int:
+    return settings.SESSION_MAX_AGE_DAYS * 24 * 60 * 60
+
+
+async def _password_login(client, user) -> str:
+    r = await client.post("/api/auth/login", json={"email": user.email, "password": "password123"})
+    assert r.status_code == 200
+    return r.cookies["refresh_token"]
+
+
+# Every value this code did not write. The first is what every key minted before
+# the session clock holds. The starts in the others sit in 2001, so a guard that let
+# one through would read it as long past the cap and answer 401.
+LEGACY_VALUES = {
+    "legacy-1": "1",
+    "empty": "",
+    "garbage": "garbage",
+    "json-list": "[1]",
+    "no-start": '{"v":1}',
+    "string-start": '{"v":1,"start":"1000000000"}',
+    "bool-start": '{"v":1,"start":true}',
+    "version-2": '{"v":2,"start":1000000000}',
+}
+
+
+async def test_session_cap_expired_refresh_returns_401_and_clears_cookie(oauth, test_user):
+    # The oauth fixture's app is the auth router plus a probe that records the log
+    # reason; nothing here touches a provider.
+    client, redis = oauth.client, oauth.redis
+    first = _session_key(await _password_login(client, test_user))
+
+    # Positive control: an hour inside the cap is an ordinary rotation.
+    await _rewrite_value(redis, first, core_auth.encode_session_value(int(time.time()) - _cap_seconds() + 3600))
+    r1 = await client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+    assert "Max-Age=0" not in r1.headers["set-cookie"]
+    second = _session_key(r1.cookies["refresh_token"])
+
+    # A second past the cap: refused before anything is minted or clamped.
+    await _rewrite_value(redis, second, core_auth.encode_session_value(int(time.time()) - _cap_seconds() - 1))
+    keys_before = set(await redis.keys(f"refresh:{test_user.id}:*"))
+    r2 = await client.post("/api/auth/refresh")
+    assert r2.status_code == 401
+    assert r2.json()["detail"] == "Session expired. Please sign in again."
+    assert oauth.seen["auth_fail_reason"] == f"session-expired:{test_user.id}"
+    cookie = r2.headers.get("set-cookie", "")
+    assert cookie.startswith("refresh_token=")
+    assert "Max-Age=0" in cookie
+    assert "Path=/api/auth" in cookie
+    # The presented key is gone and nothing replaced it.
+    assert set(await redis.keys(f"refresh:{test_user.id}:*")) == keys_before - {second}
+
+
+async def test_session_start_is_carried_through_rotation_and_grace_retry(auth_client, test_user, fake_redis):
+    old_value = await _password_login(auth_client, test_user)
+    started = core_auth.encode_session_value(int(time.time()) - 5 * 24 * 60 * 60)
+    await _rewrite_value(fake_redis, _session_key(old_value), started)
+
+    r1 = await auth_client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+    assert await fake_redis.get(_session_key(r1.cookies["refresh_token"])) == started
+
+    # A retry of the superseded token inside its grace window carries the same
+    # start: the demote never touched the value, so retrying cannot reset the clock.
+    auth_client.cookies.clear()
+    r2 = await auth_client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={old_value}"})
+    assert r2.status_code == 200
+    assert await fake_redis.get(_session_key(r2.cookies["refresh_token"])) == started
+
+
+@pytest.mark.parametrize("legacy", list(LEGACY_VALUES.values()), ids=list(LEGACY_VALUES))
+async def test_legacy_refresh_value_starts_session_clock_at_rotation(auth_client, test_user, fake_redis, legacy):
+    presented = _session_key(await _password_login(auth_client, test_user))
+    await _rewrite_value(fake_redis, presented, legacy)
+
+    before = int(time.time())
+    r = await auth_client.post("/api/auth/refresh")
+    assert r.status_code == 200
+    successor = await fake_redis.get(_session_key(r.cookies["refresh_token"]))
+    assert before <= core_auth.session_start_from_value(successor) <= int(time.time())
+    # Only the successor gets the new shape; the demoted key keeps its bytes.
+    assert await fake_redis.get(presented) == legacy
+
+
+def test_session_value_codec(monkeypatch):
+    value = core_auth.encode_session_value(1790000000)
+    assert value == '{"v":1,"start":1790000000}'
+    assert core_auth.session_start_from_value(value) == 1790000000
+    for unreadable in [
+        *LEGACY_VALUES.values(),
+        '{"v":true,"start":1790000000}',
+        '{"v":1,"start":0}',
+        '{"v":1,"start":-5}',
+        '{"v":1,"start":1790000000.5}',
+        "null",
+    ]:
+        assert core_auth.session_start_from_value(unreadable) is None, unreadable
+
+    # The cap is read at call time, so a patched setting applies at once.
+    monkeypatch.setattr(settings, "SESSION_MAX_AGE_DAYS", 1)
+    now = int(time.time())
+    assert core_auth.session_cap_exceeded(now - 24 * 60 * 60 - 5)
+    assert not core_auth.session_cap_exceeded(now - 24 * 60 * 60 + 60)
+    assert not core_auth.session_cap_exceeded(now + 3600)
+
+
+async def test_session_cap_is_checked_before_demote(auth_client, test_user, fake_redis, monkeypatch):
+    old_value = await _password_login(auth_client, test_user)
+    r1 = await auth_client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+    demoted = _session_key(old_value)
+    successor = _session_key(r1.cookies["refresh_token"])
+
+    # A grace retry of a token whose session has passed the cap is refused, not
+    # minted, and the script never runs on it.
+    await _rewrite_value(fake_redis, demoted, core_auth.encode_session_value(int(time.time()) - _cap_seconds() - 1))
+    demotes = []
+    real_demote = auth_routes.demote_refresh_token
+
+    async def spy(user_id, token):
+        demotes.append(token)
+        return await real_demote(user_id, token)
+
+    monkeypatch.setattr(auth_routes, "demote_refresh_token", spy)
+
+    auth_client.cookies.clear()
+    r2 = await auth_client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={old_value}"})
+    assert r2.status_code == 401
+    assert r2.json()["detail"] == "Session expired. Please sign in again."
+    assert demotes == []
+    # Only the presented key is deleted.
+    assert set(await fake_redis.keys(f"refresh:{test_user.id}:*")) == {successor}
+
+
 # ── Logout ────────────────────────────────────────────────────────────────────
 
 async def test_logout_returns_204(auth_client, test_user):
@@ -602,6 +753,7 @@ async def oauth(auth_db_session, monkeypatch, fake_redis):
     async def probe(request, call_next):
         response = await call_next(request)
         seen["reject_reason"] = getattr(request.state, "reject_reason", None)
+        seen["auth_fail_reason"] = getattr(request.state, "auth_fail_reason", None)
         return response
 
     add_logging_middleware(app)  # outermost, as in main.py

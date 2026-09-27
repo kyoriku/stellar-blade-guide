@@ -1,4 +1,6 @@
 import os
+import json
+import time
 import uuid
 import logging
 import jwt
@@ -28,6 +30,10 @@ REFRESH_TOKEN_EXPIRE_DAYS: int = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
 if not SECRET_KEY:
     raise RuntimeError("JWT_SECRET_KEY environment variable is not set")
+
+# Below 1, every session would be refused at its first refresh.
+if settings.SESSION_MAX_AGE_DAYS < 1:
+    raise RuntimeError("SESSION_MAX_AGE_DAYS must be at least 1")
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -63,18 +69,60 @@ def _refresh_key(user_id: int, token: str) -> str:
     return f"refresh:{user_id}:{_hash_token(token)}"
 
 
-async def store_refresh_token(user_id: int, token: str) -> None:
-    """Persist refresh token in Redis with TTL."""
+# Session value
+# Each refresh key's value carries the start of its session, copied into the
+# successor at every rotation, so the absolute lifetime survives rotation. It is a
+# JSON object on purpose: every key minted before this shape holds the literal
+# "1", which json.loads reads as the int 1, never a dict, so a legacy value can
+# never pass for an epoch in 1970 and sign its owner out.
+
+SESSION_VALUE_VERSION = 1
+
+
+def encode_session_value(start: int) -> str:
+    return json.dumps({"v": SESSION_VALUE_VERSION, "start": start}, separators=(",", ":"))
+
+
+def session_start_from_value(value: str) -> int | None:
+    """The session start this code wrote, or None for any value it did not write
+    (the legacy "1", or anything unreadable). The route treats None as a session
+    starting now, never as a refusal."""
+    try:
+        data = json.loads(value)
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    version, start = data.get("v"), data.get("start")
+    # type() rather than isinstance: True == 1, so a bool would pass as the
+    # version, or as a start in 1970.
+    if type(version) is not int or version != SESSION_VALUE_VERSION:
+        return None
+    if type(start) is not int or start <= 0:
+        return None
+    return start
+
+
+def session_cap_exceeded(start: int) -> bool:
+    """True once the session is older than SESSION_MAX_AGE_DAYS. The setting is
+    read at call time, like the grace. A start in the future (clock skew) never
+    reads as expired."""
+    return time.time() - start > settings.SESSION_MAX_AGE_DAYS * 24 * 60 * 60
+
+
+async def store_refresh_token(user_id: int, token: str, session_start: int | None = None) -> None:
+    """Persist refresh token in Redis with TTL. A rotation passes the start of the
+    session it continues; a new login passes nothing and the clock starts now."""
     key = _refresh_key(user_id, token)
     ttl = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
-    await redis_client.setex(key, ttl, "1")
+    start = int(time.time()) if session_start is None else session_start
+    await redis_client.setex(key, ttl, encode_session_value(start))
 
 
-async def validate_refresh_token(user_id: int, token: str) -> bool:
-    """Return True if the refresh token exists in Redis."""
+async def validate_refresh_token(user_id: int, token: str) -> str | None:
+    """The token's stored value, or None if the token is gone."""
     key = _refresh_key(user_id, token)
-    value = await redis_client.get(key)
-    return value is not None
+    return await redis_client.get(key)
 
 
 async def revoke_refresh_token(user_id: int, token: str) -> None:

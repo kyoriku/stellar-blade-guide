@@ -80,11 +80,13 @@ def user_to_dict(user: User) -> dict:
     }
 
 
-async def _issue_tokens(user: User, response: Response) -> dict:
-    """Create access + refresh tokens, set cookie, return response body."""
+async def _issue_tokens(user: User, response: Response, session_start: int | None = None) -> dict:
+    """Create access + refresh tokens, set cookie, return response body. A
+    rotation passes the start of the session it continues; a login passes nothing
+    and the clock starts now."""
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token()
-    await store_refresh_token(user.id, refresh_token)
+    await store_refresh_token(user.id, refresh_token, session_start=session_start)
     set_refresh_cookie(response, f"{user.id}:{refresh_token}")
     return {
         "access_token": access_token,

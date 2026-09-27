@@ -25,6 +25,8 @@ from app.core.auth import (
     get_current_user,
     RotationOutcome,
     classify_rotation,
+    session_start_from_value,
+    session_cap_exceeded,
 )
 from app.core.cache import redis_client
 from app.core.security import limiter
@@ -143,11 +145,30 @@ async def refresh(
             headers=clear_refresh_cookie_headers(),
         )
 
-    if not await validate_refresh_token(user_id, refresh_token):
+    # `is None`, not falsiness: an empty value is a legacy value, not a gone key.
+    value = await validate_refresh_token(user_id, refresh_token)
+    if value is None:
         request.state.auth_fail_reason = f"revoked-or-expired:{user_id}"
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token invalid or expired",
+            headers=clear_refresh_cookie_headers(),
+        )
+
+    # The absolute lifetime is checked before the user SELECT and the demote, so a
+    # session past it costs one GET and one DEL, holds no pooled connection, and
+    # never has its key clamped or a successor minted.
+    session_start = session_start_from_value(value)
+    if session_start is None:
+        # Every key minted before the session clock existed holds "1". Its session
+        # starts at this rotation instead, so the deploy signs nobody out.
+        logger.info(f"{CYAN}Legacy refresh value for user {user_id}; session clock starts now{RESET}")
+    elif session_cap_exceeded(session_start):
+        await revoke_refresh_token(user_id, refresh_token)
+        request.state.auth_fail_reason = f"session-expired:{user_id}"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired. Please sign in again.",
             headers=clear_refresh_cookie_headers(),
         )
 
@@ -182,7 +203,9 @@ async def refresh(
         # benign recoveries stay visible. A prior TTL at the grace value itself
         # is a concurrent duplicate of a rotation that just happened.
         logger.info(f"{CYAN}Grace-window refresh for user {user_id} (token had {prior_ttl}s left){RESET}")
-    return await _issue_tokens(user, response)
+    # The successor inherits the session's start, so rotating never resets the
+    # absolute lifetime. None, from a legacy value, stamps it now.
+    return await _issue_tokens(user, response, session_start=session_start)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
