@@ -9,8 +9,9 @@
 
    There is deliberately no matching footer constant. Page height used to be
    `100vh - navbar - footer`, which went stale every time the footer gained a
-   link and could not be right at both widths at once. RootLayout is a flex
-   column pinned to min-h-svh instead, so the page area measures itself. */
+   link and could not be right at both widths at once. RootLayout's page area is
+   min-h-svh instead — the navbar spacer and the footer gap sit inside that box,
+   so it needs no arithmetic and never has to know the footer's height. */
 :root {
   --nav-height: 65px;
 }

@@ -72,7 +72,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex-1 bg-primary flex items-center justify-center px-4 pt-12">
+    <div className="flex-1 bg-primary flex items-center justify-center px-4 py-12">
       <SEO
         title={seo.noindex['/login'].title}
         description={seo.noindex['/login'].description}
