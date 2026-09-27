@@ -42,9 +42,12 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 
 export default function Footer() {
   return (
-    // RootLayout adds bottom clearance here on pages that render the floating
-    // Contents / Back-to-top controls; this stays the no-controls baseline.
-    <footer className="bg-nav border-t border-gray-800 py-8">
+    // The extra pb-20 clears the floating Contents / Back-to-top controls, which
+    // stand ~66px off the viewport floor and land on the last line — which sits
+    // under a button at most widths, so the 14px over 66 is doing visible work.
+    // useFloatingControl marks <html> while either control is mounted; max-lg is
+    // the controls' own breakpoint.
+    <footer className="bg-nav border-t border-gray-800 py-8 max-lg:[:root[data-floating-controls]_&]:pb-20">
       {/* Nav is first in the DOM so mobile stacks it above the copyright. From md up,
           row-reverse moves the copyright to the left, and shrink-0 on the nav makes the
           copyright wrap instead of the link labels. */}
@@ -59,7 +62,7 @@ export default function Footer() {
           </ul>
         </nav>
 
-        <div className="text-center md:border-0 md:pt-0 md:text-left">
+        <div className="text-center md:text-left">
           <p className="text-gray-300 text-sm">
             &copy; {new Date().getFullYear()} Stellar Blade Guide. All rights reserved.
           </p>

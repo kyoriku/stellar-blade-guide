@@ -31,10 +31,7 @@ function RootLayout() {
     <div
       // svh, not dvh: dvh grows when the mobile bars collapse, which would scroll
       // a page sized between the two viewports and snap it back to the top.
-      // The pb-20 clears the floating controls off the footer's last line, keyed
-      // on their presence so no route list can go stale; max-lg is their own
-      // breakpoint, and they stay in the DOM above it.
-      className="flex flex-col min-h-svh bg-primary print:min-h-0 max-lg:[&:has([data-floating-control])>footer]:pb-20"
+      className="flex flex-col min-h-svh bg-primary print:min-h-0"
     >
       <ScrollToTop />
       <Navbar />
