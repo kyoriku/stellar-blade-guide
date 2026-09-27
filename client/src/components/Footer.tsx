@@ -59,7 +59,7 @@ export default function Footer() {
           </ul>
         </nav>
 
-        <div className="border-t border-gray-800 pt-6 text-center md:border-0 md:pt-0 md:text-left">
+        <div className="text-center md:border-0 md:pt-0 md:text-left">
           <p className="text-gray-300 text-sm">
             &copy; {new Date().getFullYear()} Stellar Blade Guide. All rights reserved.
           </p>
