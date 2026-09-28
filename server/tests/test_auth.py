@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import uuid
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlsplit
@@ -322,29 +323,6 @@ async def test_refresh_rotation_demotes_old_token_with_grace_ttl(auth_client, te
     assert "access_token" in r2.json()
 
 
-async def test_refresh_after_grace_expiry_returns_401(auth_client, test_user, fake_redis):
-    r_login = await auth_client.post("/api/auth/login", json={
-        "email": test_user.email,
-        "password": "password123",
-    })
-    old_value = r_login.cookies["refresh_token"]
-
-    r1 = await auth_client.post("/api/auth/refresh")
-    assert r1.status_code == 200
-
-    # Fast-forward past the grace window: the demoted key has expired
-    user_id_str, raw_token = old_value.split(":", 1)
-    await fake_redis.delete(core_auth._refresh_key(int(user_id_str), raw_token))
-
-    auth_client.cookies.clear()
-    r2 = await auth_client.post(
-        "/api/auth/refresh",
-        headers={"Cookie": f"refresh_token={old_value}"},
-    )
-    assert r2.status_code == 401
-    assert r2.json()["detail"] == "Refresh token invalid or expired"
-
-
 async def test_demote_is_atomic_under_concurrent_calls(fake_redis, monkeypatch):
     # Two refreshes racing on one cookie must not both read the full TTL: the
     # second demote has to see the grace value the first one wrote.
@@ -391,11 +369,14 @@ async def test_refresh_key_revoked_mid_refresh_returns_401_and_clears_cookie(
     user_id_str, raw_token = r_login.cookies["refresh_token"].split(":", 1)
     key = core_auth._refresh_key(int(user_id_str), raw_token)
 
+    family = core_auth._family_key(int(user_id_str), core_auth.session_id_from_token(raw_token))
     real_validate = auth_routes.validate_refresh_token
 
     async def validate_then_revoke(user_id, token):
         live = await real_validate(user_id, token)
-        await fake_redis.delete(key)  # the revocation lands here
+        # The revocation lands here. Like every real one (logout, logout-all, a
+        # password change or reset) it takes the session's family with the token.
+        await fake_redis.delete(key, family)
         return live
 
     monkeypatch.setattr(auth_routes, "validate_refresh_token", validate_then_revoke)
@@ -476,8 +457,11 @@ async def test_session_cap_expired_refresh_returns_401_and_clears_cookie(oauth, 
     assert cookie.startswith("refresh_token=")
     assert "Max-Age=0" in cookie
     assert "Path=/api/auth" in cookie
-    # The presented key is gone and nothing replaced it.
-    assert set(await redis.keys(f"refresh:{test_user.id}:*")) == keys_before - {second}
+    # The presented key and its session's family are gone and nothing replaced
+    # them, so the grace predecessor still in Redis cannot mint either.
+    ended = {second, _family(r1.cookies["refresh_token"])}
+    assert ended <= keys_before
+    assert set(await redis.keys(f"refresh:{test_user.id}:*")) == keys_before - ended
 
 
 async def test_session_start_is_carried_through_rotation_and_grace_retry(auth_client, test_user, fake_redis):
@@ -557,8 +541,196 @@ async def test_session_cap_is_checked_before_demote(auth_client, test_user, fake
     assert r2.status_code == 401
     assert r2.json()["detail"] == "Session expired. Please sign in again."
     assert demotes == []
-    # Only the presented key is deleted.
+    # The presented key and the session's family are deleted; the successor left
+    # behind is refused at its own refresh.
     assert set(await fake_redis.keys(f"refresh:{test_user.id}:*")) == {successor}
+    r3 = await auth_client.post(
+        "/api/auth/refresh", headers={"Cookie": f"refresh_token={r1.cookies['refresh_token']}"}
+    )
+    assert r3.status_code == 401
+    assert await fake_redis.keys(f"refresh:{test_user.id}:*") == []
+
+
+# ── Reuse detection ───────────────────────────────────────────────────────────
+#
+# A token is "{sid}.{secret}", the sid shared by every token of one sign-in, and
+# refresh:{uid}:family:{sid} exists while that session is signed in. A token whose
+# own key is gone while its family is alive was rotated away and has come back.
+
+def _sid(cookie_value: str) -> str | None:
+    return core_auth.session_id_from_token(cookie_value.split(":", 1)[1])
+
+
+def _family(cookie_value: str) -> str:
+    return core_auth._family_key(int(cookie_value.split(":", 1)[0]), _sid(cookie_value))
+
+
+def _reuse_warnings(caplog) -> list:
+    return [
+        rec for rec in _app_records(caplog)
+        if rec.name == "app.routers.auth" and rec.levelno == logging.WARNING
+    ]
+
+
+def test_session_id_is_read_only_from_tokens_minted_here():
+    sid = core_auth.new_session_id()
+    assert core_auth.session_id_from_token(core_auth.create_refresh_token(sid)) == sid
+    for token in [
+        str(uuid.uuid4()),        # every token issued before session ids
+        f"{sid.upper()}.secret",
+        f"{sid[:-1]}.secret",
+        f"{sid}x.secret",
+        sid,
+        "",
+    ]:
+        assert core_auth.session_id_from_token(token) is None, token
+
+
+async def test_rotated_token_presented_after_grace_ends_the_session(oauth, test_user, api_log):
+    # This was the after-grace 401 test. The 401 is unchanged; it now also ends the
+    # session the token belonged to.
+    client, redis = oauth.client, oauth.redis
+    old_value = await _password_login(client, test_user)
+    r1 = await client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+    successor = r1.cookies["refresh_token"]
+    assert _sid(old_value) is not None
+    assert _sid(successor) == _sid(old_value)
+
+    # Past the grace window the demoted key is gone; the session is not.
+    await redis.delete(_session_key(old_value))
+    client.cookies.clear()
+    r2 = await client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={old_value}"})
+    assert r2.status_code == 401
+    assert r2.json()["detail"] == "Refresh token invalid or expired"
+    assert oauth.seen["auth_fail_reason"] == f"refresh-reuse:{test_user.id}"
+    cookie = r2.headers.get("set-cookie", "")
+    assert cookie.startswith("refresh_token=")
+    assert "Max-Age=0" in cookie
+    assert await redis.exists(_family(old_value)) == 0
+    [warning] = _reuse_warnings(api_log)
+    assert _sid(old_value)[:8] in warning.getMessage()
+    assert _sid(old_value) not in warning.getMessage()
+
+    # Every token of the session is over: the successor that never saw the replay
+    # is refused at its own refresh, and deleted.
+    r3 = await client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={successor}"})
+    assert r3.status_code == 401
+    assert oauth.seen["auth_fail_reason"] == f"session-revoked:{test_user.id}"
+    assert await redis.keys(f"refresh:{test_user.id}:*") == []
+
+
+async def test_legacy_token_rotates_ungated_into_a_session_with_a_family(oauth, test_user):
+    # Every cookie issued before session ids holds a dotless uuid4.
+    client, redis = oauth.client, oauth.redis
+    legacy = f"{test_user.id}:{uuid.uuid4()}"
+    assert _sid(legacy) is None
+    await core_auth.store_refresh_token(test_user.id, legacy.split(":", 1)[1])
+
+    r = await client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={legacy}"})
+    assert r.status_code == 200
+    successor = r.cookies["refresh_token"]
+    assert _sid(successor) is not None
+    assert await redis.exists(_family(successor)) == 1
+
+    # Gone for good, a legacy token has no session to consult: a plain 401 that
+    # leaves the session it rotated into alone.
+    await redis.delete(_session_key(legacy))
+    r2 = await client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={legacy}"})
+    assert r2.status_code == 401
+    assert oauth.seen["auth_fail_reason"] == f"revoked-or-expired:{test_user.id}"
+    assert await redis.exists(_family(successor)) == 1
+
+
+async def test_logout_ends_the_session_for_its_grace_predecessor(auth_client, test_user, fake_redis):
+    old_value = await _password_login(auth_client, test_user)
+    r1 = await auth_client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+    assert (await auth_client.post("/api/auth/logout")).status_code == 204
+
+    # The predecessor is still inside its grace window, but its session is over:
+    # it must not mint the signed-out session back.
+    assert await fake_redis.exists(_session_key(old_value)) == 1
+    auth_client.cookies.clear()
+    r2 = await auth_client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={old_value}"})
+    assert r2.status_code == 401
+    assert r2.json()["detail"] == "Refresh token invalid or expired"
+    assert await fake_redis.keys(f"refresh:{test_user.id}:*") == []
+
+
+async def test_rotation_refuses_and_deletes_a_live_token_whose_session_has_ended(fake_redis, monkeypatch):
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
+    token = core_auth.create_refresh_token(core_auth.new_session_id())
+    await core_auth.store_refresh_token(1, token)  # live, but no family
+
+    prior = await core_auth.demote_refresh_token(1, token)
+    assert prior == -3
+    assert core_auth.classify_rotation(prior) is core_auth.RotationOutcome.FAMILY_GONE
+    # Deleted, and nothing recreated.
+    assert await fake_redis.keys("refresh:1:*") == []
+
+
+async def test_demote_reads_a_gone_session_token_as_gone_before_its_family(fake_redis, monkeypatch):
+    # A token revoked mid-refresh takes its family with it (logout, logout-all, a
+    # password change or reset). The script must still answer -2 for it, so the
+    # route logs revoked-mid-refresh rather than session-revoked, and create nothing.
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
+    token = core_auth.create_refresh_token(core_auth.new_session_id())
+
+    assert await core_auth.demote_refresh_token(1, token) == -2
+    assert await fake_redis.keys("refresh:1:*") == []
+
+
+async def test_rotation_re_arms_the_session_family(fake_redis, monkeypatch):
+    # Without the re-arm, a family started at sign-in would lapse seven days later
+    # under a session that refreshed every day, and its next refresh would be -3.
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
+    sid = core_auth.new_session_id()
+    token = core_auth.create_refresh_token(sid)
+    await core_auth.start_session_family(1, sid)
+    await core_auth.store_refresh_token(1, token)
+    family = core_auth._family_key(1, sid)
+    await fake_redis.expire(family, 100)
+
+    assert await core_auth.demote_refresh_token(1, token) > settings.REFRESH_GRACE_SECONDS
+    assert await fake_redis.ttl(family) > settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60 - 5
+
+
+async def test_idle_expiry_is_not_a_reuse(oauth, test_user, api_log):
+    client, redis = oauth.client, oauth.redis
+    first = await _password_login(client, test_user)
+    # The family never outlives the newest token: it is written just before the
+    # token at sign-in, and re-armed just before the successor at every rotation.
+    # fakeredis truncates a SETEX expiry to the whole second (real Redis keeps the
+    # millisecond), so the comparison allows one second.
+    assert await redis.pexpiretime(_family(first)) <= await redis.pexpiretime(_session_key(first)) + 1000
+    r1 = await client.post("/api/auth/refresh")
+    assert r1.status_code == 200
+    newest = r1.cookies["refresh_token"]
+    assert await redis.pexpiretime(_family(newest)) <= await redis.pexpiretime(_session_key(newest)) + 1000
+
+    # So a browser back after seven idle days finds both gone, which is what
+    # deleting both here stands for.
+    await redis.delete(_session_key(newest), _family(newest))
+    r = await client.post("/api/auth/refresh")
+    assert r.status_code == 401
+    assert oauth.seen["auth_fail_reason"] == f"revoked-or-expired:{test_user.id}"
+    assert _reuse_warnings(api_log) == []
+
+
+async def test_grace_counts_from_the_first_rotation(auth_client, test_user, fake_redis):
+    # A retry inside the grace gets what is left of it, never a fresh 60 s. With a
+    # re-arm on every touch, anyone polling a copied token once a minute could hold
+    # it in grace for good, and the victim's next refresh would never be a reuse.
+    old_value = await _password_login(auth_client, test_user)
+    assert (await auth_client.post("/api/auth/refresh")).status_code == 200
+    demoted = _session_key(old_value)
+    await fake_redis.expire(demoted, 10)  # fifty seconds into the grace
+
+    auth_client.cookies.clear()
+    r = await auth_client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={old_value}"})
+    assert r.status_code == 200
+    assert 0 < await fake_redis.ttl(demoted) <= 10
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
@@ -590,6 +762,7 @@ async def test_logout_all_sweeps_demoted_grace_token(auth_client, test_user, fak
     user_id_str, raw_token = old_value.split(":", 1)
     demoted_key = core_auth._refresh_key(int(user_id_str), raw_token)
     assert 0 < await fake_redis.ttl(demoted_key) <= settings.REFRESH_GRACE_SECONDS
+    assert await fake_redis.exists(_family(old_value)) == 1
 
     r = await auth_client.post(
         "/api/auth/logout-all",
@@ -598,8 +771,10 @@ async def test_logout_all_sweeps_demoted_grace_token(auth_client, test_user, fak
     assert r.status_code == 204
 
     # The wildcard sweep took the demoted key too, so re-presenting the
-    # grace-window token now 401s instead of recovering.
+    # grace-window token now 401s instead of recovering, and the session's
+    # family with it, so no token of that sign-in can rotate again.
     assert await fake_redis.get(demoted_key) is None
+    assert await fake_redis.keys(f"refresh:{user_id_str}:*") == []
     auth_client.cookies.clear()
     r2 = await auth_client.post(
         "/api/auth/refresh",
@@ -839,6 +1014,8 @@ async def test_oauth_callback_with_valid_state_logs_in_exactly_as_before(oauth, 
     refresh_cookie, state_cookie = _set_cookies(r)
     assert refresh_cookie.startswith("refresh_token=")
     assert "HttpOnly" in refresh_cookie and "Path=/api/auth" in refresh_cookie
+    # The sign-in starts a session: the token names it and its family is live.
+    assert await oauth.redis.exists(_family(refresh_cookie.split(";", 1)[0].split("=", 1)[1])) == 1
     assert state_cookie.startswith(f'{OAUTH_STATE_COOKIE}="";') and "Max-Age=0" in state_cookie
 
     # Exactly the two provider calls, carrying the code that was presented.

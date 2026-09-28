@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import time
 import uuid
 import logging
@@ -52,9 +53,15 @@ def create_access_token(user_id: int, role: str) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token() -> str:
-    """Create an opaque refresh token (UUID). Stored in Redis, not a JWT."""
-    return str(uuid.uuid4())
+def new_session_id() -> str:
+    return uuid.uuid4().hex
+
+
+def create_refresh_token(sid: str) -> str:
+    """Create an opaque refresh token, "{sid}.{secret}". Stored in Redis, not a
+    JWT. The session id survives rotation (the successor reuses it), which is
+    what lets a rotated-away token be recognised after its own key is gone."""
+    return f"{sid}.{uuid.uuid4()}"
 
 
 # Redis helpers
@@ -67,6 +74,27 @@ def _hash_token(token: str) -> str:
 
 def _refresh_key(user_id: int, token: str) -> str:
     return f"refresh:{user_id}:{_hash_token(token)}"
+
+
+# One key per session, under the swept prefix, so logout-all, a password change
+# or reset and account deletion end every session with no code of their own. Its
+# presence is what "this session is still signed in" means.
+def _family_key(user_id: int, sid: str) -> str:
+    return f"refresh:{user_id}:family:{sid}"
+
+
+_SID_RE = re.compile(r"[0-9a-f]{32}")
+
+
+def session_id_from_token(token: str) -> str | None:
+    """The session id a token names, or None for a legacy token (a dotless uuid4
+    from before session ids) or anything else not minted here."""
+    sid, dot, _ = token.partition(".")
+    return sid if dot and _SID_RE.fullmatch(sid) else None
+
+
+def _refresh_ttl() -> int:
+    return REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
 
 # Session value
@@ -114,9 +142,8 @@ async def store_refresh_token(user_id: int, token: str, session_start: int | Non
     """Persist refresh token in Redis with TTL. A rotation passes the start of the
     session it continues; a new login passes nothing and the clock starts now."""
     key = _refresh_key(user_id, token)
-    ttl = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     start = int(time.time()) if session_start is None else session_start
-    await redis_client.setex(key, ttl, encode_session_value(start))
+    await redis_client.setex(key, _refresh_ttl(), encode_session_value(start))
 
 
 async def validate_refresh_token(user_id: int, token: str) -> str | None:
@@ -125,49 +152,89 @@ async def validate_refresh_token(user_id: int, token: str) -> str | None:
     return await redis_client.get(key)
 
 
+async def start_session_family(user_id: int, sid: str) -> None:
+    await redis_client.set(_family_key(user_id, sid), "1", ex=_refresh_ttl())
+
+
+async def revoke_session_family(user_id: int, sid: str) -> bool:
+    """End a session. True if it was still alive, which is what makes a gone
+    token's return a reuse rather than an idle expiry."""
+    return await redis_client.delete(_family_key(user_id, sid)) == 1
+
+
 async def revoke_refresh_token(user_id: int, token: str) -> None:
-    """Delete a single refresh token (logout)."""
-    key = _refresh_key(user_id, token)
-    await redis_client.delete(key)
+    """Delete a single refresh token (logout, the absolute cap) and, when the
+    token names its session, the session's family in the same DEL, so a grace
+    predecessor or a fork of it cannot mint afterwards."""
+    keys = [_refresh_key(user_id, token)]
+    sid = session_id_from_token(token)
+    if sid is not None:
+        keys.append(_family_key(user_id, sid))
+    await redis_client.delete(*keys)
 
 
 # On rotation the old token is demoted, not deleted, so a browser that never
 # received the rotation response can retry inside the grace window instead of
 # being bricked. One script rather than TTL then EXPIRE: two refreshes racing
 # on one cookie could both read the full TTL between the awaits and both mint.
+# A token already inside its grace is not clamped again, so the grace counts
+# from the first rotation: re-arming it on every touch let anyone polling a
+# copied cookie hold it in grace for good, and its owner's next refresh would
+# never read as a reuse.
+# KEYS[2], the session's family, is passed only for a token that names its
+# session. A live token whose family is gone belongs to a session that has
+# ended, so it is deleted and refused (-3). Otherwise the family is re-armed to
+# the token TTL before the successor is written, so it always expires just
+# before the newest token and an idle browser never reads as a reuse.
 _DEMOTE_LUA = """
 local ttl = redis.call('TTL', KEYS[1])
 if ttl == -2 then
   return -2
 end
-redis.call('EXPIRE', KEYS[1], ARGV[1])
+if KEYS[2] then
+  if redis.call('EXISTS', KEYS[2]) == 0 then
+    redis.call('DEL', KEYS[1])
+    return -3
+  end
+  redis.call('EXPIRE', KEYS[2], ARGV[2])
+end
+if ttl == -1 or ttl > tonumber(ARGV[1]) then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
 return ttl
 """
 
 
 async def demote_refresh_token(user_id: int, token: str) -> int:
-    """Clamp a rotated-out token's TTL to the grace window, atomically, and
-    return its TTL before clamping: -2 if the key was already gone, in which
-    case nothing is written. The value is never read or written. The script
+    """Clamp a rotated-out token's TTL to the grace window, atomically, never
+    extending one already inside it, and return its TTL before clamping: -2 if the key was already gone, in which
+    case nothing is written, or -3 if its session had ended, in which case the
+    token key is deleted. The value is never read or written. The script
     object is built per call so the tests' per-fixture patch of redis_client
     reaches it; the grace is read from settings at call time for the same
     reason."""
     key = _refresh_key(user_id, token)
+    sid = session_id_from_token(token)
+    keys = [key] if sid is None else [key, _family_key(user_id, sid)]
     script = redis_client.register_script(_DEMOTE_LUA)
-    return int(await script(keys=[key], args=[settings.REFRESH_GRACE_SECONDS]))
+    return int(await script(keys=keys, args=[settings.REFRESH_GRACE_SECONDS, _refresh_ttl()]))
 
 
 class RotationOutcome(str, Enum):
     GONE = "gone"                # the key vanished between the route's GET and the demote
+    FAMILY_GONE = "family_gone"  # the token was live but its session had ended; the script deleted it
     GRACE_RETRY = "grace_retry"  # a superseded token retried inside its grace window
     ROTATED = "rotated"          # a first-time rotation
 
 
 def classify_rotation(prior_ttl: int) -> RotationOutcome:
     """Name what demote_refresh_token's return means, so the route dispatches on
-    an outcome instead of comparing TTLs inline."""
+    an outcome instead of comparing TTLs inline. -3 is named before the
+    fall-through, or a refused token would read as ROTATED and mint."""
     if prior_ttl == -2:
         return RotationOutcome.GONE
+    if prior_ttl == -3:
+        return RotationOutcome.FAMILY_GONE
     if 0 < prior_ttl <= settings.REFRESH_GRACE_SECONDS:
         return RotationOutcome.GRACE_RETRY
     return RotationOutcome.ROTATED

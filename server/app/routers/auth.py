@@ -16,8 +16,6 @@ from app.db.database import get_db
 from app.models.users import User, OAuthAccount
 from app.core.auth import (
     create_access_token,
-    create_refresh_token,
-    store_refresh_token,
     validate_refresh_token,
     revoke_refresh_token,
     demote_refresh_token,
@@ -27,10 +25,12 @@ from app.core.auth import (
     classify_rotation,
     session_start_from_value,
     session_cap_exceeded,
+    session_id_from_token,
+    revoke_session_family,
 )
 from app.core.cache import redis_client
 from app.core.security import limiter
-from app.core.colours import CYAN, RED, RESET
+from app.core.colours import CYAN, RED, RESET, YELLOW
 from app.core.usernames import username_from_provider
 from app.services.auth import (
     hash_password,
@@ -40,6 +40,7 @@ from app.services.auth import (
     clear_refresh_cookie,
     clear_refresh_cookie_headers,
     _issue_tokens,
+    _mint_refresh_session,
     RESET_TOKEN_TTL,
     _send_reset_email,
 )
@@ -145,10 +146,21 @@ async def refresh(
             headers=clear_refresh_cookie_headers(),
         )
 
+    sid = session_id_from_token(refresh_token)
+
     # `is None`, not falsiness: an empty value is a legacy value, not a gone key.
     value = await validate_refresh_token(user_id, refresh_token)
     if value is None:
-        request.state.auth_fail_reason = f"revoked-or-expired:{user_id}"
+        # A gone token whose session is still alive was rotated away and has come
+        # back after its grace window: a replay, or a browser that never received
+        # the rotation response. The server cannot tell those apart, so the
+        # session ends, and the DEL that detects it is the revocation. The user's
+        # other sessions are untouched. A legacy token has no session to consult.
+        if sid is not None and await revoke_session_family(user_id, sid):
+            logger.warning(f"{YELLOW}Refresh token reuse for user {user_id}; session {sid[:8]} ended{RESET}")
+            request.state.auth_fail_reason = f"refresh-reuse:{user_id}"
+        else:
+            request.state.auth_fail_reason = f"revoked-or-expired:{user_id}"
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token invalid or expired",
@@ -197,15 +209,28 @@ async def refresh(
             detail="Refresh token invalid or expired",
             headers=clear_refresh_cookie_headers(),
         )
+    if outcome is RotationOutcome.FAMILY_GONE:
+        # The token was live but its session had ended (a reuse elsewhere in it,
+        # a logout, the cap), so the script deleted it: a grace predecessor or a
+        # fork must not bring a signed-out session back.
+        request.state.auth_fail_reason = f"session-revoked:{user_id}"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token invalid or expired",
+            headers=clear_refresh_cookie_headers(),
+        )
     if outcome is RotationOutcome.GRACE_RETRY:
         # A superseded token retried inside its grace window (lost Set-Cookie,
         # killed tab, wake double-fire), not a fresh rotation; logged so these
         # benign recoveries stay visible. A prior TTL at the grace value itself
-        # is a concurrent duplicate of a rotation that just happened.
-        logger.info(f"{CYAN}Grace-window refresh for user {user_id} (token had {prior_ttl}s left){RESET}")
-    # The successor inherits the session's start, so rotating never resets the
-    # absolute lifetime. None, from a legacy value, stamps it now.
-    return await _issue_tokens(user, response, session_start=session_start)
+        # is a concurrent duplicate of a rotation that just happened. The
+        # session tag pairs an in-grace fork with a later reuse line.
+        session_tag = f" session {sid[:8]}" if sid else ""
+        logger.info(f"{CYAN}Grace-window refresh for user {user_id} (token had {prior_ttl}s left){session_tag}{RESET}")
+    # The successor inherits the session's start and, for a token that names its
+    # session, the session itself, so rotating never resets the absolute lifetime
+    # or leaves the family. A legacy token starts a new session here.
+    return await _issue_tokens(user, response, session_start=session_start, sid=sid)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -647,11 +672,10 @@ async def google_callback(
     # Issue tokens then redirect to frontend with access token in query param
     # (Frontend reads it once on mount, stores in memory, then removes from URL)
     access_token = create_access_token(user.id, user.role)
-    refresh_token = create_refresh_token()
-    await store_refresh_token(user.id, refresh_token)
+    refresh_cookie = await _mint_refresh_session(user)
 
     redirect = RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback?token={access_token}")
-    set_refresh_cookie(redirect, f"{user.id}:{refresh_token}")
+    set_refresh_cookie(redirect, refresh_cookie)
     clear_oauth_state_cookie(redirect)
     return redirect
 
@@ -741,10 +765,9 @@ async def discord_callback(
     )
 
     access_token = create_access_token(user.id, user.role)
-    refresh_token = create_refresh_token()
-    await store_refresh_token(user.id, refresh_token)
+    refresh_cookie = await _mint_refresh_session(user)
 
     redirect = RedirectResponse(url=f"{FRONTEND_URL}/oauth/callback?token={access_token}")
-    set_refresh_cookie(redirect, f"{user.id}:{refresh_token}")
+    set_refresh_cookie(redirect, refresh_cookie)
     clear_oauth_state_cookie(redirect)
     return redirect
