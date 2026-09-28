@@ -14,7 +14,7 @@ the real _refresh_key so the seeded token has the exact production key shape.
 from __future__ import annotations
 
 from app.core.cache import invalidate_cache_pattern
-from app.core.auth import _refresh_key
+from app.core.auth import _family_key, _refresh_key
 
 # Every glob the seed/clear flow passes to invalidate_cache_pattern. Keep in
 # sync with the sources — a new content namespace added there belongs here:
@@ -36,6 +36,9 @@ async def test_content_cache_clears_never_match_refresh_tokens(fake_redis):
     # content glob that clear is meant to remove.
     refresh_key = _refresh_key(42, "opaque-refresh-token-value")
     await fake_redis.set(refresh_key, "1")
+    # The session family shares the prefix; losing it ends the session.
+    family_key = _family_key(42, "0" * 32)
+    await fake_redis.set(family_key, "1")
 
     content_keys = [p.replace("*", "sample") for p in CONTENT_PATTERNS]
     for key in content_keys:
@@ -46,5 +49,6 @@ async def test_content_cache_clears_never_match_refresh_tokens(fake_redis):
 
     # Every content key is gone; the refresh token survives every clear.
     assert await fake_redis.get(refresh_key) == "1"
+    assert await fake_redis.get(family_key) == "1"
     for key in content_keys:
         assert await fake_redis.get(key) is None

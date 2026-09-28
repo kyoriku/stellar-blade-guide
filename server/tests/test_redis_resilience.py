@@ -184,6 +184,35 @@ async def test_redis_error_on_session_cap_delete_returns_503_without_clearing_co
     assert await fake_redis.ttl(key) > settings.REFRESH_GRACE_SECONDS
 
 
+async def test_redis_error_on_reuse_revocation_returns_503_with_the_family_intact(
+    resilience_client, resilience_user, fake_redis, monkeypatch
+):
+    # Detecting a reuse is the DEL of the family: a fault there is the same 503,
+    # and the session is left for the retry to decide, neither ended nor excused.
+    r_login = await resilience_client.post("/api/auth/login", json={
+        "email": resilience_user.email,
+        "password": "password123",
+    })
+    assert r_login.status_code == 200
+    old_value = r_login.cookies["refresh_token"]
+    assert (await resilience_client.post("/api/auth/refresh")).status_code == 200
+    user_id_str, raw_old = old_value.split(":", 1)
+    family = core_auth._family_key(int(user_id_str), core_auth.session_id_from_token(raw_old))
+    await fake_redis.delete(core_auth._refresh_key(int(user_id_str), raw_old))  # past its grace
+
+    async def _timeout(*args, **kwargs):
+        raise RedisTimeoutError("Timeout reading from socket")
+
+    monkeypatch.setattr(fake_redis, "delete", _timeout)
+
+    resilience_client.cookies.clear()
+    r = await resilience_client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={old_value}"})
+    assert r.status_code == 503
+    assert r.headers["retry-after"] == "30"
+    assert "refresh_token" not in r.headers.get("set-cookie", "")
+    assert await fake_redis.exists(family) == 1
+
+
 async def test_non_redis_error_still_returns_500(resilience_client):
     r = await resilience_client.get("/api/test-boom")
     assert r.status_code == 500

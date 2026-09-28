@@ -8,6 +8,8 @@ from app.models.users import User
 from app.core.auth import (
     create_access_token,
     create_refresh_token,
+    new_session_id,
+    start_session_family,
     store_refresh_token,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
@@ -80,14 +82,30 @@ def user_to_dict(user: User) -> dict:
     }
 
 
-async def _issue_tokens(user: User, response: Response, session_start: int | None = None) -> dict:
-    """Create access + refresh tokens, set cookie, return response body. A
-    rotation passes the start of the session it continues; a login passes nothing
-    and the clock starts now."""
-    access_token = create_access_token(user.id, user.role)
-    refresh_token = create_refresh_token()
+async def _mint_refresh_session(
+    user: User, session_start: int | None = None, sid: str | None = None
+) -> str:
+    """Mint a refresh token and return its cookie value. With no sid this starts a
+    session and its family (login, register, OAuth, or a legacy token's first
+    rotation), the one place a family is ever started; with a sid it continues
+    that session, whose family the demote script has just re-armed. The family is
+    written first so a token never exists without one."""
+    if sid is None:
+        sid = new_session_id()
+        await start_session_family(user.id, sid)
+    refresh_token = create_refresh_token(sid)
     await store_refresh_token(user.id, refresh_token, session_start=session_start)
-    set_refresh_cookie(response, f"{user.id}:{refresh_token}")
+    return f"{user.id}:{refresh_token}"
+
+
+async def _issue_tokens(
+    user: User, response: Response, session_start: int | None = None, sid: str | None = None
+) -> dict:
+    """Create access + refresh tokens, set cookie, return response body. A
+    rotation passes the start and the id of the session it continues; a login
+    passes neither, so a new session starts now."""
+    access_token = create_access_token(user.id, user.role)
+    set_refresh_cookie(response, await _mint_refresh_session(user, session_start, sid))
     return {
         "access_token": access_token,
         "token_type": "bearer",
