@@ -3,8 +3,10 @@
 // and one successor is never used. A Web Lock held across the request makes the
 // next tab send its request only after the previous response set the new cookie,
 // so it presents that one. Each tab still gets its own access token.
+// The same lock puts a sign-out behind any refresh already in flight, so that
+// refresh cannot land after the sign-out (see logout in context/AuthContext.tsx).
 
-// Must match the lock name the e2e spec queries.
+// Must match the lock name the e2e specs query.
 export const REFRESH_LOCK = 'sb_auth_refresh'
 
 // How long a tab waits for another tab's refresh before refreshing without the

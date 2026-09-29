@@ -117,8 +117,10 @@ test.describe('refresh lock', () => {
     try {
       const restoredA = a.waitForResponse(refreshOk);
       const restoredB = b.waitForResponse(refreshOk);
-      // A held fetch never delays load, so both reloads settle while it waits.
-      await Promise.all([a.reload(), b.reload()]);
+      // Only to commit: the waiting tab's 4 s lock wait starts at mount, and waiting
+      // for load (the hero image) would spend it before the poll below could see
+      // that tab queued.
+      await Promise.all([a.reload({ waitUntil: 'commit' }), b.reload({ waitUntil: 'commit' })]);
 
       const queuedOnLock = async (): Promise<boolean> => {
         try {
