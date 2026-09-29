@@ -76,9 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRefreshing, setIsRefreshing] = useState(() => hasSessionHint())
   const { showToast } = useToast()
 
-  // Single-flight guard: concurrent refreshes would race the server's token
-  // rotation (the first call revokes the cookie the second still holds → 401 →
-  // silent logout). Reuse the in-flight promise instead of issuing a second call.
+  // Single-flight guard: a second concurrent refresh in this tab would present
+  // the cookie the first one just rotated, and the server would mint a successor
+  // nobody uses. Reuse the in-flight promise instead. Across tabs,
+  // withRefreshLock (utils/refreshLock.ts) does the same job.
   const refreshInFlightRef = useRef<Promise<string | null> | null>(null)
   // Timestamp of the last successful token acquisition; drives the focus check.
   const lastRefreshRef = useRef(0)
@@ -133,6 +134,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // only; the nulled token still gates every authenticated action) and
           // the hint survives so focus-recovery / the next load retries.
           if (result.status === 401) {
+            // Read before the hint is cleared below. A hint another tab already
+            // removed means the session was ended by a sign-out there, which is
+            // not an expiry and needs no warning here.
+            const expiredHere = hasSessionHint()
             setUser(null)
             confirmedRef.current = false // this session is over — the next optimistic restore is unconfirmed again
             localStorage.removeItem(SESSION_FLAG)
@@ -141,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // this tab starts from an empty cache and a per-user fetch this 401
             // interrupted is cancelled instead of erroring under the toast.
             clearUserQueries()
-            showToast('Your session expired. Please log in again.')
+            if (expiredHere) showToast('Your session expired. Please log in again.')
           }
           return null
         }
@@ -204,6 +209,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval)
   }, [accessToken, refreshToken])
 
+  // Another tab ended the session: the hint it shares with this tab is gone, so
+  // this tab's in-memory session goes too. The notice is neutral because it is
+  // true either way: the other tab signed out, or it found the session expired
+  // first (its own toast may have shown in a tab nobody was looking at).
+  const endSessionFromElsewhere = useCallback(() => {
+    setUser(null)
+    setAccessToken(null)
+    confirmedRef.current = false
+    clearUserQueries()
+    showToast('You were signed out.')
+  }, [clearUserQueries, showToast])
+
   // Background tabs throttle/freeze the interval above (and timers don't advance
   // during system sleep), so a token can silently expire — or a refresh fired at
   // machine-wake can fail on not-yet-restored network and null it — while hidden.
@@ -214,7 +231,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const refreshIfNeeded = () => {
       if (document.visibilityState !== 'visible') return
-      if (!hasSessionHint()) return // genuinely logged out — nothing to recover
+      if (!hasSessionHint()) {
+        // No session to recover. A tab that missed another tab's storage event
+        // (one restored from the back-forward cache, say) may still render one;
+        // end it here.
+        if (user) endSessionFromElsewhere()
+        return
+      }
       const tokenMissing = !accessToken               // dropped by a transient failure → recover now
       const stale = Date.now() - lastRefreshRef.current > REFRESH_ON_FOCUS_STALE_MS
       if (tokenMissing || stale) void refreshToken()
@@ -225,7 +248,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', refreshIfNeeded)
       window.removeEventListener('focus', refreshIfNeeded)
     }
-  }, [accessToken, refreshToken])
+  }, [accessToken, refreshToken, user, endSessionFromElsewhere])
+
+  // Another tab's sign-out, or its definitive 401, removes the session hint, and
+  // the browser tells every other tab of this origin (never the one that changed
+  // it) with a storage event. End this tab's session then, instead of rendering
+  // signed in, with an access token that still works, until its next refresh. A
+  // tab already signed out has nothing to end and says nothing.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== SESSION_FLAG || e.newValue !== null) return
+      if (user) endSessionFromElsewhere()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [user, endSessionFromElsewhere])
 
   // Keyed on the token's rising edge, not on identity presence: a cached
   // identity renders before the refresh lands, so an identity-keyed edge read
@@ -327,10 +364,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      })
+      // Under the refresh lock, so a refresh already in flight in another tab of
+      // this browser lands before the cookie is revoked, instead of landing after
+      // this sign-out and signing that tab back in.
+      await withRefreshLock(() =>
+        fetch(`${API_BASE_URL}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+        }),
+      )
     } finally {
       setUser(null)
       setAccessToken(null)
