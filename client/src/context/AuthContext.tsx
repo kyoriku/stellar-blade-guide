@@ -5,6 +5,7 @@ import { API_BASE_URL, readError } from '../services/api'
 import { useToast } from './ToastContext'
 import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
 import { NOTIFICATIONS_KEY } from '../hooks/useNotifications'
+import { withRefreshLock } from '../utils/refreshLock'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
 // for unauthenticated visitors. Worst case: cleared localStorage causes one
@@ -110,11 +111,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const run = async (): Promise<string | null> => {
       setIsRefreshing(true)
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: 'POST',
-          credentials: 'include', // send the HttpOnly cookie
+        // Tabs of this browser take turns: the next tab's request goes out only
+        // after this response has set the rotated cookie, so it presents that one
+        // instead of racing this tab with the same cookie. Only the request and its
+        // body are held; everything below runs after the lock is released.
+        const result = await withRefreshLock(async () => {
+          const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include', // send the HttpOnly cookie
+          })
+          return res.ok
+            ? { ok: true as const, data: (await res.json()) as AuthResponse }
+            : { ok: false as const, status: res.status }
         })
-        if (!res.ok) {
+        if (!result.ok) {
           setAccessToken(null)
           // Only a definitive 401 ends the session: tear down the displayed
           // identity, clear the hint + display cache, and tell the user. A 503
@@ -122,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // live server-side, so the cached identity keeps rendering (pixels
           // only; the nulled token still gates every authenticated action) and
           // the hint survives so focus-recovery / the next load retries.
-          if (res.status === 401) {
+          if (result.status === 401) {
             setUser(null)
             confirmedRef.current = false // this session is over — the next optimistic restore is unconfirmed again
             localStorage.removeItem(SESSION_FLAG)
@@ -135,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           return null
         }
-        const data = (await res.json()) as AuthResponse
+        const { data } = result
         setUser(data.user)
         setAccessToken(data.access_token)
         lastRefreshRef.current = Date.now()
