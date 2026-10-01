@@ -14,7 +14,7 @@ function CollectibleSectionSkeleton({
   hideTypeBadge = false,
 }: CollectibleSectionSkeletonProps) {
   return (
-    <section id={id} className="mb-8 scroll-mt-4">
+    <section id={id} className="mb-8">
       <div className="flex items-center gap-3 mb-4">
         {locationName ? (
           <span className="text-lg text-gray-400 whitespace-nowrap">{locationName}</span>

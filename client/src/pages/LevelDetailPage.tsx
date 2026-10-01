@@ -18,6 +18,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
 import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/image'
+import { scrollToElement } from '../utils/scrollToElement'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -66,9 +67,7 @@ function LevelDetailPage() {
         // instead. Later cards are unaffected (their header is far above).
         const section = el.closest('section[id]');
         const target = section?.querySelector('article') === el ? section : el;
-        const offset = 97;
-        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-        window.scrollTo({ top, behavior: 'instant' });
+        scrollToElement(target);
       }
     }
   }, [locationData, location.hash]);
