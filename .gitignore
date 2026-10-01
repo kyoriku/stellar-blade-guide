@@ -87,6 +87,7 @@ node_modules/.tmp/
 
 # CC files
 .claude/
+.cc-stash
 CLAUDE.md
 skills-lock.json
 /plans

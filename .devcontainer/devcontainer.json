@@ -34,7 +34,7 @@
   // The `|| true` on the dependency installs is intentional — if your repo
   // is missing a server/ or client/ at any point, container creation still
   // succeeds and you can debug from inside.
-  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && (cd server && uv sync || true) && (cd client && npm install || true)",
+  "postCreateCommand": "npm install -g npm@12 && npm install -g @anthropic-ai/claude-code && (cd server && uv sync || true) && (cd client && npm ci || true)",
   // Forward these ports from the container to your Mac. Open localhost:3000
   // in Safari/Chrome and you're hitting Vite running inside the container.
   "forwardPorts": [
