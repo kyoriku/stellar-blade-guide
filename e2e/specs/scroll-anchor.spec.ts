@@ -15,7 +15,7 @@ import { nextTestIp } from '../helpers/auth';
 // is the TableOfContents sidebar.
 
 const WIDTHS = [
-  { name: 'phone', viewport: { width: 390, height: 844 }, offset: 77 },
+  { name: 'phone', viewport: { width: 390, height: 844 }, offset: 81 },
   { name: 'desktop', viewport: { width: 1280, height: 800 }, offset: 97 },
 ];
 
