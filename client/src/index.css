@@ -16,7 +16,7 @@
   --nav-height: 65px;
 }
 
-/* Where an in-page jump lands: just below the fixed navbar, 77px on phones
+/* Where an in-page jump lands: just below the fixed navbar, 81px on phones
    and 97px from md up. Every element a hash or a Contents link can scroll to
    carries this, and it is the only place the offset is defined. Native anchor
    links honor scroll-margin directly; every JS jump goes through

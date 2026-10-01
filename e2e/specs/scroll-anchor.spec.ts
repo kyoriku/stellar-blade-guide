@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { nextTestIp } from '../helpers/auth';
 
 // Every in-page jump lands its target at the `scroll-anchor` margin
-// (client/src/index.css): 77px below the viewport top on phones, 97px from md
+// (client/src/index.css): 81px below the viewport top on phones, 97px from md
 // up. window.scrollTo ignores scroll-margin, so the JS paths (the three detail
 // pages' hash effects and both Contents components) go through
 // utils/scrollToElement, which reads the margin back. A target that lost the
