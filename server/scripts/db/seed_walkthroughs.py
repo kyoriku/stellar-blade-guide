@@ -88,7 +88,8 @@ async def seed_walkthroughs():
 
     run_id = purge_manifest.current_run_id()
     purge_manifest.begin(purge_manifest.SECTION_WALKTHROUGHS, run_id)
-    changed_pairs = set()
+    changed_pairs = set()    # walkthroughs that exist after this seed
+    removed_pairs = set()    # deleted, or the old half of a rename — gone from the DB
 
     # Track which IDs are in the seed data
     seed_ids = set()
@@ -129,8 +130,14 @@ async def seed_walkthroughs():
                     # Read before the commit below resets attribute history.
                     if db.is_modified(existing, include_collections=True):
                         updated += 1
-                        changed_pairs.add(old_pair)
-                        changed_pairs.add((existing.mission_type, existing.slug))
+                        new_pair = (existing.mission_type, existing.slug)
+                        changed_pairs.add(new_pair)
+                        if old_pair != new_pair:
+                            # A rename or re-categorisation: the old URL now
+                            # 404s at the origin but is still a warm 200 at the
+                            # edge. It no longer exists in the DB, so it is a
+                            # removal for the purge's purposes, not a change.
+                            removed_pairs.add(old_pair)
                         print(f"\033[33m↻ Updated: {item['title']}\033[0m")
                     else:
                         unchanged += 1
@@ -173,9 +180,11 @@ async def seed_walkthroughs():
             print(f"  Found {len(orphaned_ids)} walkthroughs not in seed data")
 
             # Capture the URLs the deletions stale, before the rows go away.
+            # These go in the removed set: they will not be in the surface the
+            # purge derives from the DB afterwards, and it needs to know that.
             for orphan_id in orphaned_ids:
                 orphan = existing_walkthroughs[orphan_id]
-                changed_pairs.add((orphan.mission_type, orphan.slug))
+                removed_pairs.add((orphan.mission_type, orphan.slug))
 
             # Delete orphaned walkthroughs
             result = await db.execute(
@@ -221,8 +230,10 @@ async def seed_walkthroughs():
               f"— the purge will widen to the full surface\033[0m")
     else:
         purge_manifest.complete(
-            purge_manifest.SECTION_WALKTHROUGHS, run_id, pairs=changed_pairs)
-        print(f"\033[92m  Purge manifest: {len(changed_pairs)} walkthrough URL(s) changed\033[0m")
+            purge_manifest.SECTION_WALKTHROUGHS, run_id,
+            pairs=changed_pairs, pairs_removed=removed_pairs)
+        print(f"\033[92m  Purge manifest: {len(changed_pairs)} walkthrough URL(s) changed, "
+              f"{len(removed_pairs)} removed\033[0m")
     if errors:
         print(f"\033[31m  Errors: {errors}\033[0m")
     else:

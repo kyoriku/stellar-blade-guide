@@ -193,17 +193,22 @@ def scope_sources(changed, db, nav):
             raise RuntimeError(f'type slug {slug!r} is absent from navigation section {section}')
         by_section[section].add(slug)
 
-    pairs, wtypes = set(), set()
-    for mission_type, slug in changed['pairs']:
-        url_type = db['db_type_to_url'].get(mission_type)
-        if url_type is None:
-            raise RuntimeError(f'walkthrough type {mission_type!r} has no navigation slug')
-        pairs.add((url_type, slug))
-        wtypes.add(url_type)
+    # Current and removed walkthroughs are mapped identically and both get
+    # purged; they are kept apart only so the caller's subset check knows which
+    # URLs are legitimately absent from the surface derived from the current DB.
+    pairs, removed, wtypes = set(), set(), set()
+    for target, source in ((pairs, changed['pairs']),
+                           (removed, changed.get('pairs_removed', ()))):
+        for mission_type, slug in source:
+            url_type = db['db_type_to_url'].get(mission_type)
+            if url_type is None:
+                raise RuntimeError(f'walkthrough type {mission_type!r} has no navigation slug')
+            target.add((url_type, slug))
+            wtypes.add(url_type)   # a deletion stales its type index just as an edit does
 
     scoped_db = {
         'levels': levels,
-        'walkthrough_pairs': sorted(pairs),
+        'walkthrough_pairs': sorted(pairs | removed),
         'walkthrough_types': sorted(wtypes),
         'db_type_to_url': db['db_type_to_url'],
     }
@@ -219,9 +224,37 @@ def scope_sources(changed, db, nav):
     if levels or any(by_section.values()):
         index_prefixes.update(('/api/collectibles', '/api/levels', '/api/upgrades',
                                '/api/cosmetics'))
-    if pairs:
+    if pairs or removed:
         index_prefixes.add('/api/walkthroughs')
-    return scoped_db, scoped_nav, index_prefixes
+    return scoped_db, scoped_nav, index_prefixes, removed
+
+
+_EMPTY_NAV = {section: [] for section in SECTION_FOR_GROUP.values()} | {'WALKTHROUGHS': []}
+
+
+def removed_detail_urls(routes, removed_pairs, db):
+    """URLs of walkthroughs a seed deleted, or renamed away from.
+
+    These are absent from the current surface by definition — the row is gone —
+    yet they are exactly what most needs purging: the origin now 404s them while
+    the edge still holds a warm 200. So the subset check must tolerate them, and
+    it can do so safely because they are recorded rather than inferred: the
+    seeder captured each pair from the row before deleting or renaming it, and
+    the type half went through the same mapping table as every other pair, so
+    an unmappable type still raises in scope_sources.
+
+    Derived through derive_urls with only these pairs and every index gated
+    off, so what a detail URL looks like stays defined in one place.
+    """
+    if not removed_pairs:
+        return []
+    only_removed = {
+        'levels': [],
+        'walkthrough_pairs': sorted(removed_pairs),
+        'walkthrough_types': [],
+        'db_type_to_url': db['db_type_to_url'],
+    }
+    return derive_urls(routes, only_removed, _EMPTY_NAV, index_prefixes=set())
 
 
 def derive_urls(routes, db, nav, index_prefixes=None):
@@ -302,20 +335,41 @@ def purge(urls):
     return purged
 
 
-def check_narrowed(narrowed, full_urls, changed):
+CHANGE_KEYS = ('level_names', 'type_slugs', 'pairs', 'pairs_removed')
+
+
+def has_changes(changed):
+    """Whether a manifest records anything to purge.
+
+    `pairs_removed` must count. A seed that only deleted walkthroughs has no
+    current-entity changes at all, and reading that as "nothing to purge" would
+    leave every deleted page serving from the edge for 30 days.
+    """
+    return any(changed.get(key) for key in CHANGE_KEYS)
+
+
+def check_narrowed(narrowed, full_urls, removed_urls=()):
     """Guards for the narrowed set.
 
     There is deliberately no lower bound here, which is the whole reason the
     old single SANITY_FLOOR could not serve both paths: a purge covering one
     edited collectible is legitimately three or four URLs. What must hold
-    instead is that narrowing only ever *removes* URLs relative to the full
-    surface, and that a manifest reporting changes never derives nothing.
+    instead is that every URL narrowing produces is accounted for — either in
+    the surface derived from the current DB, or a recorded removal — and that
+    a manifest reporting changes never derives nothing.
+
+    Removed URLs are tolerated, not skipped: an unmappable type on a removed
+    pair still raised upstream in scope_sources. What this catches is a URL
+    the mapping invented — one that neither exists now nor was recorded as
+    having existed.
     """
-    extra = sorted(set(narrowed) - set(full_urls))
+    tolerated = set(full_urls) | set(removed_urls)
+    extra = sorted(set(narrowed) - tolerated)
     if extra:
         raise RuntimeError(
-            f'narrowed set has {len(extra)} URL(s) the full surface does not, '
-            f'e.g. {extra[0]} — the changed-entity mapping is wrong')
+            f'narrowed set has {len(extra)} URL(s) that are neither in the current '
+            f'surface nor a recorded removal, e.g. {extra[0]} — the changed-entity '
+            f'mapping is wrong')
     if not narrowed:
         raise RuntimeError('manifest reports changes but the narrowed set is empty')
 
@@ -357,20 +411,21 @@ def main():
     else:
         try:
             changed = purge_manifest.load(run_id)
-            if not any(changed[k] for k in ('level_names', 'type_slugs', 'pairs')):
+            if not has_changes(changed):
                 # An explicitly complete manifest with an empty change set is
                 # the one case that legitimately purges nothing. Absence of a
                 # manifest never reaches here — load() raises for that.
                 print('  manifest: no entities changed, nothing to purge')
                 urls, scope = [], 'no changes'
             else:
-                scoped_db, scoped_nav, index_prefixes = scope_sources(changed, db, nav)
+                scoped_db, scoped_nav, index_prefixes, removed = scope_sources(changed, db, nav)
                 narrowed = derive_urls(app.routes, scoped_db, scoped_nav, index_prefixes)
-                check_narrowed(narrowed, full_urls, changed)
+                check_narrowed(narrowed, full_urls, removed_detail_urls(app.routes, removed, db))
                 urls, scope = narrowed, 'changed entities'
                 print(f'  manifest: {len(changed["level_names"])} level(s), '
                       f'{len(changed["type_slugs"])} type(s), '
-                      f'{len(changed["pairs"])} walkthrough(s) changed '
+                      f'{len(changed["pairs"])} walkthrough(s) changed, '
+                      f'{len(changed.get("pairs_removed", ()))} removed '
                       f'→ {len(urls)} URLs')
         except (purge_manifest.ManifestUnusable, RuntimeError) as e:
             # Every ambiguity widens. Under-purging serves stale content for up

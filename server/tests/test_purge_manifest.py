@@ -16,7 +16,8 @@ from scripts.cache.purge_manifest import (
     SECTION_COLLECTIBLES, SECTION_WALKTHROUGHS, ManifestUnusable,
 )
 from scripts.cache.purge_api_cache import (
-    PUBLIC_BASE, check_narrowed, derive_urls, scope_sources,
+    PUBLIC_BASE, check_narrowed, derive_urls, has_changes, removed_detail_urls,
+    scope_sources,
 )
 
 RUN = 'run-abc'
@@ -99,7 +100,7 @@ def test_explicitly_empty_change_set_is_trustworthy():
     purge_manifest.complete(SECTION_COLLECTIBLES, RUN)
     purge_manifest.complete(SECTION_WALKTHROUGHS, RUN)
     changed = purge_manifest.load(RUN)
-    assert changed == {'level_names': [], 'type_slugs': [], 'pairs': []}
+    assert changed == {'level_names': [], 'type_slugs': [], 'pairs': [], 'pairs_removed': []}
 
 
 def test_sections_are_merged():
@@ -159,13 +160,23 @@ ROUTES = [
     SimpleNamespace(path='/api/walkthroughs/{walkthrough_type}/{slug}', methods={'GET'}),
 ]
 
-EMPTY = {'level_names': [], 'type_slugs': [], 'pairs': []}
+EMPTY = {'level_names': [], 'type_slugs': [], 'pairs': [], 'pairs_removed': []}
 
 
 def narrowed_for(**changed):
-    scoped_db, scoped_nav, index_prefixes = scope_sources({**EMPTY, **changed}, DB, NAV)
+    scoped_db, scoped_nav, index_prefixes, _removed = scope_sources({**EMPTY, **changed}, DB, NAV)
     return [u.replace(PUBLIC_BASE, '')
             for u in derive_urls(ROUTES, scoped_db, scoped_nav, index_prefixes)]
+
+
+def narrow_and_check(**changed):
+    """The exact sequence main() runs: scope, derive, then validate against the
+    current surface plus recorded removals. Raises exactly when main() widens."""
+    full = derive_urls(ROUTES, DB, NAV)
+    scoped_db, scoped_nav, index_prefixes, removed = scope_sources({**EMPTY, **changed}, DB, NAV)
+    narrowed = derive_urls(ROUTES, scoped_db, scoped_nav, index_prefixes)
+    check_narrowed(narrowed, full, removed_detail_urls(ROUTES, removed, DB))
+    return [u.replace(PUBLIC_BASE, '') for u in narrowed]
 
 
 def test_one_changed_collectible_reaches_its_level_type_and_its_own_global_list():
@@ -255,21 +266,121 @@ def test_unmapped_mission_type_raises():
         scope_sources({**EMPTY, 'pairs': [('made-up', 'alpha')]}, DB, NAV)
 
 
-def test_narrowed_is_always_a_subset_of_the_full_surface():
+def test_narrowed_is_a_subset_of_the_full_surface_when_nothing_was_removed():
     full = derive_urls(ROUTES, DB, NAV)
-    scoped_db, scoped_nav, index_prefixes = scope_sources(
+    scoped_db, scoped_nav, index_prefixes, removed = scope_sources(
         {**EMPTY, 'level_names': ['Xion'], 'type_slugs': [('gear', 'upgrades')],
          'pairs': [('main-story', 'alpha')]}, DB, NAV)
     narrowed = derive_urls(ROUTES, scoped_db, scoped_nav, index_prefixes)
+    assert removed == set()
     assert set(narrowed) <= set(full)
-    check_narrowed(narrowed, full, {})
+    check_narrowed(narrowed, full, [])
 
 
 def test_check_narrowed_rejects_urls_outside_the_full_surface():
-    with pytest.raises(RuntimeError, match='the full surface does not'):
-        check_narrowed(['https://x/api/levels/ghost'], ['https://x/api/levels/xion'], {})
+    with pytest.raises(RuntimeError, match='neither in the current surface nor a recorded removal'):
+        check_narrowed(['https://x/api/levels/ghost'], ['https://x/api/levels/xion'], [])
 
 
 def test_check_narrowed_rejects_an_empty_set():
     with pytest.raises(RuntimeError, match='narrowed set is empty'):
-        check_narrowed([], ['https://x/api/levels/xion'], {})
+        check_narrowed([], ['https://x/api/levels/xion'], [])
+
+
+# ── deletions and renames: URLs that are gone from the DB but must be purged ─
+#
+# The subset check validates against a surface derived from the CURRENT DB. A
+# deleted walkthrough is by definition not in it, and neither is the old half of
+# a rename. Both are exactly what most needs purging (the origin 404s them; the
+# edge still holds a warm 200), so the check must tolerate them — but only them.
+# Before this, every seed that deleted content widened to a full purge and the
+# error message blamed the mapping.
+
+# Neither of these exists in DB['walkthrough_pairs'].
+GONE = ('main-story', 'burning-xion')
+GONE_URL = '/api/walkthroughs/main-story/burning-xion'
+
+
+def test_manifest_round_trips_removed_pairs_separately():
+    purge_manifest.complete(SECTION_WALKTHROUGHS, RUN,
+                            pairs=[('main-story', 'alpha')], pairs_removed=[GONE])
+    changed = purge_manifest.load(RUN)
+    assert changed['pairs'] == [('main-story', 'alpha')]
+    assert changed['pairs_removed'] == [GONE]
+
+
+def test_manifest_written_before_the_split_reads_as_no_removals():
+    """An older manifest has no pairs_removed key. That is an empty set, not
+    an unusable manifest — the key's absence carries no ambiguity."""
+    purge_manifest.MANIFEST_PATH.write_text(
+        '{"run_id": "run-abc", "sections": {"walkthroughs": '
+        '{"status": "complete", "pairs": [["main-story", "alpha"]]}}}', encoding='utf-8')
+    assert purge_manifest.load(RUN)['pairs_removed'] == []
+
+
+def test_deleted_walkthrough_narrows_to_its_url_and_index_instead_of_widening():
+    """The case from seed run 20260929-200647: 4 deleted walkthroughs widened
+    to the full 127-URL surface. It must narrow to the deleted URL, its type
+    index, and the global list."""
+    urls = narrow_and_check(pairs_removed=[GONE])
+    assert sorted(urls) == sorted([
+        GONE_URL,
+        '/api/walkthroughs/main-story',
+        '/api/walkthroughs/',
+    ])
+
+
+def test_renamed_walkthrough_purges_both_the_old_and_the_new_url():
+    """A rename records the new pair as changed and the old as removed; both
+    URLs must be purged, and the old one must not trip the subset check."""
+    urls = narrow_and_check(pairs=[('main-story', 'alpha')], pairs_removed=[GONE])
+    assert '/api/walkthroughs/main-story/alpha' in urls
+    assert GONE_URL in urls
+
+
+def test_recategorised_walkthrough_purges_both_type_indexes():
+    """Moving a walkthrough from one mission type to another stales the index
+    it left as well as the one it joined.
+
+    The new location must exist in the current surface (DB has
+    side-quests/beta) — a *current* pair absent from the surface is exactly
+    what the subset check is meant to reject, and it did, when an earlier
+    version of this test used a location the fixture DB did not contain.
+    """
+    urls = narrow_and_check(pairs=[('side-quest', 'beta')],
+                            pairs_removed=[('main-story', 'beta')])
+    assert '/api/walkthroughs/side-quests/beta' in urls
+    assert '/api/walkthroughs/main-story/beta' in urls
+    assert '/api/walkthroughs/main-story' in urls
+    assert '/api/walkthroughs/side-quests' in urls
+
+
+def test_removed_detail_urls_derives_only_the_detail_pages():
+    _, _, _, removed = scope_sources({**EMPTY, 'pairs_removed': [GONE]}, DB, NAV)
+    urls = [u.replace(PUBLIC_BASE, '') for u in removed_detail_urls(ROUTES, removed, DB)]
+    assert urls == [GONE_URL]
+
+
+def test_a_genuinely_invented_url_still_widens():
+    """Tolerating removals must not become tolerating anything. A URL that is
+    neither in the surface nor a recorded removal is still a broken mapping."""
+    full = derive_urls(ROUTES, DB, NAV)
+    invented = [f'{PUBLIC_BASE}/api/walkthroughs/main-story/never-existed']
+    with pytest.raises(RuntimeError, match='neither in the current surface nor a recorded removal'):
+        check_narrowed(invented, full, removed_detail_urls(ROUTES, {('main-story', 'burning-xion')}, DB))
+
+
+def test_removed_pair_with_unmappable_type_still_widens():
+    """The removal path goes through the same type mapping as everything else;
+    tolerance applies to the URL, not to the mapping that produced it."""
+    with pytest.raises(RuntimeError, match='no navigation slug'):
+        scope_sources({**EMPTY, 'pairs_removed': [('made-up', 'x')]}, DB, NAV)
+
+
+def test_deletion_only_seed_counts_as_changes():
+    """A seed that only deleted walkthroughs has no current-entity changes.
+    Reading that as 'nothing to purge' would leave the deleted pages serving
+    from the edge for 30 days."""
+    assert has_changes({**EMPTY, 'pairs_removed': [GONE]}) is True
+    assert has_changes(EMPTY) is False
+    assert has_changes({'level_names': [], 'type_slugs': [], 'pairs': []}) is False  # pre-split shape

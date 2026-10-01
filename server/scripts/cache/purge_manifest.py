@@ -107,12 +107,20 @@ def begin(section, run_id):
     _write_atomic(data)
 
 
-def complete(section, run_id, *, level_names=(), type_slugs=(), pairs=()):
+def complete(section, run_id, *, level_names=(), type_slugs=(), pairs=(), pairs_removed=()):
     """Record what this section changed. Called only on a successful seed.
 
-    All three are taken straight off the DB rows: `Level.name`,
+    All of these are taken straight off the DB rows: `Level.name`,
     `(CollectibleType.slug, CollectibleType.category_group)` tuples, and
     `(Walkthrough.mission_type, Walkthrough.slug)` pairs.
+
+    `pairs` are walkthroughs that exist after the seed; `pairs_removed` are
+    ones that no longer do — deleted, or the old half of a rename. The split
+    matters to the purge, not to the seeder: both sets get purged, but the
+    removed URLs are by definition absent from the surface derived from the
+    current DB, and without knowing which they are the purge's subset check
+    would mistake every deletion for a broken mapping and widen to a full
+    purge.
 
     Types are carried as their stored `slug`, not their name. The name would
     have to be mapped back to request space through `_normalize_slug`, and that
@@ -133,6 +141,7 @@ def complete(section, run_id, *, level_names=(), type_slugs=(), pairs=()):
         'level_names': sorted({str(n) for n in level_names}),
         'type_slugs': sorted({(str(s), g if g is None else str(g)) for s, g in type_slugs}),
         'pairs': sorted({(str(t), str(s)) for t, s in pairs}),
+        'pairs_removed': sorted({(str(t), str(s)) for t, s in pairs_removed}),
     }
     _write_atomic(data)
 
@@ -160,7 +169,7 @@ def load(expected_run_id):
     if not isinstance(sections, dict) or not sections:
         raise ManifestUnusable('manifest records no sections')
 
-    level_names, type_slugs, pairs = set(), set(), set()
+    level_names, type_slugs, pairs, pairs_removed = set(), set(), set(), set()
     for name, section in sections.items():
         if name not in SECTIONS:
             raise ManifestUnusable(f'unknown section {name!r}')
@@ -175,6 +184,9 @@ def load(expected_run_id):
             level_names.update(section.get('level_names') or [])
             type_slugs.update(tuple(t) for t in (section.get('type_slugs') or []))
             pairs.update(tuple(p) for p in (section.get('pairs') or []))
+            # Absent in a manifest written before the split; an empty set is the
+            # correct reading of that, not an error.
+            pairs_removed.update(tuple(p) for p in (section.get('pairs_removed') or []))
         except TypeError as e:
             raise ManifestUnusable(f'section {name!r} has malformed entries: {e}') from e
 
@@ -182,6 +194,7 @@ def load(expected_run_id):
         'level_names': sorted(level_names),
         'type_slugs': sorted(type_slugs),
         'pairs': sorted(pairs),
+        'pairs_removed': sorted(pairs_removed),
     }
 
 
