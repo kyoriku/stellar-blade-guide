@@ -1,3 +1,5 @@
+import { scrollToElement } from './scrollToElement';
+
 export interface SubLink {
   href: string;
   title: string;
@@ -13,9 +15,8 @@ export interface TocLink {
 
 /**
  * Scroll to an in-page anchor, replacing (not pushing) the URL hash so
- * back-button behavior is unchanged. The 80px offset clears the fixed navbar
- * (65px) with room to spare; it is a viewport offset, so it is unaffected by
- * the navbar being out of flow.
+ * back-button behavior is unchanged. The landing offset is the target's
+ * `scroll-anchor` margin, applied by scrollToElement.
  *
  * A caller that pins the body with `position: fixed` must unpin before calling
  * this: that technique zeroes pageYOffset, leaves getBoundingClientRect stale
@@ -31,15 +32,7 @@ export interface TocLink {
 export function scrollToSection(href: string) {
   const element = document.getElementById(href.substring(1));
   if (element) {
-    const offset = 97;
-    const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: 'instant'
-    });
-
+    scrollToElement(element);
     history.replaceState(null, '', href);
   }
 }

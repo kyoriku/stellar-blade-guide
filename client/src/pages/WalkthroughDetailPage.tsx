@@ -16,6 +16,7 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/image'
+import { scrollToElement } from '../utils/scrollToElement'
 import { walkthroughTypeName } from '../utils/walkthroughTypeName'
 import { serverWalkthroughTitle } from '../utils/serverHead'
 import { WALKTHROUGH_IMAGES } from '../constants/categoryImages'
@@ -70,11 +71,7 @@ function WalkthroughDetailPage() {
   useLayoutEffect(() => {
     if (walkthrough && location.hash) {
       const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-      if (el) {
-        const offset = 97;
-        const top = el.getBoundingClientRect().top + window.pageYOffset - offset;
-        window.scrollTo({ top, behavior: 'instant' });
-      }
+      if (el) scrollToElement(el);
     }
   }, [walkthrough, location.hash]);
 
@@ -273,7 +270,7 @@ function WalkthroughDetailPage() {
 
             {/* Objectives */}
             {walkthrough.objectives && walkthrough.objectives.length > 0 && (
-              <div id="objectives" className="mb-8 p-4 bg-secondary rounded-lg border border-gray-800">
+              <div id="objectives" className="mb-8 p-4 bg-secondary rounded-lg border border-gray-800 scroll-anchor">
                 <div className="flex items-center gap-2 mb-3">
                   <List className="w-5 h-5 text-purple-400" />
                   <h2 className="text-lg font-semibold text-gray-100">Objectives</h2>
@@ -283,7 +280,7 @@ function WalkthroughDetailPage() {
                     <li
                       key={idx}
                       id={`objective-${idx}`}
-                      className="flex gap-2 walkthrough-content scroll-mt-24"
+                      className="flex gap-2 walkthrough-content scroll-anchor"
                     >
                       <span className="text-purple-400 font-bold">•</span>
                       <span className="text-gray-300">{objective}</span>
@@ -308,7 +305,7 @@ function WalkthroughDetailPage() {
                 <div
                   key={`${walkthrough.slug}-${content.order}`}
                   id={content.section_title ? slugifySection(content.section_title) : `section-${content.order}`}
-                  className="walkthrough-content scroll-mt-24"
+                  className="walkthrough-content scroll-anchor"
                 >
                   <WalkthroughContent
                     content={content}

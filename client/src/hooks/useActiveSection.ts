@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { DependencyList, Dispatch, SetStateAction } from 'react';
 
-// -80px top clears the fixed navbar (65px) with room to spare, matching the
-// anchor scrolling in utils/toc.ts and the pages' hash-scroll effects; -80%
-// bottom makes the "active" band the top fifth of the viewport. Measured
-// against the viewport (root: null), so the navbar leaving flow doesn't move it.
+// -80px top clears the fixed navbar (65px) with room to spare; -80% bottom
+// makes the "active" band the top fifth of the viewport. A jump lands its
+// target at the `scroll-anchor` margin (index.css): 97px clears this edge, and
+// 77px on phones still reaches into the band because a target is taller than
+// the 3px it starts above it. Measured against the viewport (root: null), so
+// the navbar leaving flow doesn't move it.
 const OBSERVER_OPTIONS: IntersectionObserverInit = {
   root: null,
   rootMargin: '-80px 0px -80% 0px',

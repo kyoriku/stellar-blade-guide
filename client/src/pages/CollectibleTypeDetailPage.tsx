@@ -16,6 +16,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
+import { scrollToElement } from '../utils/scrollToElement'
 import { useProgress } from '../hooks/useProgress'
 import { useActiveSection } from '../hooks/useActiveSection'
 import SEO from '../components/SEO';
@@ -254,9 +255,7 @@ function CollectibleTypeDetailPage() {
         // A-Z mode renders one headerless section, where this is a 0px no-op.
         const section = el.closest('section[id]');
         const target = section?.querySelector('article') === el ? section : el;
-        const offset = 97;
-        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
-        window.scrollTo({ top, behavior: 'instant' });
+        scrollToElement(target);
       }
     }
   }, [levelData, location.hash]);
@@ -627,7 +626,7 @@ function CollectibleTypeDetailPage() {
 
             {/* Collectibles grouped by level (or flat A-Z) */}
             {sortedLevelData.map((level) => (
-              <div key={level.level_id} id={level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')} className="space-y-8">
+              <div key={level.level_id} id={level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')} className="space-y-8 scroll-anchor">
                 {level.locations.map((location) => {
                   const sectionId = `${level.level_name}-${location.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
 

@@ -16,6 +16,20 @@
   --nav-height: 65px;
 }
 
+/* Where an in-page jump lands: just below the fixed navbar, 77px on phones
+   and 97px from md up. Every element a hash or a Contents link can scroll to
+   carries this, and it is the only place the offset is defined. Native anchor
+   links honor scroll-margin directly; every JS jump goes through
+   utils/scrollToElement.ts, which reads it back with getComputedStyle because
+   window.scrollTo ignores it. Pinned at both widths by e2e/specs/scroll-anchor. */
+@utility scroll-anchor {
+  scroll-margin-top: calc(var(--nav-height) + 0.75rem);
+
+  @variant md {
+    scroll-margin-top: calc(var(--nav-height) + 2rem);
+  }
+}
+
 /* Custom Scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;
