@@ -23,7 +23,7 @@
    utils/scrollToElement.ts, which reads it back with getComputedStyle because
    window.scrollTo ignores it. Pinned at both widths by e2e/specs/scroll-anchor. */
 @utility scroll-anchor {
-  scroll-margin-top: calc(var(--nav-height) + 0.75rem);
+  scroll-margin-top: calc(var(--nav-height) + 1rem);
 
   @variant md {
     scroll-margin-top: calc(var(--nav-height) + 2rem);
