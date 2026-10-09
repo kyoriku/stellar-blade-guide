@@ -14,7 +14,7 @@
   // Layer additional tooling onto the base Python image. Features are
   // pre-built scriptlets maintained by the devcontainers community.
   "features": {
-    // Node.js for the React frontend AND for installing Claude Code globally.
+    // Node.js for the React frontend.
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"
     },
@@ -28,13 +28,13 @@
     //   "username": "vscode"
     // }
   },
-  // Run AFTER the container is built, ONCE. Installs Claude Code globally
-  // and the project's Python and JS dependencies.
+  // Run AFTER the container is built, ONCE. Installs Claude Code (native
+  // installer) and the project's Python and JS dependencies.
   //
   // The `|| true` on the dependency installs is intentional — if your repo
   // is missing a server/ or client/ at any point, container creation still
   // succeeds and you can debug from inside.
-  "postCreateCommand": "npm install -g npm@12 && npm install -g @anthropic-ai/claude-code && (cd server && uv sync || true) && (cd client && npm ci || true)",
+  "postCreateCommand": "npm install -g npm@12 && curl -fsSL https://claude.ai/install.sh | bash && (cd server && uv sync || true) && (cd client && npm ci || true)",
   // Forward these ports from the container to your Mac. Open localhost:3000
   // in Safari/Chrome and you're hitting Vite running inside the container.
   "forwardPorts": [
