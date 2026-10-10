@@ -9,16 +9,16 @@ REDIS — fakeredis.aioredis.FakeRedis, one fresh instance per test:
     cache-hit scenarios trivially controllable without needing a real Redis.
 
 RATE LIMITER — disabled for the whole suite (autouse disable_rate_limits):
-    The slowapi limiter's storage is real Redis with fixed 60-second windows
-    keyed by IP + URL path, and every test shares client IP 127.0.0.1 (the
-    httpx ASGITransport default). Counts therefore accumulate ACROSS suite
-    runs: two back-to-back `pytest` runs inside one minute would 429 on the
-    tighter auth limits (register 5/min, login 10/min) and fail spuriously.
-    No test asserts 429 behavior, so we flip slowapi's public `enabled` flag
-    off per test. setup_rate_limiter(app) is still required in each file's
-    client fixture — the @limiter.limit decorators read
+    The slowapi limiter's storage is real Redis (moving windows, one counter per
+    route and client), and every test shares client IP 127.0.0.1 (the httpx
+    ASGITransport default). Counts would therefore accumulate ACROSS suite runs:
+    two back-to-back `pytest` runs inside one minute would 429 on the tighter
+    auth limits (register 5/min, login 10/min) and fail spuriously. So slowapi's
+    public `enabled` flag is off per test. setup_rate_limiter(app) is still
+    required in each file's client fixture — the @limiter.limit decorators read
     request.app.state.limiter either way — and with the limiter disabled the
-    suite needs no real Redis at all.
+    suite needs no real Redis at all. A test that asserts a 429 opts back in with
+    the rate_limits_on fixture, which counts in process memory instead.
 
 DATABASE + HTTP CLIENT — per test file, not here:
     Each test file builds its own SQLite in-memory engine (restricted to the
@@ -57,6 +57,7 @@ os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 import pytest
 import pytest_asyncio
 import fakeredis.aioredis
+from limits.storage import MemoryStorage
 
 import app.core.cache
 from app.core.security import limiter
@@ -67,6 +68,27 @@ def disable_rate_limits():
     limiter.enabled = False
     yield
     limiter.enabled = True
+
+
+@pytest.fixture
+def rate_limits_on(monkeypatch):
+    """Limits on for one test, counted in process memory, so it sees real 429s.
+
+    The limiter's own storage is the dev Redis. Every piece the request path can
+    reach (the strategy, its storage, the outage fallback and its dead flag) is
+    swapped before the first hit, so nothing connects, and monkeypatch restores
+    them all afterwards. Never call limiter.reset(): it clears whatever storage the
+    limiter holds. Decorate probe routes once, at module scope: decorating a
+    function twice stacks its limits.
+    """
+    storage = MemoryStorage()
+    strategy = type(limiter._limiter)
+    monkeypatch.setattr(limiter, "_storage", storage)
+    monkeypatch.setattr(limiter, "_limiter", strategy(storage))
+    monkeypatch.setattr(limiter, "_fallback_limiter", strategy(MemoryStorage()))
+    monkeypatch.setattr(limiter, "_storage_dead", False)
+    monkeypatch.setattr(limiter, "enabled", True)
+    return limiter
 
 
 @pytest_asyncio.fixture

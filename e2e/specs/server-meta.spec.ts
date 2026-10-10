@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 // Raw-HTML proofs for the server-injected head tags: these fetch :8000
 // directly (uvicorn serving the built dist with heads spliced at the
@@ -16,7 +16,7 @@ test.describe('server-injected head tags', () => {
   });
 
   test.beforeEach(async ({ context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
   });
 
   test('raw HTML carries the level head', async ({ request }) => {

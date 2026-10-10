@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 let fx: Fixtures;
 
@@ -18,7 +18,7 @@ test.describe('storage refused', () => {
   });
 
   test.beforeEach(async ({ page, context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
     await page.addInitScript(() => {
       Object.defineProperty(window, 'localStorage', {
         configurable: true,

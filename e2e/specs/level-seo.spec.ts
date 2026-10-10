@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 // Level pages ship hardcoded, count-led titles and intro copy from
 // client/src/constants/levelSeo.ts. The copy is static while the catalog is
@@ -13,7 +13,7 @@ import { nextTestIp } from '../helpers/auth';
 
 test.describe('level page seo', () => {
   test.beforeEach(async ({ context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
   });
 
   test('great desert title carries the collectible total', async ({ page }) => {

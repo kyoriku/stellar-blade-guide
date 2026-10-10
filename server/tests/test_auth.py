@@ -31,7 +31,8 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, ASGITransport
 from redis.exceptions import ConnectionError as RedisConnectionError
-from sqlalchemy import select
+from limits import parse
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
@@ -46,7 +47,9 @@ from app.models.users import User, OAuthAccount  # noqa: F401 — registers tabl
 from app.middleware.rate_limit import setup_rate_limiter
 from app.middleware.exception_handlers import add_exception_handlers
 from app.routers.auth import router as auth_router
-from app.services.auth import hash_password, user_to_dict
+from app.services.auth import (
+    RESET_COOLDOWN_SECONDS, RESET_TOKEN_TTL, hash_password, reset_cooldown_key, user_to_dict,
+)
 from app.services.users import user_to_response
 from app.core.auth import get_current_user, SECRET_KEY, ALGORITHM
 
@@ -1682,6 +1685,7 @@ async def test_forgot_password_tells_a_provider_only_address_it_has_no_password(
     assert r.json() == {"status": "no_password"}
     reset_mail.assert_not_awaited()
     assert await oauth.redis.keys("password_reset:*") == []
+    assert await oauth.redis.keys("password_reset_cooldown:*") == []
 
 
 async def test_forgot_password_still_sends_a_password_account_its_link(oauth, test_user, reset_mail):
@@ -1694,6 +1698,9 @@ async def test_forgot_password_still_sends_a_password_account_its_link(oauth, te
     email, token = reset_mail.await_args.args
     assert email == test_user.email
     assert await oauth.redis.get(f"password_reset:{token}") == str(test_user.id)
+    # The cooldown lives outside password_reset:, which /reset-password redeems as a
+    # token: a key there would be redeemable (with a numeric value, as someone's id).
+    assert await oauth.redis.keys("password_reset:*") == [f"password_reset:{token}"]
 
 
 async def test_forgot_password_stays_generic_for_unknown_and_deactivated(oauth, test_user, reset_mail):
@@ -1711,6 +1718,153 @@ async def test_forgot_password_stays_generic_for_unknown_and_deactivated(oauth, 
 
     reset_mail.assert_not_awaited()
     assert await oauth.redis.keys("password_reset:*") == []
+    assert await oauth.redis.keys("password_reset_cooldown:*") == []
+
+
+# ── Forgot password: one email per address per window, and the per-IP caps ────
+#
+# Before the window, one IP could mail one inbox 3 times a minute all day. The
+# window is keyed on the exact stored address, not the account: register verifies
+# nothing, so an id-keyed window reopened every time someone deleted the account and
+# registered the address again. Not a folded address either: a case or +tag variant
+# can be someone else's account, and a shared window would let it hold this one's.
+# A request inside the window gets the same 204 and sends nothing; the link that
+# same account was sent is still valid.
+
+async def _password_user(o, email: str, username: str, **fields) -> User:
+    user = User(email=email, username=username, password_hash=hash_password("password123"), **fields)
+    o.db.add(user)
+    await o.db.commit()
+    await o.db.refresh(user)
+    return user
+
+
+def _same_answer(r):
+    """Status, body and headers, minus the timing header the logger adds."""
+    headers = sorted((k, v) for k, v in r.headers.items() if k != "x-process-time")
+    return r.status_code, r.content, headers
+
+
+def test_the_window_is_shorter_than_the_link_it_protects():
+    # A suppressed request relies on the link already sent still working.
+    assert RESET_COOLDOWN_SECONDS < RESET_TOKEN_TTL
+
+
+async def test_forgot_password_sends_once_per_window_and_answers_the_same(oauth, test_user, reset_mail):
+    first = await _forgot(oauth, test_user.email)
+    assert oauth.seen["reject_reason"] is None
+    second = await _forgot(oauth, test_user.email)
+    unknown = await _forgot(oauth, "nobody@example.com")
+
+    reset_mail.assert_awaited_once()
+    assert _same_answer(first) == _same_answer(second) == _same_answer(unknown)
+    assert first.status_code == 204 and first.content == b""
+    assert len(await oauth.redis.keys("password_reset:*")) == 1  # the second minted nothing
+    assert 0 < await oauth.redis.ttl(reset_cooldown_key(test_user.email)) <= RESET_COOLDOWN_SECONDS
+
+
+async def test_a_suppressed_request_names_itself_in_the_access_log(oauth, test_user, reset_mail, api_log):
+    await _forgot(oauth, test_user.email)
+    await _forgot(oauth, test_user.email)
+    assert oauth.seen["reject_reason"] == f"reset-cooldown:{test_user.id}"
+    lines = [rec.getMessage() for rec in api_log.records if rec.name == "api" and " → " in rec.getMessage()]
+    assert lines[-1].endswith(f"(reset-cooldown:{test_user.id})\x1b[0m")
+
+
+async def test_another_inbox_has_its_own_window(oauth, test_user, reset_mail):
+    other = await _password_user(oauth, "other@example.com", "other_user")
+    await _forgot(oauth, test_user.email)
+    await _forgot(oauth, other.email)
+    assert reset_mail.await_count == 2
+
+
+async def test_registering_the_address_again_does_not_reopen_the_window(oauth, test_user, reset_mail):
+    """The bypass an account-keyed window had: delete the account, register the same
+    address (a new id), ask again. A Core DELETE, because the ORM's would read
+    `comments`, which this database does not have; the explicit id because SQLite,
+    unlike Postgres, would hand the old one back."""
+    email, old_id = test_user.email, test_user.id
+    await _forgot(oauth, email)
+
+    oauth.db.expunge(test_user)
+    await oauth.db.execute(delete(User).where(User.id == old_id))
+    await oauth.db.commit()
+    reborn = await _password_user(oauth, email, "testuser_again", id=old_id + 100)
+
+    r = await _forgot(oauth, reborn.email)
+    assert (r.status_code, r.content) == (204, b"")
+    reset_mail.assert_awaited_once()
+
+
+async def test_a_variant_address_cannot_hold_another_accounts_window(oauth, test_user, reset_mail):
+    # Register compares addresses exactly, so someone can register a case or +tag
+    # variant of a victim's address as their own account. Its resets must not hold
+    # the victim's window, or the victim's own requests would be dropped in silence.
+    for n, variant in enumerate(("TestUser@example.com", "testuser+x@example.com")):
+        account = await _password_user(oauth, variant, f"variant_{n}")
+        await _forgot(oauth, account.email)
+    await _forgot(oauth, test_user.email)
+
+    assert oauth.seen["reject_reason"] is None
+    assert [call.args[0] for call in reset_mail.await_args_list] == [
+        "TestUser@example.com", "testuser+x@example.com", test_user.email,
+    ]
+
+
+async def test_forgot_password_sends_again_once_the_window_is_gone(oauth, test_user, reset_mail):
+    await _forgot(oauth, test_user.email)
+    await oauth.redis.delete(reset_cooldown_key(test_user.email))
+    await _forgot(oauth, test_user.email)
+    assert reset_mail.await_count == 2
+
+
+async def test_a_failed_send_reopens_the_window(oauth, test_user, reset_mail):
+    reset_mail.side_effect = RuntimeError("resend down")
+    r = await _forgot(oauth, test_user.email)
+    assert (r.status_code, r.content) == (204, b"")
+    assert await oauth.redis.keys("password_reset_cooldown:*") == []
+
+    reset_mail.side_effect = None
+    await _forgot(oauth, test_user.email)
+    assert reset_mail.await_count == 2
+    assert await oauth.redis.exists(reset_cooldown_key(test_user.email))
+
+
+async def test_a_failed_release_still_answers_the_same(oauth, test_user, reset_mail, monkeypatch):
+    # The release is best effort: when it fails too, the answer is still the 204.
+    reset_mail.side_effect = RuntimeError("resend down")
+    monkeypatch.setattr(oauth.redis, "delete", AsyncMock(side_effect=RedisConnectionError("redis down")))
+    r = await _forgot(oauth, test_user.email)
+    assert (r.status_code, r.content) == (204, b"")
+
+
+async def test_a_failed_token_write_still_fails_closed_and_reopens_the_window(oauth, test_user, reset_mail, monkeypatch):
+    """Redis dropping between the window and the token: the request still fails closed
+    (error_handler makes it a 503 in the app; this bare app lets it propagate), and the
+    window must not stay shut over an email that never went out."""
+    monkeypatch.setattr(oauth.redis, "setex", AsyncMock(side_effect=RedisConnectionError("redis down")))
+    with pytest.raises(RedisConnectionError):
+        await _forgot(oauth, test_user.email)
+    reset_mail.assert_not_awaited()
+    assert await oauth.redis.keys("password_reset_cooldown:*") == []
+
+
+async def test_forgot_password_allows_3_a_minute_per_ip(oauth, reset_mail, rate_limits_on):
+    codes = [(await _forgot(oauth, "nobody@example.com")).status_code for _ in range(4)]
+    assert codes == [204, 204, 204, 429]
+    r = await _forgot(oauth, "nobody@example.com")
+    assert r.json() == {"error": "Rate limit exceeded: 3 per 1 minute"}
+
+
+async def test_forgot_password_allows_30_a_day_per_ip(oauth, test_user, reset_mail, rate_limits_on):
+    # Spend the day's budget for the test client's address (127.0.0.1) directly on
+    # the swapped-in memory storage, under the route's endpoint scope.
+    rate_limits_on.limiter.hit(parse("30/day"), "127.0.0.1", "app.routers.auth.forgot_password", cost=30)
+
+    r = await _forgot(oauth, test_user.email)
+    assert r.status_code == 429
+    assert r.json() == {"error": "Rate limit exceeded: 30 per 1 day"}
+    reset_mail.assert_not_awaited()
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)

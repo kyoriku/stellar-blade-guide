@@ -1,6 +1,6 @@
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import { readFixtures, redisClient, type Fixtures } from '../helpers/db';
-import { nextTestIp, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
 // Every tab of one browser shares the refresh cookie but keeps its own session in
 // memory. Signing out in one tab must sign the others out at once, a refresh in
@@ -101,14 +101,14 @@ test.describe('cross-tab sign-out', () => {
 
   test.beforeEach(async ({ page, context }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, `x${++seq}`);
     await apiRegister(page, user, ip);
     // Registration signed this browser in. Sign it out through the API, not just by
     // dropping the cookie, so no session is left in Redis for the user and the only
     // sessions a test sees are the ones it made.
     const uid = await uidFromCookie(context);
-    const out = await page.request.post('/api/auth/logout', { headers: { 'x-real-ip': ip } });
+    const out = await page.request.post('/api/auth/logout', { headers: { [TEST_IP_HEADER]: ip } });
     expect(out.status()).toBe(204);
     expect(await liveSessionKeys(uid)).toEqual([]);
     await context.clearCookies();

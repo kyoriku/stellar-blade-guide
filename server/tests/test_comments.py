@@ -8,16 +8,13 @@ Moderation is monkeypatched at the app.routers.comments._moderate_content bounda
 so no OpenAI calls are made. The default fixture mock passes all content;
 individual tests override it to return False when testing moderation rejection.
 
-Rate limit testing is intentionally omitted: slowapi's Limiter is created at
-module-import time using storage_uri=settings.REDIS_URL, which is a separate
-Redis connection from the app.core.cache.redis_client that the autouse patch_redis
-fixture covers. Reliably testing rate limits would require patching slowapi's
-internal storage — additional infrastructure for marginal value.
+Rate limits are off here, as in every file (conftest.disable_rate_limits). The
+limiter's own behaviour and every route's limit values are pinned in
+test_rate_limit.py, which opts back in with the rate_limits_on fixture.
 
 PATCH and DELETE tests seed comments directly into the DB rather than going
 through POST, so only the four dedicated POST tests touch the /api/comments/
-endpoint via HTTP. This keeps the total POST count well below the 10/min rate
-limit even when the full suite is run repeatedly in the same minute window.
+endpoint via HTTP.
 """
 
 from __future__ import annotations

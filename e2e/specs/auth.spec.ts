@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, pgPool, type Fixtures } from '../helpers/db';
-import { nextTestIp, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
 let fx: Fixtures;
 
@@ -26,7 +26,7 @@ test.describe('auth', () => {
 
   test.beforeEach(async ({ page, context }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, `a${++seq}`);
     await apiRegister(page, user, ip);
     // Registration set a refresh cookie; clear it so each test starts signed out.
@@ -159,7 +159,7 @@ test.describe('auth', () => {
   async function apiLoginCookie(page: Page, u: TestUser, testIp: string): Promise<void> {
     const res = await page.request.post('/api/auth/login', {
       data: { email: u.email, password: u.password },
-      headers: { 'x-real-ip': testIp },
+      headers: { [TEST_IP_HEADER]: testIp },
     });
     if (res.status() !== 200) throw new Error(`login failed: ${res.status()} ${await res.text()}`);
   }
@@ -313,6 +313,23 @@ test.describe('auth', () => {
       await expect(page.getByText('Check your email')).toHaveCount(0);
     });
   });
+
+  test('Forgot password says it was refused, not "Check your email", when rate limited', async ({ page }) => {
+    // A refused request sent no email, so the page must not promise one. The 429 is
+    // served here rather than earned, so the test doesn't depend on the limit's numbers.
+    await page.route('**/api/auth/forgot-password', (route) =>
+      route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Rate limit exceeded: 3 per 1 minute' }),
+      }),
+    );
+    await page.goto('/forgot-password');
+    await page.getByLabel('Email').fill(`nobody-${fx.token}@example.com`);
+    await page.getByRole('button', { name: /send/i }).click();
+    await expect(page.getByText("You're doing that too fast. Please wait a moment and try again.")).toBeVisible();
+    await expect(page.getByText('Check your email')).toHaveCount(0);
+  });
 });
 
 // ── Return paths ─────────────────────────────────────────────────────────────
@@ -333,7 +350,7 @@ test.describe('return paths', () => {
 
   test.beforeEach(async ({ page, context }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, `r${++seq}`);
     await apiRegister(page, user, ip);
     await context.clearCookies();

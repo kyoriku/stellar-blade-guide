@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 // Frozen head tags for the 21 type pages (constants/typeSeo.ts). The
 // count-consistency loop is the drift guard for the hardcoded title counts:
@@ -14,7 +14,7 @@ const PASSCODES_DESCRIPTION =
 
 test.describe('type page seo', () => {
   test.beforeEach(async ({ context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
   });
 
   test('passcodes title carries the collectible total', async ({ page }) => {

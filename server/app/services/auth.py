@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 
 import resend
 from fastapi import Response
@@ -116,6 +117,21 @@ async def _issue_tokens(
 # Password reset
 
 RESET_TOKEN_TTL = 60 * 60  # 1 hour
+RESET_COOLDOWN_SECONDS = 15 * 60  # one reset email per address per window
+
+
+def reset_cooldown_key(email: str) -> str:
+    """The forgot-password window's Redis key for one stored address.
+
+    Keyed on the address, not the account: register verifies nothing, so an account
+    can be deleted and the address registered again under a new id, which would reopen
+    an id-keyed window every time. The exact stored address, not a folded one: register
+    compares addresses exactly, so a case or +tag variant can be a separate account,
+    and a folded key would let that account hold this one's window and silently drop
+    its owner's resets. Hashed, so no address appears in a key name. The prefix must
+    stay outside password_reset:, which /reset-password redeems as a token.
+    """
+    return "password_reset_cooldown:" + hashlib.sha256(email.encode()).hexdigest()
 
 
 async def _send_reset_email(email: str, token: str) -> None:

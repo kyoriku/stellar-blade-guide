@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
+from redis.exceptions import RedisError
 
 from app.config.settings import settings
 from app.db.database import get_db
@@ -42,6 +43,8 @@ from app.services.auth import (
     _issue_tokens,
     _mint_refresh_session,
     RESET_TOKEN_TTL,
+    RESET_COOLDOWN_SECONDS,
+    reset_cooldown_key,
     _send_reset_email,
 )
 from app.services.oauth_state import (
@@ -302,8 +305,21 @@ async def change_password(
 import uuid
 
 
+async def _release_reset_cooldown(key: str) -> None:
+    """Reopen an address's forgot-password window after a request that sent nothing.
+
+    Best effort: a failure here must not change the response.
+    """
+    try:
+        await redis_client.delete(key)
+    except RedisError as e:
+        logger.warning(f"{YELLOW}Could not release a password reset cooldown: {e}{RESET}")
+
+
+# Minute limit first: slowapi stops at the first limit that fails, so a burst the
+# minute limit refuses never spends the day's budget.
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("3/minute")
+@limiter.limit("3/minute;30/day")
 async def forgot_password(
     request: Request,
     body: ForgotPasswordRequest,
@@ -314,20 +330,34 @@ async def forgot_password(
 
     204 with an empty body for a password account, an unknown address and a
     deactivated account alike, so those three cannot be told apart. The one
-    exception is a provider-only account, which is told so: see below.
+    exception is a provider-only account, which is told so: see below. An address
+    gets one email per RESET_COOLDOWN_SECONDS; a request inside that window gets
+    the same 204 and sends nothing.
     """
     result = await db.execute(select(User).where(User.email == body.email, User.is_active == True))
     user = result.scalar_one_or_none()
 
     if user and user.password_hash:
+        # One email per address per window, atomic across both workers. A request
+        # inside the window sends nothing and gets the same 204; the link this same
+        # account was sent stays valid (RESET_TOKEN_TTL is longer).
+        cooldown_key = reset_cooldown_key(user.email)
+        if not await redis_client.set(cooldown_key, "cooldown", nx=True, ex=RESET_COOLDOWN_SECONDS):
+            request.state.reject_reason = f"reset-cooldown:{user.id}"
+            return
         token = str(uuid.uuid4())
-        await redis_client.setex(f"password_reset:{token}", RESET_TOKEN_TTL, str(user.id))
+        try:
+            await redis_client.setex(f"password_reset:{token}", RESET_TOKEN_TTL, str(user.id))
+        except RedisError:
+            await _release_reset_cooldown(cooldown_key)
+            raise  # still a 503: password reset fails closed, as before
         try:
             await _send_reset_email(user.email, token)
             logger.info(f"{CYAN}Password reset email sent to {user.username}{RESET}")
         except Exception as e:
             logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
             # Don't expose email errors to the client
+            await _release_reset_cooldown(cooldown_key)  # nothing went out; let a retry send
     elif user:
         # A provider-only account has no password, and never gets one: one account,
         # one way in, which is also why no reset token is minted here. "Check your

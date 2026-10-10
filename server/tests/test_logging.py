@@ -6,8 +6,9 @@ attacker-controlled and lands on one stdout line that Railway ingests. An ESC by
 would inject ANSI sequences into the stream and a NEL / U+2028-style line break
 would forge a second access line (Starlette already drops tab, CR and LF from the
 path via urlsplit, nothing else), so each field is run through sanitize_log_field first.
-These tests pin that neutralisation, the length caps, and the `(reason)` suffix
-that names which layer answered a 404.
+These tests pin that neutralisation, the length caps, the `(reason)` suffix
+that names which layer answered a 404, and the alarm line for an /api/ request
+that arrives without a valid CF-Connecting-IP.
 
 The `api` logger has propagate=False in production (core/logging.py); the fixture
 forces it back on so caplog's root handler sees the lines. Following the house
@@ -85,8 +86,8 @@ def _app_with(*inner_layers):
     return app
 
 
-def _client(app):
-    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+def _client(app, client=("127.0.0.1", 123)):
+    return AsyncClient(transport=ASGITransport(app=app, client=client), base_url="http://test")
 
 
 @pytest.fixture
@@ -161,17 +162,41 @@ async def test_user_agent_escape_byte_is_neutralised(api_log):
     assert ANSI_PROBE not in line
 
 
-async def test_client_ip_header_is_neutralised_and_capped(api_log):
-    # Header-derived, and the outer logger writes the line even for requests that
-    # origin_check rejects — so the IP column is as untrusted as the path.
+def _ip_field(line):
+    return line.split(" · ")[1].split(" → ")[0].strip()
+
+
+async def test_an_invalid_cf_connecting_ip_never_reaches_the_line(api_log):
+    # The header is used only when it holds an address; anything else is refused
+    # and the connection's client is logged instead.
     async with _client(_app_with()) as c:
         await c.get("/api/health", headers={"cf-connecting-ip": "1.2.3.4" + ANSI_PROBE + "9" * 60})
+    (line,) = _access_lines(api_log)
+    assert _ip_field(line) == "127.0.0.1"
+    assert "\\x1b[2J" not in line  # not even escaped: the value never got this far
+
+
+async def test_client_ip_from_the_connection_is_neutralised_and_capped(api_log):
+    # The fallback is the connection's client, which under Railway's
+    # FORWARDED_ALLOW_IPS=* is the first X-Forwarded-For entry, unvalidated text a
+    # client can write. The outer logger writes the line even for requests that
+    # origin_check rejects, so the IP column is as untrusted as the path.
+    hostile = "1.2.3.4" + ANSI_PROBE + "9" * 60
+    async with _client(_app_with(), client=(hostile, 123)) as c:
+        await c.get("/api/health")
     (line,) = _access_lines(api_log)
     ip_field = line.split(" · ")[1].split(" → ")[0]
     assert ip_field.startswith("1.2.3.4\\x1b[2J")
     assert ip_field.endswith("…")
     assert len(ip_field) == LOG_IP_MAX + 1
     assert ANSI_PROBE not in line
+
+
+async def test_a_valid_cf_connecting_ip_is_logged_in_canonical_form(api_log):
+    async with _client(_app_with()) as c:
+        await c.get("/api/health", headers={"cf-connecting-ip": "2001:DB8:0:0::ABCD"})
+    (line,) = _access_lines(api_log)
+    assert _ip_field(line) == "2001:db8::abcd"
 
 
 async def test_overlong_path_and_ua_are_capped(api_log):
@@ -401,3 +426,64 @@ async def test_search_text_is_the_last_field_so_it_cannot_impersonate_one(api_lo
     assert line.index("UA: Firefox/1.0") < line.index(" q=")
     # ...and everything after `q=` is the user's, verbatim, to end of line.
     assert line.endswith(f"q={forged}")
+
+
+# ── the missing CF-Connecting-IP alarm ───────────────────────────────────────
+#
+# Every request through Cloudflare carries CF-Connecting-IP, the rate limiter's key.
+# An /api/ request without a valid one means a Cloudflare setting stopped sending it
+# (the key would fall back to X-Forwarded-For text) or the origin secret was used to
+# skip Cloudflare, so outside DEBUG the logger raises a WARNING for each one.
+
+def _cf_warnings(caplog):
+    return [
+        rec.getMessage() for rec in caplog.records
+        if rec.name == "api" and rec.levelno == logging.WARNING and "CF-Connecting-IP" in rec.getMessage()
+    ]
+
+
+@pytest.fixture
+def prod_mode(monkeypatch):
+    monkeypatch.setattr(settings, "DEBUG", False)
+
+
+async def test_an_api_request_without_cf_connecting_ip_raises_the_alarm(api_log, prod_mode):
+    async with _client(_app_with()) as c:
+        await c.get("/api/levels/x")
+    (warning,) = _cf_warnings(api_log)
+    assert "GET /api/levels/x" in warning
+    assert "client 127.0.0.1" in warning
+    assert "colo -" in warning  # no CF-Ray: whatever sent it skipped Cloudflare
+    assert " → " not in warning  # never counted as an access line
+
+
+async def test_an_invalid_cf_connecting_ip_raises_the_alarm(api_log, prod_mode):
+    async with _client(_app_with()) as c:
+        await c.get("/api/levels/x", headers={"cf-connecting-ip": "not-an-ip", "cf-ray": "8f1e2d3c4b5a6978-LHR"})
+    (warning,) = _cf_warnings(api_log)
+    assert "colo LHR" in warning  # it came through Cloudflare: a setting changed
+
+
+@pytest.mark.parametrize("path, headers", [
+    ("/api/levels/x", {"cf-connecting-ip": "203.0.113.7"}),
+    ("/api/health", {}),  # Railway's health checks never carry the header
+    ("/levels/x", {}),  # only /api/ requests reach the access log
+])
+async def test_the_alarm_stays_quiet_when_nothing_is_wrong(api_log, prod_mode, path, headers):
+    async with _client(_app_with()) as c:
+        await c.get(path, headers=headers)
+    assert _cf_warnings(api_log) == []
+
+
+async def test_the_alarm_is_off_under_debug(api_log, monkeypatch):
+    monkeypatch.setattr(settings, "DEBUG", True)
+    async with _client(_app_with()) as c:
+        await c.get("/api/levels/x")
+    assert _cf_warnings(api_log) == []
+
+
+async def test_the_alarm_line_is_neutralised(api_log, prod_mode):
+    await _asgi_get(_app_with(), "/api/levels/a" + ANSI_PROBE + "b")
+    (warning,) = _cf_warnings(api_log)
+    assert ANSI_PROBE not in warning
+    assert "\\x1b[2J" in warning

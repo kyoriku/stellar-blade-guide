@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
-import { nextTestIp, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
 let fx: Fixtures;
 
@@ -25,7 +25,7 @@ test.describe('guest progress survives sign-in', () => {
 
   test.beforeEach(async ({ page, context }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, `gs${++seq}`);
     await apiRegister(page, user, ip);
     // Registration set a refresh cookie; clear it so the tab starts as a guest.

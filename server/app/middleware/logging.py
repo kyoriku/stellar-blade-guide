@@ -3,7 +3,8 @@ import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi import Request
-from app.core.security import get_client_ip
+from app.config.settings import settings
+from app.core.security import cf_connecting_ip, get_client_ip
 from app.core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
 
 logger = logging.getLogger("api")
@@ -19,7 +20,7 @@ LOG_TZ = ZoneInfo("America/New_York")
 # is the user's input all the same.
 LOG_PATH_MAX = 256   # wide enough to keep a full sqlmap-style payload readable
 LOG_UA_MAX = 48      # parse_ua's browser branches have no cap of their own
-LOG_IP_MAX = 45      # longest textual IPv6 (incl. IPv4-mapped); header-derived, so untrusted
+LOG_IP_MAX = 45      # longest textual IPv6 (incl. IPv4-mapped); the fallback can be X-Forwarded-For text, so untrusted
 LOG_COLO_MAX = 3     # IATA airport code; hard-sliced so the column never widens
 LOG_QUERY_MAX = 40   # search text; the API allows 100 and the line is already wide
 
@@ -158,10 +159,11 @@ async def log_requests_middleware(request: Request, call_next):
     # Only show UA for auth endpoints or non-2xx responses — appended after path
     if request.url.path.startswith("/api/auth") or response.status_code >= 400:
         log_line += f' | {GRAY}UA: {sanitize_log_field(parse_ua(user_agent), LOG_UA_MAX)}{RESET}'
-        # auth_fail_reason: set by auth routes on 401 (no-cookie vs revoked-or-expired).
-        # reject_reason: set by whichever layer answered a 404 (origin_check,
-        # bot_filter, the SPA catch-all's unknown-/api/ branch). Either way the
-        # access log alone says who answered and why.
+        # auth_fail_reason: set by /refresh on 401 (no-cookie vs revoked-or-expired).
+        # reject_reason: set by whichever layer turned the request away: a 404 from
+        # origin_check, bot_filter or the SPA catch-all's unknown-/api/ branch, an
+        # OAuth callback's 303 to /login, or forgot-password's cooldown (a 204 that
+        # sends nothing). Either way the access log alone says who answered and why.
         reason = (
             getattr(request.state, "auth_fail_reason", None)
             or getattr(request.state, "reject_reason", None)
@@ -186,6 +188,16 @@ async def log_requests_middleware(request: Request, call_next):
         logger.warning(log_line)
     else:
         logger.info(log_line)
+
+    # Every request through Cloudflare carries CF-Connecting-IP, the limiter's key. One
+    # without a valid one means a Cloudflare setting stopped sending it (keys would fall
+    # back to X-Forwarded-For text) or the origin secret was used to skip Cloudflare.
+    # Railway's health checks never carry one. A colo means it came through Cloudflare.
+    if not settings.DEBUG and request.url.path != "/api/health" and cf_connecting_ip(request) is None:
+        logger.warning(
+            f"{YELLOW}No valid CF-Connecting-IP{RESET}: {request.method} {path} "
+            f"| client {client_ip} | colo {colo or '-'}"
+        )
 
     response.headers["X-Process-Time"] = str(duration_ms / 1000)
     return response

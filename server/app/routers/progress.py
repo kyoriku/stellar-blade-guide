@@ -17,6 +17,11 @@ from app.config.settings import settings
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/progress", tags=["progress"])
 
+# PUT and DELETE each count once per client across every collectible id. A checkbox
+# click is one request, and Tab+Space ticking a whole type runs 120-240 a minute;
+# two people ticking behind one address reach about 120.
+PROGRESS_WRITE_RATE_LIMIT = "300/minute"
+
 
 @router.get("", response_model=List[int])
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
@@ -88,7 +93,7 @@ async def _require_collectible(db: AsyncSession, collectible_id: int) -> None:
 
 
 @router.put("/{collectible_id}", response_model=ProgressWriteResponse, status_code=status.HTTP_200_OK)
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
+@limiter.limit(PROGRESS_WRITE_RATE_LIMIT)
 async def set_progress(
     request: Request,
     collectible_id: int,
@@ -112,7 +117,7 @@ async def set_progress(
 
 
 @router.delete("/{collectible_id}", response_model=ProgressWriteResponse, status_code=status.HTTP_200_OK)
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
+@limiter.limit(PROGRESS_WRITE_RATE_LIMIT)
 async def unset_progress(
     request: Request,
     collectible_id: int,

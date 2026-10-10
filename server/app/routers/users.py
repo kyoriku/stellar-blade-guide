@@ -34,7 +34,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 # Routes
 
 @router.patch("/me")
-@limiter.limit("20/minute")
+@limiter.limit("5/minute")
 async def update_me(
     request: Request,
     body: UpdateProfileRequest,

@@ -13,7 +13,6 @@ from app.models.users import User
 from app.core.auth import get_current_user
 from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RESET
-from app.config.settings import settings
 from app.schemas.comments import CreateCommentRequest, UpdateCommentRequest
 from app.services.comments import _moderate_content, comment_to_dict
 
@@ -21,10 +20,19 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
+# One counter per client across every thread, and no edge or browser cache absorbs
+# thread reads (they are no-store), so a carrier NAT full of readers shares this.
+COMMENT_LIST_RATE_LIMIT = "300/minute"
+
+# One counter per client across every comment, the route moderators clean up with. A
+# spammer posts 10 a minute from each address it has, so 20 would let spam outpace
+# one moderator; before per-route counting each comment had its own counter.
+COMMENT_DELETE_RATE_LIMIT = "300/minute"
+
 # Read
 
 @router.get("/{content_type}/{content_id}")
-@limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
+@limiter.limit(COMMENT_LIST_RATE_LIMIT)
 async def get_comments(
     request: Request,
     content_type: str,
@@ -187,7 +195,7 @@ async def update_comment(
 # Delete
 
 @router.delete("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/minute")
+@limiter.limit(COMMENT_DELETE_RATE_LIMIT)
 async def delete_comment(
     request: Request,
     comment_id: int,
