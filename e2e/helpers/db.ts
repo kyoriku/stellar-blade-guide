@@ -50,6 +50,11 @@ async function invalidateContentKeys(redis: Redis, walkthroughSlug: string): Pro
   );
 }
 
+// The fixture's description carries a wikilink, so the structured-data spec can
+// check that JSON-LD gets the text a reader sees, not the markup.
+export const FIXTURE_DESCRIPTION = 'End-to-end fixture item by the [[levels/eidos-7|Eidos 7 page]].';
+export const FIXTURE_DESCRIPTION_TEXT = 'End-to-end fixture item by the Eidos 7 page.';
+
 export async function createFixtures(token: string): Promise<Fixtures> {
   const pool = pgPool();
   const redis = redisClient();
@@ -98,7 +103,7 @@ export async function createFixtures(token: string): Promise<Fixtures> {
     const col = await pool.query(
       `INSERT INTO collectibles (id, location_id, title, description, display_order)
        VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM collectibles), $1, $2, $3::jsonb, 1) RETURNING id`,
-      [locationId, collectibleTitle, JSON.stringify({ type: 'text', content: 'End-to-end fixture item.' })]
+      [locationId, collectibleTitle, JSON.stringify({ type: 'text', content: FIXTURE_DESCRIPTION })]
     );
     const collectibleId = col.rows[0].id;
 

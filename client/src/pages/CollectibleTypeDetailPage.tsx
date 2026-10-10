@@ -27,6 +27,7 @@ import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
+import { descriptionPlainText } from '../utils/descriptionText'
 
 // Display order AND allowlist: a subtype missing here (or spelled differently
 // than the DB value) silently never appears as a filter option.
@@ -331,7 +332,7 @@ function CollectibleTypeDetailPage() {
               '@type': 'ListItem',
               position,
               name: collectible.title,
-              description: collectible.description?.content || collectible.description?.items?.join(', '),
+              description: descriptionPlainText(collectible.description),
               ...(collectible.images?.[0] && {
                 image: collectible.images[0].url
               })
