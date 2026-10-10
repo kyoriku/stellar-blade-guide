@@ -25,6 +25,7 @@ import CommentSection from '../components/comments/CommentSection'
 import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
+import { descriptionPlainText } from '../utils/descriptionText'
 
 function LevelDetailPage() {
   const { levelName } = useParams<{ levelName: string }>();
@@ -187,7 +188,7 @@ function LevelDetailPage() {
             '@type': 'ListItem',
             position,
             name: collectible.title,
-            description: collectible.description?.content || collectible.description?.items?.join(', '),
+            description: descriptionPlainText(collectible.description),
             ...(collectible.images?.[0] && {
               image: collectible.images[0].url
             })
