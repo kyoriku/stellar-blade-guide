@@ -5,9 +5,10 @@ GET/PATCH notifications API, and the null-actor read guard.
 Same SQLite-in-memory strategy as test_comments.py. The app mounts both the
 comments and notifications routers so a reply POST exercises the emit path and
 the notifications endpoints read it back. Moderation is monkeypatched so no
-OpenAI calls happen. Label lookups use content_type='level' (SQLite-safe);
-walkthrough/collectible label tables are Postgres-only (JSONB) and rely on the
-route's defensive fallback, covered by reasoning rather than a live table here.
+OpenAI calls happen. Label lookups use content_type='level' (SQLite-safe) and
+'walkthrough', whose table is created by hand below because its JSONB columns don't
+compile on SQLite (the same workaround as test_walkthroughs.py). Comments seeded
+without a matching row still exercise the route's defensive fallback.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ import app.routers.comments as comments_module
 
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.core.auth import create_access_token
@@ -29,6 +30,7 @@ from app.models.comments import Comment
 from app.models.notifications import Notification
 from app.models.collectibles import Level, CollectibleType
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
+from app.models.walkthroughs import Walkthrough
 from app.services.auth import hash_password
 from app.routers.comments import router as comments_router
 from app.routers.notifications import router as notifications_router
@@ -56,6 +58,22 @@ async def db_engine():
             tables=[User.__table__, OAuthAccount.__table__, Comment.__table__,
                     Notification.__table__, Level.__table__, CollectibleType.__table__],
         )
+        await conn.execute(text("""
+            CREATE TABLE walkthroughs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                slug VARCHAR(150) NOT NULL UNIQUE,
+                title VARCHAR(255) NOT NULL,
+                subtitle VARCHAR(255),
+                level VARCHAR(100),
+                mission_type VARCHAR(50) NOT NULL,
+                objectives JSON,
+                content JSON NOT NULL,
+                display_order INTEGER NOT NULL,
+                thumbnail_url VARCHAR(255),
+                rewards JSON,
+                available_after VARCHAR(255)
+            )
+        """))
     yield engine
     await engine.dispose()
 
@@ -195,6 +213,27 @@ async def test_list_returns_items_label_url_and_unread_count(db_session, user_a,
     assert item["label"] == "Eidos 7"
     assert item["url"] == f"/levels/eidos-7#comment-{reply.id}"
     assert item["is_read"] is False
+
+
+async def test_walkthrough_link_uses_the_navigation_spelling(db_session, user_a, user_b):
+    # The DB stores side-quest; the page lives at side-quests. Linking the DB value sent
+    # readers to a spelling the edge cached apart from the one the seed purge refreshes.
+    w = Walkthrough(slug="calm-quest", title="Calm Quest", mission_type="side-quest",
+                    content=[], display_order=1)
+    db_session.add(w)
+    await db_session.commit()
+    await db_session.refresh(w)
+    reply = await _seed_comment(db_session, user_b.id, content_type="walkthrough", content_id=w.id)
+    db_session.add(Notification(
+        user_id=user_a.id, actor_id=user_b.id, type="comment_reply",
+        comment_id=reply.id, content_type="walkthrough", content_id=w.id,
+    ))
+    await db_session.commit()
+
+    async with _client(db_session, user_a) as c:
+        item = (await c.get("/api/notifications")).json()["items"][0]
+    assert item["label"] == "Calm Quest"
+    assert item["url"] == f"/walkthroughs/side-quests/calm-quest#comment-{reply.id}"
 
 
 async def test_collectible_label_uses_plural_slug_not_singular_name(db_session, user_a, user_b):

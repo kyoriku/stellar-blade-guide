@@ -2,6 +2,8 @@
 (scripts/cache/purge_api_cache.py). The derivation walks the route table, so
 a new route under a cached prefix must appear automatically (or raise), and
 routes outside the prefixes must be ignored."""
+import os
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -9,13 +11,14 @@ import requests
 
 from scripts.cache import purge_api_cache
 from scripts.cache.purge_api_cache import (
-    PUBLIC_BASE, TransientPurgeError, derive_urls, purge,
+    PUBLIC_BASE, TransientPurgeError, derive_urls, purge, singular_walkthrough_urls,
 )
 
 DB = {
     'levels': ['eidos-7', 'nest'],
     'walkthrough_pairs': [('main-story', 'scavenger-adam'), ('side-quests', 'looking-at-you')],
     'walkthrough_types': ['main-story', 'side-quests'],
+    'db_type_to_url': {'main-story': 'main-story', 'side-quest': 'side-quests'},
 }
 NAV = {
     'COLLECTIBLES': ['cans', 'memorysticks'],
@@ -67,6 +70,63 @@ def test_unrecognized_cached_route_shape_raises():
 def test_non_get_routes_are_ignored():
     urls = derive_urls([route('/api/levels/{level_name}', methods=frozenset({'POST'}))], DB, NAV)
     assert urls == []
+
+
+# ── One-time purge of the singular walkthrough spellings ─────────────────────
+# Search and reply notifications used to link /walkthroughs/side-quest/..., the API
+# answered it, and the edge cached it apart from the plural the seed purge refreshes.
+
+def test_singular_walkthrough_urls_are_the_db_spelling_of_renamed_types():
+    # main-story is spelled the same in the DB and in URLs, so it adds nothing.
+    assert singular_walkthrough_urls(BASE_ROUTES, DB) == [
+        f'{PUBLIC_BASE}/api/walkthroughs/side-quest',
+        f'{PUBLIC_BASE}/api/walkthroughs/side-quest/looking-at-you',
+    ]
+
+
+def test_singular_walkthrough_urls_refuse_an_empty_set():
+    same = {**DB, 'db_type_to_url': {'main-story': 'main-story', 'side-quests': 'side-quests'}}
+    with pytest.raises(RuntimeError, match='spelled differently'):
+        singular_walkthrough_urls(BASE_ROUTES, same)
+
+
+def _stub_main(monkeypatch, argv):
+    """Run main() against the fixture: routes, DB sources and Cloudflare are stand-ins."""
+    monkeypatch.setitem(sys.modules, 'app.main', SimpleNamespace(app=SimpleNamespace(routes=BASE_ROUTES)))
+    monkeypatch.setattr(purge_api_cache, 'parse_navigation', lambda: NAV)
+    monkeypatch.setattr(purge_api_cache, 'load_db_sources', lambda: DB)
+    monkeypatch.setattr(purge_api_cache, 'SANITY_FLOOR', 0)
+    purged, cleared = [], []
+    monkeypatch.setattr(purge_api_cache, 'purge', lambda urls: purged.extend(urls) or len(urls))
+    monkeypatch.setattr(purge_api_cache.purge_manifest, 'clear', lambda: cleared.append(True))
+    monkeypatch.setattr(sys, 'argv', ['purge_api_cache.py', *argv])
+    return purged, cleared
+
+
+def test_singular_flag_reads_prod_and_leaves_the_seed_manifest(monkeypatch, capsys):
+    monkeypatch.setenv('PROD_DATABASE_URL', 'postgresql+asyncpg://seeder:hunter2@prod.example:5432/sbg')
+    monkeypatch.setenv('DATABASE_URL', 'postgresql+asyncpg://dev.example/sbg')
+    purged, cleared = _stub_main(monkeypatch, ['--singular-walkthroughs'])
+
+    purge_api_cache.main()
+
+    # The stale copies were cached from prod, so they are derived from prod.
+    assert os.environ['DATABASE_URL'] == 'postgresql+asyncpg://seeder:hunter2@prod.example:5432/sbg'
+    assert purged == [
+        f'{PUBLIC_BASE}/api/walkthroughs/side-quest',
+        f'{PUBLIC_BASE}/api/walkthroughs/side-quest/looking-at-you',
+    ]
+    # A pending seed manifest describes other URLs; this purge must not spend it.
+    assert cleared == []
+    out = capsys.readouterr().out
+    assert 'seeder:*****@prod.example' in out and 'hunter2' not in out
+
+
+def test_singular_flag_refuses_without_the_prod_database(monkeypatch):
+    monkeypatch.delenv('PROD_DATABASE_URL', raising=False)
+    _stub_main(monkeypatch, ['--singular-walkthroughs', '--dry-run'])
+    with pytest.raises(RuntimeError, match='PROD_DATABASE_URL'):
+        purge_api_cache.main()
 
 
 class _Resp:

@@ -4,6 +4,7 @@ import re
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.navigation import NAV_LEVEL_SLUGS, url_type
 from app.schemas.search import SearchResult
 
 logger = logging.getLogger(__name__)
@@ -207,7 +208,7 @@ async def _execute_search(db: AsyncSession, q: str, limit: int) -> list[SearchRe
                 id=row["id"],
                 title=row["title"],
                 snippet=row["subtitle"],
-                navigation_url=f"/walkthroughs/{row['mission_type']}/{row['slug']}",
+                navigation_url=f"/walkthroughs/{url_type(row['mission_type'])}/{row['slug']}",
                 score=float(row["score"]),
             ))
     except Exception as e:
@@ -216,6 +217,8 @@ async def _execute_search(db: AsyncSession, q: str, limit: int) -> list[SearchRe
     try:
         rows = (await db.execute(_LEVELS_SQL, params)).mappings().all()
         for row in rows:
+            if _level_slug(row["name"]) not in NAV_LEVEL_SLUGS:
+                continue  # Default and Boss Challenge have no page to link to
             count = row["collectible_count"]
             results.append(SearchResult(
                 kind="level",

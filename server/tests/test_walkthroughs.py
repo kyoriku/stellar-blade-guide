@@ -189,7 +189,7 @@ async def test_get_walkthrough_detail_unknown_slug_returns_404(walkthroughs_clie
 async def test_get_walkthrough_detail_wrong_type_returns_404(walkthroughs_client, walkthroughs_db_session):
     await _seed_walkthrough(walkthroughs_db_session, slug="typed-slug", title="Typed", mission_type="main-story")
     # Correct slug, wrong type — type filter must be enforced, not just slug
-    r = await walkthroughs_client.get("/api/walkthroughs/side-quest/typed-slug")
+    r = await walkthroughs_client.get("/api/walkthroughs/side-quests/typed-slug")
     assert r.status_code == 404
     body = r.json()
     # Error response only — no walkthrough data leaked
@@ -250,14 +250,70 @@ async def test_detail_cache_key_only_written_by_the_spelling_that_resolves(
 async def test_by_type_cache_key_is_raw_and_exact(walkthroughs_client, walkthroughs_db_session, fake_redis):
     await _seed_walkthrough(walkthroughs_db_session, slug="main-one", title="Main One", mission_type="main-story")
 
-    # _normalize_type strips a trailing s, so both spellings resolve; one key.
-    for spelling in ("main-story", "main-storys"):
-        r = await walkthroughs_client.get(f"/api/walkthroughs/{spelling}")
-        assert r.status_code == 200, spelling
+    # Only the navigation spelling resolves; another spelling of the type is
+    # redirected to it before any cache read or write.
+    r = await walkthroughs_client.get("/api/walkthroughs/main-story")
+    assert r.status_code == 200
+    r = await walkthroughs_client.get("/api/walkthroughs/main-storys")
+    assert (r.status_code, r.headers["location"]) == (308, "/api/walkthroughs/main-story")
     # Case variant: 404 from the DB even with the canonical entry warm, and no write.
     r = await walkthroughs_client.get("/api/walkthroughs/MAIN-STORY")
     assert r.status_code == 404
     assert await fake_redis.keys("walkthroughs:type:*") == ["walkthroughs:type:main-story"]
+
+
+# ── One spelling per walkthrough URL ─────────────────────────────────────────
+#
+# The DB stores side-quest; URLs use the navigation slug, side-quests. The API used to
+# answer both, so the edge cached a second copy the seed purge never reaches, and a
+# search click could show pre-edit text for 30 days. Any other spelling of a known type
+# now gets a permanent redirect, which (like every non-200) is never cached.
+
+async def test_the_singular_spelling_redirects_to_the_navigation_spelling(
+    walkthroughs_client, walkthroughs_db_session, fake_redis
+):
+    await _seed_walkthrough(walkthroughs_db_session, slug="looking-at-you", title="Looking At You", mission_type="side-quest")
+
+    r = await walkthroughs_client.get("/api/walkthroughs/side-quest/looking-at-you")
+    assert (r.status_code, r.headers["location"]) == (308, "/api/walkthroughs/side-quests/looking-at-you")
+    r = await walkthroughs_client.get("/api/walkthroughs/side-quest")
+    assert (r.status_code, r.headers["location"]) == (308, "/api/walkthroughs/side-quests")
+    # Redirected before the cache: nothing read, nothing written.
+    assert await fake_redis.keys("walkthrough*") == []
+
+
+async def test_the_navigation_spelling_still_answers(walkthroughs_client, walkthroughs_db_session):
+    await _seed_walkthrough(walkthroughs_db_session, slug="looking-at-you", title="Looking At You", mission_type="side-quest")
+
+    r = await walkthroughs_client.get("/api/walkthroughs/side-quests/looking-at-you")
+    assert (r.status_code, r.json()["slug"]) == (200, "looking-at-you")
+    r = await walkthroughs_client.get("/api/walkthroughs/side-quests")
+    assert [w["slug"] for w in r.json()] == ["looking-at-you"]
+
+
+async def test_every_other_spelling_of_a_known_type_redirects(walkthroughs_client):
+    # The de-pluraliser also accepts T+s and T+es. Nothing ever linked them, but they
+    # would have been cacheable copies too.
+    for spelling, canonical in [
+        ("side-questes", "side-quests"),
+        ("bulletin-board-request", "bulletin-board-requests"),
+        ("main-storys", "main-story"),
+        ("nier-dlcs", "nier-dlc"),
+    ]:
+        r = await walkthroughs_client.get(f"/api/walkthroughs/{spelling}/any-slug")
+        assert (r.status_code, r.headers["location"]) == (308, f"/api/walkthroughs/{canonical}/any-slug"), spelling
+
+
+async def test_the_redirect_keeps_the_slug_inside_its_segment(walkthroughs_client):
+    r = await walkthroughs_client.get("/api/walkthroughs/side-quest/a%3Fb%23c")
+    assert r.headers["location"] == "/api/walkthroughs/side-quests/a%3Fb%23c"
+
+
+async def test_a_type_outside_the_navigation_is_answered_as_stored(walkthroughs_client, walkthroughs_db_session):
+    # The e2e fixture's type has no navigation slug, so there is nothing to send it to.
+    await _seed_walkthrough(walkthroughs_db_session, slug="fx", title="Fixture", mission_type="e2e-fixture")
+    r = await walkthroughs_client.get("/api/walkthroughs/e2e-fixture/fx")
+    assert r.status_code == 200
 
 
 # ── access-log cache column ──────────────────────────────────────────────────

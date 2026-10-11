@@ -11,6 +11,7 @@ from app.models.comments import Comment  # noqa: F401 — FK target, keep mapper
 from app.models.collectibles import CollectibleType, Level
 from app.models.walkthroughs import Walkthrough
 from app.core.auth import get_current_user
+from app.core.navigation import url_type
 from app.core.security import limiter
 from app.config.settings import settings
 from app.schemas.notifications import NotificationItem, NotificationList
@@ -60,7 +61,7 @@ async def _build_label_urls(db: AsyncSession, notifications: list[Notification])
                 select(Walkthrough).where(Walkthrough.id.in_(by_type["walkthrough"]))
             )).scalars()
             for r in rows:
-                out[("walkthrough", r.id)] = (r.title, f"/walkthroughs/{r.mission_type}/{r.slug}")
+                out[("walkthrough", r.id)] = (r.title, f"/walkthroughs/{url_type(r.mission_type)}/{r.slug}")
         except Exception as e:
             logger.warning(f"notification walkthrough label lookup failed: {e}")
 

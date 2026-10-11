@@ -1,5 +1,8 @@
 import time
+from urllib.parse import quote
+
 from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
@@ -8,21 +11,11 @@ from app.db.database import get_db, LIKE_ESCAPE, escape_like
 from app.models.walkthroughs import Walkthrough as WalkthroughModel
 from app.schemas.walkthroughs import Walkthrough as WalkthroughSchema, WalkthroughListItem
 from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
+from app.core.navigation import canonical_url_type, normalize_type as _normalize_type
 from app.core.security import limiter
 from app.config.settings import settings
 
 router = APIRouter(prefix="/walkthroughs", tags=["walkthroughs"])
-
-
-def _normalize_type(walkthrough_type: str) -> str:
-    """Normalize plural type slugs to singular DB values.
-    e.g. 'side-quests' -> 'side-quest', 'bosses' -> 'boss'
-    """
-    if walkthrough_type.endswith('es'):
-        return walkthrough_type[:-2]
-    elif walkthrough_type.endswith('s'):
-        return walkthrough_type[:-1]
-    return walkthrough_type
 
 
 def _serialize_list_item(w) -> dict:
@@ -78,7 +71,14 @@ async def get_all_walkthroughs(request: Request, db: AsyncSession = Depends(get_
 @router.get("/{walkthrough_type}", response_model=List[WalkthroughListItem])
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
 async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: AsyncSession = Depends(get_db)):
-    """Get walkthroughs by type (main-story, side-quest, etc.)."""
+    """Get walkthroughs by type (main-story, side-quests, etc.)."""
+    # One URL per resource: any other spelling of a known type (side-quest for
+    # side-quests) gets a permanent redirect. It is no-store, like every non-200, so
+    # the edge never keeps a copy the seed purge can't reach.
+    canonical = canonical_url_type(walkthrough_type)
+    if canonical:
+        return RedirectResponse(f"{settings.API_PREFIX}/walkthroughs/{canonical}", status_code=308)
+
     normalized_type = _normalize_type(walkthrough_type)
 
     # Raw on purpose: mission_type matching below is exact and case-sensitive, so a
@@ -152,6 +152,13 @@ async def get_walkthrough_by_slug(
     db: AsyncSession = Depends(get_db)
 ):
     """Get specific walkthrough by type and slug with full content."""
+    # The same redirect as the type list. The slug is quoted whole, so a ? or # in it
+    # stays inside the path segment.
+    canonical = canonical_url_type(walkthrough_type)
+    if canonical:
+        return RedirectResponse(
+            f"{settings.API_PREFIX}/walkthroughs/{canonical}/{quote(slug, safe='')}", status_code=308)
+
     normalized_type = _normalize_type(walkthrough_type)
 
     cache_key, _ = walkthrough_cache_keys(normalized_type, slug)
