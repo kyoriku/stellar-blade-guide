@@ -17,7 +17,7 @@ Testing approach:
 import json
 import pytest
 import pytest_asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
 
@@ -25,6 +25,7 @@ from app.db.database import get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.routers import search as search_route
 from app.schemas.search import SearchResult
+from app.services.search import _LEVELS_SQL, _WALKTHROUGHS_SQL, _execute_search
 
 
 @pytest_asyncio.fixture
@@ -283,3 +284,54 @@ async def test_rejected_search_hands_nothing_to_the_access_log(search_probe_clie
     assert r.status_code == 422
     assert seen["search_query"] is None
     assert seen["search_total"] is None
+
+
+# ---------------------------------------------------------------------------
+# Result links: _execute_search against a fake session
+# ---------------------------------------------------------------------------
+# The SQL is Postgres-only, so these hand _execute_search a session that answers each
+# query with prepared rows. They pin the links each kind of result carries.
+
+class _RowsSession:
+    """Answers each search query (matched by identity) with its rows; others get none."""
+
+    def __init__(self, *answers):
+        self.answers = answers
+
+    async def execute(self, stmt, params=None):
+        rows = next((rows for sql, rows in self.answers if sql is stmt), [])
+        result = MagicMock()
+        result.mappings.return_value.all.return_value = rows
+        return result
+
+
+async def test_walkthrough_results_link_the_navigation_spelling():
+    # The DB stores side-quest; the page lives at side-quests. Linking the DB value let
+    # the edge cache a copy the seed purge never refreshes, so a search click could show
+    # a walkthrough's pre-edit text for up to 30 days.
+    rows = [
+        {"id": 1, "title": "Looking At You", "mission_type": "side-quest", "slug": "looking-at-you",
+         "subtitle": "A side quest", "score": 0.9},
+        {"id": 2, "title": "Missing Husband", "mission_type": "bulletin-board-request", "slug": "missing-husband",
+         "subtitle": "A request", "score": 0.8},
+        {"id": 3, "title": "Scavenger Adam", "mission_type": "main-story", "slug": "scavenger-adam",
+         "subtitle": "The story", "score": 0.7},
+    ]
+    results = await _execute_search(_RowsSession((_WALKTHROUGHS_SQL, rows)), "q", 20)
+    assert [r.navigation_url for r in results] == [
+        "/walkthroughs/side-quests/looking-at-you",
+        "/walkthroughs/bulletin-board-requests/missing-husband",
+        "/walkthroughs/main-story/scavenger-adam",
+    ]
+
+
+async def test_hidden_pseudo_levels_are_not_search_results():
+    # Default and Boss Challenge are levels in the DB with no page of their own: a result
+    # for either linked to a 404. Their collectibles still appear, through the type pages.
+    rows = [
+        {"id": 1, "name": "Eidos 7", "collectible_count": 40, "score": 0.9},
+        {"id": 2, "name": "Default", "collectible_count": 12, "score": 0.8},
+        {"id": 3, "name": "Boss Challenge", "collectible_count": 5, "score": 0.7},
+    ]
+    results = await _execute_search(_RowsSession((_LEVELS_SQL, rows)), "q", 20)
+    assert [r.navigation_url for r in results] == ["/levels/eidos-7"]

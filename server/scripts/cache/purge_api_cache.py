@@ -8,6 +8,10 @@ Usage:
                                                             # purge the full surface
   uv run python scripts/cache/purge_api_cache.py --run-id X # narrow to the changed
                                                             # entities recorded by run X
+  uv run python scripts/cache/purge_api_cache.py --singular-walkthroughs
+                                    # one-time: the walkthrough URLs under the DB
+                                    # spelling of a type (side-quest), read from the
+                                    # PROD database; leaves the seed manifest alone
 
 --run-id defaults to $SEED_RUN_ID, which prod_seed.py exports, so an orchestrated
 run needs no flag. Without either, there is no run to match a manifest against and
@@ -257,6 +261,30 @@ def removed_detail_urls(routes, removed_pairs, db):
     return derive_urls(routes, only_removed, _EMPTY_NAV, index_prefixes=set())
 
 
+def singular_walkthrough_urls(routes, db):
+    """One-time: walkthrough URLs under the DB spelling of a type whose URL spelling
+    differs (/api/walkthroughs/side-quest and /api/walkthroughs/side-quest/<slug>).
+
+    Search and reply notifications used to link these, the API served them, and the
+    edge cached them where the seed purge never looks. The API now redirects them,
+    no-store, so whatever the edge still holds is the last copy and one purge clears
+    it. The types come from the rows, so a type with no walkthroughs adds no list
+    URL. Derived through derive_urls like removed_detail_urls, so what a URL looks
+    like stays defined in one place.
+    """
+    url_to_db = {url: t for t, url in db['db_type_to_url'].items() if t != url}
+    pairs = sorted((url_to_db[url], slug) for url, slug in db['walkthrough_pairs'] if url in url_to_db)
+    if not pairs:
+        raise RuntimeError('no walkthrough type is spelled differently in the DB and in URLs')
+    singular = {
+        'levels': [],
+        'walkthrough_pairs': pairs,
+        'walkthrough_types': sorted({t for t, _ in pairs}),
+        'db_type_to_url': db['db_type_to_url'],
+    }
+    return derive_urls(routes, singular, _EMPTY_NAV, index_prefixes=set())
+
+
 def derive_urls(routes, db, nav, index_prefixes=None):
     """Expand every cached GET route into concrete URLs. A route under a
     cached prefix whose shape is not recognized raises (the caller falls back
@@ -384,13 +412,27 @@ def _flag_value(args, name):
     return None
 
 
+def _mask(url):
+    return re.sub(r"//([^:/@]+):[^@]*@", r"//\1:*****@", url)
+
+
 def main():
     args = sys.argv[1:]
     dry_run = '--dry-run' in args
     force_all = '--all' in args
+    singular = '--singular-walkthroughs' in args
     run_id = _flag_value(args, '--run-id') or purge_manifest.current_run_id()
 
     print('\033[36m=== Scoped API cache purge ===\033[0m')
+    if singular:
+        # The stale URLs were cached from prod, so they are derived from prod, the way
+        # prod_seed.py points its child here. Set before the app import, which builds
+        # the engine from DATABASE_URL.
+        prod_db = os.environ.get('PROD_DATABASE_URL')
+        if not prod_db:
+            raise RuntimeError('--singular-walkthroughs needs PROD_DATABASE_URL (server/.env)')
+        os.environ['DATABASE_URL'] = prod_db
+        print(f'  Database: {_mask(prod_db)}')
     from app.main import app  # route table is the source of truth for shapes
     nav = parse_navigation()
     db = load_db_sources()
@@ -406,7 +448,9 @@ def main():
           f'({len(db["levels"])} levels, {len(db["walkthrough_pairs"])} walkthroughs)')
 
     urls, scope = full_urls, 'full surface'
-    if force_all:
+    if singular:
+        urls, scope = singular_walkthrough_urls(app.routes, db), 'singular walkthrough spellings (one-time)'
+    elif force_all:
         print('  --all: purging the full surface by request')
     else:
         try:
@@ -446,8 +490,10 @@ def main():
 
     purged = purge(urls)
     # Spent either way: a full purge covers whatever the manifest described, so
-    # leaving it behind would let a later run re-purge a stale changed set.
-    purge_manifest.clear()
+    # leaving it behind would let a later run re-purge a stale changed set. The
+    # one-time singular purge covers none of it, so a pending manifest stays.
+    if not singular:
+        purge_manifest.clear()
     print(f'\033[32m✓ Purged {purged} API URLs ({scope}); image cache left warm\033[0m')
 
 

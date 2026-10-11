@@ -302,6 +302,38 @@ async def test_unknown_type_gate(client, monkeypatch):
     assert 'rel="canonical"' not in r.text  # unknown type: no canonical, ever
 
 
+# --- one spelling per walkthrough page -----------------------------------------
+# A walkthrough page reached by another spelling of its type (side-quest for
+# side-quests) is a permanent redirect to the one URL, decided on spelling alone.
+
+async def test_other_type_spellings_redirect_to_the_navigation_spelling(client, monkeypatch):
+    monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
+    for path, location in [
+        ('/walkthroughs/side-quest/calm-quest', '/walkthroughs/side-quests/calm-quest'),
+        ('/walkthroughs/side-quest/calm-quest/', '/walkthroughs/side-quests/calm-quest'),
+        ('/Walkthroughs/side-quest/calm-quest', '/walkthroughs/side-quests/calm-quest'),
+        ('/walkthroughs/side-quest', '/walkthroughs/side-quests'),
+        ('/walkthroughs/main-storys/the-mission', '/walkthroughs/main-story/the-mission'),
+        ('/walkthroughs/side-quest/calm-quest?ref=share', '/walkthroughs/side-quests/calm-quest?ref=share'),
+    ]:
+        r = await client.get(path)
+        assert (r.status_code, r.headers['location']) == (301, location), path
+    r = await client.head('/walkthroughs/side-quest/calm-quest')
+    assert (r.status_code, r.headers['location']) == (301, '/walkthroughs/side-quests/calm-quest')
+
+
+async def test_navigation_spelling_and_other_types_are_not_redirected(client, monkeypatch):
+    monkeypatch.setattr(seo_head.settings, 'DEBUG', False)
+    monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
+    r = await client.get('/walkthroughs/side-quests')
+    assert r.status_code == 200
+    # A mixed-case type is not a spelling of anything: the 404 head, as before.
+    r = await client.get('/walkthroughs/Side-Quest/calm-quest')
+    assert r.status_code == 200 and f'404 Page Not Found{SUFFIX}' in r.text
+    r = await client.get('/walkthroughs/bogus-type/foo')
+    assert r.status_code == 200
+
+
 # --- response mechanics ------------------------------------------------------
 
 async def test_etag_and_304(client):

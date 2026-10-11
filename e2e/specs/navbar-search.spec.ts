@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readFixtures, type Fixtures } from '../helpers/db';
+import { readFixtures, pgPool, redisClient, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 let fx: Fixtures;
@@ -14,6 +14,40 @@ test.describe('navbar mobile search', () => {
 
   test.beforeEach(async ({ context }) => {
     await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+  });
+
+  test('a walkthrough result links its type by the navigation spelling', async ({ page }) => {
+    // The DB stores side-quest; the page lives at side-quests. A singular link let the
+    // edge cache a copy the seed purge never refreshes. A real side quest, because the
+    // fixture's type is not in the navigation.
+    const pool = pgPool();
+    const { rows } = await pool
+      .query<{ title: string; slug: string }>(
+        "SELECT title, slug FROM walkthroughs WHERE mission_type = 'side-quest' ORDER BY display_order, id LIMIT 1",
+      )
+      .finally(() => pool.end());
+    const { title, slug } = rows[0];
+
+    // A real title means a real search key, and a response an earlier run cached (it
+    // lives an hour) would answer instead of the code under test. Clear that key.
+    const searchKey = `search:${title.trim().toLowerCase()}:20`;
+    const redis = redisClient();
+    try {
+      await redis.del(searchKey);
+      await page.goto('/');
+      await page.getByRole('button', { name: 'Toggle menu' }).click();
+      await page.getByPlaceholder('Search collectibles, walkthroughs, levels...').fill(title);
+      await page
+        .locator('#mobile-menu a[href^="/walkthroughs/"]')
+        .filter({ has: page.getByText(title, { exact: true }) })
+        .first()
+        .click();
+      await expect(page).toHaveURL(new RegExp(`/walkthroughs/side-quests/${slug}$`));
+      await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+    } finally {
+      await redis.del(searchKey);
+      redis.disconnect();
+    }
   });
 
   test('query clears and accordion resets after navigating from a result', async ({ page }) => {

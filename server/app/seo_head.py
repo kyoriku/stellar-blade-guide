@@ -20,14 +20,16 @@ import html
 import json
 import logging
 import os
+from urllib.parse import quote
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
 from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
 from app.core.http_cache import etag_matches
+from app.core.navigation import canonical_url_type
 from app.db.database import AsyncSessionLocal
 from app.routers.walkthroughs import _normalize_type, _serialize_full, lookup_walkthrough
 
@@ -217,6 +219,28 @@ def render_head(head: dict) -> str:
     return '\n  '.join(lines)
 
 
+def walkthrough_page_redirect(full_path: str, query: str = '') -> str | None:
+    """The canonical path for a walkthrough page reached by another spelling of its
+    type (/walkthroughs/side-quest/<slug> for side-quests), or None.
+
+    Spelling only, no DB access. The 'walkthroughs' segment matches in any case, as the
+    client router does; the type matches case-sensitively, as the API does. The slug is
+    quoted whole, so nothing from the request can leave the path.
+    """
+    if full_path.endswith('/'):
+        full_path = full_path[:-1]
+    parts = full_path.split('/')
+    if len(parts) not in (2, 3) or parts[0].lower() != 'walkthroughs':
+        return None
+    canonical = canonical_url_type(parts[1])
+    if not canonical:
+        return None
+    path = f'/walkthroughs/{canonical}'
+    if len(parts) == 3:
+        path += f"/{quote(parts[2], safe='')}"
+    return f'{path}?{query}' if query else path
+
+
 def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = None) -> None:
     """Serve the built SPA with per-route head tags spliced at the marker.
 
@@ -257,6 +281,12 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         if full_path == 'api' or full_path.startswith('api/'):
             request.state.reject_reason = "no-route"
             raise HTTPException(status_code=404)
+        # A walkthrough page reached by another spelling of its type goes to the one
+        # URL, so bookmarks, shares and anything indexed land on the canonical page.
+        # Like every non-200 here it is no-store, so no cache keeps the old spelling.
+        redirect = walkthrough_page_redirect(full_path, request.url.query)
+        if redirect:
+            return RedirectResponse(redirect, status_code=301)
         file_path = os.path.realpath(os.path.join(client_dist, full_path))
         if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
             return FileResponse(file_path)
