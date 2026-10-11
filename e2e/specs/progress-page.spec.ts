@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
-import { nextTestIp, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
 let fx: Fixtures;
 
@@ -24,7 +24,7 @@ async function gotoProgressAuthed(page: Page): Promise<void> {
 async function apiLoginToken(page: Page, user: TestUser, ip: string): Promise<string> {
   const res = await page.request.post('/api/auth/login', {
     data: { email: user.email, password: user.password },
-    headers: { 'x-real-ip': ip },
+    headers: { [TEST_IP_HEADER]: ip },
   });
   if (res.status() !== 200) {
     throw new Error(`login failed: ${res.status()} ${await res.text()}`);
@@ -34,7 +34,7 @@ async function apiLoginToken(page: Page, user: TestUser, ip: string): Promise<st
 
 test.describe('progress page auth gate', () => {
   test('guest is redirected to login', async ({ page, context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
     await page.goto('/progress');
     await expect(page).toHaveURL(/\/login/);
   });
@@ -51,7 +51,7 @@ test.describe('authenticated stats', () => {
 
   test.beforeEach(async ({ page, context }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, `st${++seq}`);
     // Register via API (sets the refresh cookie on this context) and plant the
     // session hint so the app self-restores on load.
@@ -71,7 +71,7 @@ test.describe('authenticated stats', () => {
   test('a completed collectible is reflected in the hero', async ({ page }) => {
     const token = await apiLoginToken(page, user, ip);
     const put = await page.request.put(`/api/progress/${fx.collectibleId}`, {
-      headers: { Authorization: `Bearer ${token}`, 'x-real-ip': ip },
+      headers: { Authorization: `Bearer ${token}`, [TEST_IP_HEADER]: ip },
     });
     expect(put.status()).toBe(200);
 
@@ -95,7 +95,7 @@ test.describe('account switch', () => {
 
   test.beforeEach(async ({ page, context, request }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     userA = makeUser(fx.token, 'swa');
     userB = makeUser(fx.token, 'swb');
     // A registers through the page's jar (its refresh cookie drives the page
@@ -104,7 +104,7 @@ test.describe('account switch', () => {
     await apiRegister(page, userA, ip);
     const regB = await request.post('/api/auth/register', {
       data: userB,
-      headers: { 'x-real-ip': ip },
+      headers: { [TEST_IP_HEADER]: ip },
     });
     if (regB.status() !== 201) throw new Error(`register B failed: ${regB.status()}`);
     await page.addInitScript(() => localStorage.setItem('sb_has_session', '1'));
@@ -118,7 +118,7 @@ test.describe('account switch', () => {
   test("signing out and in as another account shows that account's stats", async ({ page }) => {
     const token = await apiLoginToken(page, userA, ip);
     const put = await page.request.put(`/api/progress/${fx.collectibleId}`, {
-      headers: { Authorization: `Bearer ${token}`, 'x-real-ip': ip },
+      headers: { Authorization: `Bearer ${token}`, [TEST_IP_HEADER]: ip },
     });
     expect(put.status()).toBe(200);
 

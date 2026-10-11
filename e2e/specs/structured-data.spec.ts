@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, FIXTURE_DESCRIPTION_TEXT, type Fixtures } from '../helpers/db';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 import { stripLinks } from '../../client/src/utils/descriptionText';
 
 type ListItem = { name: string; description?: string };
@@ -27,7 +27,7 @@ test.describe('structured data', () => {
   });
 
   test.beforeEach(async ({ context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
   });
 
   test('walkthrough page carries BreadcrumbList + WebPage + Article ld+json', async ({ page }) => {

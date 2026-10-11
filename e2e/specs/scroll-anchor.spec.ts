@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 // Every in-page jump lands its target at the `scroll-anchor` margin
 // (client/src/index.css): 81px below the viewport top on phones, 97px from md
@@ -82,7 +82,7 @@ for (const { name, viewport, offset } of WIDTHS) {
     test.use({ viewport });
 
     test.beforeEach(async ({ context }) => {
-      await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+      await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
     });
 
     test(`level hash lands a location ${offset}px down`, async ({ page }) => {

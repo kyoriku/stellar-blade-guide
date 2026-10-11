@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
-import { API_BASE_URL, errorMessage } from '../services/api'
+import { API_BASE_URL, errorMessage, readError } from '../services/api'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -22,6 +22,9 @@ export default function ForgotPasswordPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
+      // A refusal (a 429 from the rate limit, a 5xx) sent no email, so it must not
+      // reach "Check your email"; readError gives it the same wording as every form.
+      if (!res.ok) throw new Error(await readError(res, 'Something went wrong. Please try again.'))
       // Every address gets the same empty 204, so the page cannot tell a password
       // account from an unknown or deactivated one. The one exception is an account
       // that signs in with a provider: it has no password to reset, and the API says

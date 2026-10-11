@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 let fx: Fixtures;
 
@@ -13,7 +13,7 @@ test.describe('navbar mobile search', () => {
   });
 
   test.beforeEach(async ({ context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
   });
 
   test('query clears and accordion resets after navigating from a result', async ({ page }) => {

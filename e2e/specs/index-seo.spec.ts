@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 // The five category index pages ship intent-matched seoTitle overrides while
 // their h1s keep the short names. These pages render <SEO> unconditionally
@@ -16,7 +16,7 @@ const TITLES: Array<[path: string, title: string | RegExp]> = [
 
 test.describe('index page seo titles', () => {
   test.beforeEach(async ({ context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
   });
 
   for (const [path, title] of TITLES) {

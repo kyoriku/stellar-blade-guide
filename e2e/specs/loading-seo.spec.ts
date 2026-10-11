@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { nextTestIp } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 // The walkthrough pages previously rendered no <title> or meta description at
 // all while their query loaded. These tests hold the API request open to pin
@@ -7,7 +7,7 @@ import { nextTestIp } from '../helpers/auth';
 
 test.describe('walkthrough loading-state seo', () => {
   test.beforeEach(async ({ context }) => {
-    await context.setExtraHTTPHeaders({ 'x-real-ip': nextTestIp() });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
   });
 
   test('list page carries full head tags while loading', async ({ page }) => {

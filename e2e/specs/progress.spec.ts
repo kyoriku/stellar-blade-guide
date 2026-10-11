@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
-import { nextTestIp, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
 let fx: Fixtures;
 
@@ -43,7 +43,7 @@ test.describe('authenticated progress toggling', () => {
 
   test.beforeEach(async ({ page, context }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, `p${++seq}`);
     // Register via API (sets the refresh cookie on this context) and plant the
     // session hint so the app self-restores on load — the same code path the

@@ -12,9 +12,8 @@ pass Python lists/dicts; SQLAlchemy serializes/deserializes them automatically.
 conftest's autouse patch_redis covers app.core.cache.redis_client, so walkthroughs
 caching goes through FakeRedis with no extra patching needed here.
 
-Rate limit testing is intentionally omitted: slowapi's Limiter is created at
-module-import time using storage_uri=settings.REDIS_URL, separate from the
-app.core.cache.redis_client the autouse patch_redis fixture covers.
+Rate limits are off here, as in every file (conftest.disable_rate_limits); the
+limiter itself is tested in test_rate_limit.py with the rate_limits_on fixture.
 """
 
 from __future__ import annotations

@@ -1,9 +1,22 @@
 import type { Page } from '@playwright/test';
 
-// Each test gets a unique client IP via the x-real-ip header, which the
-// server's rate limiter trusts unconditionally (get_client_ip). This keeps
-// the Redis-backed fixed-window limits ON while giving every test a private
-// bucket (register is 5/min, delete-me 5/min — shared IP would 429).
+// Each test gets a unique client IP, which keeps the Redis-backed limits ON while
+// giving every test a private bucket (register is 5/min, delete-me 5/min — a
+// shared IP would 429). The server keys on CF-Connecting-IP, else the
+// connection's client address (get_client_ip). The tests send X-Forwarded-For,
+// which the app never reads: uvicorn turns it into the client address.
+//
+// CF-Connecting-IP can't be used here: extra headers go with every request a page
+// makes, and Cloudflare answers a client-sent one with a 403 (Error 1000), which
+// would break the page's images on img.stellarbladeguide.com.
+//
+// This rests on three dev-server facts. If every test suddenly 429s on register,
+// check them first:
+//   - uvicorn's proxy headers are on and trust 127.0.0.1 (its default; the dev
+//     container leaves FORWARDED_ALLOW_IPS unset);
+//   - uvicorn is reached from 127.0.0.1 (both start commands bind IPv4);
+//   - Vite's /api proxy doesn't set xfwd, which would append its own entry.
+export const TEST_IP_HEADER = 'x-forwarded-for';
 let ipSeq = 0;
 // Decorrelate back-to-back suite runs: the rate-limit windows are Redis-backed
 // and survive the process, so a fixed sequence reuses the same IPs when the
@@ -35,7 +48,7 @@ export function makeUser(token: string, name: string): TestUser {
 export async function apiRegister(page: Page, user: TestUser, ip: string): Promise<void> {
   const res = await page.request.post('/api/auth/register', {
     data: user,
-    headers: { 'x-real-ip': ip },
+    headers: { [TEST_IP_HEADER]: ip },
   });
   if (res.status() !== 201) {
     throw new Error(`register failed: ${res.status()} ${await res.text()}`);
@@ -46,12 +59,12 @@ export async function apiRegister(page: Page, user: TestUser, ip: string): Promi
 export async function apiDeleteUser(page: Page, user: TestUser, ip: string): Promise<boolean> {
   const login = await page.request.post('/api/auth/login', {
     data: { email: user.email, password: user.password },
-    headers: { 'x-real-ip': ip },
+    headers: { [TEST_IP_HEADER]: ip },
   });
   if (login.status() !== 200) return false;
   const { access_token } = (await login.json()) as { access_token: string };
   const del = await page.request.delete('/api/users/me', {
-    headers: { Authorization: `Bearer ${access_token}`, 'x-real-ip': ip },
+    headers: { Authorization: `Bearer ${access_token}`, [TEST_IP_HEADER]: ip },
   });
   return del.status() === 204;
 }

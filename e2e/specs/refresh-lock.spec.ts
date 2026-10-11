@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { test, expect, type Page, type Request, type Response } from '@playwright/test';
 import { readFixtures, redisClient, type Fixtures } from '../helpers/db';
-import { nextTestIp, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
 // Tabs of one browser share the refresh cookie. The client holds a Web Lock across
 // each refresh so tabs take turns: the next tab's request goes out only after the
@@ -71,7 +71,7 @@ test.describe('refresh lock', () => {
 
   test.beforeEach(async ({ page, context }) => {
     ip = nextTestIp();
-    await context.setExtraHTTPHeaders({ 'x-real-ip': ip });
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, `l${++seq}`);
     // Keeps the refresh cookie: every page in this context starts signed in.
     await apiRegister(page, user, ip);
