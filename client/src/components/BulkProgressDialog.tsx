@@ -119,7 +119,9 @@ export default function BulkProgressDialog({
       // the word dialog is pinned near the top instead (mobile first): centred, its
       // input would sit under the iOS keyboard. The UA colours dialog text black,
       // and a modal dialog given position: relative would lay out off-screen.
-      className={`mx-auto ${requireWord ? 'mt-4 mb-auto sm:my-auto' : 'my-auto'} w-[calc(100%-2rem)] max-w-sm max-h-[calc(100svh-2rem)] overflow-y-auto overscroll-contain p-0 scheme-dark text-gray-100 bg-secondary border border-gray-700 rounded-xl shadow-2xl backdrop:bg-[rgba(0,0,0,0.6)] backdrop:backdrop-blur-[8px]`}
+      // overscroll-none, not contain: contain rubber-bands the content on macOS even
+      // when nothing overflows, and either keeps the page behind from scrolling.
+      className={`mx-auto ${requireWord ? 'mt-4 mb-auto sm:my-auto' : 'my-auto'} w-[calc(100%-2rem)] max-w-sm max-h-[calc(100svh-2rem)] overflow-y-auto overscroll-none p-0 scheme-dark text-gray-100 bg-secondary border border-gray-700 rounded-xl shadow-2xl backdrop:bg-[rgba(0,0,0,0.6)] backdrop:backdrop-blur-[8px]`}
     >
       <div className="relative p-4 sm:p-6">
         <form
