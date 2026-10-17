@@ -224,17 +224,16 @@ async def apply_bulk_progress(
     # and aiosqlite would report -1.
     changed = result.scalars().all()
     await db.commit()
+    # .get: a seed running between the two statements can add an id to the scope,
+    # and a KeyError here would turn a committed write into a 500.
+    changed_quantity = sum(quantity.get(cid, 1) for cid in changed)
 
+    # Both units: the page counts by quantity, so a x2 item makes them differ.
     logger.info(
         f"{CYAN}User {current_user.id} bulk {body.action} {_describe_scope(body)}: "
-        f"{len(changed)} changed{RESET}"
+        f"{len(changed)} changed, {changed_quantity} by quantity{RESET}"
     )
-    return {
-        "entries": len(changed),
-        # .get: a seed running between the two statements can add an id to the
-        # scope, and a KeyError here would turn a committed write into a 500.
-        "quantity": sum(quantity.get(cid, 1) for cid in changed),
-    }
+    return {"entries": len(changed), "quantity": changed_quantity}
 
 
 async def _require_collectible(db: AsyncSession, collectible_id: int) -> None:

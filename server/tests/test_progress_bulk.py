@@ -19,6 +19,7 @@ the route's SQL.
 
 from __future__ import annotations
 
+import logging
 import typing
 
 import pytest
@@ -445,6 +446,22 @@ async def test_mark_all_found_is_idempotent(first_client, second_client, some_fo
     assert again.json() == {"entries": 0, "quantity": 0}
     assert await _found(first_client, world) == set(ITEMS)
     assert await _found(second_client, world) == OTHER_USER_ITEMS
+
+
+async def test_the_write_logs_rows_and_quantity(first_client, bulk_db_session, world, users, caplog):
+    # The page counts by quantity, so the INFO line carries both units; Eidos 7's x3
+    # module makes them differ. One entry is already found, so what changed is not
+    # the whole scope, and the line must count what changed.
+    await _tick(bulk_db_session, users[0], world, {"e7_doc"})
+    body = {"action": "mark_found", "scope": "level", "level": "Eidos 7"}
+    keys = _expected(body) - {"e7_doc"}
+    assert len(keys) != _qty(keys)
+    caplog.set_level(logging.INFO, logger=progress_routes.logger.name)
+    r = await first_client.post("/api/progress/bulk", json=body)
+    assert r.status_code == 200
+    lines = [rec.getMessage() for rec in caplog.records if "bulk mark_found level Eidos 7" in rec.getMessage()]
+    assert len(lines) == 1
+    assert f": {len(keys)} changed, {_qty(keys)} by quantity" in lines[0]
 
 
 async def test_clear_with_nothing_found_returns_zero(first_client, world, users):
