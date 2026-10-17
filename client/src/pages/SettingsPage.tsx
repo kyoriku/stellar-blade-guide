@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { User, KeyRound, Trash2, Save, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
@@ -34,6 +34,7 @@ export default function SettingsPage() {
 
   // ── Delete account ─────────────────────────────────────────────────────────
   const [deleteConfirm, setDeleteConfirm] = useState('')
+  const deleteConfirmId = useId()
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -399,14 +400,21 @@ export default function SettingsPage() {
 
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label htmlFor={deleteConfirmId} className="block text-sm font-medium text-gray-300 mb-1.5">
                 Type <span className="text-white font-mono">{user.username}</span> to confirm
               </label>
               <input
+                id={deleteConfirmId}
                 type="text"
                 value={deleteConfirm}
                 onChange={e => setDeleteConfirm(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-colors text-sm"
+                // The match is exact, so a phone must not capitalise, correct or fill it.
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                autoComplete="off"
+                // outline-hidden, not outline-none: forced colors still draws it.
+                className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-colors text-sm"
                 placeholder={user.username}
               />
             </div>
