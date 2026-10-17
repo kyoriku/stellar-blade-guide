@@ -291,10 +291,10 @@ async def test_fresh_user_all_zeros(user_client, stats_db_session):
     assert data["total"] == {"completed": 0, "total": 2}
     assert data["types"] == [
         {"name": "Document", "slug": "documents", "category": "collectibles",
-         "completed": 0, "total": 2}
+         "completed": 0, "total": 2, "cycles": ["Base"]}
     ]
     assert data["levels"] == [
-        {"name": "Xion", "order": 1, "completed": 0, "total": 2}
+        {"name": "Xion", "order": 1, "completed": 0, "total": 2, "cycles": ["Base"]}
     ]
     assert data["cycles"] == [{"name": "Base", "completed": 0, "total": 2}]
 
@@ -319,7 +319,7 @@ async def test_dual_typed_item_counted_once_overall_once_per_type(
     by_name = {t["name"]: t for t in data["types"]}
     assert by_name["Memorystick"] == {
         "name": "Memorystick", "slug": "memorysticks", "category": "collectibles",
-        "completed": 1, "total": 1,
+        "completed": 1, "total": 1, "cycles": ["Base"],
     }
     assert by_name["Passcode"]["completed"] == 1
     assert sum(t["total"] for t in data["types"]) > data["total"]["total"]
@@ -343,7 +343,7 @@ async def test_type_with_no_collectibles_has_zero_total(user_client, stats_db_se
     data = await _get_stats(user_client)
     assert data["types"] == [
         {"name": "Empty Type", "slug": "empty-types", "category": "collectibles",
-         "completed": 0, "total": 0}
+         "completed": 0, "total": 0, "cycles": []}
     ]
 
 
@@ -368,8 +368,8 @@ async def test_level_attribution_and_order(user_client, stats_db_session, test_u
 
     data = await _get_stats(user_client)
     assert data["levels"] == [
-        {"name": "Eidos 7", "order": 1, "completed": 0, "total": 1},
-        {"name": "Great Desert", "order": 2, "completed": 1, "total": 1},
+        {"name": "Eidos 7", "order": 1, "completed": 0, "total": 1, "cycles": ["Base"]},
+        {"name": "Great Desert", "order": 2, "completed": 1, "total": 1, "cycles": ["Base"]},
     ]
 
 
@@ -391,6 +391,33 @@ async def test_cycle_default_base_and_fixed_order(user_client, stats_db_session,
     ]
 
 
+async def test_level_and_type_rows_name_their_cycles(user_client, stats_db_session):
+    # The bulk progress picker disables the cycles a scope lacks, from these.
+    xion = await _seed_level(stats_db_session)
+    desert = await _seed_level(stats_db_session, name="Great Desert", display_order=2)
+    xion_loc = await _seed_location(stats_db_session, xion.id)
+    desert_loc = await _seed_location(stats_db_session, desert.id)
+    suits = await _seed_type(stats_db_session, "Nano Suit", "nano-suits", display_order=1)
+    await _seed_type(stats_db_session, "Empty Type", "empty-types", display_order=2)
+    # Seeded out of display order, DLC twice, and the Base item untyped.
+    for cycle in ("DLC", "Base", "NG+", "DLC"):
+        c = await _seed_collectible(stats_db_session, xion_loc.id, title=f"Xion {cycle}", cycle=cycle)
+        if cycle != "Base":
+            await _map_type(stats_db_session, c.id, suits.id)
+    await _seed_collectible(stats_db_session, desert_loc.id, title="Desert NG++", cycle="NG++")
+    await stats_db_session.commit()
+
+    data = await _get_stats(user_client)
+    assert {r["name"]: r["cycles"] for r in data["levels"]} == {
+        "Xion": ["Base", "NG+", "DLC"],
+        "Great Desert": ["NG++"],
+    }
+    assert {r["slug"]: r["cycles"] for r in data["types"]} == {
+        "nano-suits": ["NG+", "DLC"],
+        "empty-types": [],
+    }
+
+
 async def test_unmapped_collectible_counts_overall_but_in_no_type(
     user_client, stats_db_session, test_user
 ):
@@ -408,7 +435,7 @@ async def test_unmapped_collectible_counts_overall_but_in_no_type(
     assert data["cycles"] == [{"name": "Base", "completed": 1, "total": 1}]
     assert data["types"] == [
         {"name": "Document", "slug": "documents", "category": "collectibles",
-         "completed": 0, "total": 0}
+         "completed": 0, "total": 0, "cycles": []}
     ]
 
 
@@ -447,9 +474,9 @@ async def test_quantity_weighted_totals_across_all_buckets(
     assert data["total"] == {"completed": 2, "total": 3}
     assert data["types"] == [
         {"name": "Drone Upgrade Module", "slug": "drone-upgrade-modules",
-         "category": "collectibles", "completed": 2, "total": 2}
+         "category": "collectibles", "completed": 2, "total": 2, "cycles": ["Base"]}
     ]
-    assert data["levels"] == [{"name": "Xion", "order": 1, "completed": 2, "total": 3}]
+    assert data["levels"] == [{"name": "Xion", "order": 1, "completed": 2, "total": 3, "cycles": ["Base"]}]
     assert data["cycles"] == [{"name": "Base", "completed": 2, "total": 3}]
 
 
@@ -480,7 +507,8 @@ async def test_dual_typed_multiquantity_credits_full_weight_per_type(
     assert data["total"] == {"completed": 2, "total": 2}
     by_name = {t["name"]: t for t in data["types"]}
     assert by_name["Type A"] == {"name": "Type A", "slug": "type-a",
-                                 "category": "collectibles", "completed": 2, "total": 2}
+                                 "category": "collectibles", "completed": 2, "total": 2,
+                                 "cycles": ["Base"]}
     assert by_name["Type B"]["completed"] == 2
 
 

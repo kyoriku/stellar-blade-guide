@@ -50,6 +50,9 @@ class TypeStat(BaseModel):
     category: str  # category_group with NULL coalesced to "collectibles"
     completed: int
     total: int
+    # The cycles this type's collectibles span, in display order: the bulk
+    # progress picker offers only these.
+    cycles: List[str]
 
 
 class LevelStat(BaseModel):
@@ -57,6 +60,7 @@ class LevelStat(BaseModel):
     order: int
     completed: int
     total: int
+    cycles: List[str]  # as TypeStat.cycles
 
 
 class CycleStat(BaseModel):
