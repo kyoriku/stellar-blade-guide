@@ -36,6 +36,14 @@ router = APIRouter(prefix="/progress", tags=["progress"])
 # two people ticking behind one address reach about 120.
 PROGRESS_WRITE_RATE_LIMIT = "300/minute"
 
+# collectibles.id and user_progress.collectible_id are integer (int4). A larger id
+# names nothing, and asyncpg refuses to bind one, which would be a 500.
+_ID_MAX = 2**31 - 1
+
+
+def _storable_id(cid: int) -> bool:
+    return 0 < cid <= _ID_MAX
+
 
 @router.get("", response_model=List[int])
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
@@ -61,7 +69,10 @@ async def sync_progress(
     db: AsyncSession = Depends(get_db),
 ):
     """Bulk import progress from localStorage on first login."""
-    if not body.collectible_ids:
+    # An id outside int4 drops out here, as an unknown one does below: a 422 would
+    # strand every other id in the guest copy behind the sync's error toast.
+    ids = sorted({cid for cid in body.collectible_ids if _storable_id(cid)})
+    if not ids:
         return {"status": "ok", "added": 0}
 
     # The bulk route's insert, over the sent ids: an unknown id drops out of the
@@ -69,7 +80,7 @@ async def sync_progress(
     # list), a row the user already has is skipped before it takes a sequence value,
     # and ON CONFLICT absorbs a tick committed concurrently. "added" is what the
     # insert returned, so it is exact.
-    scope = select(Collectible.id).where(Collectible.id.in_(sorted(set(body.collectible_ids))))
+    scope = select(Collectible.id).where(Collectible.id.in_(ids))
     result = await db.execute(_mark_found_stmt(current_user.id, scope))
     added = len(result.scalars().all())
     await db.commit()
@@ -237,6 +248,9 @@ async def apply_bulk_progress(
 
 
 async def _require_collectible(db: AsyncSession, collectible_id: int) -> None:
+    if not _storable_id(collectible_id):
+        # Names nothing, and binding it would be a 500: the unknown-id 404.
+        raise HTTPException(status_code=404, detail="Collectible not found")
     result = await db.execute(
         select(Collectible.id).where(Collectible.id == collectible_id)
     )
