@@ -7,6 +7,10 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+# For input that is invalid in a way no message describes. The database backstop in
+# error_handler.py answers with it too, so the two read the same.
+INVALID_INPUT_DETAIL = "Some of the information you entered is invalid."
+
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Flatten FastAPI's verbose 422 (which echoes loc/input/type) into one
@@ -17,7 +21,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         msg = str(err.get("msg", "")).replace("Value error, ", "")
         if msg:
             messages.append(msg)
-    detail = "; ".join(messages) if messages else "Some of the information you entered is invalid."
+    detail = "; ".join(messages) if messages else INVALID_INPUT_DETAIL
     return JSONResponse(status_code=422, content={"detail": detail})
 
 
