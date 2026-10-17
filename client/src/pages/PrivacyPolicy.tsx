@@ -75,7 +75,15 @@ export default function PrivacyPolicy() {
 
           <section>
             <SectionHeader icon={Cookie} id="cookies">Cookies, Sessions & Local Storage</SectionHeader>
-            <p>We use cookies and server-side sessions to keep you logged in after authentication. We also use browser localStorage to store guest progress tracking data. These are strictly functional. Separately, this site loads Google AdSense, and Google may set or read its own advertising cookies and device identifiers as a third party — see <a href="#advertising" className={linkClass}>Advertising</a> below. You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
+            <p>We use cookies and server-side sessions to keep you logged in after authentication. We also keep these items in your browser's localStorage:</p>
+            <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
+              <li><strong>Guest progress</strong> (<code>sb_progress</code>): the collectibles you mark found while signed out, added to your account when you sign in</li>
+              <li><strong>Signed-in hint</strong> (<code>sb_has_session</code>): that this browser has a signed-in session, so a page knows to reconnect it as it loads</li>
+              <li><strong>Account display</strong> (<code>sb_user</code>): your user ID, username, avatar link, account role, and whether your account has a password, so the site can show you as signed in while it reconnects</li>
+              <li><strong>Sign-in return page</strong> (<code>oauth_redirect</code>): the page to return to after you sign in with Google or Discord</li>
+              <li><strong>Progress tip</strong> (<code>sb_tip_hand_clear</code>, <code>sb_bulk_done</code>): whether the tip about clearing progress in bulk has been shown, and whether you've used Manage progress, so the tip appears at most once</li>
+            </ul>
+            <p className="mt-2">These are strictly functional. Separately, this site loads Google AdSense, and Google may set or read its own advertising cookies and device identifiers as a third party — see <a href="#advertising" className={linkClass}>Advertising</a> below. You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
           </section>
 
           <section>
@@ -129,7 +137,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: August 26, 2026
+            Last Updated: October 17, 2026
           </div>
         </div>
       </div>
