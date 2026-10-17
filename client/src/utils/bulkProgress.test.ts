@@ -201,7 +201,10 @@ describe('counted copy', () => {
     expect(BULK_COPY.dialogBodyMarkFound(12, '12', allNgPlus, false)).toBe("All 12 NG+ collectibles you haven't found will be marked found.")
     expect(BULK_COPY.successMarkFound(738, '738', all)).toBe('Marked 738 collectibles as found.')
     expect(BULK_COPY.successMarkFound(12, '12', allNgPlus)).toBe('Marked 12 NG+ collectibles as found.')
-    expect(BULK_COPY.successClear(1, '1', allNgPlus)).toBe('Cleared 1 NG+ collectible across the whole game.')
+    // The clear toast reads as the mark one does.
+    expect(BULK_COPY.successClear(340, '340', all)).toBe('Cleared 340 collectibles.')
+    expect(BULK_COPY.successClear(12, '12', allNgPlus)).toBe('Cleared 12 NG+ collectibles.')
+    expect(BULK_COPY.successClear(1, '1', allNgPlus)).toBe('Cleared 1 NG+ collectible.')
     expect(BULK_COPY.nothingToClear(all)).toBe('Nothing is marked found yet.')
     expect(BULK_COPY.nothingToClear(allNgPlus)).toBe('Nothing in NG+ is marked found yet.')
     expect(BULK_COPY.nothingToMark(allNgPlus)).toBe('Every NG+ collectible is already marked found.')

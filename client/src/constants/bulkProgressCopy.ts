@@ -18,8 +18,6 @@ const scopeName = (scope: Scope) => `${scope.label}${cycleSuffix(scope.cycle)}`
 // collectibles you've found", and for one, "The 1 collectible you've found".
 const allOf = (n: number, formatted: string, cycle: string | undefined, which: string) =>
   `${n === 1 ? 'The' : 'All'} ${counted(n, formatted, cycle)} ${which}`
-const acrossGame = (n: number, formatted: string, cycle?: string) =>
-  `${counted(n, formatted, cycle)} across the whole game`
 // Only a mixed scope loses something: when all of it is in one state, the
 // opposite action puts it back exactly.
 const undoNote = (mixed: boolean) => (mixed ? " This can't be undone." : '')
@@ -78,7 +76,7 @@ export const BULK_COPY = {
   applyTimeout: 'This is taking too long. It may still save, so check your progress in a moment.',
   successClear: (n: number, formatted: string, scope: Scope) =>
     scope.everything
-      ? `Cleared ${acrossGame(n, formatted, scope.cycle)}.`
+      ? `Cleared ${counted(n, formatted, scope.cycle)}.`
       : `Cleared ${counted(n, formatted)} from ${scopeName(scope)}.`,
   successMarkFound: (n: number, formatted: string, scope: Scope) =>
     scope.everything
