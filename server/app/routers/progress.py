@@ -245,6 +245,26 @@ async def _require_collectible(db: AsyncSession, collectible_id: int) -> None:
         raise HTTPException(status_code=404, detail="Collectible not found")
 
 
+def _put_stmt(user_id: int, collectible_id: int):
+    # Postgres takes a nextval() for a candidate row before it checks conflicts, so a
+    # plain INSERT would burn a sequence value on every re-assert of a row the user
+    # already has. The NOT EXISTS forms no row then; ON CONFLICT stays as the guard
+    # for a tick committed concurrently.
+    return (
+        pg_insert(UserProgress)
+        .from_select(
+            ["user_id", "collectible_id"],
+            select(literal(user_id, Integer), literal(collectible_id, Integer))
+            .where(~exists().where(
+                UserProgress.user_id == user_id,
+                UserProgress.collectible_id == collectible_id,
+            )),
+        )
+        .on_conflict_do_nothing(constraint="uq_user_collectible")
+        .returning(UserProgress.collectible_id)
+    )
+
+
 @router.put("/{collectible_id}", response_model=ProgressWriteResponse, status_code=status.HTTP_200_OK)
 @limiter.limit(PROGRESS_WRITE_RATE_LIMIT)
 async def set_progress(
@@ -258,14 +278,11 @@ async def set_progress(
     toggle deleted rows when a stale tab re-sent completions)."""
     await _require_collectible(db, collectible_id)
 
-    result = await db.execute(
-        pg_insert(UserProgress)
-        .values(user_id=current_user.id, collectible_id=collectible_id)
-        .on_conflict_do_nothing(constraint="uq_user_collectible")
-    )
+    inserted = (await db.execute(_put_stmt(current_user.id, collectible_id))).scalars().all()
     await db.commit()
-    # rowcount 0 means the ON CONFLICT path fired: the row already existed.
-    write_status = "added" if result.rowcount else "already_complete"
+    # No row back means it already existed: the NOT EXISTS (or, in a race, the
+    # ON CONFLICT) formed nothing.
+    write_status = "added" if inserted else "already_complete"
     return {"status": write_status, "collectible_id": collectible_id}
 
 

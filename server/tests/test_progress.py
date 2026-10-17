@@ -216,6 +216,36 @@ async def test_put_nonexistent_collectible_returns_404(user_client):
     assert r.status_code == 404
 
 
+def test_put_skips_a_held_row_before_it_takes_a_sequence_value():
+    # Postgres takes a nextval() for a candidate row before it checks conflicts, so
+    # the NOT EXISTS must sit in the SELECT. SQLite drops the constraint name, so the
+    # Postgres compile is what pins it.
+    from sqlalchemy.dialects import postgresql
+    from app.routers.progress import _put_stmt
+
+    sql = " ".join(str(_put_stmt(1, 2).compile(dialect=postgresql.dialect())).split())
+    assert sql.startswith("INSERT INTO user_progress (user_id, collectible_id) SELECT ")
+    assert (
+        " WHERE NOT (EXISTS (SELECT * FROM user_progress WHERE user_progress.user_id = %(user_id_1)s"
+        " AND user_progress.collectible_id = %(collectible_id_1)s))"
+    ) in sql
+    assert sql.endswith(
+        " ON CONFLICT ON CONSTRAINT uq_user_collectible DO NOTHING RETURNING user_progress.collectible_id"
+    )
+
+
+async def test_put_skips_only_the_row_itself(user_client, second_user_client, progress_db_session):
+    # The NOT EXISTS is per user and per collectible: another of the user's rows, or
+    # another user's row for the same collectible, must not stop the insert.
+    await _seed_collectible(progress_db_session, collectible_id=1)
+    await _seed_collectible(progress_db_session, collectible_id=2)
+
+    assert (await user_client.put("/api/progress/1")).json()["status"] == "added"
+    assert (await user_client.put("/api/progress/2")).json()["status"] == "added"
+    assert sorted((await user_client.get("/api/progress")).json()) == [1, 2]
+    assert (await second_user_client.put("/api/progress/1")).json()["status"] == "added"
+
+
 # ── DELETE /api/progress/{collectible_id} (idempotent un-complete) ────────────
 
 async def test_delete_unauthenticated_returns_401(progress_client):
