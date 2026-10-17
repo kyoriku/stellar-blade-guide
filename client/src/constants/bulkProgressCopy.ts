@@ -82,4 +82,8 @@ export const BULK_COPY = {
     scope.everything
       ? `Marked ${counted(n, formatted, scope.cycle)} as found.`
       : `Marked ${counted(n, formatted)} from ${scopeName(scope)} as found.`,
+  // The one-time tip for someone clearing their progress one checkmark at a time
+  // (hooks/useHandClearTip.ts), naming the level or type the page shows.
+  handClearTip: (label: string) => `Clearing your progress? You can clear all of ${label} at once.`,
+  handClearAction: 'Open Manage progress',
 } as const

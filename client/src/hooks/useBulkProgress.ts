@@ -6,6 +6,7 @@ import { API_BASE_URL, ApiError, readError } from '../services/api'
 import type { BulkPreviewResponse, BulkProgressRequest, BulkProgressResponse } from '../services/api'
 import { BULK_COPY } from '../constants/bulkProgressCopy'
 import { GuestSyncPendingError, wasRefused } from '../utils/bulkProgress'
+import { markBulkDone } from '../utils/handClearTip'
 
 // Under ['progress'], so one useIsMutating({ mutationKey: ['progress'] }) counts the
 // per-item writes and this one; not under ['progress', 'write'], whose "only me is
@@ -84,9 +85,12 @@ export function useBulkProgress() {
       if (!res.ok) throw new ApiError(res.status, await readError(res, BULK_COPY.applyError))
       return (await res.json()) as BulkProgressResponse
     },
-    // These callbacks may only cancel and invalidate: a setQueryData(['progress'])
-    // here would recreate the query after a sign-out's clearUserQueries and paint
-    // one account's progress for the next.
+    // These callbacks never set query data: a setQueryData(['progress']) here
+    // would recreate the query after a sign-out's clearUserQueries and paint one
+    // account's progress for the next.
+    // Config-level, so it runs even if the card unmounted mid-write. A browser
+    // that has used the tool never needs the hand-clear tip.
+    onSuccess: () => markBulkDone(() => window.localStorage),
     onSettled: async (_data, error, { req, scopeIds }) => {
       // On failure too, unless the server refused outright: a request that timed
       // out or lost its response may still have committed.

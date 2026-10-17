@@ -16,6 +16,7 @@ import { LEVEL_SEO, isLevelSlug } from '../constants/levelSeo'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
+import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
@@ -44,6 +45,14 @@ function LevelDetailPage() {
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const { prefetchLevel } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
+  // Manage progress names a level by its exact name, which only the nav holds.
+  const tipLevel = LEVELS.find(level => level.slug === levelName)
+  const noteToggle = useHandClearTip(tipLevel ? `level:${tipLevel.name}` : null, tipLevel?.name ?? '')
+  // Stable like toggle itself, so memo(CollectibleSection) still bails out.
+  const toggleProgress = useCallback((id: number) => {
+    const found = toggle(id)
+    if (found !== undefined) noteToggle(id, found)
+  }, [toggle, noteToggle])
   const resetActiveSection = () => setActiveSection('');
 
   const prevLevelName = useRef(levelName);
@@ -390,7 +399,7 @@ function LevelDetailPage() {
                   priorityId={priorityId}
                   isCompleted={isCompleted}
                   isToggling={isToggling}
-                  onToggleProgress={toggle}
+                  onToggleProgress={toggleProgress}
                 />
               );
             })}

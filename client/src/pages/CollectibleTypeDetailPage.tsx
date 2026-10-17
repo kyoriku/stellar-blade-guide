@@ -18,6 +18,7 @@ import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
 import { useProgress } from '../hooks/useProgress'
+import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -70,6 +71,17 @@ function CollectibleTypeDetailPage() {
   const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
   const { prefetchCollectiblesByType } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
+  // Manage progress names a type by its slug, which this page's URL already is.
+  const navTypes: readonly { slug: string; name: string }[] = category === 'upgrades' ? UPGRADES
+    : category === 'cosmetics' ? COSMETICS
+      : COLLECTIBLES
+  const tipType = navTypes.find(type => type.slug === typeName)
+  const noteToggle = useHandClearTip(tipType ? `type:${tipType.slug}` : null, tipType?.name ?? '')
+  // Stable like toggle itself, so memo(CollectibleSection) still bails out.
+  const toggleProgress = useCallback((id: number) => {
+    const found = toggle(id)
+    if (found !== undefined) noteToggle(id, found)
+  }, [toggle, noteToggle])
 
   // Find current and next type - use the appropriate array based on category
   const typeArray = category === 'upgrades' ? upgradeTypes
@@ -651,7 +663,7 @@ function CollectibleTypeDetailPage() {
                       hideTypeBadge
                       isCompleted={isCompleted}
                       isToggling={isToggling}
-                      onToggleProgress={toggle}
+                      onToggleProgress={toggleProgress}
                     />
                   );
                 })}

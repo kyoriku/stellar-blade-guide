@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useIsMutating } from '@tanstack/react-query'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, ListChecks } from 'lucide-react'
 import BulkProgressDialog from './BulkProgressDialog'
 import BusyLabel from './BusyLabel'
@@ -11,6 +12,7 @@ import type { Scope } from '../constants/bulkProgressCopy'
 import { cycleLabel } from '../constants/cycleLabels'
 import { buildRequest, bulkErrorMessage, pickableCycles, scopeForCopy, scopeGroups, scopeOffered, soleCycle } from '../utils/bulkProgress'
 import { CYCLE_NAMES } from '../utils/progressRows'
+import { scrollToElement } from '../utils/scrollToElement'
 import type { BulkAction, BulkCycle, BulkPreviewResponse, BulkProgressRequest, UserStatsResponse } from '../services/api'
 
 // What the dialog shows is frozen at the press, and Confirm sends exactly this
@@ -39,6 +41,8 @@ export default function BulkProgressSection({ stats }: { stats?: UserStatsRespon
   const [writeError, setWriteError] = useState<string | null>(null)
 
   const { preview, apply } = useBulkProgress()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { isAuthenticated, accessToken } = useAuth()
   const { showToast } = useToast()
   // Per-item writes count too: the refresh after a bulk write would overwrite the
@@ -80,6 +84,35 @@ export default function BulkProgressSection({ stats }: { stats?: UserStatsRespon
   const selectRef = useRef<HTMLSelectElement>(null)
   const cyclesRef = useRef<HTMLFieldSetElement>(null)
   const focusedPill = useRef<HTMLInputElement | null>(null)
+  const sectionRef = useRef<HTMLElement>(null)
+  const toggleRef = useRef<HTMLButtonElement>(null)
+  // Counts arrivals from the hand-clear tip, so the scroll can wait for the open card.
+  const [arrivals, setArrivals] = useState(0)
+
+  // The hand-clear tip's way in (hooks/useHandClearTip.ts) is router state, never the
+  // URL, so nothing outside the site can prefill the card. It is handled on the
+  // navigation, not the mount, so a click while this page is already open still
+  // lands, and spent at once, so Back, Forward or a reload doesn't arrive again.
+  const arrival = (location.state as { manageProgress?: unknown } | null)?.manageProgress
+  useLayoutEffect(() => {
+    if (typeof arrival !== 'string') return
+    setOpen(true)
+    // A count in flight keeps its pick: that request is already frozen.
+    if (counting === null) {
+      setScopeValue(arrival)
+      setCycle('')
+    }
+    setArrivals(n => n + 1)
+    void navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
+  }, [arrival, counting, navigate, location.pathname, location.search, location.hash])
+
+  // After the opened card has rendered, so the scroll allows for its full height.
+  // Focus follows, since the reader asked to come here.
+  useLayoutEffect(() => {
+    if (arrivals === 0 || !sectionRef.current) return
+    scrollToElement(sectionRef.current)
+    toggleRef.current?.focus({ preventScroll: true })
+  }, [arrivals])
 
   // Disabling the pill under focus (stats arriving after a pick) drops focus to
   // <body>, and React never reports that blur. Hand focus to the row's checked
@@ -180,11 +213,12 @@ export default function BulkProgressSection({ stats }: { stats?: UserStatsRespon
   const actionButton = 'flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer aria-busy:cursor-progress aria-disabled:cursor-not-allowed'
 
   return (
-    <section aria-labelledby={headingId} className="bg-secondary border border-gray-800 rounded-xl">
+    <section ref={sectionRef} aria-labelledby={headingId} className="scroll-anchor bg-secondary border border-gray-800 rounded-xl">
       {/* The toggle sits inside the heading, so the card still turns up in
           heading navigation. */}
       <h2 id={headingId} className="text-lg font-semibold text-gray-100">
         <button
+          ref={toggleRef}
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
