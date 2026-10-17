@@ -200,7 +200,7 @@ export default function ProgressPage() {
                       </p>
                       {liveCompleted === 0 && (
                         <p className="text-sm text-gray-400 mt-2">
-                          Mark collectibles as found on any level or type pages to start tracking.
+                          Mark collectibles as found on any level or type page to start tracking.
                         </p>
                       )}
                     </div>
