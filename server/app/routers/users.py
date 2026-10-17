@@ -178,6 +178,23 @@ async def get_my_stats(
         .group_by(Collectible.cycle)
     )).all()
 
+    # The cycles each level and type holds, read from the catalog so a new item
+    # in a new cycle shows up without a client release.
+    level_cycle_rows = (await db.execute(
+        select(Level.name, Collectible.cycle)
+        .select_from(Level)
+        .join(Location, Location.level_id == Level.id)
+        .join(Collectible, Collectible.location_id == Location.id)
+        .distinct()
+    )).all()
+    type_cycle_rows = (await db.execute(
+        select(CollectibleType.slug, Collectible.cycle)
+        .select_from(CollectibleType)
+        .join(collectible_type_mappings, collectible_type_mappings.c.type_id == CollectibleType.id)
+        .join(Collectible, Collectible.id == collectible_type_mappings.c.collectible_id)
+        .distinct()
+    )).all()
+
     # Category rollups count each collectible once per category group: a
     # dual-typed item's two types share a group, so aggregating over the raw
     # mappings (like the per-type query) would double-count it. DISTINCT
@@ -222,6 +239,18 @@ async def get_my_stats(
     cycle_rank = {name: i for i, name in enumerate(CYCLE_DISPLAY_ORDER)}
     cycle_rows = sorted(cycle_rows, key=lambda r: cycle_rank.get(r.cycle, len(CYCLE_DISPLAY_ORDER)))
 
+    def cycles_by(rows) -> dict[str, list[str]]:
+        found: dict[str, set[str]] = {}
+        for key, cycle in rows:
+            found.setdefault(key, set()).add(cycle)
+        return {
+            key: sorted(cycles, key=lambda c: (cycle_rank.get(c, len(CYCLE_DISPLAY_ORDER)), c))
+            for key, cycles in found.items()
+        }
+
+    level_cycles = cycles_by(level_cycle_rows)
+    type_cycles = cycles_by(type_cycle_rows)
+
     # Mirrors the public read path (is_deleted + is_approved filters), so the
     # count equals comments the user can actually see rendered.
     comments_posted = (await db.execute(
@@ -247,6 +276,7 @@ async def get_my_stats(
                 "category": r.category,
                 "completed": r.completed,
                 "total": r.total,
+                "cycles": type_cycles.get(r.slug, []),
             }
             for r in type_rows
         ],
@@ -256,6 +286,7 @@ async def get_my_stats(
                 "order": r.display_order,
                 "completed": r.completed,
                 "total": r.total,
+                "cycles": level_cycles.get(r.name, []),
             }
             for r in level_rows
         ],

@@ -26,6 +26,9 @@ export interface AuthContextValue {
   register: (email: string, username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   refreshToken: () => Promise<string | null>
+  // Settles when this tab's sign-in sync of guest progress has (at once if none is
+  // running). Never rejects.
+  waitForGuestSync: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

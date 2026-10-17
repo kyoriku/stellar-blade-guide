@@ -270,6 +270,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Re-firing after a transient token drop is harmless: the sync is additive
   // and skipped when sb_progress is empty.
   const prevSyncedRef = useRef(false)
+  // The syncs in flight, if any. A bulk clear must not commit before they land: a
+  // sync would arrive afterwards and re-add what was just cleared.
+  const guestSyncRef = useRef<Promise<void> | null>(null)
 
   useEffect(() => {
     const canSync = !!user && accessToken !== null
@@ -281,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (local) {
           const ids = JSON.parse(local) as number[]
           if (ids.length > 0) {
-            fetch(`${API_BASE_URL}/progress/sync`, {
+            const sync: Promise<void> = fetch(`${API_BASE_URL}/progress/sync`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -302,12 +305,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               void queryClient.invalidateQueries({ queryKey: ['progress'] })
               void queryClient.invalidateQueries({ queryKey: ['user-stats'] })
             }).catch(() => showToast("Couldn't sync your saved progress. It's still saved on this device."))
+            // Also waits for any sync still in flight: a token drop and recovery
+            // starts a new one before the last has landed.
+            const tracked: Promise<void> = Promise.all([guestSyncRef.current, sync])
+              .then(() => undefined)
+              .finally(() => {
+                if (guestSyncRef.current === tracked) guestSyncRef.current = null
+              })
+            guestSyncRef.current = tracked
           }
         }
       } catch { /* storage refused or corrupt sb_progress JSON: nothing to sync */ }
     }
     prevSyncedRef.current = canSync
   }, [user, accessToken, showToast, queryClient])
+
+  const waitForGuestSync = useCallback(() => guestSyncRef.current ?? Promise.resolve(), [])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -431,6 +444,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       refreshToken,
+      waitForGuestSync,
     }}>
       {children}
     </AuthContext.Provider>

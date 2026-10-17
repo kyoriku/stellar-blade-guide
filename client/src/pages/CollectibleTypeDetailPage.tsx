@@ -28,6 +28,7 @@ import MobileBackToTop from '../components/MobileBackToTop'
 import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
 import { descriptionPlainText } from '../utils/descriptionText'
+import { cycleLabel } from '../constants/cycleLabels'
 
 // Display order AND allowlist: a subtype missing here (or spelled differently
 // than the DB value) silently never appears as a filter option.
@@ -525,7 +526,7 @@ function CollectibleTypeDetailPage() {
                   <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayTypeName}</h1>
                   <p className="text-gray-300">
                     {(cycleFilter !== 'All' || subtypeFilter !== 'All')
-                      ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName}${cycleFilter !== 'All' ? ` (${cycleFilter})` : ''}${subtypeFilter !== 'All' ? ` (${subtypeFilter})` : ''}`
+                      ? `${filteredTotal} of ${totalCollectibles} ${displayTypeName}${cycleFilter !== 'All' ? ` (${cycleLabel(cycleFilter)})` : ''}${subtypeFilter !== 'All' ? ` (${subtypeFilter})` : ''}`
                       : `${totalCollectibles} ${displayTypeName}`
                     }
                     {completedIds.size > 0 && (() => {
@@ -547,13 +548,13 @@ function CollectibleTypeDetailPage() {
                         <button
                           key={cycle}
                           onClick={() => setCycleFilter(cycle)}
-                          title={`Show ${cycle === 'All' ? 'all' : cycle} ${displayTypeName}`}
+                          title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} ${displayTypeName}`}
                           className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
                             ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
                             : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                             }`}
                         >
-                          {cycle}
+                          {cycleLabel(cycle)}
                         </button>
                       ))}
                     </div>
@@ -653,7 +654,7 @@ function CollectibleTypeDetailPage() {
             {/* Empty state when filter yields no results */}
             {sortedLevelData.length === 0 && cycleFilter !== 'All' && (
               <div className="bg-secondary rounded-lg p-8 border border-zinc-800 text-center">
-                <p className="text-gray-400">No {cycleFilter} {displayTypeName} found.</p>
+                <p className="text-gray-400">No {cycleLabel(cycleFilter)} {displayTypeName} found.</p>
               </div>
             )}
 

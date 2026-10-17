@@ -4,6 +4,7 @@ import ImageGallery from './ImageGallery'
 import TypeBadge from './TypeBadge';
 import { FileText, List } from 'lucide-react'
 import { parseDescription } from '../utils/parseDescription'
+import { cycleLabel } from '../constants/cycleLabels'
 
 // CollectibleTypeDetailPage augments collectibles with presentation-only
 // fields: a pre-deduped anchor slug, and (in A–Z sort) origin level/location.
@@ -93,7 +94,7 @@ function CollectibleSection({
                     ))}
                     {collectible.cycle && collectible.cycle !== 'Base' && (
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-sm font-semibold border whitespace-nowrap ${CYCLE_STYLES[collectible.cycle] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
-                        {collectible.cycle}
+                        {cycleLabel(collectible.cycle)}
                       </span>
                     )}
                     <h2 className="text-xl font-semibold text-gray-100 leading-tight">

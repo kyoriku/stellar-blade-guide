@@ -8,6 +8,7 @@ import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 import QueryError from '../components/QueryError'
 import CompletionRing from '../components/CompletionRing'
+import BulkProgressSection from '../components/BulkProgressSection'
 import { useUserStats, weightedFound } from '../hooks/useUserStats'
 import { useProgress } from '../hooks/useProgress'
 import { usePrefetch } from '../hooks/usePrefetch'
@@ -218,6 +219,25 @@ export default function ProgressPage() {
               </div>
             </section>
 
+            {/* Card order is the Manage progress picker's order (utils/bulkProgress.ts
+                scopeGroups): levels, the three categories, then other sources. */}
+            <SectionCard Icon={MapIcon} title="Levels">
+              <TwoColRows count={lvls.length}>
+                {lvls.map(r => {
+                  const slug = r.slug
+                  return (
+                    <StatRow
+                      key={r.key}
+                      name={r.label}
+                      to={slug ? `/levels/${slug}` : null}
+                      stat={r.stat}
+                      onMouseEnter={slug ? () => void prefetchLevel(slug) : undefined}
+                    />
+                  )
+                })}
+              </TwoColRows>
+            </SectionCard>
+
             {/* Full-width cards, not a card grid: three categories leave an
                 empty cell in two columns, and three columns need a 1062px
                 container, which also packs 21 rows of numbers into one band. */}
@@ -254,23 +274,6 @@ export default function ProgressPage() {
             })}
             {dualTypeFootnote}
 
-            <SectionCard Icon={MapIcon} title="By Level">
-              <TwoColRows count={lvls.length}>
-                {lvls.map(r => {
-                  const slug = r.slug
-                  return (
-                    <StatRow
-                      key={r.key}
-                      name={r.label}
-                      to={slug ? `/levels/${slug}` : null}
-                      stat={r.stat}
-                      onMouseEnter={slug ? () => void prefetchLevel(slug) : undefined}
-                    />
-                  )
-                })}
-              </TwoColRows>
-            </SectionCard>
-
             <SectionCard Icon={CircleEllipsis} title="Other Sources">
               <TwoColRows count={nonLvls.length}>
                 {nonLvls.map(r => (
@@ -279,7 +282,7 @@ export default function ProgressPage() {
               </TwoColRows>
             </SectionCard>
 
-            <SectionCard Icon={Repeat} title="By Cycle">
+            <SectionCard Icon={Repeat} title="Cycles">
               <TwoColRows count={cycs.length}>
                 {cycs.map(r => (
                   <StatRow key={r.key} name={r.label} to={null} stat={r.stat} />
@@ -288,6 +291,10 @@ export default function ProgressPage() {
             </SectionCard>
           </>
         )}
+
+        {/* Outside the ternary: a stats error, including the refetch right after a
+            bulk write, must not take the card, or a dialog still open on it, with it. */}
+        <BulkProgressSection stats={stats} />
       </div>
     </div>
   )

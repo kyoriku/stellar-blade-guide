@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { BULK_COPY } from '../../client/src/constants/bulkProgressCopy';
 
 let fx: Fixtures;
 
@@ -77,6 +78,13 @@ test.describe('authenticated stats', () => {
 
     await gotoProgressAuthed(page);
     await expect(page.getByText(/^1 of [\d.,\s]+ collectibles found$/)).toBeVisible();
+  });
+
+  test("cards follow the Manage progress picker's order", async ({ page }) => {
+    await gotoProgressAuthed(page);
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+      'Levels', 'Collectibles', 'Upgrades', 'Cosmetics', 'Other Sources', 'Cycles', BULK_COPY.heading,
+    ]);
   });
 });
 

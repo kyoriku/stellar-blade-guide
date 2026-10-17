@@ -23,6 +23,7 @@ const t = (slug: string, name: string, category = 'collectibles'): TypeStat => (
   category,
   completed: 1,
   total: 2,
+  cycles: ['Base'],
 })
 
 describe('pct', () => {
@@ -75,7 +76,7 @@ describe('typeRows', () => {
   })
 })
 
-const lvl = (name: string, order = 1): LevelStat => ({ name, order, completed: 0, total: 1 })
+const lvl = (name: string, order = 1): LevelStat => ({ name, order, completed: 0, total: 1, cycles: ['Base'] })
 
 describe('levelRows / nonLevelRows', () => {
   it('lists exactly the 10 nav levels while loading, all linked', () => {
@@ -84,13 +85,13 @@ describe('levelRows / nonLevelRows', () => {
     expect(rows.every(r => r.slug !== null && r.stat === null)).toBe(true)
   })
 
-  it('routes Default and Boss Challenge to the non-level section, never By Level', () => {
+  it('routes Default and Boss Challenge to the non-level section, never Levels', () => {
     const server = [lvl('Eidos 7'), lvl('Default'), lvl('Boss Challenge')]
     expect(levelRows(server).map(r => r.key)).toEqual(['Eidos 7'])
     expect(nonLevelRows(server).map(r => r.key)).toEqual(['Default', 'Boss Challenge'])
   })
 
-  it('appends unknown server levels to By Level', () => {
+  it('appends unknown server levels to Levels', () => {
     const rows = levelRows([lvl('Eidos 7'), lvl('New DLC Level')])
     expect(rows.map(r => r.key)).toEqual(['Eidos 7', 'New DLC Level'])
     expect(rows[1].slug).toBeNull()
@@ -108,15 +109,19 @@ const cyc = (name: string): CycleStat => ({ name, completed: 0, total: 1 })
 describe('cycleRows', () => {
   it('shows the four cycles in fixed order while loading', () => {
     expect(cycleRows(undefined).map(r => r.key)).toEqual(CYCLE_NAMES)
+    // Keys stay stored values; the labels are what the card shows.
+    expect(cycleRows(undefined).map(r => r.label)).toEqual(['NG', 'NG+', 'NG++', 'DLC'])
   })
 
   it('orders loaded cycles by the fixed ranking regardless of response order', () => {
     const rows = cycleRows([cyc('DLC'), cyc('Base'), cyc('NG+')])
     expect(rows.map(r => r.key)).toEqual(['Base', 'NG+', 'DLC'])
+    expect(rows.map(r => r.label)).toEqual(['NG', 'NG+', 'DLC'])
   })
 
   it('appends unknown cycle names', () => {
     const rows = cycleRows([cyc('Base'), cyc('NG+++')])
     expect(rows.map(r => r.key)).toEqual(['Base', 'NG+++'])
+    expect(rows.map(r => r.label)).toEqual(['NG', 'NG+++'])
   })
 })
