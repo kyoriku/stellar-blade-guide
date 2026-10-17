@@ -167,24 +167,56 @@ describe('errors', () => {
 })
 
 describe('counted copy', () => {
-  const eidos = { label: 'Eidos 7', everything: false, cycle: 'NG+' }
+  const eidos = { label: 'Eidos 7', everything: false }
+  const eidosNgPlus = { ...eidos, cycle: 'NG+' }
   const all = { label: 'Everything', everything: true }
+  const allNgPlus = { ...all, cycle: 'NG+' }
+
+  it('names a scope with "from"', () => {
+    expect(BULK_COPY.nothingToClear(eidos)).toBe('Nothing from Eidos 7 is marked found.')
+    expect(BULK_COPY.nothingToMark(eidos)).toBe('Everything from Eidos 7 is already marked found.')
+    expect(BULK_COPY.dialogBodyClear(12, '12', eidos, false)).toBe('12 collectibles from Eidos 7 will be marked not found.')
+    expect(BULK_COPY.dialogBodyMarkFound(12, '12', eidos, false)).toBe('12 collectibles from Eidos 7 will be marked found.')
+    expect(BULK_COPY.successClear(12, '12', eidos)).toBe('Cleared 12 collectibles from Eidos 7.')
+    expect(BULK_COPY.successMarkFound(12, '12', eidos)).toBe('Marked 12 collectibles from Eidos 7 as found.')
+    // A picked cycle still follows the scope's name.
+    expect(BULK_COPY.successMarkFound(2, '2', eidosNgPlus)).toBe('Marked 2 collectibles from Eidos 7 (NG+) as found.')
+  })
 
   it('uses the singular for one', () => {
-    expect(BULK_COPY.dialogBodyClear(1, '1', eidos, false)).toBe('1 collectible in Eidos 7 (NG+) will be marked not found.')
-    expect(BULK_COPY.successMarkFound(2, '2', eidos)).toBe('Marked 2 collectibles in Eidos 7 (NG+) as found.')
+    expect(BULK_COPY.dialogBodyClear(1, '1', eidosNgPlus, false)).toBe('1 collectible from Eidos 7 (NG+) will be marked not found.')
+    expect(BULK_COPY.successClear(1, '1', eidos)).toBe('Cleared 1 collectible from Eidos 7.')
   })
 
   it("says it can't be undone only when the scope is mixed", () => {
-    expect(BULK_COPY.dialogBodyClear(2, '2', eidos, true)).toBe("2 collectibles in Eidos 7 (NG+) will be marked not found. This can't be undone.")
-    expect(BULK_COPY.dialogBodyMarkFound(2, '2', eidos, false)).toBe('2 collectibles in Eidos 7 (NG+) will be marked found.')
+    expect(BULK_COPY.dialogBodyClear(2, '2', eidosNgPlus, true)).toBe("2 collectibles from Eidos 7 (NG+) will be marked not found. This can't be undone.")
+    expect(BULK_COPY.dialogBodyMarkFound(2, '2', eidosNgPlus, false)).toBe('2 collectibles from Eidos 7 (NG+) will be marked found.')
+    expect(BULK_COPY.dialogBodyMarkFound(1077, '1,077', all, true)).toBe("All 1,077 collectibles you haven't found will be marked found. This can't be undone.")
+    expect(BULK_COPY.dialogBodyClear(340, '340', all, false)).toBe("All 340 collectibles you've found will be marked not found.")
   })
 
-  it('gives everything its own wording, and counts only what changes', () => {
-    expect(BULK_COPY.dialogBodyMarkFound(1077, '1,077', all, true)).toBe("1,077 collectibles across the whole game will be marked found. This can't be undone.")
-    expect(BULK_COPY.successClear(1, '1', { ...all, cycle: 'NG+' })).toBe('Cleared 1 NG+ collectible across the whole game.')
-    expect(BULK_COPY.nothingToMark({ ...all, cycle: 'NG+' })).toBe('Every NG+ collectible is already marked found.')
-    expect(BULK_COPY.nothingToClear(all)).toBe('Nothing is marked found.')
+  it('gives everything its own wording, which names which ones change', () => {
+    expect(BULK_COPY.dialogBodyClear(12, '12', allNgPlus, false)).toBe("All 12 NG+ collectibles you've found will be marked not found.")
+    expect(BULK_COPY.dialogBodyMarkFound(738, '738', all, false)).toBe("All 738 collectibles you haven't found will be marked found.")
+    expect(BULK_COPY.dialogBodyMarkFound(12, '12', allNgPlus, false)).toBe("All 12 NG+ collectibles you haven't found will be marked found.")
+    expect(BULK_COPY.successMarkFound(738, '738', all)).toBe('Marked 738 collectibles as found.')
+    expect(BULK_COPY.successMarkFound(12, '12', allNgPlus)).toBe('Marked 12 NG+ collectibles as found.')
+    expect(BULK_COPY.successClear(1, '1', allNgPlus)).toBe('Cleared 1 NG+ collectible across the whole game.')
+    expect(BULK_COPY.nothingToClear(all)).toBe('Nothing is marked found yet.')
+    expect(BULK_COPY.nothingToClear(allNgPlus)).toBe('Nothing in NG+ is marked found yet.')
+    expect(BULK_COPY.nothingToMark(allNgPlus)).toBe('Every NG+ collectible is already marked found.')
     expect(BULK_COPY.emptyScope({ ...all, cycle: 'DLC' })).toBe('There are no DLC collectibles.')
+  })
+
+  it('never says "All 1"', () => {
+    expect(BULK_COPY.dialogBodyClear(1, '1', all, false)).toBe("The 1 collectible you've found will be marked not found.")
+    expect(BULK_COPY.dialogBodyMarkFound(1, '1', allNgPlus, false)).toBe("The 1 NG+ collectible you haven't found will be marked found.")
+    expect(BULK_COPY.successMarkFound(1, '1', all)).toBe('Marked 1 collectible as found.')
+  })
+
+  it('words the errors as the copy pass set them', () => {
+    expect(BULK_COPY.previewError).toBe("Couldn't check your progress. Please try again.")
+    expect(BULK_COPY.previewTimeout).toBe('That took too long. Please try again.')
+    expect(BULK_COPY.applyTimeout).toBe('This is taking too long. It may still save, so check your progress in a moment.')
   })
 })
