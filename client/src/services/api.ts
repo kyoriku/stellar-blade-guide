@@ -168,6 +168,29 @@ export interface ProgressWriteResponse {
   collectible_id: number
 }
 
+// Mirrors BulkProgressRequest / BulkPreviewResponse / BulkProgressResponse in
+// server/app/schemas/progress.py. The target is a union so a request can only
+// name the one target its scope takes; the server rejects any other shape.
+export type BulkAction = 'clear' | 'mark_found'
+export type BulkCycle = 'Base' | 'NG+' | 'NG++' | 'DLC'
+export type BulkTarget =
+  | { scope: 'everything' }
+  | { scope: 'level'; level: string } // a level's exact name
+  | { scope: 'type'; type: string } // a type's slug
+export type BulkProgressRequest = BulkTarget & { action: BulkAction; cycle?: BulkCycle }
+
+export interface BulkPreviewResponse {
+  entries: number
+  quantity: number // the Progress page's unit: a found ×N entry counts N
+  scope_entries: number
+  scope_ids: number[]
+}
+
+export interface BulkProgressResponse {
+  entries: number
+  quantity: number
+}
+
 // Mirrors UserStatsResponse in server/app/schemas/users.py
 export interface CategoryStat {
   category: string
@@ -181,6 +204,7 @@ export interface TypeStat {
   category: string
   completed: number
   total: number
+  cycles: string[] // the cycles its collectibles span, in display order
 }
 
 export interface LevelStat {
@@ -188,6 +212,7 @@ export interface LevelStat {
   order: number
   completed: number
   total: number
+  cycles: string[]
 }
 
 export interface CycleStat {
