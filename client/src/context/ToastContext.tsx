@@ -3,29 +3,50 @@ import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
-// Lightweight, app-wide toast. Used for background/optimistic failures that have
-// no inline home (progress toggle/load, guest-sync, walkthrough nav) and for
-// reply notifications. Self-dismissing; never blocks the UI.
+// Lightweight, app-wide toast for feedback that has no inline home: background and
+// optimistic failures (progress toggle and load, guest sync, walkthrough nav) and the
+// bulk progress card's results. Self-dismissing; never blocks the UI.
 //
-// `onClick` makes a toast actionable without coupling this provider to the
-// router: the provider sits outside <BrowserRouter>, so callers (which are
-// inside Router) pass a navigate callback rather than a route string.
+// The one toast that isn't feedback is the hand-clear tip (hooks/useHandClearTip.ts),
+// and it should stay the only one. It alone uses `action`, a link-styled button after
+// the message, and `duration: Infinity`, which leaves a toast up until its action or
+// Dismiss is pressed: it shows once per browser, to someone whose eyes are on a list.
+//
+// `onClick` and `action` keep this provider free of the router: it sits outside
+// <BrowserRouter>, so callers (which are inside Router) pass a navigate callback
+// rather than a route string.
+
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
 
 interface Toast {
   id: number
   message: string
   variant: 'error' | 'info'
   onClick?: () => void
+  action?: ToastAction
   duration: number
 }
 
+interface ToastOptions {
+  variant?: 'error' | 'info'
+  onClick?: () => void
+  action?: ToastAction
+  // Milliseconds on screen; Infinity for no timer.
+  duration?: number
+}
+
 interface ToastContextValue {
-  showToast: (message: string, opts?: { variant?: 'error' | 'info'; onClick?: () => void; duration?: number }) => void
+  showToast: (message: string, opts?: ToastOptions) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
 
-const TOAST_DURATION = 5000
+// How long a toast stays, by variant. An error stays longer, since it usually
+// asks for something to be done.
+const TOAST_DURATIONS = { info: 6000, error: 10000 } as const
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -38,8 +59,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
-  // Arm (or re-arm) a toast's auto-dismiss timer.
+  // Arm (or re-arm) a toast's auto-dismiss timer. Infinity arms none: setTimeout
+  // would run an Infinity delay at once.
   const scheduleDismiss = useCallback((id: number, duration: number) => {
+    if (duration === Infinity) return
     timers.current.set(id, setTimeout(() => dismiss(id), duration))
   }, [dismiss])
 
@@ -49,14 +72,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     if (timer) { clearTimeout(timer); timers.current.delete(id) }
   }, [])
 
-  const showToast = useCallback((message: string, opts?: { variant?: 'error' | 'info'; onClick?: () => void; duration?: number }) => {
+  const showToast = useCallback((message: string, opts?: ToastOptions) => {
     const id = nextId.current++
     const variant = opts?.variant ?? 'error'
-    const duration = opts?.duration ?? TOAST_DURATION
+    const duration = opts?.duration ?? TOAST_DURATIONS[variant]
     // Dedupe: never stack an identical message that's already visible (also
     // collapses StrictMode double-fires, since queued functional updates see
     // each other's results).
-    setToasts(prev => (prev.some(t => t.message === message) ? prev : [...prev, { id, message, variant, onClick: opts?.onClick, duration }]))
+    setToasts(prev => (prev.some(t => t.message === message) ? prev : [...prev, { id, message, variant, onClick: opts?.onClick, action: opts?.action, duration }]))
     scheduleDismiss(id, duration)
   }, [scheduleDismiss])
 
@@ -72,6 +95,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           className="fixed bottom-4 left-4 right-4 sm:left-auto sm:w-full sm:max-w-sm z-100 flex flex-col gap-2 pointer-events-none"
           role="status"
           aria-live="polite"
+          // A status region is atomic by default, so each new toast would be read
+          // after every toast still up, and the tip stays up until dismissed.
+          aria-atomic="false"
         >
           {toasts.map(t => (
             <div
@@ -88,7 +114,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   {t.message}
                 </button>
               ) : (
-                <span className="flex-1">{t.message}</span>
+                <span className="flex-1">
+                  {t.message}
+                  {t.action && (
+                    <>
+                      {' '}
+                      <button
+                        type="button"
+                        onClick={() => { t.action!.onClick(); dismiss(t.id) }}
+                        className="text-cyan-400 underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 cursor-pointer"
+                      >
+                        {t.action.label}
+                      </button>
+                    </>
+                  )}
+                </span>
               )}
               <button
                 onClick={() => dismiss(t.id)}

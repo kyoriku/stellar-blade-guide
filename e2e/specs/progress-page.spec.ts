@@ -67,6 +67,9 @@ test.describe('authenticated stats', () => {
   test('fresh user sees zero completion in the hero', async ({ page }) => {
     await gotoProgressAuthed(page);
     await expect(page.getByText(/^0 of [\d.,\s]+ collectibles found$/)).toBeVisible();
+    // Things are marked on level and type pages; a category (Collectibles, Upgrades,
+    // Cosmetics) is a group of types.
+    await expect(page.getByText('Mark collectibles as found on any level or type page to start tracking.', { exact: true })).toBeVisible();
   });
 
   test('a completed collectible is reflected in the hero', async ({ page }) => {

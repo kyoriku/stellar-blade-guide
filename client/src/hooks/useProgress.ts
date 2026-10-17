@@ -216,7 +216,9 @@ export function useProgress() {
   // (isPending, status) would silently reintroduce the problem.
   const { mutate: writeProgress } = writeMutation
 
-  const toggle = useCallback((collectibleId: number) => {
+  // Returns the click's intent for a signed-in user (true: mark found), for the
+  // hand-clear tip, and nothing for a guest, whose click never reaches the server.
+  const toggle = useCallback((collectibleId: number): boolean | undefined => {
     if (isAuthenticated) {
       // Intent is read from the query cache (not render state) at click time:
       // earlier optimistic writes have already landed there, so rapid clicks
@@ -226,6 +228,7 @@ export function useProgress() {
       const desired = !current.includes(collectibleId)
       setPendingIds(prev => new Set(prev).add(collectibleId))
       writeProgress({ collectibleId, desired })
+      return desired
     } else {
       setGuestIds(prev => {
         // Intent from what this instance shows, applied to what storage holds now:

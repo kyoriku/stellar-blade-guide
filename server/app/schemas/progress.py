@@ -49,7 +49,7 @@ class BulkProgressRequest(BaseModel):
     @classmethod
     def printable(cls, v, info):
         # Postgres refuses a NUL in a text parameter, so a control character would
-        # be a 500 there instead of the 422 any other unknown name gets.
+        # fail the lookup instead of getting the 422 any other unknown name gets.
         if v is not None and not v.isprintable():
             raise ValueError(f"{info.field_name} must be printable text")
         return v

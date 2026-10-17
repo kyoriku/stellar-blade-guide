@@ -13,6 +13,7 @@ from app.models.users import User
 from app.core.auth import get_current_user
 from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RESET
+from app.core.ids import is_row_id
 from app.schemas.comments import CreateCommentRequest, UpdateCommentRequest
 from app.services.comments import _moderate_content, comment_to_dict
 
@@ -42,6 +43,8 @@ async def get_comments(
     allowed_types = {"walkthrough", "collectible", "level"}
     if content_type not in allowed_types:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid content type")
+    if not is_row_id(content_id):
+        return []  # the answer for content nobody has commented on
 
     Reply = aliased(Comment)
     has_live_replies = sa_exists().where(
@@ -90,6 +93,8 @@ async def create_comment(
 
     # If replying, verify parent exists and belongs to the same content
     if body.parent_id is not None:
+        if not is_row_id(body.parent_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found")
         result = await db.execute(select(Comment).where(Comment.id == body.parent_id))
         parent = result.scalar_one_or_none()
         if not parent:
@@ -164,6 +169,8 @@ async def update_comment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if not is_row_id(comment_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     result = await db.execute(
         select(Comment)
         .options(selectinload(Comment.user))
@@ -206,6 +213,8 @@ async def delete_comment(
     Soft-delete a comment. Body is replaced with [deleted] but replies are preserved.
     Users can delete their own. Moderators and admins can delete any.
     """
+    if not is_row_id(comment_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     result = await db.execute(select(Comment).where(Comment.id == comment_id))
     comment = result.scalar_one_or_none()
 

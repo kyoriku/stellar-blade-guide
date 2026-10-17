@@ -162,8 +162,9 @@ async def log_requests_middleware(request: Request, call_next):
         # auth_fail_reason: set by /refresh on 401 (no-cookie vs revoked-or-expired).
         # reject_reason: set by whichever layer turned the request away: a 404 from
         # origin_check, bot_filter or the SPA catch-all's unknown-/api/ branch, an
-        # OAuth callback's 303 to /login, or forgot-password's cooldown (a 204 that
-        # sends nothing). Either way the access log alone says who answered and why.
+        # OAuth callback's 303 to /login, forgot-password's cooldown (a 204 that
+        # sends nothing), or error_handler's database backstop (a 400). Either way
+        # the access log alone says who answered and why.
         reason = (
             getattr(request.state, "auth_fail_reason", None)
             or getattr(request.state, "reject_reason", None)

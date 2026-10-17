@@ -11,6 +11,7 @@ from app.models.comments import Comment  # noqa: F401 — FK target, keep mapper
 from app.models.collectibles import CollectibleType, Level
 from app.models.walkthroughs import Walkthrough
 from app.core.auth import get_current_user
+from app.core.ids import is_row_id
 from app.core.navigation import url_type
 from app.core.security import limiter
 from app.config.settings import settings
@@ -132,6 +133,8 @@ async def mark_read(
     db: AsyncSession = Depends(get_db),
 ):
     """Mark a single notification read (only the owner's)."""
+    if not is_row_id(notification_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
     result = await db.execute(
         update(Notification)
         .where(Notification.id == notification_id, Notification.user_id == current_user.id)

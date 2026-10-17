@@ -81,7 +81,7 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
         return RedirectResponse(f"{settings.API_PREFIX}/walkthroughs/{canonical}", status_code=308)
 
     if not is_text_segment(walkthrough_type):
-        # The unknown-type 404, before a NUL can reach Postgres as a 500.
+        # The unknown-type 404, before a NUL can reach Postgres, which refuses it.
         raise HTTPException(status_code=404, detail="No walkthroughs found for this type")
 
     normalized_type = _normalize_type(walkthrough_type)
@@ -121,7 +121,7 @@ async def lookup_walkthrough(db: AsyncSession, normalized_type: str, slug: str):
     Shared by the API handler below and the server-side head injection
     (app/seo_head.py) so the query logic exists exactly once.
     """
-    # Nothing stored can match, and a NUL would reach Postgres as a 500.
+    # Nothing stored can match, and Postgres would refuse a NUL.
     if not (is_text_segment(normalized_type) and is_text_segment(slug)):
         return None
 

@@ -355,7 +355,7 @@ async def test_unknown_level_or_type_is_rejected(first_client, all_found, world,
 @pytest.mark.parametrize("path", ["/api/progress/bulk", "/api/progress/bulk/preview"])
 @pytest.mark.parametrize("field", ["level", "type"])
 async def test_a_control_character_is_refused_before_any_lookup(first_client, world, monkeypatch, path, field):
-    # Postgres refuses a NUL in a text parameter, so the lookup would be a 500
+    # Postgres refuses a NUL in a text parameter, so the lookup would fail
     # there. SQLite accepts it and answers "Unknown level", so assert the lookup
     # never runs.
     async def unreachable(*_args):

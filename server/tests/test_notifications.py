@@ -288,6 +288,20 @@ async def test_mark_read_owner_and_non_owner(db_session, user_a, user_b):
     assert await _unread_count(db_session, user_a.id) == 0
 
 
+async def test_mark_read_past_int4_is_the_notification_404(db_session, user_a, user_b):
+    # Postgres refuses 2**31 for an int4 parameter; SQLite holds it, so the row here
+    # makes a guard with the wrong bound find it, and 2**63 raises with no guard.
+    db_session.add(Notification(id=2**31, user_id=user_a.id, actor_id=user_b.id, type="comment_reply",
+                                comment_id=None, content_type="walkthrough", content_id=1))
+    await db_session.commit()
+    async with _client(db_session, user_a) as c:
+        for nid in (2**31, 2**63):
+            r = await c.patch(f"/api/notifications/{nid}/read")
+            assert r.status_code == 404
+            assert r.json() == {"detail": "Notification not found"}
+    assert await _unread_count(db_session, user_a.id) == 1
+
+
 async def test_mark_all_read(db_session, user_a, user_b):
     for _ in range(3):
         db_session.add(Notification(user_id=user_a.id, actor_id=user_b.id, type="comment_reply",

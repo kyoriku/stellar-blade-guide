@@ -132,7 +132,7 @@ test.describe('cross-tab sign-out', () => {
     await expect(navSignIn(b)).toBeVisible();
     await expect(accountMenu(b)).toHaveCount(0);
     await expect(b.getByText(SIGNED_OUT_TOAST)).toBeVisible();
-    // One-shot: a toast lasts 5 s, so a retrying count would pass once it faded.
+    // One-shot: a toast fades on a timer, so a retrying count would pass once it had.
     expect(await b.getByText(EXPIRED_TOAST).count()).toBe(0);
     // The tab that signed out gets no storage event, so no notice either.
     expect(await a.getByText(SIGNED_OUT_TOAST).count()).toBe(0);
@@ -259,7 +259,7 @@ test.describe('cross-tab sign-out', () => {
       await bRefused;
       await settle(b);
       await expect(navSignIn(b)).toBeVisible();
-      // One-shot: a toast lasts 5 s, so a retrying count would pass once it faded.
+      // One-shot: a toast fades on a timer, so a retrying count would pass once it had.
       expect(await b.getByText(EXPIRED_TOAST).count()).toBe(0);
     } finally {
       release();

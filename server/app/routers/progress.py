@@ -25,6 +25,7 @@ from app.schemas.progress import (
 )
 from app.core.auth import get_current_user
 from app.core.colours import CYAN, RESET
+from app.core.ids import is_row_id
 from app.core.security import limiter
 from app.config.settings import settings
 
@@ -35,14 +36,6 @@ router = APIRouter(prefix="/progress", tags=["progress"])
 # click is one request, and Tab+Space ticking a whole type runs 120-240 a minute;
 # two people ticking behind one address reach about 120.
 PROGRESS_WRITE_RATE_LIMIT = "300/minute"
-
-# collectibles.id and user_progress.collectible_id are integer (int4). A larger id
-# names nothing, and asyncpg refuses to bind one, which would be a 500.
-_ID_MAX = 2**31 - 1
-
-
-def _storable_id(cid: int) -> bool:
-    return 0 < cid <= _ID_MAX
 
 
 @router.get("", response_model=List[int])
@@ -71,7 +64,7 @@ async def sync_progress(
     """Bulk import progress from localStorage on first login."""
     # An id outside int4 drops out here, as an unknown one does below: a 422 would
     # strand every other id in the guest copy behind the sync's error toast.
-    ids = sorted({cid for cid in body.collectible_ids if _storable_id(cid)})
+    ids = sorted({cid for cid in body.collectible_ids if is_row_id(cid)})
     if not ids:
         return {"status": "ok", "added": 0}
 
@@ -248,8 +241,8 @@ async def apply_bulk_progress(
 
 
 async def _require_collectible(db: AsyncSession, collectible_id: int) -> None:
-    if not _storable_id(collectible_id):
-        # Names nothing, and binding it would be a 500: the unknown-id 404.
+    if not is_row_id(collectible_id):
+        # Names nothing, and binding it would fail: the unknown-id 404.
         raise HTTPException(status_code=404, detail="Collectible not found")
     result = await db.execute(
         select(Collectible.id).where(Collectible.id == collectible_id)

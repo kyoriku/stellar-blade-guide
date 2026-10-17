@@ -19,6 +19,7 @@ from app.models.users import User
 from app.core.auth import get_current_user, require_role
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
+from app.core.ids import is_row_id
 from app.schemas.users import UpdateProfileRequest, UpdateRoleRequest, UserStatsResponse
 from app.services.users import (
     user_to_response,
@@ -312,6 +313,8 @@ async def update_user_role(
     _admin: User = Depends(require_role("admin")),
 ):
     """Admin only: change a user's role."""
+    if not is_row_id(user_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -334,6 +337,8 @@ async def deactivate_user(
     _admin: User = Depends(require_role("admin")),
 ):
     """Admin only: deactivate a user account."""
+    if not is_row_id(user_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
