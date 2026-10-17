@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { holdRoute } from '../helpers/route';
 
 let fx: Fixtures;
 
@@ -122,5 +123,30 @@ test.describe('guest progress survives sign-in', () => {
 
     const gets = await tickAsGuestThenSignIn(page);
     await expectMergedSetEverywhere(page, gets);
+  });
+
+  test('a box ticked into the guest copy while the sync is out is kept for the next one', async ({ page }) => {
+    // Another tab still signed out ticks a box while this tab's sign-in sync is in
+    // flight. The sync must drop only the ids it sent, or that tick is lost.
+    const res = await page.request.get('/api/levels/eidos-7');
+    const ids = ((await res.json()) as { collectibles: { id: number }[] }[]).flatMap(l => l.collectibles.map(c => c.id));
+    const other = ids.find(id => id !== fx.collectibleId)!;
+    const sync = await holdRoute(page, '**/api/progress/sync');
+
+    await page.goto('/levels/eidos-7');
+    await toggleBtn(page).click();
+    await expect(toggleBtn(page)).toHaveAccessibleName('Mark as not found');
+    await page.goto('/progress');
+    await expect(page).toHaveURL(/\/login/);
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password').fill(user.password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await sync.seen;
+
+    await page.evaluate(stored => localStorage.setItem('sb_progress', JSON.stringify(stored)), [fx.collectibleId, other]);
+    const synced = page.waitForResponse(r => r.url().endsWith('/api/progress/sync') && r.status() === 200);
+    sync.release();
+    await synced;
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sb_progress'))).toBe(JSON.stringify([other]));
   });
 });

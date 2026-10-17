@@ -15,11 +15,13 @@ DDL strategy:
     (no relationship traversal), so Level/Location/type tables are not needed.
 
 conftest's autouse patch_redis covers app.core.cache.redis_client.
-get_current_user() only decodes the JWT — no Redis lookup for access tokens.
+get_current_user() decodes the JWT and loads the active user row; access tokens
+never touch Redis.
 """
 
 from __future__ import annotations
 
+import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
@@ -216,6 +218,48 @@ async def test_put_nonexistent_collectible_returns_404(user_client):
     assert r.status_code == 404
 
 
+@pytest.mark.parametrize("cid", [0, -1, 2**31, 2**63])
+async def test_put_and_delete_outside_int4_are_the_unknown_id_404(user_client, progress_db_session, cid):
+    # 2**63 would raise binding to SQLite without the guard, as 2**31 does in Postgres.
+    # The others get a row SQLite can hold, so a guard with the wrong bound would find
+    # it and answer 200: the 404 must come from the bound, before any query.
+    if cid < 2**63:
+        await _seed_collectible(progress_db_session, collectible_id=cid)
+    for r in (await user_client.put(f"/api/progress/{cid}"), await user_client.delete(f"/api/progress/{cid}")):
+        assert r.status_code == 404
+        assert r.json() == {"detail": "Collectible not found"}
+
+
+def test_put_skips_a_held_row_before_it_takes_a_sequence_value():
+    # Postgres takes a nextval() for a candidate row before it checks conflicts, so
+    # the NOT EXISTS must sit in the SELECT. SQLite drops the constraint name, so the
+    # Postgres compile is what pins it.
+    from sqlalchemy.dialects import postgresql
+    from app.routers.progress import _put_stmt
+
+    sql = " ".join(str(_put_stmt(1, 2).compile(dialect=postgresql.dialect())).split())
+    assert sql.startswith("INSERT INTO user_progress (user_id, collectible_id) SELECT ")
+    assert (
+        " WHERE NOT (EXISTS (SELECT * FROM user_progress WHERE user_progress.user_id = %(user_id_1)s"
+        " AND user_progress.collectible_id = %(collectible_id_1)s))"
+    ) in sql
+    assert sql.endswith(
+        " ON CONFLICT ON CONSTRAINT uq_user_collectible DO NOTHING RETURNING user_progress.collectible_id"
+    )
+
+
+async def test_put_skips_only_the_row_itself(user_client, second_user_client, progress_db_session):
+    # The NOT EXISTS is per user and per collectible: another of the user's rows, or
+    # another user's row for the same collectible, must not stop the insert.
+    await _seed_collectible(progress_db_session, collectible_id=1)
+    await _seed_collectible(progress_db_session, collectible_id=2)
+
+    assert (await user_client.put("/api/progress/1")).json()["status"] == "added"
+    assert (await user_client.put("/api/progress/2")).json()["status"] == "added"
+    assert sorted((await user_client.get("/api/progress")).json()) == [1, 2]
+    assert (await second_user_client.put("/api/progress/1")).json()["status"] == "added"
+
+
 # ── DELETE /api/progress/{collectible_id} (idempotent un-complete) ────────────
 
 async def test_delete_unauthenticated_returns_401(progress_client):
@@ -311,6 +355,86 @@ async def test_sync_is_additive_only_never_deletes(user_client, progress_db_sess
 
     r = await user_client.get("/api/progress")
     assert sorted(r.json()) == [1, 2]
+
+
+async def test_sync_counts_a_repeated_id_once(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [1, 1]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 1
+    assert (await user_client.get("/api/progress")).json() == [1]
+
+
+async def test_sync_of_ids_already_held_adds_nothing(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+    await user_client.put("/api/progress/1")
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [1]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 0
+
+
+async def test_sync_takes_up_to_2000_ids(user_client):
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": list(range(1, 2001))})
+    assert r.status_code == 200
+    assert r.json()["added"] == 0  # none of them exist in this database
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": list(range(1, 2002))})
+    assert r.status_code == 422
+
+
+async def test_sync_adds_only_what_it_was_sent(user_client, progress_db_session):
+    # A repeat, an unknown id, and a collectible nobody sent that must stay unfound.
+    for cid in (1, 2, 3):
+        await _seed_collectible(progress_db_session, collectible_id=cid)
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [3, 3, 1, 999]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 2
+    assert sorted((await user_client.get("/api/progress")).json()) == [1, 3]
+
+
+def test_storable_ids_are_the_positive_int4_range():
+    from app.routers.progress import _storable_id
+
+    cases = [-1, 0, 1, 2**31 - 1, 2**31, 2**63]
+    assert [_storable_id(i) for i in cases] == [False, False, True, True, False, False]
+
+
+async def test_sync_drops_ids_outside_int4_like_unknown_ones(user_client, progress_db_session):
+    # Postgres refuses to bind 2**31 to an int4 parameter; SQLite only refuses past
+    # int8, so 2**63 is what would reach this database and raise without the filter.
+    # Rows at 0, -1 and 2**31 (which SQLite can hold) make a filter with the wrong
+    # bound add them, so the bound itself is pinned, not only the filter's presence.
+    for cid in (1, 0, -1, 2**31):
+        await _seed_collectible(progress_db_session, collectible_id=cid)
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [1, 0, -1, 2**31, 2**63]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 1
+    assert (await user_client.get("/api/progress")).json() == [1]
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [2**31, 2**63]})
+    assert r.json() == {"status": "ok", "added": 0}
+
+
+async def test_sync_inserts_through_the_bulk_statement(user_client, progress_db_session, monkeypatch):
+    # One insert for both routes, so the NOT EXISTS and the lock order cannot drift apart.
+    from app.routers import progress as progress_routes
+
+    await _seed_collectible(progress_db_session, collectible_id=1)
+    calls = []
+    real = progress_routes._mark_found_stmt
+
+    def spy(user_id, scope):
+        calls.append(user_id)
+        return real(user_id, scope)
+
+    monkeypatch.setattr(progress_routes, "_mark_found_stmt", spy)
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [1]})
+    assert r.json()["added"] == 1
+    assert len(calls) == 1
 
 
 # ── Isolation ─────────────────────────────────────────────────────────────────

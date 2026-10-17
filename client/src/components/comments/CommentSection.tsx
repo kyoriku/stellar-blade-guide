@@ -27,6 +27,8 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
   // navigation, so this lets comment mutations (which change `comments` and
   // re-run the effect) bail out — only a real navigation re-fires the highlight.
   const highlightedKey = useRef<string | null>(null)
+  // Focus lands here after a delete, which takes its own Delete button with it.
+  const headingRef = useRef<HTMLHeadingElement>(null)
 
   // Highlight on navigation to a #comment-<id> anchor — from the notification
   // bell/toast, or a directly-shared link. Waits for comments to render (the
@@ -59,7 +61,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <MessageSquare className="w-5 h-5 text-cyan-400" />
-        <h2 className="text-lg font-semibold text-white">
+        <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold text-white">
           Comments
           {totalCount > 0 && (
             <span className="ml-2 text-sm font-normal text-gray-400">({totalCount})</span>
@@ -102,6 +104,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
               onReply={postReply}
               onEdit={editComment}
               onDelete={deleteComment}
+              headingRef={headingRef}
               highlightId={highlightId}
             />
           ))}

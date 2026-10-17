@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { holdRoute } from '../helpers/route';
 import { BULK_COPY } from '../../client/src/constants/bulkProgressCopy';
 import { cycleLabel } from '../../client/src/constants/cycleLabels';
 
@@ -133,22 +134,6 @@ const manageCard = (page: Page) =>
 const previewRequest = (page: Page) => page.waitForRequest(r => r.url().endsWith('/api/progress/bulk/preview'));
 const statsResponse = (page: Page) =>
   page.waitForResponse(r => r.url().endsWith('/api/users/me/stats') && r.status() === 200);
-
-// Holds every request to `url` until released, answering from the real server
-// (through `edit` when given). `seen` resolves on the first request.
-async function holdRoute(page: Page, url: string, edit?: (body: string) => string) {
-  let release!: () => void;
-  const held = new Promise<void>(resolve => { release = resolve; });
-  let arrived!: () => void;
-  const seen = new Promise<void>(resolve => { arrived = resolve; });
-  await page.route(url, async route => {
-    arrived();
-    await held;
-    const response = await route.fetch();
-    await route.fulfill(edit ? { response, body: edit(await response.text()) } : { response });
-  });
-  return { release, seen };
-}
 
 // Altess Levoire, from the live catalog: the single-cycle level these checks use.
 async function singleCycleLevel(page: Page) {

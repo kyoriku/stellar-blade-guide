@@ -30,6 +30,7 @@ from app.config.settings import settings
 from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
 from app.core.http_cache import etag_matches
 from app.core.navigation import canonical_url_type
+from app.core.segments import is_text_segment
 from app.db.database import AsyncSessionLocal
 from app.routers.walkthroughs import _normalize_type, _serialize_full, lookup_walkthrough
 
@@ -287,15 +288,19 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         redirect = walkthrough_page_redirect(full_path, request.url.query)
         if redirect:
             return RedirectResponse(redirect, status_code=301)
-        file_path = os.path.realpath(os.path.join(client_dist, full_path))
-        if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
-            return FileResponse(file_path)
+        # No page or file is named with a control character, and realpath raises on a
+        # NUL, so such a path gets the unknown-page head before any lookup.
+        printable = is_text_segment(full_path)
+        if printable:
+            file_path = os.path.realpath(os.path.join(client_dist, full_path))
+            if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
+                return FileResponse(file_path)
 
         shell = read_shell() if reload_shell else cached_shell
         if shell is None:
             return FileResponse(index_path)
 
-        head = resolve_static_head('/' + full_path)
+        head = resolve_static_head('/' + full_path) if printable else _not_found_head()
         if isinstance(head, tuple):
             head = await fetch_walkthrough_head(head[1], head[2])
 

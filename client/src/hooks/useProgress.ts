@@ -6,8 +6,8 @@ import { useToast } from '../context/ToastContext'
 import { API_BASE_URL, ApiError, readError, errorMessage } from '../services/api'
 import type { ProgressWriteResponse } from '../services/api'
 
-// Also hardcoded in AuthContext's merge-on-login effect — keep in sync.
-const STORAGE_KEY = 'sb_progress'
+// AuthContext's sign-in sync imports it.
+export const STORAGE_KEY = 'sb_progress'
 
 const PROGRESS_WRITE_KEY = ['progress', 'write']
 
@@ -62,8 +62,9 @@ function setLocalProgress(ids: Set<number>): boolean {
   }
 }
 
-// Removes ids from the guest copy. While signed in, that copy holds only ids a
-// failed sign-in sync left behind, which the next sync would add back.
+// Removes ids from the guest copy. While signed in, that copy holds ids a failed
+// sign-in sync left behind, or ids a signed-out tab ticked while a sync was out;
+// the next sync would add either back.
 export function dropFromLocalProgress(ids: number[]): void {
   try {
     if (!localStorage.getItem(STORAGE_KEY)) return

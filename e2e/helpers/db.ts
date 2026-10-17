@@ -135,6 +135,34 @@ export function readFixtures(): Fixtures {
   return JSON.parse(fs.readFileSync(FIXTURE_FILE, 'utf-8')) as Fixtures;
 }
 
+// A comment by `username` on the fixture walkthrough, with a live reply by the same
+// user, so deleting the parent leaves it as "[deleted]" instead of removing it.
+// Comments are never seeded, so their sequence is in step and the ids are its own.
+export async function createCommentThread(fx: Fixtures, username: string): Promise<{ parentId: number; replyId: number }> {
+  const pool = pgPool();
+  try {
+    const insert = `INSERT INTO comments (user_id, content_type, content_id, parent_id, body, is_approved, is_deleted)
+      VALUES ((SELECT id FROM users WHERE username = $1), 'walkthrough', $2, $3, $4, true, false) RETURNING id`;
+    const parent = await pool.query(insert, [username, fx.walkthroughId, null, `E2E ${fx.token} comment`]);
+    const parentId: number = parent.rows[0].id;
+    const reply = await pool.query(insert, [username, fx.walkthroughId, parentId, `E2E ${fx.token} reply`]);
+    return { parentId, replyId: reply.rows[0].id };
+  } finally {
+    await pool.end();
+  }
+}
+
+// A deleted account leaves its comments behind (user_id SET NULL), so they go by
+// what they are on.
+export async function deleteFixtureComments(fx: Fixtures): Promise<void> {
+  const pool = pgPool();
+  try {
+    await pool.query(`DELETE FROM comments WHERE content_type = 'walkthrough' AND content_id = $1`, [fx.walkthroughId]);
+  } finally {
+    await pool.end();
+  }
+}
+
 export async function teardownFixtures(fx: Fixtures): Promise<string[]> {
   const pool = pgPool();
   const redis = redisClient();
@@ -143,6 +171,11 @@ export async function teardownFixtures(fx: Fixtures): Promise<string[]> {
     // Leftover users (afterEach normally deletes them via the API); cascades user_progress.
     const users = await pool.query(`DELETE FROM users WHERE username LIKE $1`, [`e2e_${fx.token}%`]);
     if (users.rowCount) report.push(`deleted ${users.rowCount} leftover fixture user(s) via SQL`);
+
+    const comments = await pool.query(
+      `DELETE FROM comments WHERE content_type = 'walkthrough' AND content_id = $1`, [fx.walkthroughId]
+    );
+    if (comments.rowCount) report.push(`deleted ${comments.rowCount} leftover fixture comment(s) via SQL`);
 
     await pool.query(`DELETE FROM collectibles WHERE id = $1`, [fx.collectibleId]);
     await pool.query(`DELETE FROM locations WHERE id = $1`, [fx.locationId]);
@@ -159,8 +192,9 @@ export async function teardownFixtures(fx: Fixtures): Promise<string[]> {
          (SELECT count(*) FROM collectibles WHERE title LIKE '%' || $1 || '%') +
          (SELECT count(*) FROM locations    WHERE name  LIKE '%' || $1 || '%') +
          (SELECT count(*) FROM walkthroughs WHERE title LIKE '%' || $1 || '%') +
-         (SELECT count(*) FROM users        WHERE username LIKE '%' || $1 || '%') AS n`,
-      [fx.token]
+         (SELECT count(*) FROM users        WHERE username LIKE '%' || $1 || '%') +
+         (SELECT count(*) FROM comments     WHERE content_type = 'walkthrough' AND content_id = $2) AS n`,
+      [fx.token, fx.walkthroughId]
     );
     if (Number(residue.rows[0].n) !== 0) {
       throw new Error(`Fixture residue remains after teardown: ${residue.rows[0].n} row(s)`);

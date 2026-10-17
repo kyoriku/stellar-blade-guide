@@ -296,6 +296,19 @@ test.describe('auth', () => {
     });
   });
 
+  test("Settings' delete-account box is labelled, and a phone leaves the typed username alone", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    // The match is exact, so no capitalising, correcting or filling.
+    const box = page.getByLabel(`Type ${user!.username} to confirm`, { exact: true });
+    await expect(box).toBeVisible();
+    await expect(box).toHaveAttribute('autocapitalize', 'none');
+    await expect(box).toHaveAttribute('autocorrect', 'off');
+    await expect(box).toHaveAttribute('spellcheck', 'false');
+    await expect(box).toHaveAttribute('autocomplete', 'off');
+  });
+
   test('Forgot password tells a provider-only address the truth, and nobody else anything', async ({ page }) => {
     // An unknown address: the generic answer, as for a password or deactivated account.
     // (A real password account is not submitted here: in dev that would call Resend.)

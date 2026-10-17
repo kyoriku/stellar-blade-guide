@@ -27,7 +27,7 @@ interface Props {
 
 // A native modal <dialog>: showModal() makes the page behind it inert and gives
 // Escape for free, and the top layer keeps it clear of any transformed ancestor.
-// ConfirmModal is left alone because comment delete relies on it.
+// ConfirmModal, the comment delete dialog, follows the same pattern.
 export default function BulkProgressDialog({
   action,
   quantity,
@@ -59,8 +59,8 @@ export default function BulkProgressDialog({
     // Guarded because StrictMode runs this twice in dev, closing in between.
     if (!dialog.open) dialog.showModal()
     ;(requireWord ? inputRef.current : cancelRef.current)?.focus()
-    // Written only while mounted, as ConfirmModal does: the nav drawer is the
-    // other writer and there is no count.
+    // Written only while mounted, as ConfirmModal does: the nav drawer and that
+    // dialog are the other writers, and there is no count.
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = 'unset'
@@ -119,7 +119,9 @@ export default function BulkProgressDialog({
       // the word dialog is pinned near the top instead (mobile first): centred, its
       // input would sit under the iOS keyboard. The UA colours dialog text black,
       // and a modal dialog given position: relative would lay out off-screen.
-      className={`mx-auto ${requireWord ? 'mt-4 mb-auto sm:my-auto' : 'my-auto'} w-[calc(100%-2rem)] max-w-sm max-h-[calc(100svh-2rem)] overflow-y-auto overscroll-contain p-0 scheme-dark text-gray-100 bg-secondary border border-gray-700 rounded-xl shadow-2xl backdrop:bg-[rgba(0,0,0,0.6)] backdrop:backdrop-blur-[8px]`}
+      // overscroll-none, not contain: contain rubber-bands the content on macOS even
+      // when nothing overflows, and either keeps the page behind from scrolling.
+      className={`mx-auto ${requireWord ? 'mt-4 mb-auto sm:my-auto' : 'my-auto'} w-[calc(100%-2rem)] max-w-sm max-h-[calc(100svh-2rem)] overflow-y-auto overscroll-none p-0 scheme-dark text-gray-100 bg-secondary border border-gray-700 rounded-xl shadow-2xl backdrop:bg-[rgba(0,0,0,0.6)] backdrop:backdrop-blur-[8px]`}
     >
       <div className="relative p-4 sm:p-6">
         <form

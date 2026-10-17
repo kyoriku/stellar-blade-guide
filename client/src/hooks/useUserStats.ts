@@ -35,8 +35,10 @@ export function useUserStats(options?: { refetchOnMount?: 'always' }) {
   const { user, isAuthenticated, isLoading: authLoading, accessToken, authFetch } = useAuth()
 
   return useQuery({
-    // Keyed by user id: logout never clears the query cache, so a second
-    // account signing in on the same tab must not inherit a stale snapshot.
+    // Keyed by user id even though clearUserQueries (AuthContext) drops this cache
+    // at logout and at a refresh 401: its account-switch backstop runs after the
+    // render that changed the identity, and the id keeps that render from painting
+    // the previous account's numbers.
     queryKey: ['user-stats', user?.id],
     queryFn: async () => {
       const res = await authFetch(`${API_BASE_URL}/users/me/stats`)

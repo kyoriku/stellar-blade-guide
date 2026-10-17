@@ -5,6 +5,7 @@ import { API_BASE_URL, readError } from '../services/api'
 import { useToast } from './ToastContext'
 import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
 import { NOTIFICATIONS_KEY } from '../hooks/useNotifications'
+import { STORAGE_KEY, dropFromLocalProgress } from '../hooks/useProgress'
 import { withRefreshLock } from '../utils/refreshLock'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
@@ -277,10 +278,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const canSync = !!user && accessToken !== null
     if (canSync && !prevSyncedRef.current) {
-      // 'sb_progress' must match STORAGE_KEY in hooks/useProgress.ts — drift
-      // means guest progress silently never merges (or never clears) on login.
       try {
-        const local = localStorage.getItem('sb_progress')
+        const local = localStorage.getItem(STORAGE_KEY)
         if (local) {
           const ids = JSON.parse(local) as number[]
           if (ids.length > 0) {
@@ -296,7 +295,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 showToast("Couldn't sync your saved progress. It's still saved on this device.")
                 return
               }
-              localStorage.removeItem('sb_progress')
+              // Only what this request carried: an id ticked into the guest copy
+              // while it was in flight (a tab still signed out) waits for the next sync.
+              dropFromLocalProgress(ids)
               // The sign-in commit fired GET /progress and the stats query before
               // this effect ran, so their cached answers predate the merge. Cancel
               // first: a load still in flight would otherwise be reused as-is.

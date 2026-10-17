@@ -36,6 +36,14 @@ router = APIRouter(prefix="/progress", tags=["progress"])
 # two people ticking behind one address reach about 120.
 PROGRESS_WRITE_RATE_LIMIT = "300/minute"
 
+# collectibles.id and user_progress.collectible_id are integer (int4). A larger id
+# names nothing, and asyncpg refuses to bind one, which would be a 500.
+_ID_MAX = 2**31 - 1
+
+
+def _storable_id(cid: int) -> bool:
+    return 0 < cid <= _ID_MAX
+
 
 @router.get("", response_model=List[int])
 @limiter.limit(settings.RATE_LIMIT_PER_MINUTE)
@@ -61,41 +69,22 @@ async def sync_progress(
     db: AsyncSession = Depends(get_db),
 ):
     """Bulk import progress from localStorage on first login."""
-    if not body.collectible_ids:
+    # An id outside int4 drops out here, as an unknown one does below: a 422 would
+    # strand every other id in the guest copy behind the sync's error toast.
+    ids = sorted({cid for cid in body.collectible_ids if _storable_id(cid)})
+    if not ids:
         return {"status": "ok", "added": 0}
 
-    # Get existing progress to avoid duplicates
-    result = await db.execute(
-        select(UserProgress.collectible_id)
-        .where(UserProgress.user_id == current_user.id)
-    )
-    existing_ids = set(result.scalars().all())
-
-    # Validate collectible IDs exist in the database
-    valid_result = await db.execute(
-        select(Collectible.id).where(Collectible.id.in_(body.collectible_ids))
-    )
-    valid_ids = set(valid_result.scalars().all())
-
-    new_ids = [cid for cid in body.collectible_ids if cid in valid_ids and cid not in existing_ids]
-
-    # Route the insert through an upsert as a safety net: a concurrent sync (or a
-    # PUT racing this) could re-add a cid that passed the existing_ids dedup
-    # above, violating uq_user_collectible -> IntegrityError -> 500. ON CONFLICT
-    # DO NOTHING absorbs that. The "added" count stays based on new_ids (accurate
-    # fast-path; best-effort under a concurrent race).
-    if new_ids:
-        await db.execute(
-            pg_insert(UserProgress)
-            .values([
-                {"user_id": current_user.id, "collectible_id": cid}
-                for cid in new_ids
-            ])
-            .on_conflict_do_nothing(constraint="uq_user_collectible")
-        )
-
+    # The bulk route's insert, over the sent ids: an unknown id drops out of the
+    # SELECT, a repeat counts once (the IN collapses it; the set only trims the bound
+    # list), a row the user already has is skipped before it takes a sequence value,
+    # and ON CONFLICT absorbs a tick committed concurrently. "added" is what the
+    # insert returned, so it is exact.
+    scope = select(Collectible.id).where(Collectible.id.in_(ids))
+    result = await db.execute(_mark_found_stmt(current_user.id, scope))
+    added = len(result.scalars().all())
     await db.commit()
-    return {"status": "ok", "added": len(new_ids)}
+    return {"status": "ok", "added": added}
 
 
 # One bulk write can stand in for the whole catalog of single-item writes, so it
@@ -246,25 +235,47 @@ async def apply_bulk_progress(
     # and aiosqlite would report -1.
     changed = result.scalars().all()
     await db.commit()
+    # .get: a seed running between the two statements can add an id to the scope,
+    # and a KeyError here would turn a committed write into a 500.
+    changed_quantity = sum(quantity.get(cid, 1) for cid in changed)
 
+    # Both units: the page counts by quantity, so a x2 item makes them differ.
     logger.info(
         f"{CYAN}User {current_user.id} bulk {body.action} {_describe_scope(body)}: "
-        f"{len(changed)} changed{RESET}"
+        f"{len(changed)} changed, {changed_quantity} by quantity{RESET}"
     )
-    return {
-        "entries": len(changed),
-        # .get: a seed running between the two statements can add an id to the
-        # scope, and a KeyError here would turn a committed write into a 500.
-        "quantity": sum(quantity.get(cid, 1) for cid in changed),
-    }
+    return {"entries": len(changed), "quantity": changed_quantity}
 
 
 async def _require_collectible(db: AsyncSession, collectible_id: int) -> None:
+    if not _storable_id(collectible_id):
+        # Names nothing, and binding it would be a 500: the unknown-id 404.
+        raise HTTPException(status_code=404, detail="Collectible not found")
     result = await db.execute(
         select(Collectible.id).where(Collectible.id == collectible_id)
     )
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Collectible not found")
+
+
+def _put_stmt(user_id: int, collectible_id: int):
+    # Postgres takes a nextval() for a candidate row before it checks conflicts, so a
+    # plain INSERT would burn a sequence value on every re-assert of a row the user
+    # already has. The NOT EXISTS forms no row then; ON CONFLICT stays as the guard
+    # for a tick committed concurrently.
+    return (
+        pg_insert(UserProgress)
+        .from_select(
+            ["user_id", "collectible_id"],
+            select(literal(user_id, Integer), literal(collectible_id, Integer))
+            .where(~exists().where(
+                UserProgress.user_id == user_id,
+                UserProgress.collectible_id == collectible_id,
+            )),
+        )
+        .on_conflict_do_nothing(constraint="uq_user_collectible")
+        .returning(UserProgress.collectible_id)
+    )
 
 
 @router.put("/{collectible_id}", response_model=ProgressWriteResponse, status_code=status.HTTP_200_OK)
@@ -280,14 +291,11 @@ async def set_progress(
     toggle deleted rows when a stale tab re-sent completions)."""
     await _require_collectible(db, collectible_id)
 
-    result = await db.execute(
-        pg_insert(UserProgress)
-        .values(user_id=current_user.id, collectible_id=collectible_id)
-        .on_conflict_do_nothing(constraint="uq_user_collectible")
-    )
+    inserted = (await db.execute(_put_stmt(current_user.id, collectible_id))).scalars().all()
     await db.commit()
-    # rowcount 0 means the ON CONFLICT path fired: the row already existed.
-    write_status = "added" if result.rowcount else "already_complete"
+    # No row back means it already existed: the NOT EXISTS (or, in a race, the
+    # ON CONFLICT) formed nothing.
+    write_status = "added" if inserted else "already_complete"
     return {"status": write_status, "collectible_id": collectible_id}
 
 
