@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { MessageSquare, Pencil, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import type { CommentData } from '../../hooks/useComments'
 import { errorMessage } from '../../services/api'
+import { useToast } from '../../context/ToastContext'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
+import BusyLabel from '../BusyLabel'
 
 interface CommentProps {
   comment: CommentData
@@ -13,6 +16,8 @@ interface CommentProps {
   onReply: (parentId: number, body: string) => Promise<void>
   onEdit: (commentId: number, body: string) => Promise<void>
   onDelete: (commentId: number) => Promise<void>
+  // Takes focus once a delete has removed the Delete button that had it.
+  headingRef: RefObject<HTMLHeadingElement | null>
   depth?: number
   highlightId?: number | null
 }
@@ -36,10 +41,12 @@ export default function Comment({
   onReply,
   onEdit,
   onDelete,
+  headingRef,
   depth = 0,
   highlightId = null,
 }: CommentProps) {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editBody, setEditBody] = useState(comment.body)
@@ -48,6 +55,37 @@ export default function Comment({
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const deleteButtonRef = useRef<HTMLButtonElement>(null)
+  // Read when a delete settles: the browser may have closed the dialog meanwhile.
+  const deleteModalOpen = useRef(false)
+  // Where focus goes after the dialog follows the outcome. A cancel or a failed
+  // delete gives it back to the Delete button. A successful delete takes that
+  // button with the comment's actions, so the heading gets it once both the
+  // dialog's close and the list's update have landed: the list updates on
+  // TanStack's timer, in no fixed order with the close.
+  const deleted = useRef(false)
+  const dialogGone = useRef(false)
+  const listUpdated = useRef(false)
+  const focusHeadingOnceDeleted = useCallback(() => {
+    if (!deleted.current || !dialogGone.current || !listUpdated.current) return
+    // Only when the delete left focus nowhere: anyone who moved on meanwhile keeps their place.
+    const active = document.activeElement
+    if (active && active !== document.body && active !== deleteButtonRef.current) return
+    // preventScroll: the heading can be a long way up a thread.
+    headingRef.current?.focus({ preventScroll: true })
+  }, [headingRef])
+  // The list's update reaches this comment one of two ways: a soft delete
+  // re-renders it as deleted, and a hard removal unmounts it.
+  useEffect(() => {
+    if (!comment.is_deleted || !deleted.current) return
+    listUpdated.current = true
+    focusHeadingOnceDeleted()
+  }, [comment.is_deleted, focusHeadingOnceDeleted])
+  useEffect(() => () => {
+    if (!deleted.current) return
+    listUpdated.current = true
+    focusHeadingOnceDeleted()
+  }, [focusHeadingOnceDeleted])
   const [isSaving, setIsSaving] = useState(false)
 
   // A comment whose author deleted their account arrives with user null, and a
@@ -77,14 +115,37 @@ export default function Comment({
       setIsSaving(false)
     }
   }
+  const openDeleteModal = () => {
+    deleteModalOpen.current = true
+    deleted.current = false
+    dialogGone.current = false
+    listUpdated.current = false
+    setDeleteError(null)
+    setShowDeleteModal(true)
+  }
+  const handleDialogClosed = () => {
+    dialogGone.current = true
+    if (deleted.current) focusHeadingOnceDeleted()
+    else deleteButtonRef.current?.focus()
+  }
+  const closeDeleteModal = () => {
+    deleteModalOpen.current = false
+    setDeleteError(null)
+    setShowDeleteModal(false)
+  }
+
   const handleDelete = async () => {
     setDeleteError(null)
     setIsDeleting(true)
     try {
       await onDelete(comment.id)
-      setShowDeleteModal(false)
+      deleted.current = true
+      closeDeleteModal()
     } catch (err) {
-      setDeleteError(errorMessage(err, 'Failed to delete comment'))
+      const message = errorMessage(err, 'Failed to delete comment')
+      // A dialog the browser closed mid-delete has nowhere to show the error.
+      if (deleteModalOpen.current) setDeleteError(message)
+      else showToast(message)
     } finally {
       setIsDeleting(false)
     }
@@ -178,13 +239,26 @@ export default function Comment({
                   </button>
                 )}
                 <button
-                  onClick={() => { setShowDeleteModal(true); setDeleteError(null) }}
+                  ref={deleteButtonRef}
+                  // Ignored while a delete is out. If the browser closes the dialog
+                  // mid-delete, this is where the delete shows until it lands.
+                  onClick={() => { if (!isDeleting) openDeleteModal() }}
+                  aria-busy={isDeleting}
                   title="Delete comment"
-                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                  className="flex items-center text-xs text-gray-400 hover:text-red-400 transition-colors cursor-pointer aria-busy:cursor-progress"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Delete
+                  <BusyLabel
+                    label="Delete"
+                    busy={isDeleting ? 'Deleting…' : null}
+                    variants={['Deleting…']}
+                    icon={<Trash2 className="w-3.5 h-3.5" />}
+                    gap="gap-1"
+                    align="start"
+                  />
                 </button>
+                {/* The dialog's own announcement goes with it, so this reads out a
+                    delete the browser closed the dialog on. */}
+                <span className="sr-only" aria-live="polite">{isDeleting && !showDeleteModal ? 'Deleting…' : ''}</span>
               </>
             )}
 
@@ -226,6 +300,7 @@ export default function Comment({
               onReply={onReply}
               onEdit={onEdit}
               onDelete={onDelete}
+              headingRef={headingRef}
               depth={depth + 1}
               highlightId={highlightId}
             />
@@ -233,17 +308,21 @@ export default function Comment({
         </div>
       )}
 
-      {/* Delete confirmation modal */}
-      <ConfirmModal
-        isOpen={showDeleteModal}
-        title="Delete comment"
-        message="This comment will be removed. This action cannot be undone."
-        confirmLabel="Delete"
-        onConfirm={() => void handleDelete()}
-        onCancel={() => { setShowDeleteModal(false); setDeleteError(null) }}
-        isLoading={isDeleting}
-        error={deleteError}
-      />
+      {/* Delete confirmation, mounted only while open */}
+      {showDeleteModal && (
+        <ConfirmModal
+          title="Delete comment"
+          message="This comment will be removed. This action cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={() => void handleDelete()}
+          onCancel={closeDeleteModal}
+          // The delete, if one is out, carries on; the Delete button shows it.
+          onForcedClose={closeDeleteModal}
+          onClosed={handleDialogClosed}
+          isLoading={isDeleting}
+          error={deleteError}
+        />
+      )}
     </div>
   )
 }

@@ -27,7 +27,7 @@ interface Props {
 
 // A native modal <dialog>: showModal() makes the page behind it inert and gives
 // Escape for free, and the top layer keeps it clear of any transformed ancestor.
-// ConfirmModal is left alone because comment delete relies on it.
+// ConfirmModal, the comment delete dialog, follows the same pattern.
 export default function BulkProgressDialog({
   action,
   quantity,
@@ -59,8 +59,8 @@ export default function BulkProgressDialog({
     // Guarded because StrictMode runs this twice in dev, closing in between.
     if (!dialog.open) dialog.showModal()
     ;(requireWord ? inputRef.current : cancelRef.current)?.focus()
-    // Written only while mounted, as ConfirmModal does: the nav drawer is the
-    // other writer and there is no count.
+    // Written only while mounted, as ConfirmModal does: the nav drawer and that
+    // dialog are the other writers, and there is no count.
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = 'unset'
