@@ -13,7 +13,7 @@ limiter's own behaviour and every route's limit values are pinned in
 test_rate_limit.py, which opts back in with the rate_limits_on fixture.
 
 PATCH and DELETE tests seed comments directly into the DB rather than going
-through POST, so only the six dedicated POST tests touch the /api/comments/
+through POST, so only the dedicated POST tests touch the /api/comments/
 endpoint via HTTP.
 """
 
@@ -22,6 +22,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 
 import openai
+import pytest
 import pytest_asyncio
 import app.routers.comments as comments_module
 
@@ -31,6 +32,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 from app.core.auth import create_access_token
 from app.db.database import Base, get_db
+from app.middleware.exception_handlers import add_exception_handlers
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.comments import Comment
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
@@ -41,6 +43,8 @@ from app.routers.comments import router as comments_router
 def _make_comments_app(db_session: AsyncSession) -> FastAPI:
     app = FastAPI()
     setup_rate_limiter(app)
+    # The production 422 shape, one flat detail string, which is what the client shows.
+    add_exception_handlers(app)
 
     async def override_get_db():
         yield db_session
@@ -207,7 +211,7 @@ async def test_post_comment_empty_body_returns_422(user_client):
 
 
 async def test_post_comment_with_a_nul_is_refused_before_moderation(user_client, monkeypatch):
-    # Postgres refuses a NUL in text (SQLite does not, so a 500 cannot show here):
+    # Postgres refuses a NUL in text (SQLite does not, so the failure cannot show here):
     # the body model must refuse it before the moderation call and the INSERT.
     moderate = AsyncMock(return_value=True)
     monkeypatch.setattr(comments_module, "_moderate_content", moderate)
@@ -220,8 +224,39 @@ async def test_post_comment_with_a_nul_is_refused_before_moderation(user_client,
     moderate.assert_not_called()
 
 
+async def test_post_comment_with_a_lone_surrogate_is_refused_before_moderation(user_client, monkeypatch):
+    # Half of an emoji's surrogate pair has no UTF-8 form, so the driver cannot send it
+    # and the INSERT would fail after moderation ran. json.dumps writes it as an
+    # ASCII escape, as a browser's JSON.stringify does, so the body is built here rather
+    # than left to the test client's json= encoding.
+    import json
+
+    moderate = AsyncMock(return_value=True)
+    monkeypatch.setattr(comments_module, "_moderate_content", moderate)
+    r = await user_client.post("/api/comments/", headers={"Content-Type": "application/json"}, content=json.dumps({
+        "content_type": "walkthrough",
+        "content_id": 1,
+        "body": "a" + chr(0xD800) + "b",
+    }))
+    assert r.status_code == 422
+    assert r.json() == {"detail": "Comment body contains a character that can't be saved"}
+    moderate.assert_not_called()
+
+
+async def test_post_comment_keeps_a_whole_emoji(user_client):
+    # A whole emoji is one code point, which UTF-8 encodes fine.
+    body = "nice " + chr(0x1F600)
+    r = await user_client.post("/api/comments/", json={
+        "content_type": "walkthrough",
+        "content_id": 1,
+        "body": body,
+    })
+    assert r.status_code == 201
+    assert r.json()["body"] == body
+
+
 async def test_post_comment_keeps_line_breaks_and_tabs(user_client):
-    # Only NUL is refused: the check is not isprintable(), which would refuse these.
+    # Line breaks and tabs are kept: the check is not isprintable(), which would refuse them.
     body = "line one" + chr(10) + "line two" + chr(9) + "end"
     r = await user_client.post("/api/comments/", json={
         "content_type": "walkthrough",
@@ -267,14 +302,94 @@ async def test_edit_with_a_nul_is_refused_before_moderation(user_client, comment
     moderate.assert_not_called()
 
 
+async def test_edit_with_a_lone_surrogate_is_refused_before_moderation(user_client, comments_db_session, test_user, monkeypatch):
+    import json  # built by hand, as in the create test
+
+    comment = await _seed_comment(comments_db_session, test_user.id, body="Original body")
+
+    moderate = AsyncMock(return_value=True)
+    monkeypatch.setattr(comments_module, "_moderate_content", moderate)
+    r = await user_client.patch(f"/api/comments/{comment.id}", headers={"Content-Type": "application/json"},
+                                content=json.dumps({"body": "edited " + chr(0xDFFF)}))
+    assert r.status_code == 422
+    assert r.json() == {"detail": "Comment body contains a character that can't be saved"}
+    moderate.assert_not_called()
+
+
+async def test_edit_keeps_a_whole_emoji(user_client, comments_db_session, test_user):
+    comment = await _seed_comment(comments_db_session, test_user.id, body="Original body")
+
+    body = "edited " + chr(0x1F600)
+    r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": body})
+    assert r.status_code == 200
+    assert r.json()["body"] == body
+
+
 async def test_edit_keeps_line_breaks_and_tabs(user_client, comments_db_session, test_user):
-    # The edit validator is its own copy of the check, so it is pinned on its own.
+    # The edit request has its own validator, so it is pinned on its own.
     comment = await _seed_comment(comments_db_session, test_user.id, body="Original body")
 
     body = "line one" + chr(10) + "line two" + chr(9) + "end"
     r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": body})
     assert r.status_code == 200
     assert r.json()["body"] == body
+
+
+# ── Ids past int4 ─────────────────────────────────────────────────────────────
+# Postgres refuses to bind 2**31 to an int4 parameter. SQLite binds up to
+# int8, so a row is seeded at 2**31, where a guard with the wrong bound would find
+# it, and 2**63 raises in SQLite with no guard at all.
+
+async def test_list_for_content_past_int4_is_the_empty_answer(comments_client, comments_db_session, test_user):
+    comments_db_session.add(Comment(user_id=test_user.id, content_type="walkthrough", content_id=2**31, body="Far"))
+    await comments_db_session.commit()
+    for cid in (2**31, 2**63):
+        r = await comments_client.get(f"/api/comments/walkthrough/{cid}")
+        assert r.status_code == 200
+        assert r.json() == []
+
+
+@pytest.mark.parametrize("cid", [0, 2**31, 2**63])
+async def test_post_comment_for_content_outside_int4_is_refused(user_client, monkeypatch, cid):
+    moderate = AsyncMock(return_value=True)
+    monkeypatch.setattr(comments_module, "_moderate_content", moderate)
+    r = await user_client.post("/api/comments/", json={
+        "content_type": "walkthrough",
+        "content_id": cid,
+        "body": "Hello",
+    })
+    assert r.status_code == 422
+    assert r.json() == {"detail": "content_id must be a valid id"}
+    moderate.assert_not_called()
+
+
+@pytest.mark.parametrize("pid", [2**31, 2**63])
+async def test_reply_to_a_parent_past_int4_is_the_parent_404(user_client, comments_db_session, test_user, pid):
+    if pid < 2**63:
+        comments_db_session.add(Comment(id=pid, user_id=test_user.id, content_type="walkthrough",
+                                        content_id=1, body="Parent"))
+        await comments_db_session.commit()
+    r = await user_client.post("/api/comments/", json={
+        "content_type": "walkthrough",
+        "content_id": 1,
+        "body": "Reply",
+        "parent_id": pid,
+    })
+    assert r.status_code == 404
+    assert r.json() == {"detail": "Parent comment not found"}
+
+
+@pytest.mark.parametrize("cid", [2**31, 2**63])
+async def test_edit_and_delete_past_int4_are_the_comment_404(user_client, comments_db_session, test_user, cid):
+    if cid < 2**63:
+        comments_db_session.add(Comment(id=cid, user_id=test_user.id, content_type="walkthrough",
+                                        content_id=1, body="Mine"))
+        await comments_db_session.commit()
+    edit = await user_client.patch(f"/api/comments/{cid}", json={"body": "Edited"})
+    delete = await user_client.delete(f"/api/comments/{cid}")
+    for r in (edit, delete):
+        assert r.status_code == 404
+        assert r.json() == {"detail": "Comment not found"}
 
 
 # ── DELETE ────────────────────────────────────────────────────────────────────

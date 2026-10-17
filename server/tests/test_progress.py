@@ -395,13 +395,6 @@ async def test_sync_adds_only_what_it_was_sent(user_client, progress_db_session)
     assert sorted((await user_client.get("/api/progress")).json()) == [1, 3]
 
 
-def test_storable_ids_are_the_positive_int4_range():
-    from app.routers.progress import _storable_id
-
-    cases = [-1, 0, 1, 2**31 - 1, 2**31, 2**63]
-    assert [_storable_id(i) for i in cases] == [False, False, True, True, False, False]
-
-
 async def test_sync_drops_ids_outside_int4_like_unknown_ones(user_client, progress_db_session):
     # Postgres refuses to bind 2**31 to an int4 parameter; SQLite only refuses past
     # int8, so 2**63 is what would reach this database and raise without the filter.

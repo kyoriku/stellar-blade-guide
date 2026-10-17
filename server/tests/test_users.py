@@ -1,6 +1,7 @@
 """
 Tests for the users endpoints: the avatar pipeline of PATCH /api/users/me,
-and the avatar cleanup on DELETE /api/users/me.
+the avatar cleanup on DELETE /api/users/me, and the admin routes' answer for
+an id past int4.
 
 Avatar moderation deliberately fails CLOSED (503 + Retry-After), unlike
 comment moderation which fails open: blocking comments during an OpenAI
@@ -128,6 +129,38 @@ async def user_client(users_db_session, test_user, monkeypatch, fake_redis):
         headers={"Authorization": f"Bearer {token}"},
     ) as c:
         yield c
+
+
+# ── PATCH /api/users/{id}/role and /deactivate (admin) ────────────────────────
+
+@pytest_asyncio.fixture
+async def admin_client(users_db_session):
+    admin = User(email="admin@example.com", username="admin",
+                 password_hash=hash_password("password123"), role="admin")
+    users_db_session.add(admin)
+    await users_db_session.commit()
+    await users_db_session.refresh(admin)
+    async with AsyncClient(
+        transport=ASGITransport(_make_users_app(users_db_session)),
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {create_access_token(admin.id, admin.role)}"},
+    ) as c:
+        yield c
+
+
+@pytest.mark.parametrize("uid", [2**31, 2**63])
+async def test_admin_routes_past_int4_are_the_user_404(admin_client, users_db_session, uid):
+    # Postgres refuses 2**31 for an int4 parameter; SQLite holds it, so the row here
+    # makes a guard with the wrong bound find it, and 2**63 raises with no guard.
+    if uid < 2**63:
+        users_db_session.add(User(id=uid, email="far@example.com", username="faraway",
+                                  password_hash=hash_password("password123")))
+        await users_db_session.commit()
+    role = await admin_client.patch(f"/api/users/{uid}/role", json={"role": "moderator"})
+    deactivate = await admin_client.patch(f"/api/users/{uid}/deactivate")
+    for r in (role, deactivate):
+        assert r.status_code == 404
+        assert r.json() == {"detail": "User not found"}
 
 
 # ── Avatar pipeline stubs ─────────────────────────────────────────────────────
