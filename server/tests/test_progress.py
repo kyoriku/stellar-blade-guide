@@ -313,6 +313,62 @@ async def test_sync_is_additive_only_never_deletes(user_client, progress_db_sess
     assert sorted(r.json()) == [1, 2]
 
 
+async def test_sync_counts_a_repeated_id_once(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [1, 1]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 1
+    assert (await user_client.get("/api/progress")).json() == [1]
+
+
+async def test_sync_of_ids_already_held_adds_nothing(user_client, progress_db_session):
+    await _seed_collectible(progress_db_session, collectible_id=1)
+    await user_client.put("/api/progress/1")
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [1]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 0
+
+
+async def test_sync_takes_up_to_2000_ids(user_client):
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": list(range(1, 2001))})
+    assert r.status_code == 200
+    assert r.json()["added"] == 0  # none of them exist in this database
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": list(range(1, 2002))})
+    assert r.status_code == 422
+
+
+async def test_sync_adds_only_what_it_was_sent(user_client, progress_db_session):
+    # A repeat, an unknown id, and a collectible nobody sent that must stay unfound.
+    for cid in (1, 2, 3):
+        await _seed_collectible(progress_db_session, collectible_id=cid)
+
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [3, 3, 1, 999]})
+    assert r.status_code == 200
+    assert r.json()["added"] == 2
+    assert sorted((await user_client.get("/api/progress")).json()) == [1, 3]
+
+
+async def test_sync_inserts_through_the_bulk_statement(user_client, progress_db_session, monkeypatch):
+    # One insert for both routes, so the NOT EXISTS and the lock order cannot drift apart.
+    from app.routers import progress as progress_routes
+
+    await _seed_collectible(progress_db_session, collectible_id=1)
+    calls = []
+    real = progress_routes._mark_found_stmt
+
+    def spy(user_id, scope):
+        calls.append(user_id)
+        return real(user_id, scope)
+
+    monkeypatch.setattr(progress_routes, "_mark_found_stmt", spy)
+    r = await user_client.post("/api/progress/sync", json={"collectible_ids": [1]})
+    assert r.json()["added"] == 1
+    assert len(calls) == 1
+
+
 # ── Isolation ─────────────────────────────────────────────────────────────────
 
 async def test_progress_isolation_between_users(

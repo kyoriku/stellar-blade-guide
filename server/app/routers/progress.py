@@ -64,38 +64,16 @@ async def sync_progress(
     if not body.collectible_ids:
         return {"status": "ok", "added": 0}
 
-    # Get existing progress to avoid duplicates
-    result = await db.execute(
-        select(UserProgress.collectible_id)
-        .where(UserProgress.user_id == current_user.id)
-    )
-    existing_ids = set(result.scalars().all())
-
-    # Validate collectible IDs exist in the database
-    valid_result = await db.execute(
-        select(Collectible.id).where(Collectible.id.in_(body.collectible_ids))
-    )
-    valid_ids = set(valid_result.scalars().all())
-
-    new_ids = [cid for cid in body.collectible_ids if cid in valid_ids and cid not in existing_ids]
-
-    # Route the insert through an upsert as a safety net: a concurrent sync (or a
-    # PUT racing this) could re-add a cid that passed the existing_ids dedup
-    # above, violating uq_user_collectible -> IntegrityError -> 500. ON CONFLICT
-    # DO NOTHING absorbs that. The "added" count stays based on new_ids (accurate
-    # fast-path; best-effort under a concurrent race).
-    if new_ids:
-        await db.execute(
-            pg_insert(UserProgress)
-            .values([
-                {"user_id": current_user.id, "collectible_id": cid}
-                for cid in new_ids
-            ])
-            .on_conflict_do_nothing(constraint="uq_user_collectible")
-        )
-
+    # The bulk route's insert, over the sent ids: an unknown id drops out of the
+    # SELECT, a repeat counts once (the IN collapses it; the set only trims the bound
+    # list), a row the user already has is skipped before it takes a sequence value,
+    # and ON CONFLICT absorbs a tick committed concurrently. "added" is what the
+    # insert returned, so it is exact.
+    scope = select(Collectible.id).where(Collectible.id.in_(sorted(set(body.collectible_ids))))
+    result = await db.execute(_mark_found_stmt(current_user.id, scope))
+    added = len(result.scalars().all())
     await db.commit()
-    return {"status": "ok", "added": len(new_ids)}
+    return {"status": "ok", "added": added}
 
 
 # One bulk write can stand in for the whole catalog of single-item writes, so it
