@@ -13,7 +13,7 @@ limiter's own behaviour and every route's limit values are pinned in
 test_rate_limit.py, which opts back in with the rate_limits_on fixture.
 
 PATCH and DELETE tests seed comments directly into the DB rather than going
-through POST, so only the four dedicated POST tests touch the /api/comments/
+through POST, so only the six dedicated POST tests touch the /api/comments/
 endpoint via HTTP.
 """
 
@@ -206,6 +206,32 @@ async def test_post_comment_empty_body_returns_422(user_client):
     assert r.status_code == 422
 
 
+async def test_post_comment_with_a_nul_is_refused_before_moderation(user_client, monkeypatch):
+    # Postgres refuses a NUL in text (SQLite does not, so a 500 cannot show here):
+    # the body model must refuse it before the moderation call and the INSERT.
+    moderate = AsyncMock(return_value=True)
+    monkeypatch.setattr(comments_module, "_moderate_content", moderate)
+    r = await user_client.post("/api/comments/", json={
+        "content_type": "walkthrough",
+        "content_id": 1,
+        "body": "hi" + chr(0) + "there",
+    })
+    assert r.status_code == 422
+    moderate.assert_not_called()
+
+
+async def test_post_comment_keeps_line_breaks_and_tabs(user_client):
+    # Only NUL is refused: the check is not isprintable(), which would refuse these.
+    body = "line one" + chr(10) + "line two" + chr(9) + "end"
+    r = await user_client.post("/api/comments/", json={
+        "content_type": "walkthrough",
+        "content_id": 1,
+        "body": body,
+    })
+    assert r.status_code == 201
+    assert r.json()["body"] == body
+
+
 # ── PATCH ─────────────────────────────────────────────────────────────────────
 
 async def test_edit_own_comment_returns_200(user_client, comments_db_session, test_user):
@@ -229,6 +255,26 @@ async def test_edit_flagged_update_returns_400(user_client, comments_db_session,
     monkeypatch.setattr(comments_module, "_moderate_content", AsyncMock(return_value=False))
     r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": "Flagged edit"})
     assert r.status_code == 400
+
+
+async def test_edit_with_a_nul_is_refused_before_moderation(user_client, comments_db_session, test_user, monkeypatch):
+    comment = await _seed_comment(comments_db_session, test_user.id, body="Original body")
+
+    moderate = AsyncMock(return_value=True)
+    monkeypatch.setattr(comments_module, "_moderate_content", moderate)
+    r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": "edited" + chr(0)})
+    assert r.status_code == 422
+    moderate.assert_not_called()
+
+
+async def test_edit_keeps_line_breaks_and_tabs(user_client, comments_db_session, test_user):
+    # The edit validator is its own copy of the check, so it is pinned on its own.
+    comment = await _seed_comment(comments_db_session, test_user.id, body="Original body")
+
+    body = "line one" + chr(10) + "line two" + chr(9) + "end"
+    r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": body})
+    assert r.status_code == 200
+    assert r.json()["body"] == body
 
 
 # ── DELETE ────────────────────────────────────────────────────────────────────
