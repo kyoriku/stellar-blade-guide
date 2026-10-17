@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
 import { API_BASE_URL, ApiError, readError, errorMessage } from '../services/api'
@@ -36,22 +37,53 @@ function maybeFlushDrift(queryClient: ReturnType<typeof useQueryClient>) {
   }
 }
 
-function getLocalProgress(): Set<number> {
+function getLocalProgress(fallback: Set<number> = new Set()): Set<number> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? new Set(JSON.parse(stored) as number[]) : new Set()
+    if (!stored) return new Set()
+    const ids: unknown = JSON.parse(stored)
+    // Anything but an id array is corrupt (a JSON string would otherwise become a
+    // set of characters, written back on the next tick and rejected by every sync).
+    return Array.isArray(ids) && ids.every(Number.isInteger) ? new Set(ids as number[]) : new Set(fallback)
   } catch {
-    return new Set()
+    return new Set(fallback)
   }
 }
 
-function setLocalProgress(ids: Set<number>) {
+function setLocalProgress(ids: Set<number>): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+    return true
   } catch {
     // Runs inside the setGuestIds updater, which React replays during render,
     // so refused or full storage would crash the page rather than lose one
     // save; the toggle still holds in memory for this page's life.
+    return false
+  }
+}
+
+// Removes ids from the guest copy. While signed in, that copy holds only ids a
+// failed sign-in sync left behind, which the next sync would add back.
+export function dropFromLocalProgress(ids: number[]): void {
+  try {
+    if (!localStorage.getItem(STORAGE_KEY)) return
+    const drop = new Set(ids)
+    const kept = [...getLocalProgress()].filter(id => !drop.has(id))
+    if (kept.length > 0) localStorage.setItem(STORAGE_KEY, JSON.stringify(kept))
+    else localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Refused storage holds nothing a sync could read either.
+  }
+}
+
+// For a write outside this hook (the bulk route): re-sync now if no per-item write
+// is pending, otherwise leave it to the last one to settle, so the refetch cannot
+// overwrite an optimistic tick still in flight.
+export function requestProgressResync(queryClient: QueryClient): void {
+  driftPending = true
+  if (queryClient.isMutating({ mutationKey: PROGRESS_WRITE_KEY }) === 0) {
+    driftPending = false
+    void queryClient.invalidateQueries({ queryKey: ['progress'] })
   }
 }
 
@@ -195,14 +227,20 @@ export function useProgress() {
       writeProgress({ collectibleId, desired })
     } else {
       setGuestIds(prev => {
-        const next = new Set(prev)
-        if (next.has(collectibleId)) {
-          next.delete(collectibleId)
-        } else {
-          next.add(collectibleId)
-        }
-        setLocalProgress(next)
-        return next
+        // Intent from what this instance shows, applied to what storage holds now:
+        // a sign-in sync or another tab may have changed it since this instance
+        // read it, and writing the old snapshot back would let the next sync re-add
+        // progress the account has since cleared.
+        const found = !prev.has(collectibleId)
+        const next = getLocalProgress(prev)
+        if (found) next.add(collectibleId)
+        else next.delete(collectibleId)
+        if (setLocalProgress(next)) return next
+        // Storage that reads but will not write: keep today's in-memory behaviour.
+        const kept = new Set(prev)
+        if (found) kept.add(collectibleId)
+        else kept.delete(collectibleId)
+        return kept
       })
     }
   }, [isAuthenticated, writeProgress, queryClient])
