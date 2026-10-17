@@ -1,4 +1,4 @@
-import { Database, FileText, Bot, BarChart3, Cookie, Megaphone, Globe, Shield, UserCheck, Users, RefreshCw, Heart } from 'lucide-react'
+import { Database, FileText, Bot, BarChart3, Cookie, /* Megaphone, */ Globe, Shield, UserCheck, Users, RefreshCw, Heart } from 'lucide-react'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 import SectionHeader from '../components/SectionHeader'
@@ -9,7 +9,9 @@ const sections = [
   { id: 'ai-moderation', label: 'AI comment moderation' },
   { id: 'analytics', label: 'Web analytics' },
   { id: 'cookies', label: 'Cookies & local storage' },
-  { id: 'advertising', label: 'Advertising' },
+  // AdSense is off (its script in index.html is commented out). Every AdSense line on
+  // this page is commented out, not deleted, so it can come back if ads return.
+  // { id: 'advertising', label: 'Advertising' },
   { id: 'support', label: 'Support contributions' },
   { id: 'third-party', label: 'Third-party services' },
   { id: 'security', label: 'Data security & retention' },
@@ -60,7 +62,7 @@ export default function PrivacyPolicy() {
               <li>Monitor site performance and detect technical issues</li>
               <li>Comply with legal obligations</li>
             </ul>
-            <p className="mt-2">We do <strong>not</strong> sell or rent your personal information, and we never provide your account details — email address, password, or comment history — to advertisers. Loading Google AdSense does mean Google independently receives standard request data and may use advertising cookies; see <a href="#advertising" className={linkClass}>Advertising</a> below.</p>
+            <p className="mt-2">We do <strong>not</strong> sell or rent your personal information, and we never provide your account details — email address, password, or comment history — to advertisers.{/* AdSense is off:  Loading Google AdSense does mean Google independently receives standard request data and may use advertising cookies; see <a href="#advertising" className={linkClass}>Advertising</a> below. */}</p>
           </section>
 
           <section>
@@ -77,15 +79,18 @@ export default function PrivacyPolicy() {
             <SectionHeader icon={Cookie} id="cookies">Cookies, Sessions & Local Storage</SectionHeader>
             <p>We use cookies and server-side sessions to keep you logged in after authentication. We also keep these items in your browser's localStorage:</p>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
-              <li><strong>Guest progress</strong> (<code>sb_progress</code>): the collectibles you mark found while signed out, added to your account when you sign in</li>
-              <li><strong>Signed-in hint</strong> (<code>sb_has_session</code>): that this browser has a signed-in session, so a page knows to reconnect it as it loads</li>
-              <li><strong>Account display</strong> (<code>sb_user</code>): your user ID, username, avatar link, account role, and whether your account has a password, so the site can show you as signed in while it reconnects</li>
-              <li><strong>Sign-in return page</strong> (<code>oauth_redirect</code>): the page to return to after you sign in with Google or Discord</li>
-              <li><strong>Progress tip</strong> (<code>sb_tip_hand_clear</code>, <code>sb_bulk_done</code>): whether the tip about clearing progress in bulk has been shown, and whether you've used Manage progress, so the tip appears at most once</li>
+              <li><strong>Guest progress</strong>: the collectibles you mark found while signed out, added to your account when you sign in</li>
+              <li><strong>Signed-in hint</strong>: that this browser has a signed-in session, so a page knows to reconnect it as it loads</li>
+              <li><strong>Account display</strong>: your user ID, username, avatar link, account role, and whether your account has a password, so the site can show you as signed in while it reconnects</li>
+              <li><strong>Sign-in return page</strong>: the page to return to after you sign in with Google or Discord</li>
+              <li><strong>Progress tip</strong>: whether the tip about clearing progress in bulk has been shown, and whether you've used Manage progress, so the tip appears at most once</li>
             </ul>
-            <p className="mt-2">These are strictly functional. Separately, this site loads Google AdSense, and Google may set or read its own advertising cookies and device identifiers as a third party — see <a href="#advertising" className={linkClass}>Advertising</a> below. You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
+            <p className="mt-2">These are strictly functional.{/* AdSense is off:  Separately, this site loads Google AdSense, and Google may set or read its own advertising cookies and device identifiers as a third party — see <a href="#advertising" className={linkClass}>Advertising</a> below. */} You can clear cookies and localStorage through your browser settings, which will log you out and remove any unsaved guest progress.</p>
           </section>
 
+          {/* AdSense is off (its script in index.html is commented out). If ads return, restore
+              this section with the Megaphone import, its entry in `sections`, and the AdSense
+              lines in How We Use, Cookies and Third-Party Services.
           <section>
             <SectionHeader icon={Megaphone} id="advertising">Advertising</SectionHeader>
             <p>This site participates in Google AdSense, and the Google AdSense script is included on every page.</p>
@@ -93,6 +98,7 @@ export default function PrivacyPolicy() {
             <p className="mt-2">When your browser loads that script, it is requested directly from Google's servers, so Google receives standard request information including your IP address, browser user agent, and the page you are viewing. Google may also set or read cookies and similar device identifiers as a third party. Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this site or other sites, and Google's use of advertising cookies enables it and its partners to serve ads to you based on your visit to this site and/or other sites on the Internet. This processing is governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className={linkClass}>Google's privacy policy</a> and by <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer" className={linkClass}>how Google uses information from sites that use its services</a>.</p>
             <p className="mt-2">You may opt out of personalized advertising by visiting <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" className={linkClass}>Google's Ads Settings</a>. Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className={linkClass}>www.aboutads.info</a>.</p>
           </section>
+          */}
 
           <section>
             <SectionHeader icon={Heart} id="support">Support Contributions</SectionHeader>
@@ -109,7 +115,7 @@ export default function PrivacyPolicy() {
               <li><strong>OpenAI</strong> - automated comment moderation (comment text only)</li>
               <li><strong>Resend</strong> - transactional email delivery (email address only)</li>
               <li><strong>Ko-fi & Stripe</strong> - voluntary tip processing (we never see your payment details)</li>
-              <li><strong>Google AdSense</strong> - advertising (see <a href="#advertising" className={linkClass}>Advertising</a> above)</li>
+              {/* AdSense is off: <li><strong>Google AdSense</strong> - advertising (see <a href="#advertising" className={linkClass}>Advertising</a> above)</li> */}
             </ul>
           </section>
 
