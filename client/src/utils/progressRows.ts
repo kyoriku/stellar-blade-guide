@@ -1,5 +1,6 @@
 import { LEVELS } from '../constants/navigation'
 import type { TypeStat, LevelStat, CycleStat } from '../services/api'
+import { cycleLabel } from '../constants/cycleLabels'
 
 // Pure row-building logic for the My Progress page (extracted from
 // ProgressPage.tsx so it can be unit-tested; the page owns all rendering).
@@ -46,7 +47,7 @@ export function typeRows(
   return [...known, ...extras]
 }
 
-// By Level lists only the 10 real, navigable levels (the navbar list). The
+// Levels lists only the 10 real, navigable levels (the navbar list). The
 // server's levels array also carries two buckets that aren't levels at all —
 // 'Default' (level-less starting/bonus gear; the label the type pages already
 // show) and 'Boss Challenge' (a game mode) — those render in their own
@@ -91,14 +92,14 @@ export function nonLevelRows(levels: LevelStat[] | undefined): Row[] {
 export const CYCLE_NAMES = ['Base', 'NG+', 'NG++', 'DLC']
 
 export function cycleRows(cycles: CycleStat[] | undefined): Row[] {
-  if (!cycles) return CYCLE_NAMES.map(name => ({ key: name, label: name, slug: null, stat: null }))
+  if (!cycles) return CYCLE_NAMES.map(name => ({ key: name, label: cycleLabel(name), slug: null, stat: null }))
   const byName = new Map(cycles.map(c => [c.name, c]))
   const known = CYCLE_NAMES.flatMap(name => {
     const c = byName.get(name)
-    return c ? [{ key: name, label: name, slug: null, stat: c }] : []
+    return c ? [{ key: name, label: cycleLabel(name), slug: null, stat: c }] : []
   })
   const extras = cycles
     .filter(c => !CYCLE_NAMES.includes(c.name))
-    .map(c => ({ key: c.name, label: c.name, slug: null, stat: c }))
+    .map(c => ({ key: c.name, label: cycleLabel(c.name), slug: null, stat: c }))
   return [...known, ...extras]
 }

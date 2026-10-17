@@ -26,6 +26,7 @@ import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 import { descriptionPlainText } from '../utils/descriptionText'
+import { cycleLabel } from '../constants/cycleLabels'
 
 function LevelDetailPage() {
   const { levelName } = useParams<{ levelName: string }>();
@@ -325,7 +326,7 @@ function LevelDetailPage() {
                   <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayLevelName}</h1>
                   <p className="text-gray-300">
                     {cycleFilter !== 'All'
-                      ? `${filteredTotal} of ${totalCollectibles} collectibles (${cycleFilter})`
+                      ? `${filteredTotal} of ${totalCollectibles} collectibles (${cycleLabel(cycleFilter)})`
                       : `${totalCollectibles} collectibles`
                     }
                     {completedIds.size > 0 && (() => {
@@ -345,13 +346,13 @@ function LevelDetailPage() {
                       <button
                         key={cycle}
                         onClick={() => setCycleFilter(cycle)}
-                        title={`Show ${cycle === 'All' ? 'all' : cycle} collectibles`}
+                        title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} collectibles`}
                         className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
                           ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
                           : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                           }`}
                       >
-                        {cycle}
+                        {cycleLabel(cycle)}
                       </button>
                     ))}
                   </div>
@@ -395,7 +396,7 @@ function LevelDetailPage() {
 
             {filteredLocationData.length === 0 && cycleFilter !== 'All' && (
               <div className="bg-secondary rounded-lg p-8 border border-zinc-800 text-center">
-                <p className="text-gray-400">No {cycleFilter} collectibles found.</p>
+                <p className="text-gray-400">No {cycleLabel(cycleFilter)} collectibles found.</p>
               </div>
             )}
 
