@@ -13,6 +13,7 @@ from app.schemas.walkthroughs import Walkthrough as WalkthroughSchema, Walkthrou
 from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
 from app.core.navigation import canonical_url_type, normalize_type as _normalize_type
 from app.core.security import limiter
+from app.core.segments import is_text_segment
 from app.config.settings import settings
 
 router = APIRouter(prefix="/walkthroughs", tags=["walkthroughs"])
@@ -79,6 +80,10 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
     if canonical:
         return RedirectResponse(f"{settings.API_PREFIX}/walkthroughs/{canonical}", status_code=308)
 
+    if not is_text_segment(walkthrough_type):
+        # The unknown-type 404, before a NUL can reach Postgres as a 500.
+        raise HTTPException(status_code=404, detail="No walkthroughs found for this type")
+
     normalized_type = _normalize_type(walkthrough_type)
 
     # Raw on purpose: mission_type matching below is exact and case-sensitive, so a
@@ -116,6 +121,10 @@ async def lookup_walkthrough(db: AsyncSession, normalized_type: str, slug: str):
     Shared by the API handler below and the server-side head injection
     (app/seo_head.py) so the query logic exists exactly once.
     """
+    # Nothing stored can match, and a NUL would reach Postgres as a 500.
+    if not (is_text_segment(normalized_type) and is_text_segment(slug)):
+        return None
+
     # Exact match
     result = await db.execute(
         select(WalkthroughModel).where(

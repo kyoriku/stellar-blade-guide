@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from app.models.collectibles import Level, Location, CollectibleType, Collectible
 from app.core.cache import get_cache, set_cache, cache_slug
+from app.core.segments import is_text_segment
 from app.config.settings import settings
 from app.db.database import LIKE_ESCAPE, escape_like
 
@@ -43,6 +44,9 @@ def _normalize_slug(slug: str) -> str:
 
 async def _resolve_level(level_name: str, db: AsyncSession) -> Level:
     """Find a level by exact name or slug, raise 404 if not found."""
+    if not is_text_segment(level_name):
+        # The unknown-level 404, before a NUL can reach Postgres as a 500.
+        raise HTTPException(status_code=404, detail="Level not found")
     result = await db.execute(select(Level).filter(Level.name == level_name))
     level = result.scalar_one_or_none()
 
@@ -72,6 +76,9 @@ def _single(rows):
 
 async def _resolve_type(type_name: str, category: str, db: AsyncSession) -> CollectibleType:
     """Find a collectible type by name within a category, raise 404 if not found."""
+    if not is_text_segment(type_name):
+        # The unknown-type 404, before a NUL can reach Postgres as a 500.
+        raise HTTPException(status_code=404, detail=f"{category.title()} type not found")
     if category == 'collectibles':
         category_filter = or_(
             CollectibleType.category_group == 'collectibles',
