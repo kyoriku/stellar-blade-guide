@@ -530,12 +530,14 @@ function CollectibleTypeDetailPage() {
                       : `${totalCollectibles} ${displayTypeName}`
                     }
                     {completedIds.size > 0 && (() => {
-                      const pageCollectibles = levelData.flatMap(l => l.locations.flatMap(loc => loc.collectibles));
-                      const found = pageCollectibles
+                      // Over the entries the count line counts, so the cycle and subtype
+                      // filters narrow both.
+                      const found = filteredBySubtype
+                        .flatMap(l => l.locations.flatMap(loc => loc.collectibles))
                         .filter(c => completedIds.has(c.id))
                         .reduce((sum, c) => sum + (c.quantity || 1), 0);
                       if (found === 0) return null;
-                      return <span className="text-cyan-400 ml-2">· {found === totalCollectibles ? `all ${found}` : found} found</span>;
+                      return <span className="text-cyan-400 ml-2">· {found === filteredTotal ? `all ${found}` : found} found</span>;
                     })()}
                   </p>
                 </div>
