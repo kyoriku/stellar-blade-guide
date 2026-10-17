@@ -15,7 +15,8 @@ DDL strategy:
     (no relationship traversal), so Level/Location/type tables are not needed.
 
 conftest's autouse patch_redis covers app.core.cache.redis_client.
-get_current_user() only decodes the JWT — no Redis lookup for access tokens.
+get_current_user() decodes the JWT and loads the active user row; access tokens
+never touch Redis.
 """
 
 from __future__ import annotations
