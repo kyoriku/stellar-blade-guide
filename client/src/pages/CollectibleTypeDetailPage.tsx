@@ -12,7 +12,7 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation'
 import { COLLECTIBLE_IMAGES, UPGRADE_IMAGES, COSMETIC_IMAGES } from '../constants/categoryImages'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Loader2 } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
@@ -580,22 +580,27 @@ function CollectibleTypeDetailPage() {
                   <div className="flex items-center justify-end sm:justify-start gap-2 order-3 sm:order-0">
                     {showSubtypeFilter && (
                       <>
-                        <select
-                          value={subtypeFilter}
-                          onChange={(e) => setSubtypeFilter(e.target.value)}
-                          title={`Show ${displayTypeName} of a specific subtype`}
-                          className="bg-gray-800/50 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50"
-                        >
-                          <option value="All">All ({subtypeCounts.total})</option>
-                          {SUBTYPE_ORDER
-                            .filter(s => subtypeCounts.counts.has(s))
-                            .map(s => (
-                              <option key={s} value={s}>
-                                {s} ({subtypeCounts.counts.get(s)})
-                              </option>
-                            ))
-                          }
-                        </select>
+                        {/* The native arrow sits against the border whatever the padding, so
+                            the chevron is drawn here, inset as on the Manage progress Scope. */}
+                        <div className="relative">
+                          <select
+                            value={subtypeFilter}
+                            onChange={(e) => setSubtypeFilter(e.target.value)}
+                            title={`Show ${displayTypeName} of a specific subtype`}
+                            className="appearance-none bg-gray-800/50 border border-gray-700 text-gray-300 text-sm rounded-lg pl-3 pr-10 py-1.5 cursor-pointer scheme-dark focus:outline-hidden focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+                          >
+                            <option value="All">All ({subtypeCounts.total})</option>
+                            {SUBTYPE_ORDER
+                              .filter(s => subtypeCounts.counts.has(s))
+                              .map(s => (
+                                <option key={s} value={s}>
+                                  {s} ({subtypeCounts.counts.get(s)})
+                                </option>
+                              ))
+                            }
+                          </select>
+                          <ChevronDown aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        </div>
                         <div className="w-px h-6 bg-gray-700 mx-2" />
                       </>
                     )}

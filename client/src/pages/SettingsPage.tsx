@@ -217,7 +217,7 @@ export default function SettingsPage() {
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
+                className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
                 placeholder="yourname"
               />
               <p className={`mt-1.5 text-xs ${usernameChanged && !usernameValid ? 'text-red-400' : 'text-gray-400'}`}>
@@ -233,7 +233,7 @@ export default function SettingsPage() {
                 type="url"
                 value={avatarUrl}
                 onChange={e => setAvatarUrl(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
+                className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
                 placeholder="https://example.com/avatar.png"
               />
             </div>
@@ -311,7 +311,7 @@ export default function SettingsPage() {
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
+                    className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
                     placeholder="••••••••"
                   />
                   <button
@@ -335,7 +335,7 @@ export default function SettingsPage() {
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                     required
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
+                    className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
                     placeholder="••••••••"
                   />
                   <button

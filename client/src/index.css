@@ -30,6 +30,20 @@
   }
 }
 
+/* Form text is 16px on touch screens: iOS Safari zooms the page into a focused
+   control whose text is smaller, and leaves it zoomed. A coarse pointer rather
+   than a width, so a phone in landscape gets it and a narrow desktop window does
+   not. Unlayered, so it beats every Tailwind utility (they sit in a layer), and no
+   control is set above 16px, so it only ever raises a size. Pinned by
+   e2e/specs/touch-controls.spec.ts. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Custom Scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;

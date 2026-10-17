@@ -186,7 +186,7 @@ export default function Comment({
                 onChange={e => { setEditBody(e.target.value); setEditError(null) }}
                 rows={3}
                 maxLength={2000}
-                className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
+                className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
               />
               <div className="flex gap-2 justify-end">
                 {editError

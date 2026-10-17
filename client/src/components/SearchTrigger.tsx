@@ -149,7 +149,7 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search..."
-            className="w-full pl-9 pr-8 py-1.5 bg-secondary border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition-colors"
+            className="w-full pl-9 pr-8 py-1.5 bg-secondary border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-400 focus:outline-hidden focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition-colors"
           />
           <button
             onClick={() => (query ? setQuery('') : collapse())}
