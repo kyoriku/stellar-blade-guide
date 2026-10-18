@@ -129,6 +129,11 @@ describe('sectionAnchor', () => {
     expect(sectionAnchor({ section_title: '', order: 2 })).toBe('section-2')
   })
 
+  it('writes a whole-number order without a decimal point', () => {
+    // A seed file's 2.0 reaches the page as the number 2; the server writes it the same way.
+    expect(sectionAnchor({ order: 2.0 })).toBe('section-2')
+  })
+
   it('is empty for a Greek-only title, where the server gives no anchor', () => {
     expect(sectionAnchor({ section_title: '\u03b1\u03b2\u03b3', order: 3 })).toBe('')
   })

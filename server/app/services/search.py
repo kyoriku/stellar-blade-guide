@@ -391,7 +391,13 @@ def _section_anchor(block: dict) -> str | None:
     order = block.get("order")
     if order is None:
         return None
-    return f"section-{str(order).lower() if isinstance(order, bool) else order}"
+    # A number as the page's template string writes it: 2 for a whole 2.0
+    # (JavaScript switches to exponent notation from 1e21, as Python already does).
+    if isinstance(order, bool):
+        order = str(order).lower()
+    elif isinstance(order, float) and order.is_integer() and abs(order) < 1e21:
+        order = int(order)
+    return f"section-{order}"
 
 
 def _extract_snippet(description: dict | None) -> str | None:

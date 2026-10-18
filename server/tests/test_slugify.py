@@ -103,6 +103,11 @@ def test_empty_section_title_counts_as_untitled():
     assert _section_anchor({"section_title": "", "order": 2}) == "section-2"
 
 
+def test_untitled_section_anchor_writes_a_whole_number_order_as_the_page_does():
+    # A seed file's 2.0 reaches the page as the number 2, which its template string writes as "2".
+    assert _section_anchor({"order": 2.0}) == "section-2"
+
+
 def test_greek_only_section_title_has_no_anchor():
     # The page gives this section an empty id, which nothing can link to; the client
     # side pins that empty string.
