@@ -20,7 +20,7 @@ from app.core.auth import _family_key, _refresh_key
 # sync with the sources — a new content namespace added there belongs here:
 #   scripts/cache/clear_content_cache.py   (collectibles/cosmetics/upgrades/walkthroughs)
 #   scripts/db/seed_collectibles.py        (+ search)
-#   scripts/db/seed_walkthroughs.py        (walkthrough*)
+#   scripts/db/seed_walkthroughs.py        (walkthrough* + search)
 CONTENT_PATTERNS = [
     "collectibles:*",
     "cosmetics:*",

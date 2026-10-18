@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { slugifyTitle, buildSlugMap } from './slugify'
+import { slugifyTitle, buildSlugMap, slugifySection, sectionAnchor } from './slugify'
 
 // These cases mirror server/tests/test_slugify.py one-for-one: the server's
 // _slugify_title/_build_slug_map must stay byte-identical to these functions
@@ -82,5 +82,59 @@ describe('buildSlugMap', () => {
     expect(m.get(1)).toBe('gear-1')
     expect(m.get(2)).toBe('gear-2')
     expect(m.get(3)).toBe('gear-3')
+  })
+})
+
+// Walkthrough section ids. Search links straight to a section, so _section_anchor in
+// server/app/services/search.py builds the same id, and server/tests/test_slugify.py
+// pins the server side.
+
+describe('slugifySection', () => {
+  it('hyphenates the words of a title', () => {
+    expect(slugifySection('Catching a Whale Shark')).toBe('catching-a-whale-shark')
+  })
+
+  it('removes apostrophes rather than hyphenating them', () => {
+    expect(slugifySection("Finding Frank's Bag")).toBe('finding-franks-bag')
+  })
+
+  it('drops the period after a leading number', () => {
+    expect(slugifySection('1. Vibrant Cat')).toBe('1-vibrant-cat')
+  })
+
+  it('drops parentheses at the end of a title', () => {
+    expect(slugifySection('Belial (First Encounter)')).toBe('belial-first-encounter')
+  })
+
+  it('drops parentheses at the start of a title', () => {
+    expect(slugifySection('(Optional) Finding the Cat')).toBe('optional-finding-the-cat')
+  })
+
+  it('drops Greek letters, unlike slugifyTitle', () => {
+    expect(slugifySection('Chapter of Trial 1-\u03b2')).toBe('chapter-of-trial-1')
+    expect(slugifyTitle('Chapter of Trial 1-\u03b2')).toBe('chapter-of-trial-1-\u03b2')
+  })
+})
+
+describe('sectionAnchor', () => {
+  it("uses a titled section's slug", () => {
+    expect(sectionAnchor({ section_title: "Finding Frank's Bag", order: 2 })).toBe('finding-franks-bag')
+  })
+
+  it('uses section-{order} for an untitled section', () => {
+    expect(sectionAnchor({ order: 1 })).toBe('section-1')
+  })
+
+  it('treats an empty title as untitled', () => {
+    expect(sectionAnchor({ section_title: '', order: 2 })).toBe('section-2')
+  })
+
+  it('writes a whole-number order without a decimal point', () => {
+    // A seed file's 2.0 reaches the page as the number 2; the server writes it the same way.
+    expect(sectionAnchor({ order: 2.0 })).toBe('section-2')
+  })
+
+  it('is empty for a Greek-only title, where the server gives no anchor', () => {
+    expect(sectionAnchor({ section_title: '\u03b1\u03b2\u03b3', order: 3 })).toBe('')
   })
 })

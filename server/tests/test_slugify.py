@@ -1,4 +1,7 @@
-from app.services.search import _slugify_title, _build_slug_map
+from app.services.search import _slugify_title, _build_slug_map, _section_anchor
+
+# Characters kept out of the source as literals.
+ALPHA, BETA, GAMMA = chr(0x3B1), chr(0x3B2), chr(0x3B3)
 
 
 def test_single_star_becomes_1():
@@ -60,3 +63,52 @@ def test_build_slug_map_star_variants_stay_distinct_and_bare():
         2: "ranged-enhancement-gear-2-supply-box",
         3: "ranged-enhancement-gear-3",
     }
+
+
+# Walkthrough section ids. Search links straight to a section, so _section_anchor
+# mirrors sectionAnchor and slugifySection in client/src/utils/slugify.ts, and
+# slugify.test.ts pins the same cases from the client side.
+
+def test_section_anchor_hyphenates_the_words_of_a_title():
+    assert _section_anchor({"section_title": "Catching a Whale Shark", "order": 1}) == "catching-a-whale-shark"
+
+
+def test_section_anchor_removes_apostrophes_rather_than_hyphenating_them():
+    assert _section_anchor({"section_title": "Finding Frank's Bag", "order": 2}) == "finding-franks-bag"
+
+
+def test_section_anchor_drops_the_period_after_a_leading_number():
+    assert _section_anchor({"section_title": "1. Vibrant Cat", "order": 1}) == "1-vibrant-cat"
+
+
+def test_section_anchor_drops_parentheses_at_the_end_of_a_title():
+    assert _section_anchor({"section_title": "Belial (First Encounter)", "order": 1}) == "belial-first-encounter"
+
+
+def test_section_anchor_drops_parentheses_at_the_start_of_a_title():
+    assert _section_anchor({"section_title": "(Optional) Finding the Cat", "order": 1}) == "optional-finding-the-cat"
+
+
+def test_section_anchor_drops_greek_letters_unlike_slugify_title():
+    title = "Chapter of Trial 1-" + BETA
+    assert _section_anchor({"section_title": title, "order": 1}) == "chapter-of-trial-1"
+    assert _slugify_title(title) == "chapter-of-trial-1-" + BETA
+
+
+def test_untitled_section_anchor_is_section_order():
+    assert _section_anchor({"order": 1}) == "section-1"
+
+
+def test_empty_section_title_counts_as_untitled():
+    assert _section_anchor({"section_title": "", "order": 2}) == "section-2"
+
+
+def test_untitled_section_anchor_writes_a_whole_number_order_as_the_page_does():
+    # A seed file's 2.0 reaches the page as the number 2, which its template string writes as "2".
+    assert _section_anchor({"order": 2.0}) == "section-2"
+
+
+def test_greek_only_section_title_has_no_anchor():
+    # The page gives this section an empty id, which nothing can link to; the client
+    # side pins that empty string.
+    assert _section_anchor({"section_title": ALPHA + BETA + GAMMA, "order": 3}) is None

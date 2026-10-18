@@ -75,6 +75,8 @@ server/scripts/images/prune-pending.json
 server/scripts/sitemap-state.json
 # changed-entity manifest: what a seed run altered, consumed by purge_api_cache.py
 server/scripts/cache/purge-manifest.json
+# search results before the rework, recorded by search_eval.py --snapshot for its checks
+server/scripts/search-baseline.json
 # executed one-off schema migrations (local reference material)
 server/scripts/migrations/
 
@@ -91,6 +93,7 @@ node_modules/.tmp/
 CLAUDE.md
 skills-lock.json
 /plans
+server/review
 
 # e2e suite — deps, browsers, and per-run artifacts stay local
 e2e/node_modules/

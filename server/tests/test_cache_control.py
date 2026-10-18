@@ -172,7 +172,7 @@ async def test_advertised_s_maxage_equals_the_ttl_actually_written_to_redis(
         captured["ttl"] = ttl
         return True
 
-    monkeypatch.setattr(search_route, "_execute_search", AsyncMock(return_value=[]))
+    monkeypatch.setattr(search_route, "_execute_search", AsyncMock(return_value=([], None)))
     monkeypatch.setattr(search_route, "get_cache", AsyncMock(return_value=None))
     monkeypatch.setattr(search_route, "set_cache", fake_set_cache)
 

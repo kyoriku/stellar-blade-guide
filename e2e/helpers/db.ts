@@ -6,6 +6,13 @@ import { PG_URL, REDIS_HOST, REDIS_PORT } from './guard';
 
 const FIXTURE_FILE = path.join(__dirname, '..', '.fixtures.json');
 
+// A section of the fixture walkthrough: a word only its text holds, and the id the
+// section has on the page, which is where search links that word.
+export interface FixtureSection {
+  word: string;
+  anchor: string;
+}
+
 export interface Fixtures {
   token: string;
   levelCreated: boolean;
@@ -16,6 +23,8 @@ export interface Fixtures {
   walkthroughId: number;
   walkthroughSlug: string;
   walkthroughTitle: string;
+  titledSection: FixtureSection;
+  untitledSection: FixtureSection;
   baseline: { collectibles: number; walkthroughs: number };
 }
 
@@ -31,6 +40,14 @@ export function redisClient(): Redis {
   return new Redis({ host: REDIS_HOST, port: REDIS_PORT, lazyConnect: false });
 }
 
+// The Redis key of a search response, as search_cache_key (server/app/core/cache.py)
+// builds it for the client's limit of 20. `q` is the query as the server normalizes
+// it: for the text specs type, trimmed and lowercased.
+export function searchKey(q: string): string {
+  return `search:${q}:20:v2`;
+}
+
+// Every cached search whose query holds the run token, at any limit or key version.
 async function delSearchKeys(redis: Redis, token: string): Promise<number> {
   let cursor = '0';
   let deleted = 0;
@@ -110,10 +127,22 @@ export async function createFixtures(token: string): Promise<Fixtures> {
     // mission_type must not end in 's' (the walkthrough route de-pluralizes the URL segment).
     const walkthroughSlug = `e2e-${token}`;
     const walkthroughTitle = `E2E ${token} walkthrough`;
+    // A titled section and an untitled one, so search can be seen linking a word in a
+    // walkthrough's text to the section holding it: a titled section's id is its title's
+    // slug, an untitled one's section-{order}. Each word starts with letters (a word
+    // starting with digits can parse as a number: "3e5..." splits in two), then the run
+    // token's last three characters, so its first five characters are this run's alone.
+    // It still holds the run token, which cleanup and the residue check look for.
+    const titledSection: FixtureSection = { word: `vq${token.slice(-3)}${token}`, anchor: 'e2e-fixtures-section' };
+    const untitledSection: FixtureSection = { word: `vu${token.slice(-3)}${token}`, anchor: 'section-2' };
+    const content = [
+      { order: 1, section_title: "E2E Fixture's Section", text: `E2E fixture step by ${titledSection.word}.` },
+      { order: 2, text: `E2E fixture step by ${untitledSection.word}.` },
+    ];
     const wt = await pool.query(
       `INSERT INTO walkthroughs (id, slug, title, mission_type, display_order, content)
        VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM walkthroughs), $1, $2, 'e2e-fixture', 999, $3::jsonb) RETURNING id`,
-      [walkthroughSlug, walkthroughTitle, JSON.stringify([{ order: 1, text: 'E2E fixture step.' }])]
+      [walkthroughSlug, walkthroughTitle, JSON.stringify(content)]
     );
     const walkthroughId = wt.rows[0].id;
 
@@ -121,7 +150,7 @@ export async function createFixtures(token: string): Promise<Fixtures> {
 
     const fx: Fixtures = {
       token, levelCreated, levelId, locationId, collectibleId, collectibleTitle,
-      walkthroughId, walkthroughSlug, walkthroughTitle, baseline,
+      walkthroughId, walkthroughSlug, walkthroughTitle, titledSection, untitledSection, baseline,
     };
     fs.writeFileSync(FIXTURE_FILE, JSON.stringify(fx, null, 2));
     return fx;
@@ -191,7 +220,7 @@ export async function teardownFixtures(fx: Fixtures): Promise<string[]> {
       `SELECT
          (SELECT count(*) FROM collectibles WHERE title LIKE '%' || $1 || '%') +
          (SELECT count(*) FROM locations    WHERE name  LIKE '%' || $1 || '%') +
-         (SELECT count(*) FROM walkthroughs WHERE title LIKE '%' || $1 || '%') +
+         (SELECT count(*) FROM walkthroughs WHERE title LIKE '%' || $1 || '%' OR content::text LIKE '%' || $1 || '%') +
          (SELECT count(*) FROM users        WHERE username LIKE '%' || $1 || '%') +
          (SELECT count(*) FROM comments     WHERE content_type = 'walkthrough' AND content_id = $2) AS n`,
       [fx.token, fx.walkthroughId]

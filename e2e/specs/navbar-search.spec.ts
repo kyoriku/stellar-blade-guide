@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readFixtures, pgPool, redisClient, type Fixtures } from '../helpers/db';
+import { readFixtures, pgPool, redisClient, searchKey, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
 let fx: Fixtures;
@@ -30,10 +30,10 @@ test.describe('navbar mobile search', () => {
 
     // A real title means a real search key, and a response an earlier run cached (it
     // lives an hour) would answer instead of the code under test. Clear that key.
-    const searchKey = `search:${title.trim().toLowerCase()}:20`;
+    const key = searchKey(title.trim().toLowerCase());
     const redis = redisClient();
     try {
-      await redis.del(searchKey);
+      await redis.del(key);
       await page.goto('/');
       await page.getByRole('button', { name: 'Toggle menu' }).click();
       await page.getByPlaceholder('Search collectibles, walkthroughs, levels...').fill(title);
@@ -45,7 +45,7 @@ test.describe('navbar mobile search', () => {
       await expect(page).toHaveURL(new RegExp(`/walkthroughs/side-quests/${slug}$`));
       await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     } finally {
-      await redis.del(searchKey);
+      await redis.del(key);
       redis.disconnect();
     }
   });

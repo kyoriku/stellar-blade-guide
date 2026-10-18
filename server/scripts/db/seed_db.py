@@ -15,26 +15,23 @@ from app.models.walkthroughs import Walkthrough
 from app.models.users import User, OAuthAccount
 from app.models.comments import Comment
 from app.models.progress import UserProgress
+from app.services.search_text import COLUMN_STATE_SQL, RETIRED_SEARCH_INDEXES, plan_search_columns
 
-# Search infrastructure create_all cannot express: the pg_trgm extension and the
-# GIN indexes app/services/search.py queries at runtime. Definitions match what
-# production has (verified byte-identical in the 2026-07-09 schema audit).
-SEARCH_INDEX_DDL = [
-    "CREATE EXTENSION IF NOT EXISTS pg_trgm",
-    "CREATE INDEX IF NOT EXISTS ix_collectibles_fts "
-    "ON collectibles USING GIN (to_tsvector('english', title))",
-    "CREATE INDEX IF NOT EXISTS ix_walkthroughs_fts "
-    "ON walkthroughs USING GIN ("
-    "  to_tsvector('english', title || ' ' || COALESCE(subtitle, '')))",
-    "CREATE INDEX IF NOT EXISTS ix_levels_fts "
-    "ON levels USING GIN (to_tsvector('english', name))",
-    "CREATE INDEX IF NOT EXISTS ix_collectibles_trgm "
-    "ON collectibles USING GIN (title gin_trgm_ops)",
-    "CREATE INDEX IF NOT EXISTS ix_walkthroughs_trgm "
-    "ON walkthroughs USING GIN (title gin_trgm_ops)",
-    "CREATE INDEX IF NOT EXISTS ix_levels_trgm "
-    "ON levels USING GIN (name gin_trgm_ops)",
-]
+# Search infrastructure create_all cannot express: the pg_trgm extension, which
+# app/services/search.py's similarity() needs, and the stored search_vector columns,
+# generated from app/services/search_text.py's expressions. The columns aren't in the
+# ORM (nothing writes them), so this adds them, or rebuilds one whose tag says its
+# expression has changed. The six indexes the old search statements were built around
+# are dropped where found. Production gets all of this from the hand-run migration
+# (scripts/migrations/add_search_vectors.py), never from this script.
+async def ensure_search_columns(conn):
+    await conn.exec_driver_sql("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+    await conn.exec_driver_sql(f"DROP INDEX IF EXISTS {', '.join(RETIRED_SEARCH_INDEXES)}")
+    version = int((await conn.exec_driver_sql("SHOW server_version_num")).scalar())
+    states = {r.table_name: dict(r._mapping) for r in (await conn.execute(text(COLUMN_STATE_SQL))).all()}
+    for statement in plan_search_columns(states, version):
+        await conn.exec_driver_sql(statement)
+
 
 async def seed_database():
     # 1 Create tables (sync inside async context)
@@ -42,12 +39,11 @@ async def seed_database():
         await conn.run_sync(Base.metadata.create_all)
     print("\033[92mTables created/verified\033[0m")
 
-    # 1b Search extension + indexes (before the already-seeded early return so
-    # re-runs heal missing search infra too)
+    # 1b Search extension + columns (before the already-seeded early return so
+    # re-runs heal missing or stale search infra too)
     async with engine.begin() as conn:
-        for ddl in SEARCH_INDEX_DDL:
-            await conn.execute(text(ddl))
-    print("\033[92mSearch extension + indexes ready\033[0m")
+        await ensure_search_columns(conn)
+    print("\033[92mSearch extension + columns ready\033[0m")
 
     # 2 Use a single session for the seeding process
     async with AsyncSession(engine) as session:

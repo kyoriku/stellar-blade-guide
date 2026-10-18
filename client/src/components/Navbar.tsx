@@ -487,7 +487,8 @@ function Navbar() {
               <div className="mt-2 text-xs text-gray-400">
                 {mobileSearchData
                   ? `${mobileSearchData.total} result${mobileSearchData.total !== 1 ? 's' : ''} found`
-                  : searchQuery.length < 2
+                  // Trimmed, like the search itself (useSearch): "x " sends nothing.
+                  : searchQuery.trim().length < 2
                     ? 'Type at least 2 characters...'
                     : 'Searching...'}
               </div>

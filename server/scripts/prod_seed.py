@@ -149,6 +149,11 @@ CLOUDFLARE_ZONE_ID = os.environ["CLOUDFLARE_ZONE_ID"]
 CLOUDFLARE_API_TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
 
 STEPS = [
+    # First, before anything writes: a refusal from the walkthrough seeder itself would
+    # land after the collectibles are written and before the purge, and the next run
+    # would see no collectible change to purge. This one only reads the seed files.
+    ("Checking walkthrough files", [
+     "uv", "run", "python", "scripts/db/seed_walkthroughs.py", "--check"]),
     ("Seeding prod collectibles database", [
      "uv", "run", "python", "scripts/db/seed_collectibles.py"]),
     ("Seeding prod walkthroughs database", [

@@ -11,13 +11,17 @@ DB 404s.
 walkthrough_cache_keys is also the single place the detail key shape lives. The
 API route and the SPA head injection (app/seo_head.py) both call it; the
 source-grep test below fails if either grows an inline key again.
+
+search_cache_key does the same for the search route, and carries the version
+that lets a deploy change results without a flush.
 """
 import re
 from pathlib import Path
 
+import app.routers.search as search_router
 import app.routers.walkthroughs as walkthroughs_router
 import app.seo_head as seo_head
-from app.core.cache import cache_slug, walkthrough_cache_keys
+from app.core.cache import cache_slug, search_cache_key, walkthrough_cache_keys
 
 
 def test_cache_slug_lowercases_and_hyphenates():
@@ -51,3 +55,25 @@ def test_walkthrough_key_shape_is_not_rebuilt_inline():
     for module in (walkthroughs_router, seo_head):
         source = Path(module.__file__).read_text(encoding="utf-8")
         assert not inline.search(source), f"{module.__name__} builds a walkthrough key inline"
+
+
+def test_search_cache_key_shape():
+    # Byte for byte: e2e/helpers/db.ts searchKey() builds the same key to clear it,
+    # so a version bump changes both.
+    assert search_cache_key("nano", 20) == "search:nano:20:v2"
+    assert search_cache_key("new game plus", 50) == "search:new game plus:50:v2"
+
+
+def test_no_search_key_can_be_read_as_an_unversioned_one():
+    """The image being replaced reads search:{q}:{limit}. A versioned key ends in
+    ":v2", never in digits, so whatever the query, the two images never share an
+    entry; a "search:v2:" prefix would have, for the query "v2:nano"."""
+    old_shape = re.compile(r"search:.*:\d+")
+    for q in ("nano", "v2:nano", "nano:20", "nano:20:v1", ":", "a:1:v2"):
+        for limit in (1, 20, 50):
+            assert not old_shape.fullmatch(search_cache_key(q, limit))
+
+
+def test_search_key_shape_is_not_rebuilt_inline():
+    source = Path(search_router.__file__).read_text(encoding="utf-8")
+    assert not re.search(r"""['"]search:""", source), "the search router builds its key inline"

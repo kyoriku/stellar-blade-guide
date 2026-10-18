@@ -347,9 +347,9 @@ async def test_missing_cf_ray_keeps_the_column_width(api_log):
 # only route with query params — the OAuth callbacks receive their
 # authorization `code` there, and a generic rule would log credentials.
 
-def _search_app(query, total=None, status=200):
-    """Stand-in for the search route: hands `query` (and `total`) to the access
-    log the way the real handler does."""
+def _search_app(query, total=None, status=200, corrected=None):
+    """Stand-in for the search route: hands `query` (and `total`, and the typo
+    fallback's `corrected`) to the access log the way the real handler does."""
     app = FastAPI()
     add_logging_middleware(app)
 
@@ -358,6 +358,8 @@ def _search_app(query, total=None, status=200):
         request.state.search_query = query
         if total is not None:
             request.state.search_total = total
+        # The route sets it on every hit and miss, None when nothing was corrected.
+        request.state.search_corrected = corrected
         return JSONResponse({"ok": True}, status_code=status)
 
     return app
@@ -426,6 +428,38 @@ async def test_search_text_is_the_last_field_so_it_cannot_impersonate_one(api_lo
     assert line.index("UA: Firefox/1.0") < line.index(" q=")
     # ...and everything after `q=` is the user's, verbatim, to end of line.
     assert line.endswith(f"q={forged}")
+
+
+async def test_a_corrected_query_names_its_correction_before_the_text(api_log):
+    """A typo fallback's results are for the corrected words, so the line says so: a
+    search that found something never reads as a content gap, and q= stays last."""
+    async with _client(_search_app("obvlisiohn", total=20, corrected="oblivion")) as c:
+        await c.get("/api/search/")
+    (line,) = _access_lines(api_log)
+    assert line.endswith("| /api/search/ | n=20 c=oblivion q=obvlisiohn")
+
+
+@pytest.mark.parametrize("corrected", [None, ""])
+async def test_an_uncorrected_query_has_no_c_field(api_log, corrected):
+    async with _client(_search_app("nano", total=20, corrected=corrected)) as c:
+        await c.get("/api/search/")
+    (line,) = _access_lines(api_log)
+    assert line.endswith("| /api/search/ | n=20 q=nano")
+    assert " c=" not in line
+
+
+async def test_the_correction_is_neutralised_and_capped_like_the_text(api_log):
+    """Corrections are built from title words, but nothing in the line may trust that."""
+    hostile = "ab" + ANSI_PROBE + chr(0x2028) + "z" * 100
+    async with _client(_search_app("abc", total=1, corrected=hostile)) as c:
+        await c.get("/api/search/")
+    (line,) = _access_lines(api_log)
+    assert len(line.splitlines()) == 1
+    assert ANSI_PROBE not in line
+    field = line.split(" c=", 1)[1].rsplit(" q=", 1)[0]
+    assert field == sanitize_log_field(hostile, LOG_QUERY_MAX)
+    assert len(field) == LOG_QUERY_MAX + 1
+    assert line.endswith(" q=abc")
 
 
 # ── the missing CF-Connecting-IP alarm ───────────────────────────────────────
