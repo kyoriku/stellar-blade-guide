@@ -181,7 +181,11 @@ async def log_requests_middleware(request: Request, call_next):
     if search_query is not None:
         search_total = getattr(request.state, "search_total", None)
         count = f'n={search_total:<2} ' if search_total is not None else ''
-        log_line += f' | {count}q={sanitize_log_field(search_query, LOG_QUERY_MAX)}'
+        # The query the results are for, when the typo fallback corrected it: shown, so
+        # a corrected query never hides a content gap. Title words only, never "q=".
+        corrected = getattr(request.state, "search_corrected", None)
+        fixed = f'c={sanitize_log_field(corrected, LOG_QUERY_MAX)} ' if corrected else ''
+        log_line += f' | {count}{fixed}q={sanitize_log_field(search_query, LOG_QUERY_MAX)}'
 
     if response.status_code >= 500:
         logger.error(log_line)
