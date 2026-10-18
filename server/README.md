@@ -38,7 +38,7 @@ scripts/
                      prune_bucket.py; full flow documented in images/PIPELINE.md)
   migrations/        one-off schema migrations, written as needed (no Alembic; executed scripts stay out of the repo)
 seed-data/           JSON source of truth for all content (untracked; carries its own README)
-tests/               pytest suite (18 modules + conftest.py)
+tests/               pytest suite (test modules + conftest.py)
 pyproject.toml       dependencies + pytest config
 ```
 
@@ -236,4 +236,4 @@ Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React
 uv run pytest
 ```
 
-275 tests run in about three seconds. The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
+The suite is black-box contract style: each test builds a minimal FastAPI app and drives it over HTTP (httpx `AsyncClient`), with an in-memory SQLite database (aiosqlite) and `fakeredis` standing in for PostgreSQL and Redis, so no live services are needed. Rate limiting is disabled suite-wide by a fixture. Coverage spans the content routes and schemas, auth flows, ETag / bot-filter / origin-check middleware, Redis outage resilience, slug generation, and seed-data validity.
