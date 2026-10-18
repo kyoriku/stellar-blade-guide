@@ -120,6 +120,20 @@ def test_the_ng_alias_keeps_the_other_words():
     assert parsed["plain"] == ["nano", "suit"]
 
 
+@pytest.mark.parametrize("raw, phrase", [
+    ("nano suit ng+", f"'nano' <-> 'suit' <-> {NG_PHRASE}"),
+    ("nano suit new game p", f"'nano' <-> 'suit' <-> {NG_PHRASE}"),
+    ("nano ng+ suit", f"'nano' <-> {NG_PHRASE} <-> 'suit'"),
+    ("ng+ nano suit", f"{NG_PHRASE} <-> 'nano' <-> 'suit'"),
+    ("new game plus nano suit", f"{NG_PHRASE} <-> 'nano' <-> 'suit'"),
+    ("ng+ ng++ nano", f"{NG_PHRASE} <-> 'nano'"),     # spellings typed together are one alias
+])
+def test_the_phrase_puts_the_ng_alias_where_it_was_typed(raw, phrase):
+    """The phrase boost needs the words in the order a page has them. With the alias
+    always placed before the last word, "nano suit ng+" asked for "nano new game suit"."""
+    assert parse(raw)["phrase_q"] == phrase
+
+
 # ---------------------------------------------------------------------------
 # Outfit, appearance and Eve aliases
 # ---------------------------------------------------------------------------

@@ -68,15 +68,22 @@ def build_query(q: str) -> dict:
 
     Words are runs of letters and digits, each passed quoted, so nothing typed can
     become tsquery syntax. Every word must match; the last one is the word being
-    typed and matches as a prefix (search_text and _SEARCH_SQL decide how).
+    typed and matches as a prefix (search_text and _SEARCH_SQL decide how). The
+    phrase, which only ranks, keeps the typed order, the New Game Plus alias included.
     Aliases only ever add: outfit words also mean the outfit types and nano suits,
     "eve" next to an outfit or suit word means a nano suit, an outfit word next to
     "drone" means a Drone Appearance, and New Game Plus means "new game" or "ng".
     """
     ng = bool(_NG_RX.search(q))
-    rest = _NG_RX.sub(" ", q)
-    rest = re.sub(r"['’]s\b", "", rest)                     # possessive: "eve's" -> "eve"
-    toks = re.findall(r"[^\W_]+", rest)
+    # The words in typed order, with None where a New Game Plus spelling was typed
+    # (once for several in a row). Only the phrase reads the positions.
+    typed = []
+    for i, segment in enumerate(_NG_RX.split(q)):
+        if i and typed[-1:] != [None]:
+            typed.append(None)
+        segment = re.sub(r"['’]s\b", "", segment)             # possessive: "eve's" -> "eve"
+        typed += re.findall(r"[^\W_]+", segment)
+    toks = [t for t in typed if t is not None]
     dressy = any(t in _OUTFIT_WORDS or t in _APPEARANCE_WORDS for t in toks)
     eve_dressy = dressy or any(t in _SUIT_WORDS for t in toks)
     droney = "drone" in toks                                  # "drone skin" means a Drone Appearance
@@ -93,7 +100,8 @@ def build_query(q: str) -> dict:
     last = toks.pop() if toks and concept(toks[-1]) is None else ""   # the word being typed, any length
     terms = [concept(t) or f"'{t}'" for t in toks]
     parts = terms + ([NG] if ng else [])
-    phrase = terms + ([NG_PHRASE] if ng else []) + ([f"'{last}'"] if last else [])
+    # "nano suit ng+" asks for 'nano' <-> 'suit' <-> NG_PHRASE, in the order typed.
+    phrase = [NG_PHRASE if t is None else concept(t) or f"'{t}'" for t in typed]
     plain = [t for t in toks if concept(t) is None] + ([last] if last else [])
     concept_words = (({"new game", "ng"} if ng else set()) | (set(_OUTFIT_SNIPPET_WORDS) if dressy else set())
                      | ({"nano suit"} if eve_dressy and "eve" in toks else set()))
