@@ -68,7 +68,8 @@ export function SearchResults({
       void prefetchLevel(target.levelSlug)
   }
 
-  if (query.length < 2) {
+  // Trimmed, like the search itself (useSearch): "x " is one character, not two.
+  if (query.trim().length < 2) {
     return (
       <div className="px-4 py-6 text-sm text-gray-400 text-center">
         Search collectibles, walkthroughs, levels...

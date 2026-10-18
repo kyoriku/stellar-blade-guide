@@ -10,12 +10,17 @@ export function useSearch(query: string, limit = 20) {
     return () => clearTimeout(id)
   }, [query])
 
+  // Trimmed before the length check, the key and the request: "nano" and "nano " are
+  // one request and one cache entry, and a letter plus a space is not two characters.
+  const term = debouncedQuery.trim()
   const result = useQuery({
-    queryKey: ['search', debouncedQuery, limit],
-    queryFn: ({ signal }) => api.searchAll(debouncedQuery, limit, signal),
-    enabled: debouncedQuery.length >= 2,
+    queryKey: ['search', term, limit],
+    queryFn: ({ signal }) => api.searchAll(term, limit, signal),
+    enabled: term.length >= 2,
     staleTime: 5 * 60 * 1000,
+    // A failing search shows its error at once, not after the global retries.
+    retry: false,
   })
 
-  return { ...result, isPending: query !== debouncedQuery || result.isLoading }
+  return { ...result, isPending: query.trim() !== term || result.isLoading }
 }
