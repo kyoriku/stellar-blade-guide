@@ -18,6 +18,7 @@ import { useActiveSection } from '../hooks/useActiveSection'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
 import { walkthroughTypeName } from '../utils/walkthroughTypeName'
+import { sectionAnchor, slugifySection } from '../utils/slugify'
 import { serverWalkthroughTitle } from '../utils/serverHead'
 import { WALKTHROUGH_IMAGES } from '../constants/categoryImages'
 import SEO from '../components/SEO';
@@ -168,10 +169,6 @@ function WalkthroughDetailPage() {
     return <ErrorPage code={404} />;
   }
 
-  function slugifySection(title: string): string {
-    return title.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-  }
-
   const tocLinks = [{
     mainLink: `#${slugifySection(walkthrough.content.find(c => c.section_title)?.section_title || 'start')}`,
     title: walkthrough.title,
@@ -304,7 +301,7 @@ function WalkthroughDetailPage() {
               {walkthrough.content.map((content, index) => (
                 <div
                   key={`${walkthrough.slug}-${content.order}`}
-                  id={content.section_title ? slugifySection(content.section_title) : `section-${content.order}`}
+                  id={sectionAnchor(content)}
                   className="walkthrough-content scroll-anchor"
                 >
                   <WalkthroughContent

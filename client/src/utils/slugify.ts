@@ -31,3 +31,15 @@ export function buildSlugMap(
   }
   return map;
 }
+
+// A walkthrough section's id on its page: a titled section's slug, an untitled one's
+// section-{order}. Search links straight to sections, so _section_anchor in
+// server/app/services/search.py mirrors this; slugify.test.ts and the server's
+// test_slugify.py pin the same cases.
+export function slugifySection(title: string): string {
+  return title.toLowerCase().replace(/'/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+export function sectionAnchor(section: { section_title?: string; order: number }): string {
+  return section.section_title ? slugifySection(section.section_title) : `section-${section.order}`
+}
