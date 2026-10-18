@@ -150,7 +150,7 @@ All routes are mounted under `/api` and rate limited per route.
 | `/api/collectibles` | collectibles by type |
 | `/api/upgrades`, `/api/cosmetics` | category-scoped collectible reads (four routers defined in `routers/collectibles.py`) |
 | `/api/walkthroughs` | walkthroughs by mission type and slug |
-| `/api/search` | full-text search across collectibles, walkthroughs, and levels (`pg_trgm` + `tsvector`, scores merged) |
+| `/api/search` | one ranked search across collectibles, walkthroughs, and the type, walkthrough category, and level pages (stored `tsvector` columns, `pg_trgm` similarity for typos) |
 | `/api/auth` | register / login / logout, token refresh, OAuth (Google, Discord), password reset |
 | `/api/users` | account settings (profile, avatar upload with moderation) and role-gated user administration |
 | `/api/comments` | threaded comments with AI moderation and soft delete |

@@ -42,6 +42,20 @@ def walkthrough_cache_keys(normalized_type: str, slug: str) -> tuple[str, str]:
     return f"walkthrough:{normalized_type}:{slug}", f"walkthrough:miss:{normalized_type}:{slug}"
 
 
+# Bump whenever the same query's results can change: new keys start empty, so a deploy
+# needs no flush, and the old image keeps reading its own keys while it drains. The
+# version is a suffix because an unversioned key always ends in its limit's digits and
+# a versioned one never does, whatever the query; a prefix would collide (the old key
+# for the query "v2:nano" is "search:v2:nano:20").
+SEARCH_CACHE_VERSION = 2
+
+
+def search_cache_key(q: str, limit: int) -> str:
+    """The Redis key of one search response, for a normalized query. The router builds
+    it only through here."""
+    return f"search:{q}:{limit}:v{SEARCH_CACHE_VERSION}"
+
+
 # Redis errors fail open by design: every handler below logs and returns a miss
 # so reads fall through to Postgres. Contrast core/auth.py, where Redis errors
 # deliberately raise — auth fails closed (503 via error_handler).

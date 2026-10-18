@@ -9,6 +9,7 @@ only that one spelling is produced and every other spelling is redirected to it.
 """
 import json
 import os
+import re
 
 _SEO_JSON_PATH = os.path.join(os.path.dirname(__file__), '../../../client/src/constants/seo.json')
 
@@ -48,3 +49,17 @@ def canonical_url_type(segment: str) -> str | None:
 # The levels that have a page: seo.json's levels keys, the set seo_head already uses to
 # decide a level page is real. The pseudo-levels Default and Boss Challenge are not in it.
 NAV_LEVEL_SLUGS = frozenset(_seo['levels'])
+
+
+def _page_title(title: str) -> str:
+    """A seo.json page title without its leading "All N" count, which changes with every seed."""
+    return re.sub(r'^All \d+ ', '', title)
+
+
+# What each page is called besides its name, for search (app/services/search.py): the
+# type and level pages' titles from seo.json ("Camp Locations", "Eidos 7 Collectibles").
+TYPE_PAGE_TITLES = {slug: _page_title(entry['title'])
+                    for group in _seo['types'].values() for slug, entry in group.items()}
+LEVEL_PAGE_TITLES = {slug: _page_title(entry['title']) for slug, entry in _seo['levels'].items()}
+# The walkthrough categories in navigation order: URL segment -> display name.
+WALKTHROUGH_CATEGORIES = {slug: entry['name'] for slug, entry in _seo['walkthroughTypes'].items()}

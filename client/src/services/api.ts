@@ -146,6 +146,8 @@ export interface SearchResponse {
   query: string
   total: number
   results: SearchResult[]
+  // The typo-corrected query the results are for, when the server corrected one
+  corrected?: string | null
 }
 
 export interface WalkthroughListItem {

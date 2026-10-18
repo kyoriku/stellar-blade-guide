@@ -31,6 +31,14 @@ export function redisClient(): Redis {
   return new Redis({ host: REDIS_HOST, port: REDIS_PORT, lazyConnect: false });
 }
 
+// The Redis key of a search response, as search_cache_key (server/app/core/cache.py)
+// builds it for the client's limit of 20. `q` is the query as the server normalizes
+// it: for the text specs type, trimmed and lowercased.
+export function searchKey(q: string): string {
+  return `search:${q}:20:v2`;
+}
+
+// Every cached search whose query holds the run token, at any limit or key version.
 async function delSearchKeys(redis: Redis, token: string): Promise<number> {
   let cursor = '0';
   let deleted = 0;

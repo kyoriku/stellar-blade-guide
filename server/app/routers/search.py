@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.settings import settings
 from app.db.database import get_db
 from app.schemas.search import SearchResponse
-from app.core.cache import get_cache, set_cache
+from app.core.cache import get_cache, search_cache_key, set_cache
 from app.core.security import limiter
-from app.services.search import _execute_search
+from app.services.search import _execute_search, normalize_search_query
 
 SEARCH_RATE_LIMIT = "30/minute"
 # Shared with security_headers.py, which advertises the same value as s-maxage.
@@ -27,25 +27,32 @@ async def search(
     limit: int = Query(default=20, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
 ):
-    q_normalized = q.strip().lower()
+    q_normalized = normalize_search_query(q)
     # Opt-in access-log field (rendered by log_requests_middleware). Set before the
     # lookup so a 500 still names the query that caused it.
     request.state.search_query = q_normalized
-    cache_key = f"search:{q_normalized}:{limit}"
+    if not q_normalized or not q_normalized.isprintable():
+        # Nothing searchable is left (zero-width or control characters only): answer
+        # empty without a cache or DB round trip.
+        request.state.search_total = 0
+        return SearchResponse(query=q_normalized, total=0, results=[])
+    cache_key = search_cache_key(q_normalized, limit)
 
     cached = await get_cache(cache_key)
     if cached:
         request.state.cache_status = "HIT"
         # .get, not ["total"]: a log nicety must never be able to 500 the route.
         request.state.search_total = cached.get("total")
+        request.state.search_corrected = cached.get("corrected")
         return cached
 
     request.state.cache_status = "MISS"
     db_start = time.time()
 
-    results = await _execute_search(db, q_normalized, limit)
+    results, corrected = await _execute_search(db, q_normalized, limit)
     request.state.db_time = (time.time() - db_start) * 1000
-    response = SearchResponse(query=q_normalized, total=len(results), results=results)
+    response = SearchResponse(query=q_normalized, total=len(results), results=results, corrected=corrected)
     request.state.search_total = response.total
+    request.state.search_corrected = corrected
     await set_cache(cache_key, response.model_dump(), ttl=SEARCH_CACHE_TTL)
     return response

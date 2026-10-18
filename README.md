@@ -94,8 +94,8 @@ Content images are pre-generated as static WebP variants (four srcSet widths plu
 - Soft delete preserves thread context when a parent comment is removed
 
 **Search**
-- Full-text search across collectibles, walkthroughs, and levels
-- PostgreSQL `pg_trgm` trigram similarity + `tsvector` FTS; scores merged and ranked
+- One ranked search across collectibles, walkthroughs and their text, and the type, walkthrough category, and level pages
+- PostgreSQL stored `tsvector` columns, half-typed words, a few aliases (New Game Plus, outfits), `pg_trgm` similarity for misspelt titles, and a typo fallback
 - Rate-limited to 30 req/min; results cached in Redis for 1 hour
 
 ## Repository Layout
