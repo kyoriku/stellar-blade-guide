@@ -1,6 +1,10 @@
 """
-Usage: 
-  uv run scripts/db/seed_walkthroughs.py
+Usage:
+  uv run scripts/db/seed_walkthroughs.py           # seed
+  uv run scripts/db/seed_walkthroughs.py --check   # only load and check the files; no DB, no Redis
+
+Both refuse a file whose text sits deeper than search can index (see check_depth).
+prod_seed.py runs --check before any seeder writes.
 """
 
 import sys
@@ -20,6 +24,7 @@ from app.models.walkthroughs import Walkthrough
 from app.core.cache import invalidate_cache_pattern
 from scripts.images.paths import normalize_image_path, normalize_content_images
 from scripts.cache import purge_manifest
+from app.services.search_text import MAX_DEPTH, too_deep
 
 
 def load_all_walkthrough_files():
@@ -36,13 +41,41 @@ def load_all_walkthrough_files():
     print(f"Found {len(json_files)} walkthrough files\n")
 
     for json_file in json_files:
-        with open(json_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            all_data.append(data)
-            rel_path = Path(json_file).relative_to(seed_dir)
-            print(f"   {rel_path}: {data['title']}")
-    
+        rel_path = Path(json_file).relative_to(seed_dir)
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            title = data['title']
+        except (ValueError, KeyError, TypeError) as e:
+            raise SystemExit(f"\033[31m✗ {rel_path}: not a walkthrough file ({type(e).__name__}: {e})\033[0m")
+        all_data.append(data)
+        print(f"   {rel_path}: {title}")
+
     return all_data
+
+
+def check_depth(walkthrough_data):
+    """True when search can index every string in every walkthrough's content.
+
+    The stored search_vector reads at most MAX_DEPTH containers below a section key
+    (app/services/search_text.py); deeper text would go unindexed without a sound.
+    Run before anything is written, so a refusal leaves the database untouched.
+    """
+    ok = True
+    for item in walkthrough_data:
+        paths = too_deep(item.get('content'))
+        if paths:
+            ok = False
+            print(f"\033[31m✗ {item.get('title', '?')}: text deeper than search indexes "
+                  f"({MAX_DEPTH} levels below a section key):\033[0m")
+            for path in paths[:10]:
+                print(f"    {path}")
+            if len(paths) > 10:
+                print(f"    ... {len(paths) - 10} more")
+    if not ok:
+        print("\033[31m  Fix: flatten the field, or raise MAX_DEPTH in app/services/search_text.py, "
+              "which needs a migration (the stored expression changes). Nothing was written.\033[0m")
+    return ok
 
 
 async def reset_walkthroughs_sequence(db):
@@ -78,6 +111,8 @@ async def seed_walkthroughs():
     if not walkthrough_data:
         print("\033[31m✗ No walkthrough data found!\033[0m")
         return
+    if not check_depth(walkthrough_data):
+        sys.exit(1)
 
     print(f"\n\033[96m━━━ STEP 2: Seeding {len(walkthrough_data)} Walkthroughs ━━━\033[0m\n")
     added = 0
@@ -242,4 +277,6 @@ async def seed_walkthroughs():
 
 
 if __name__ == "__main__":
+    if "--check" in sys.argv:
+        sys.exit(0 if check_depth(load_all_walkthrough_files()) else 1)
     asyncio.run(seed_walkthroughs())
