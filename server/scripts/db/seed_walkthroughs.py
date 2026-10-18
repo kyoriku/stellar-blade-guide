@@ -243,8 +243,10 @@ async def seed_walkthroughs():
     # STEP 5: Clear cache
     print(f"\n\033[96m━━━ STEP 5: Clearing Cache ━━━\033[0m")
     try:
-        await invalidate_cache_pattern("walkthrough*")
-        print("\033[32m✓ Redis cache cleared\033[0m")
+        # Search results embed walkthrough titles, sections and links too.
+        walkthrough_keys = await invalidate_cache_pattern("walkthrough*")
+        search_keys = await invalidate_cache_pattern("search:*")
+        print(f"\033[32m✓ Redis cache cleared: walkthrough* {walkthrough_keys} key(s), search:* {search_keys} key(s)\033[0m")
     except Exception as e:
         print(f"\033[31m✗ Failed to clear Redis cache: {e}\033[0m")
 
