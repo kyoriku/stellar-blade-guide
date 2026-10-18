@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Compass, Zap, Sparkles, BookOpen, Map } from 'lucide-react'
+import { Compass, Zap, Sparkles, BookOpen, Map, LayoutGrid, Library } from 'lucide-react'
 import type { SearchResponse } from '../services/api'
 import { errorMessage } from '../services/api'
 import { usePrefetch } from '../hooks/usePrefetch'
@@ -15,20 +15,25 @@ interface SearchResultsProps {
 }
 
 const KIND_ICONS = {
-  collectibles: Compass,
-  upgrades:     Zap,
-  cosmetics:    Sparkles,
-  walkthrough:  BookOpen,
-  level:        Map,
+  collectibles:     Compass,
+  upgrades:         Zap,
+  cosmetics:        Sparkles,
+  walkthrough:      BookOpen,
+  level:            Map,
+  type:             LayoutGrid,
+  walkthrough_type: Library,
 } as const
 
 function parsePrefetchTarget(result: { kind: string; navigation_url: string }) {
   try {
     const [urlPart, anchor] = result.navigation_url.split('#')
     const parts = urlPart.split('/').filter(Boolean)
-    const isCollectibleKind = ['collectibles', 'upgrades', 'cosmetics'].includes(result.kind)
+    // A type page (/{category}/{slug}) warms the same query as its items, with no anchor.
+    const isCollectibleKind = ['collectibles', 'upgrades', 'cosmetics', 'type'].includes(result.kind)
     if (isCollectibleKind && parts.length >= 2)
       return { kind: 'collectible' as const, category: parts[0], typeSlug: parts[1], anchor }
+    if (result.kind === 'walkthrough_type' && parts.length >= 2)
+      return { kind: 'walkthrough-category' as const, type: parts[1] }
     if (result.kind === 'walkthrough' && parts.length >= 3)
       return { kind: 'walkthrough' as const, type: parts[1], slug: parts[2] }
     if (result.kind === 'level' && parts.length >= 2)
@@ -48,12 +53,14 @@ export function SearchResults({
   onResultClick,
   activeIndex = -1,
 }: SearchResultsProps) {
-  const { prefetchCollectiblesByType, prefetchWalkthroughBySlug, prefetchLevel } = usePrefetch()
+  const { prefetchCollectiblesByType, prefetchWalkthroughBySlug, prefetchWalkthroughsByType, prefetchLevel } = usePrefetch()
 
   const handleMouseEnter = (result: SearchResponse['results'][number]) => {
     const target = parsePrefetchTarget(result)
     if (!target) return
-    if (target.kind === 'collectible')
+    if (target.kind === 'walkthrough-category')
+      prefetchWalkthroughsByType(target.type)
+    else if (target.kind === 'collectible')
       void prefetchCollectiblesByType(target.typeSlug, target.category, target.anchor)
     else if (target.kind === 'walkthrough')
       void prefetchWalkthroughBySlug(target.type, target.slug)
