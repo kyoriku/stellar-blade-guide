@@ -51,7 +51,7 @@ uv sync                                    # install dependencies
 uv run uvicorn app.main:app --reload       # dev server on :8000
 ```
 
-`DATABASE_URL` must point at a PostgreSQL instance and `REDIS_URL` at a Redis instance; the dev container provides and wires both automatically. Interactive API docs at `http://localhost:8000/docs` are available only when `DEBUG=True` (disabled in production). The `pg_trgm` extension and FTS indexes that search needs are created by `scripts/db/seed_db.py`.
+`DATABASE_URL` must point at a PostgreSQL instance and `REDIS_URL` at a Redis instance; the dev container provides and wires both automatically. Interactive API docs at `http://localhost:8000/docs` are available only when `DEBUG=True` (disabled in production). Search needs the `pg_trgm` extension (for `similarity()`) and the stored `search_vector` columns on `collectibles` and `walkthroughs`; `scripts/db/seed_db.py` creates both and rebuilds a column whose expression has changed, while production gets them from a hand-run migration.
 
 ## Environment Variables
 
@@ -226,7 +226,7 @@ uv run python scripts/db/seed_walkthroughs.py
 
 Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalidates the affected Redis cache patterns. `scripts/prod_seed.py` (production seeding) reads its credentials from `server/.env` (`PROD_*` / `CLOUDFLARE_*`, see Environment Variables) and requires a typed confirmation. `scripts/generate_sitemap.py` regenerates `client/public/sitemap.xml` from the database, deriving each page's `lastmod` from a content hash persisted in `scripts/sitemap-state.json` (gitignored).
 
-Schema changes are one-off manual scripts written into `scripts/migrations/` as needed (there is no Alembic). Each runs once with `uv run python scripts/migrations/<script>.py` alongside an update to the matching SQLAlchemy model; executed scripts are kept out of the repo, so the directory is empty between schema changes.
+Schema changes are one-off manual scripts written into `scripts/migrations/` as needed (there is no Alembic). Each runs once with `uv run python scripts/migrations/<script>.py` alongside an update to the matching SQLAlchemy model; executed scripts are kept out of the repo, so the directory is empty between schema changes. The exception is the two stored generated `search_vector` columns, which sit outside the ORM because nothing writes them: their expressions live in `app/services/search_text.py`, and each column's comment holds a hash of its expression, so `seed_db.py` and the migration can spot a stale one and rebuild it.
 
 Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.13 image serves the API and the built SPA from a single origin as a non-root user.
 
