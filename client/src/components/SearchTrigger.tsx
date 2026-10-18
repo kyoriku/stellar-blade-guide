@@ -28,7 +28,9 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   const onExpandRef = useRef(onExpand)
   onExpandRef.current = onExpand
   const navigate = useNavigate()
-  const { data, isLoading, isError, error } = useSearch(query)
+  // isPending, as on mobile: TanStack's isLoading is false while the query is still
+  // debouncing (disabled), which flashed "No results" on the second character.
+  const { data, isPending, isError, error } = useSearch(query)
 
   // The input opens leftward over the navbar. Where its edge lands against the links
   // depends on the system font's label widths, so it is measured: if the default width
@@ -106,7 +108,9 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   }, [isExpanded])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const count = data?.results.length ?? 0
+    // Rows the panel is hiding behind its skeleton can't be selected or opened.
+    const results = isPending ? [] : (data?.results ?? [])
+    const count = results.length
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setActiveIndex(i => Math.min(i + 1, count - 1))
@@ -114,8 +118,8 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
       e.preventDefault()
       setActiveIndex(i => Math.max(i - 1, -1))
     } else if (e.key === 'Enter') {
-      if (activeIndex >= 0 && data?.results[activeIndex]) {
-        void navigate(data.results[activeIndex].navigation_url)
+      if (activeIndex >= 0 && results[activeIndex]) {
+        void navigate(results[activeIndex].navigation_url)
         collapse()
       }
     } else if (e.key === 'Escape') {
@@ -164,7 +168,7 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
         <SearchResults
           query={query}
           data={data}
-          isLoading={isLoading}
+          isLoading={isPending}
           isError={isError}
           error={error}
           onResultClick={collapse}
