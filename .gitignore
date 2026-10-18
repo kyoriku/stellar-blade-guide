@@ -93,6 +93,7 @@ node_modules/.tmp/
 CLAUDE.md
 skills-lock.json
 /plans
+server/review
 
 # e2e suite — deps, browsers, and per-run artifacts stay local
 e2e/node_modules/
