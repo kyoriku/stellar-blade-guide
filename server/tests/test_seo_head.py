@@ -6,6 +6,7 @@ testable without a real client build), fakeredis via the autouse conftest
 patch, and a hand-created SQLite walkthroughs table for the dynamic branch.
 app.main is deliberately not imported.
 """
+import html
 import json
 import os
 
@@ -152,6 +153,26 @@ async def test_walkthrough_list_head_uses_countless_variant(client):
     assert 'Complete Main Story walkthroughs for Stellar Blade. Detailed guides' in r.text
 
 
+async def test_fishing_list_head_uses_its_seo_json_copy(client):
+    e = SEO['walkthroughTypes']['fishing']
+    r = await client.get('/walkthroughs/fishing')
+    assert f'<title data-seo="server">{html.escape(e["title"])}{SUFFIX}</title>' in r.text
+    assert f'name="description" content="{html.escape(e["description"])}"' in r.text
+    assert 'href="https://stellarbladeguide.com/walkthroughs/fishing"' in r.text
+
+
+@pytest.mark.parametrize('slug', ['main-story', 'side-quests', 'bulletin-board-requests',
+                                  'nier-dlc', 'nikke-dlc'])
+async def test_other_walkthrough_lists_keep_the_generated_head(client, slug):
+    entry = SEO['walkthroughTypes'][slug]
+    assert not {'title', 'description', 'intro', 'pages'} & set(entry)
+    name = html.escape(entry['name'])
+    r = await client.get(f'/walkthroughs/{slug}')
+    assert f'<title data-seo="server">{name} Walkthroughs{SUFFIX}</title>' in r.text
+    assert (f'name="description" content="Complete {name} walkthroughs for Stellar Blade. '
+            'Detailed guides with step-by-step instructions and screenshots."') in r.text
+
+
 async def test_escaping(client):
     r = await client.get('/cosmetics/nano-suits')
     assert f'All 126 Nano Suits &amp; How to Unlock{SUFFIX}' in r.text
@@ -261,6 +282,24 @@ async def test_walkthrough_cache_hit_skips_db(client, monkeypatch):
     assert f'<title data-seo="server">Cached Walkthrough{SUFFIX}</title>' in r.text
 
 
+@pytest.mark.parametrize('wid, slug, title', [
+    (501, 'fishing-overview', 'Fishing Overview'), (502, 'all-fish', 'All Fish'),
+    (503, 'fishing-spots', 'Fishing Spots'), (504, 'bait-and-fishing-data', 'Bait and Fishing Data')])
+async def test_page_seo_replaces_the_generated_walkthrough_head(client, monkeypatch, wid, slug, title):
+    page = SEO['walkthroughTypes']['fishing']['pages'][slug]
+    row = {**{k: None for k in ('subtitle', 'level', 'thumbnail_url', 'available_after',
+                                'objectives', 'rewards')},
+           'id': wid, 'slug': slug, 'title': title, 'mission_type': 'fishing',
+           'display_order': wid, 'content': [PLAIN_BLOCK]}
+    await set_cache(f'walkthrough:fishing:{slug}', row, ttl=60)
+    monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
+    r = await client.get(f'/walkthroughs/fishing/{slug}')
+    assert f'<title data-seo="server">{html.escape(page["title"])}{SUFFIX}</title>' in r.text
+    assert f'name="description" content="{html.escape(page["description"])}"' in r.text
+    assert f'{title} Walkthrough' not in r.text
+    assert f'href="https://stellarbladeguide.com/walkthroughs/fishing/{slug}"' in r.text
+
+
 async def test_walkthrough_cache_write_matches_api_shape(client, walkthrough_session_factory):
     row = await seed_walkthrough(walkthrough_session_factory, slug='warm-me', title='Warm Me')
     await client.get('/walkthroughs/main-story/warm-me')
@@ -286,6 +325,17 @@ async def test_db_failure_serves_loading_variant_and_no_miss_key(client, monkeyp
     assert 'Main Story walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.' in r.text
     # A failure must never negative-cache the slug.
     assert await get_cache('walkthrough:miss:main-story:some-mission') is None
+
+
+async def test_db_failure_keeps_a_pages_own_copy_and_only_that_page(client, monkeypatch):
+    monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
+    page = SEO['walkthroughTypes']['fishing']['pages']['all-fish']
+    r = await client.get('/walkthroughs/fishing/all-fish')
+    assert f'<title data-seo="server">{html.escape(page["title"])}{SUFFIX}</title>' in r.text
+    assert f'name="description" content="{html.escape(page["description"])}"' in r.text
+    # A page without its own copy keeps the category-name variant.
+    r = await client.get('/walkthroughs/fishing/no-such-page')
+    assert f'<title data-seo="server">Fishing Walkthrough{SUFFIX}</title>' in r.text
 
 
 async def test_unknown_type_gate(client, monkeypatch):

@@ -10,6 +10,7 @@ import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import { thumbnailUrl, buildSrcSet, ogImageUrl } from '../utils/image';
 import { walkthroughTypeName } from '../utils/walkthroughTypeName';
+import { walkthroughTypeSeo } from '../constants/walkthroughSeo';
 
 export default function WalkthroughsListPage() {
   const { type } = useParams<{ type: string }>();
@@ -19,6 +20,10 @@ export default function WalkthroughsListPage() {
   const { data: walkthroughs, isLoading, isError, error, refetch } = useWalkthroughsByType(type!, isValidType);
 
   const displayType = walkthroughTypeName(type!);
+  // Hand-written head copy when seo.json has it (Fishing); every other
+  // category keeps the generated strings below.
+  const typeSeo = walkthroughTypeSeo(type!);
+  const seoTitle = typeSeo?.title ?? `${displayType} Walkthroughs`;
 
   if (!isValidType) {
     return <ErrorPage code={404} />;
@@ -32,8 +37,8 @@ export default function WalkthroughsListPage() {
     return (
       <div className="flex-1 bg-primary">
         <SEO
-          title={`${displayType} Walkthroughs`}
-          description={`Complete ${displayType} walkthroughs for Stellar Blade. Detailed guides with step-by-step instructions and screenshots.`}
+          title={seoTitle}
+          description={typeSeo?.description ?? `Complete ${displayType} walkthroughs for Stellar Blade. Detailed guides with step-by-step instructions and screenshots.`}
           canonical={`/walkthroughs/${type}`}
           ogImage={listOgImage}
         />
@@ -43,10 +48,14 @@ export default function WalkthroughsListPage() {
               all that stays a placeholder. */}
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayType}</h1>
-            <div className="mt-2 max-w-3xl space-y-1.5">
-              <div className="h-6 bg-gray-700/50 rounded animate-pulse" />
-              <div className="h-6 w-3/4 bg-gray-700/50 rounded animate-pulse" />
-            </div>
+            {typeSeo?.intro ? (
+              <p className="text-gray-300 mt-2 max-w-3xl">{typeSeo.intro}</p>
+            ) : (
+              <div className="mt-2 max-w-3xl space-y-1.5">
+                <div className="h-6 bg-gray-700/50 rounded animate-pulse" />
+                <div className="h-6 w-3/4 bg-gray-700/50 rounded animate-pulse" />
+              </div>
+            )}
           </div>
           {/* Card skeletons on desktop */}
           <div className="hidden md:grid gap-4 grid-cols-2 lg:grid-cols-3">
@@ -82,15 +91,15 @@ export default function WalkthroughsListPage() {
   return (
     <div className="flex-1 bg-primary">
       <SEO
-        title={`${displayType} Walkthroughs`}
-        description={`Complete ${displayType} walkthroughs for Stellar Blade. ${walkthroughs.length} detailed guides with step-by-step instructions and screenshots.`}
+        title={seoTitle}
+        description={typeSeo?.description ?? `Complete ${displayType} walkthroughs for Stellar Blade. ${walkthroughs.length} detailed guides with step-by-step instructions and screenshots.`}
         canonical={`/walkthroughs/${type}`}
         ogImage={listOgImage}
       />
       <StructuredData
         type="CollectionPage"
         headline={`${displayType} - Stellar Blade Walkthroughs`}
-        description={`All ${walkthroughs.length} ${displayType} walkthroughs for Stellar Blade.`}
+        description={typeSeo?.description ?? `All ${walkthroughs.length} ${displayType} walkthroughs for Stellar Blade.`}
         extraSchemas={[{
           '@context': 'https://schema.org',
           '@type': 'ItemList',
@@ -110,7 +119,7 @@ export default function WalkthroughsListPage() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{displayType}</h1>
           <p className="text-gray-300 mt-2 max-w-3xl">
-            {walkthroughs.length} {displayType} {walkthroughs.length === 1 ? 'walkthrough' : 'walkthroughs'} for Stellar Blade with step-by-step instructions, screenshots, and boss strategies.
+            {typeSeo?.intro ?? `${walkthroughs.length} ${displayType} ${walkthroughs.length === 1 ? 'walkthrough' : 'walkthroughs'} for Stellar Blade with step-by-step instructions, screenshots, and boss strategies.`}
           </p>
         </div>
 
