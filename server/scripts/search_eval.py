@@ -130,7 +130,7 @@ EXPECT_FIRST = {
     "memories in the doll": "Memories in the Doll", "sentinel 82": "Sentinel 82's Report",
     "obvlisiohn": "Oblivion", "black learl": "Black Pearl", "boss challgen": "Boss: Scarlet",
     "mystery bai": "Fantastic Bait", "box hunter": "Supply Boxes", "amelia": None,
-    "lily outfits": "Lily Outfits", "lyle": "Stolen Treasure", "fishing": "A Gift for a Fishing Maniac",
+    "lily outfits": "Lily Outfits", "lyle": "Stolen Treasure", "fishing": "Fishing",
     "eidos": "Eidos 7", "recruit passcode": "Recruit Passcode Specialists", "precious treasure": "Precious Treasure",
     "side quests": "Side Quests", "bulletin board": "Bulletin Board Requests", "nanosuit": "Nano Suits",
     "supplybox": "Supply Boxes", "memory stick": "Memorysticks", "costumes": "Nano Suits",
@@ -138,7 +138,7 @@ EXPECT_FIRST = {
     "eve outfits": "Nano Suits", "drone skin": "Drone Appearances", "eidos 7 camps": "Eidos 7",
     "xion documents": "Xion", "walkthroughs": "Main Story", "side quest walkthrough": "Side Quests",
     "eidos 7 collectibles": "Eidos 7", "an e": "An Eye for an Eye, a Tooth for a Tooth",
-    "the l": "The Last Wine", "fishin": "A Gift for a Fishing Maniac",
+    "the l": "The Last Wine", "fishin": "Fishing", "fish": "Fishing",
     f"burst reovery gear {STAR * 3}": f"Burst Recovery Gear {STAR * 3}",
     "yorha no.2 type b uniform": "YoRHa No.2 Type B Uniform", "black pearl location": "Black Pearl",
     "new gam": "EVE Protocol", "missable": None, "emilia": None,
@@ -148,7 +148,7 @@ SHORT_CATEGORY_NAMES = [
     ("side quest", "side-quests"), ("bulletin board request", "bulletin-board-requests"), ("main story", "main-story"),
 ]
 # Prefixes that dozens of equally good titles share: their targets may leave the top 5.
-ALLOWED_TYPING_DROPS = {"lo", "legi", "legio", "centr"}
+ALLOWED_TYPING_DROPS = {"lo", "legi", "legio", "centr", "fi"}
 TIMING_QUERIES = BRIEF + [
     "boss", "eve", "xion", "supply", "the", "su", "bo", "ma", "st", "fi", "ad",
     "beta core eidos seven", "spire 4 memorystick upper", "black nano suit red", "weapon core crater hidden",

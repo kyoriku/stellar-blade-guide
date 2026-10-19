@@ -32,6 +32,7 @@ WALKTHROUGH_CATEGORIES = [
     "bulletin-board-requests",
     "dlc/nier",
     "dlc/nikke",
+    "fishing",
 ]
 
 

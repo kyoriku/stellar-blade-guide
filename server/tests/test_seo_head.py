@@ -405,7 +405,7 @@ def test_seo_json_sections_complete():
     assert len(SEO['levels']) == 10
     assert {k: len(v) for k, v in SEO['types'].items()} == {
         'collectibles': 7, 'upgrades': 7, 'cosmetics': 7}
-    assert len(SEO['walkthroughTypes']) == 5
+    assert len(SEO['walkthroughTypes']) == 6
     assert len(SEO['pages']) == 4
     assert len(SEO['noindex']) == 7
     for section in ('levels',):

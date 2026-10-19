@@ -56,6 +56,7 @@ MISSION_TYPE_SLUG_MAP = {
     'bulletin-board-request': 'bulletin-board-requests',
     'nier-dlc': 'nier-dlc',
     'nikke-dlc': 'nikke-dlc',
+    'fishing': 'fishing',
 }
 
 # Type name from DB → (category, slug)
