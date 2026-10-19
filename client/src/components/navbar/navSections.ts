@@ -19,11 +19,11 @@ export interface NavSection {
   prefetch: PrefetchSpec
   itemActiveMatch: 'prefix' | 'exact' // walkthroughs = prefix (deeper detail routes), rest = exact
   scrollable: boolean // desktop Levels list only
-  mobileMaxH: string // 'max-h-96' (walkthroughs) | 'max-h-[1000px]'
+  mobileMaxH: string // 'max-h-[1000px]': a tighter cap clips the last links once a list outgrows it
 }
 
 export const NAV_SECTIONS: readonly NavSection[] = [
-  { key: 'walkthroughs', label: 'Walkthroughs', icon: Book, basePath: '/walkthroughs', items: WALKTHROUGHS, prefetch: { kind: 'walkthrough' }, itemActiveMatch: 'prefix', scrollable: false, mobileMaxH: 'max-h-96' },
+  { key: 'walkthroughs', label: 'Walkthroughs', icon: Book, basePath: '/walkthroughs', items: WALKTHROUGHS, prefetch: { kind: 'walkthrough' }, itemActiveMatch: 'prefix', scrollable: false, mobileMaxH: 'max-h-[1000px]' },
   { key: 'levels', label: 'Levels', icon: Map, basePath: '/levels', items: LEVELS, prefetch: { kind: 'level' }, itemActiveMatch: 'exact', scrollable: true, mobileMaxH: 'max-h-[1000px]' },
   { key: 'collectibles', label: 'Collectibles', icon: Package, basePath: '/collectibles', items: COLLECTIBLES, prefetch: { kind: 'type', category: 'collectibles' }, itemActiveMatch: 'exact', scrollable: false, mobileMaxH: 'max-h-[1000px]' },
   { key: 'upgrades', label: 'Upgrades', icon: Zap, basePath: '/upgrades', items: UPGRADES, prefetch: { kind: 'type', category: 'upgrades' }, itemActiveMatch: 'exact', scrollable: false, mobileMaxH: 'max-h-[1000px]' },
