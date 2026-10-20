@@ -11,6 +11,7 @@ import StructuredData from '../components/StructuredData';
 import { thumbnailUrl, buildSrcSet, ogImageUrl } from '../utils/image';
 import { walkthroughTypeName } from '../utils/walkthroughTypeName';
 import { walkthroughTypeSeo } from '../constants/walkthroughSeo';
+import { SECTION_LABELS } from '../constants/sections';
 
 export default function WalkthroughsListPage() {
   const { type } = useParams<{ type: string }>();
@@ -100,6 +101,10 @@ export default function WalkthroughsListPage() {
         type="CollectionPage"
         headline={`${displayType} - Stellar Blade Walkthroughs`}
         description={typeSeo?.description ?? `All ${walkthroughs.length} ${displayType} walkthroughs for Stellar Blade.`}
+        breadcrumbs={[
+          { name: SECTION_LABELS.walkthroughs, path: '/walkthroughs' },
+          { name: displayType, path: `/walkthroughs/${type}` },
+        ]}
         extraSchemas={[{
           '@context': 'https://schema.org',
           '@type': 'ItemList',

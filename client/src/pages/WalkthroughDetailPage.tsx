@@ -22,6 +22,7 @@ import { sectionAnchor, slugifySection } from '../utils/slugify'
 import { serverWalkthroughTitle } from '../utils/serverHead'
 import { WALKTHROUGH_IMAGES } from '../constants/categoryImages'
 import { walkthroughPageSeo } from '../constants/walkthroughSeo'
+import { SECTION_LABELS } from '../constants/sections'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -213,6 +214,11 @@ function WalkthroughDetailPage() {
         type="WebPage"
         headline={walkthrough.title}
         description={pageDescription}
+        breadcrumbs={[
+          { name: SECTION_LABELS.walkthroughs, path: '/walkthroughs' },
+          { name: walkthroughTypeName(type!), path: `/walkthroughs/${type}` },
+          { name: walkthrough.title, path: `/walkthroughs/${type}/${slug}` },
+        ]}
         extraSchemas={[{
           '@context': 'https://schema.org',
           '@type': 'Article',

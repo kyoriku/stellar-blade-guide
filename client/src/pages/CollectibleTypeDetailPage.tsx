@@ -22,6 +22,7 @@ import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
+import { SECTION_LABELS } from '../constants/sections'
 import CommentSection from '../components/comments/CommentSection'
 import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
@@ -507,6 +508,10 @@ function CollectibleTypeDetailPage() {
         headline={`${displayTypeName} - Stellar Blade Guide`}
         description={`All ${totalCollectibles} ${displayTypeName} across ${totalLevels} levels in Stellar Blade.`}
         extraSchemas={structuredDataSchemas}
+        breadcrumbs={[
+          { name: SECTION_LABELS[category], path: `/${category}` },
+          { name: displayTypeName, path: `/${category}/${typeName}` },
+        ]}
       />
       <div className="container mx-auto px-3 py-8">
         <div className="flex gap-8">

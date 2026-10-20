@@ -22,6 +22,7 @@ import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
+import { SECTION_LABELS } from '../constants/sections'
 import CommentSection from '../components/comments/CommentSection'
 import FloatingTOC from '../components/FloatingTOC'
 import BackToTop from '../components/BackToTop'
@@ -296,6 +297,10 @@ function LevelDetailPage() {
         headline={`${displayLevelName} Collectibles Guide`}
         description={`Find all ${totalCollectibles} collectibles across ${locationData.length} locations in ${displayLevelName}.`}
         extraSchemas={structuredDataSchemas}
+        breadcrumbs={[
+          { name: SECTION_LABELS.levels, path: '/levels' },
+          { name: displayLevelName, path: `/levels/${levelName}` },
+        ]}
       />
 
       <div className="container mx-auto px-3 py-8">

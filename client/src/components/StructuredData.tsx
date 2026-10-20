@@ -1,19 +1,27 @@
 import { useEffect } from 'react';
+import { breadcrumbList, type Crumb } from '../utils/breadcrumbs';
 
 interface StructuredDataProps {
   type?: 'WebPage' | 'Article' | 'CollectionPage';
   headline?: string;
   description?: string;
   extraSchemas?: object[];
+  // The page's trail below Home, each crumb named as its page's h1. A page that
+  // passes none (the home page) gets no BreadcrumbList.
+  breadcrumbs?: readonly Crumb[];
 }
 
 export default function StructuredData({
   type = 'WebPage',
   headline,
   description,
-  extraSchemas
+  extraSchemas,
+  breadcrumbs
 }: StructuredDataProps) {
   const pathname = window.location.pathname;
+  // Pages pass a fresh array on every render, so the effect is keyed on the
+  // trail's content rather than its identity.
+  const crumbsKey = breadcrumbs?.length ? JSON.stringify(breadcrumbs) : '';
 
   // Schemas are built inside the effect: computing them during render would
   // make fresh object identities on every render and re-run the effect.
@@ -30,47 +38,7 @@ export default function StructuredData({
       publisher: { '@type': 'Organization', name: 'Stellar Blade Guide' }
     } : null;
 
-    const generateBreadcrumbs = () => {
-      const pathParts = pathname.split('/').filter(Boolean);
-      if (pathParts.length === 0) return null;
-
-      const breadcrumbs = [{ name: 'Home', url: '/' }];
-      let currentPath = '';
-
-      pathParts.forEach((part, index) => {
-        currentPath += `/${part}`;
-        let name = part.replace(/-/g, ' ')
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-
-        if (index === 0) {
-          const sectionNames: Record<string, string> = {
-            collectibles: 'Collectibles',
-            levels: 'Levels',
-            walkthroughs: 'Walkthroughs'
-          };
-          name = sectionNames[part] || name;
-        }
-
-        breadcrumbs.push({ name, url: currentPath });
-      });
-
-      return breadcrumbs;
-    };
-
-    const breadcrumbs = generateBreadcrumbs();
-
-    const breadcrumbSchema = breadcrumbs ? {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: breadcrumbs.map((crumb, index) => ({
-        '@type': 'ListItem',
-        position: index + 1,
-        name: crumb.name,
-        item: `${siteUrl}${crumb.url}`
-      }))
-    } : null;
+    const breadcrumbSchema = crumbsKey ? breadcrumbList(JSON.parse(crumbsKey) as Crumb[]) : null;
 
     const pageSchema = {
       '@context': 'https://schema.org',
@@ -102,7 +70,7 @@ export default function StructuredData({
     return () => {
       scripts.forEach(script => script.remove());
     };
-  }, [pathname, headline, description, type, extraSchemas]);
+  }, [pathname, headline, description, type, extraSchemas, crumbsKey]);
 
   return null;
 }

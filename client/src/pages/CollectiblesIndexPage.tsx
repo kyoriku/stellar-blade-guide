@@ -3,10 +3,11 @@ import CategoryIndexPage, { type CategoryIndexConfig } from '../components/Categ
 import { COLLECTIBLES } from '../constants/navigation';
 import { COLLECTIBLE_IMAGES } from '../constants/categoryImages';
 import seo from '../constants/seo.json';
+import { SECTION_LABELS } from '../constants/sections';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/collectibles',
-  title: 'Collectibles',
+  title: SECTION_LABELS.collectibles,
   seoTitle: seo.index['/collectibles'].title,
   metaDescription: seo.index['/collectibles'].description,
   intro: 'All collectible types in Stellar Blade including Cans, Documents, Memorysticks, Passcodes, Camps, Supply Boxes, and Supply Chests. Found throughout every level with screenshots and detailed locations.',
