@@ -21,6 +21,8 @@ import { walkthroughTypeName } from '../utils/walkthroughTypeName'
 import { sectionAnchor, slugifySection } from '../utils/slugify'
 import { serverWalkthroughTitle } from '../utils/serverHead'
 import { WALKTHROUGH_IMAGES } from '../constants/categoryImages'
+import { walkthroughPageSeo } from '../constants/walkthroughSeo'
+import { SECTION_LABELS } from '../constants/sections'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import CommentSection from '../components/comments/CommentSection'
@@ -31,6 +33,9 @@ import MobileBackToTop from '../components/MobileBackToTop'
 function WalkthroughDetailPage() {
   const { type, slug } = useParams<{ type: string; slug: string }>();
   const location = useLocation();
+  // Hand-written head copy for a page that has it in seo.json (the fishing
+  // guide); every other walkthrough keeps the generated strings.
+  const pageSeo = walkthroughPageSeo(type!, slug!);
 
   const { data: walkthrough, isLoading, isError, error, refetch } = useWalkthrough(type!, slug!);
   const { data: allWalkthroughs = [], isError: navError } = useWalkthroughsByType(type!);
@@ -102,8 +107,8 @@ function WalkthroughDetailPage() {
     return (
       <div className="flex-1 bg-primary">
         <SEO
-          title={serverTitle ? `${serverTitle} Walkthrough` : `${typeDisplay} Walkthrough`}
-          description={`${typeDisplay} walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.`}
+          title={pageSeo?.title ?? (serverTitle ? `${serverTitle} Walkthrough` : `${typeDisplay} Walkthrough`)}
+          description={pageSeo?.description ?? `${typeDisplay} walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.`}
           canonical={`/walkthroughs/${type}/${slug}`}
           ogImage={WALKTHROUGH_IMAGES[type!] ? ogImageUrl(WALKTHROUGH_IMAGES[type!]) : undefined}
         />
@@ -191,12 +196,12 @@ function WalkthroughDetailPage() {
   // findIndex returning -1 on an imageless walkthrough matches nothing, which
   // is what we want.
   const firstGalleryIdx = walkthrough.content.findIndex(c => c.images?.length > 0);
-  const pageDescription = `${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with ${hasBossFight ? 'screenshots, tips, and boss strategies' : 'screenshots and tips'}.`;
+  const pageDescription = pageSeo?.description ?? `${walkthrough.title} walkthrough for Stellar Blade${walkthrough.level ? ` (${walkthrough.level})` : ''}. Step-by-step guide with ${hasBossFight ? 'screenshots, tips, and boss strategies' : 'screenshots and tips'}.`;
 
   return (
     <div className="flex-1 bg-primary">
       <SEO
-        title={`${walkthrough.title} Walkthrough`}
+        title={pageSeo?.title ?? `${walkthrough.title} Walkthrough`}
         description={pageDescription}
         canonical={`/walkthroughs/${type}/${slug}`}
         ogImage={(() => {
@@ -209,6 +214,11 @@ function WalkthroughDetailPage() {
         type="WebPage"
         headline={walkthrough.title}
         description={pageDescription}
+        breadcrumbs={[
+          { name: SECTION_LABELS.walkthroughs, path: '/walkthroughs' },
+          { name: walkthroughTypeName(type!), path: `/walkthroughs/${type}` },
+          { name: walkthrough.title, path: `/walkthroughs/${type}/${slug}` },
+        ]}
         extraSchemas={[{
           '@context': 'https://schema.org',
           '@type': 'Article',

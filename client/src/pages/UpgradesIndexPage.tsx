@@ -3,10 +3,11 @@ import CategoryIndexPage, { type CategoryIndexConfig } from '../components/Categ
 import { UPGRADES } from '../constants/navigation';
 import { UPGRADE_IMAGES } from '../constants/categoryImages';
 import seo from '../constants/seo.json';
+import { SECTION_LABELS } from '../constants/sections';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/upgrades',
-  title: 'Upgrades',
+  title: SECTION_LABELS.upgrades,
   seoTitle: seo.index['/upgrades'].title,
   metaDescription: seo.index['/upgrades'].description,
   intro: "All upgrade items in Stellar Blade including Beta Cores, Body Cores, Exospines, Tumbler Expansion Modules, Drone Upgrade Modules, Weapon Cores, and Gear. These items enhance Eve's abilities and equipment.",

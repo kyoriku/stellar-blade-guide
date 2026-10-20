@@ -26,8 +26,10 @@ R2 object keys are deterministic from local file paths:
 - Walkthroughs: `stellar-blade/walkthroughs/<type>/<mission>/<file>`
 - One-off site assets (heroes, og banner): `stellar-blade/site/<name>`
 
-Path segments are the local path lowercased with underscores and spaces turned
-into hyphens and `&` into `and` (see `derive_key` in `generate_variants.py`).
+Path segments are the local path lowercased, with underscores and spaces turned
+into hyphens. The file name also turns `&` into `and`, but folder names keep it,
+so keep `&` out of folder names (see `derive_key` in `generate_variants.py`,
+mirrored in `update_r2_urls.py`).
 
 Per source image, the staged/uploaded files are:
 

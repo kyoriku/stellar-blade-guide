@@ -43,6 +43,7 @@ function CategoryIndexPage({ config }: { config: CategoryIndexConfig }) {
         type="CollectionPage"
         headline={config.structuredDataHeadline}
         description={config.structuredDataDescription}
+        breadcrumbs={[{ name: title, path: basePath }]}
         extraSchemas={[
           {
             '@context': 'https://schema.org',

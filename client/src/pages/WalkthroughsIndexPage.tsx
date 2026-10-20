@@ -3,10 +3,11 @@ import CategoryIndexPage, { type CategoryIndexConfig } from '../components/Categ
 import { WALKTHROUGHS } from '../constants/navigation';
 import { WALKTHROUGH_IMAGES } from '../constants/categoryImages';
 import seo from '../constants/seo.json';
+import { SECTION_LABELS } from '../constants/sections';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/walkthroughs',
-  title: 'Walkthroughs',
+  title: SECTION_LABELS.walkthroughs,
   seoTitle: seo.index['/walkthroughs'].title,
   metaDescription: seo.index['/walkthroughs'].description,
   intro: 'Step-by-step walkthrough guides for Stellar Blade covering the main story, side quests, and more. Each guide includes screenshots and tips, and every boss fight gets its own strategy.',

@@ -3,10 +3,11 @@ import CategoryIndexPage, { type CategoryIndexConfig } from '../components/Categ
 import { COSMETICS } from '../constants/navigation';
 import { COSMETIC_IMAGES } from '../constants/categoryImages';
 import seo from '../constants/seo.json';
+import { SECTION_LABELS } from '../constants/sections';
 
 const CONFIG: CategoryIndexConfig = {
   basePath: '/cosmetics',
-  title: 'Cosmetics',
+  title: SECTION_LABELS.cosmetics,
   seoTitle: seo.index['/cosmetics'].title,
   metaDescription: seo.index['/cosmetics'].description,
   intro: 'All cosmetic items in Stellar Blade including Nano Suits, Glasses, Earrings, Hairstyles, Drone Appearances, and outfits for Lily and Adam. Most are found in chests, purchased from shops, or earned through quests.',

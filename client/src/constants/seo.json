@@ -11,7 +11,7 @@
   "index": {
     "/walkthroughs": {
       "title": "Main Story & Side Quest Walkthroughs",
-      "description": "Step-by-step walkthroughs for every Stellar Blade main story mission, side quest, and bulletin board request, plus the NieR: Automata and Goddess of Victory: Nikke DLC."
+      "description": "Walkthroughs for every Stellar Blade main story mission, side quest, and bulletin board request, plus the NieR: Automata and Nikke DLC and a fishing guide."
     },
     "/levels": {
       "title": "All 10 Levels with Every Collectible",
@@ -198,7 +198,13 @@
   "walkthroughTypes": {
     "main-story": {
       "name": "Main Story",
-      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.webp"
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.webp",
+      "pages": {
+        "eve-protocol": {
+          "title": "All 3 Endings & Bosses: EVE Protocol",
+          "description": "All 3 Stellar Blade endings and what decides each: Return to the Colony, Making New Memories, and Cost of Lost Memories, plus every EVE Protocol boss."
+        }
+      }
     },
     "side-quests": {
       "name": "Side Quests",
@@ -215,6 +221,31 @@
     "nikke-dlc": {
       "name": "Goddess of Victory: Nikke DLC",
       "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/dlc/goddess-of-victory-nikke/stellar-blade-x-goddess-of-victory-nikke.webp"
+    },
+    "fishing": {
+      "name": "Fishing",
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/bulletin-board-requests/the-fish-of-legends/stellar-blade-20260909194438.webp",
+      "title": "Fishing Guide: Fish, Bait & Spots",
+      "description": "How fishing works in Stellar Blade, with all 25 fish in Data Bank order, every fishing spot and bait, Clyde's shop, the fishing requests, and Ocean Maid.",
+      "intro": "How fishing works in Stellar Blade, from getting the rod to every fish, spot, and bait.",
+      "pages": {
+        "fishing-overview": {
+          "title": "How to Fish, Clyde's Shop & Ocean Maid",
+          "description": "How to start fishing in Stellar Blade and land a catch, what the bite tells you, Clyde's shop, selling fish to Barry, the fishing requests, and Ocean Maid."
+        },
+        "all-fish": {
+          "title": "All 25 Fish: Bait, Spots & Stars",
+          "description": "All 25 fish in Stellar Blade in Data Bank order, with each one's size, star grade, favourite bait, fishing spots, and the Fishing Score it earns."
+        },
+        "fishing-spots": {
+          "title": "Fishing Spots & What Bites There",
+          "description": "Every fishing spot in Stellar Blade, from the Oasis to Lily's Atelier, with directions from the nearest Camp or Waypoint and the fish that bite there, by bait."
+        },
+        "bait-and-fishing-data": {
+          "title": "Every Bait & Fishing Data Tier",
+          "description": "Every bait in Stellar Blade, what it catches and where to get it, from Clyde's shop to the Fantastic Bait at the Plant, plus every Fishing Data tier."
+        }
+      }
     }
   },
   "pages": {

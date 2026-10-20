@@ -78,6 +78,20 @@ def check_depth(walkthrough_data):
     return ok
 
 
+def check_markers(walkthrough_data):
+    """True when no walkthrough still carries a [VERIFY] marker.
+
+    Drafts mark every unconfirmed fact with [VERIFY] so it shows on the dev page.
+    Only --check runs this (prod_seed.py's first step), so marked drafts still seed
+    on dev while prod refuses them before anything is written.
+    """
+    marked = [item.get('title', '?') for item in walkthrough_data
+              if '[VERIFY' in json.dumps(item, ensure_ascii=False)]
+    for title in marked:
+        print(f"\033[31m✗ {title}: still marked [VERIFY]; confirm or remove it before seeding prod\033[0m")
+    return not marked
+
+
 async def reset_walkthroughs_sequence(db):
     """Reset walkthroughs sequence to match max ID.
 
@@ -280,5 +294,8 @@ async def seed_walkthroughs():
 
 if __name__ == "__main__":
     if "--check" in sys.argv:
-        sys.exit(0 if check_depth(load_all_walkthrough_files()) else 1)
+        data = load_all_walkthrough_files()
+        ok = check_depth(data)
+        ok = check_markers(data) and ok
+        sys.exit(0 if ok else 1)
     asyncio.run(seed_walkthroughs())

@@ -5,7 +5,7 @@ export const WALKTHROUGHS = [
   { slug: 'nier-dlc', name: 'NieR: Automata DLC' },
   { slug: 'nikke-dlc', name: 'Goddess of Victory: Nikke DLC' },
   // { slug: 'bosses', name: 'Bosses' },
-  // { slug: 'fishing', name: 'Fishing' },
+  { slug: 'fishing', name: 'Fishing' },
 ] as const;
 
 export const LEVELS = [

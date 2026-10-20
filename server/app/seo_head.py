@@ -74,14 +74,23 @@ def _not_found_head() -> dict:
     return {'title': e['title'], 'description': e['description'], 'noindex': True}
 
 
-def _loading_variant_head(type_slug: str) -> dict:
+def _page_seo(type_slug: str, slug: str) -> dict | None:
+    """seo.json's hand-written head copy for one walkthrough page, if it has any.
+    A dict lookup by key, so a raw path slug can only select fixed strings."""
+    entry = _SEO['walkthroughTypes'].get(type_slug) or {}
+    return (entry.get('pages') or {}).get(slug)
+
+
+def _loading_variant_head(type_slug: str, slug: str) -> dict:
     """The walkthrough detail page's loading-state head — used when the DB is
-    unavailable so the response still carries honest, path-free tags."""
+    unavailable so the response still carries honest tags. Every value comes from
+    seo.json; the path slug only selects a page's hand-written copy."""
     name = _walkthrough_type_name(type_slug)
     entry = _SEO['walkthroughTypes'].get(type_slug)
+    page = _page_seo(type_slug, slug)
     return {
-        'title': f'{name} Walkthrough',
-        'description': f'{name} walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.',
+        'title': page['title'] if page else f'{name} Walkthrough',
+        'description': page['description'] if page else f'{name} walkthrough for Stellar Blade. Step-by-step guide with screenshots and tips.',
         'image': entry['image'] if entry else None,
     }
 
@@ -113,8 +122,8 @@ def resolve_static_head(path: str):
             if e:
                 name = e['name']
                 return {
-                    'title': f'{name} Walkthroughs',
-                    'description': f'Complete {name} walkthroughs for Stellar Blade. Detailed guides with step-by-step instructions and screenshots.',
+                    'title': e.get('title') or f'{name} Walkthroughs',
+                    'description': e.get('description') or f'Complete {name} walkthroughs for Stellar Blade. Detailed guides with step-by-step instructions and screenshots.',
                     'canonical': f'/walkthroughs/{slug}',
                     'image': e['image'],
                 }
@@ -156,7 +165,7 @@ async def fetch_walkthrough_head(type_slug: str, slug: str) -> dict:
     except Exception:
         logger.warning('seo head lookup failed for %s/%s; serving the loading-variant head',
                        type_slug, slug, exc_info=True)
-        return _loading_variant_head(type_slug)
+        return _loading_variant_head(type_slug, slug)
 
     content = data.get('content') or []
     has_boss = any(isinstance(b, dict) and b.get('is_boss') for b in content)
@@ -173,6 +182,9 @@ async def fetch_walkthrough_head(type_slug: str, slug: str) -> dict:
                 image = images[0]['url']
                 break
     head = {'title': f"{data['title']} Walkthrough", 'description': description, 'image': image}
+    page = _page_seo(type_slug, data['slug'])
+    if page:
+        head['title'], head['description'] = page['title'], page['description']
     if known_type:
         # Canonical from the matched type key and the DB row's slug — never the
         # raw path (ilike-found rows emit their true slug).
