@@ -165,7 +165,8 @@ async def test_fishing_list_head_uses_its_seo_json_copy(client):
                                   'nier-dlc', 'nikke-dlc'])
 async def test_other_walkthrough_lists_keep_the_generated_head(client, slug):
     entry = SEO['walkthroughTypes'][slug]
-    assert not {'title', 'description', 'intro', 'pages'} & set(entry)
+    # A category's own pages may carry copy (main story's EVE Protocol); its list head can't.
+    assert not {'title', 'description', 'intro'} & set(entry)
     name = html.escape(entry['name'])
     r = await client.get(f'/walkthroughs/{slug}')
     assert f'<title data-seo="server">{name} Walkthroughs{SUFFIX}</title>' in r.text
@@ -282,22 +283,23 @@ async def test_walkthrough_cache_hit_skips_db(client, monkeypatch):
     assert f'<title data-seo="server">Cached Walkthrough{SUFFIX}</title>' in r.text
 
 
-@pytest.mark.parametrize('wid, slug, title', [
-    (501, 'fishing-overview', 'Fishing Overview'), (502, 'all-fish', 'All Fish'),
-    (503, 'fishing-spots', 'Fishing Spots'), (504, 'bait-and-fishing-data', 'Bait and Fishing Data')])
-async def test_page_seo_replaces_the_generated_walkthrough_head(client, monkeypatch, wid, slug, title):
-    page = SEO['walkthroughTypes']['fishing']['pages'][slug]
+@pytest.mark.parametrize('kind, wid, slug, title', [
+    ('fishing', 501, 'fishing-overview', 'Fishing Overview'), ('fishing', 502, 'all-fish', 'All Fish'),
+    ('fishing', 503, 'fishing-spots', 'Fishing Spots'), ('fishing', 504, 'bait-and-fishing-data', 'Bait and Fishing Data'),
+    ('main-story', 15, 'eve-protocol', 'EVE Protocol')])
+async def test_page_seo_replaces_the_generated_walkthrough_head(client, monkeypatch, kind, wid, slug, title):
+    page = SEO['walkthroughTypes'][kind]['pages'][slug]
     row = {**{k: None for k in ('subtitle', 'level', 'thumbnail_url', 'available_after',
                                 'objectives', 'rewards')},
-           'id': wid, 'slug': slug, 'title': title, 'mission_type': 'fishing',
+           'id': wid, 'slug': slug, 'title': title, 'mission_type': kind,
            'display_order': wid, 'content': [PLAIN_BLOCK]}
-    await set_cache(f'walkthrough:fishing:{slug}', row, ttl=60)
+    await set_cache(f'walkthrough:{kind}:{slug}', row, ttl=60)
     monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
-    r = await client.get(f'/walkthroughs/fishing/{slug}')
+    r = await client.get(f'/walkthroughs/{kind}/{slug}')
     assert f'<title data-seo="server">{html.escape(page["title"])}{SUFFIX}</title>' in r.text
     assert f'name="description" content="{html.escape(page["description"])}"' in r.text
     assert f'{title} Walkthrough' not in r.text
-    assert f'href="https://stellarbladeguide.com/walkthroughs/fishing/{slug}"' in r.text
+    assert f'href="https://stellarbladeguide.com/walkthroughs/{kind}/{slug}"' in r.text
 
 
 async def test_walkthrough_cache_write_matches_api_shape(client, walkthrough_session_factory):

@@ -198,7 +198,13 @@
   "walkthroughTypes": {
     "main-story": {
       "name": "Main Story",
-      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.webp"
+      "image": "https://img.stellarbladeguide.com/stellar-blade/walkthroughs/main-story/scavenger-adam/stellar-blade-20251127221921.webp",
+      "pages": {
+        "eve-protocol": {
+          "title": "All 3 Endings & Bosses: EVE Protocol",
+          "description": "All 3 Stellar Blade endings and what decides each: Return to the Colony, Making New Memories, and Cost of Lost Memories, plus every EVE Protocol boss."
+        }
+      }
     },
     "side-quests": {
       "name": "Side Quests",
