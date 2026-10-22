@@ -60,16 +60,16 @@ def test_walkthrough_key_shape_is_not_rebuilt_inline():
 def test_search_cache_key_shape():
     # Byte for byte: e2e/helpers/db.ts searchKey() builds the same key to clear it,
     # so a version bump changes both.
-    assert search_cache_key("nano", 20) == "search:nano:20:v2"
-    assert search_cache_key("new game plus", 50) == "search:new game plus:50:v2"
+    assert search_cache_key("nano", 20) == "search:nano:20:v3"
+    assert search_cache_key("new game plus", 50) == "search:new game plus:50:v3"
 
 
 def test_no_search_key_can_be_read_as_an_unversioned_one():
-    """The image being replaced reads search:{q}:{limit}. A versioned key ends in
-    ":v2", never in digits, so whatever the query, the two images never share an
-    entry; a "search:v2:" prefix would have, for the query "v2:nano"."""
+    """The image from before the versions reads search:{q}:{limit}. A versioned key ends
+    in ":v" and the version, never in ":" and digits alone, so whatever the query, the two
+    never share an entry; a "search:v2:" prefix would have, for the query "v2:nano"."""
     old_shape = re.compile(r"search:.*:\d+")
-    for q in ("nano", "v2:nano", "nano:20", "nano:20:v1", ":", "a:1:v2"):
+    for q in ("nano", "v2:nano", "nano:20", "nano:20:v1", ":", "a:1:v2", "a:1:v3"):
         for limit in (1, 20, 50):
             assert not old_shape.fullmatch(search_cache_key(q, limit))
 

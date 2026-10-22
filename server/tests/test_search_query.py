@@ -314,6 +314,32 @@ def test_hostile_input_never_becomes_tsquery_syntax():
 
 
 # ---------------------------------------------------------------------------
+# "guide": optional when the rest of the query names something
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("q, terms", [
+    ("eidos 7 guide", "eidos 7"),
+    ("xion guide", "xion"),
+    ("fishing guides", "fishing"),
+    ("guide to xion", "to xion"),
+    ("prayer meeting guide", "prayer meeting"),   # still exact: the whole query decides exact titles
+    ("7 guide", "7"),
+])
+def test_guide_drops_out_of_the_words_that_must_match(q, terms):
+    assert search.search_terms(q) == terms
+
+
+@pytest.mark.parametrize("q", [
+    "guide", "guides", "the guide", "a guide",   # nothing, or only stopwords, would be left
+    "eve guide", "dlc guide",                    # three letters is too little to stand alone
+    "guidebook", "guided tour", "guid",          # not the word itself
+    "xion",                                      # no "guide" at all
+])
+def test_guide_stays_when_too_little_is_left(q):
+    assert search.search_terms(q) == q
+
+
+# ---------------------------------------------------------------------------
 # Typo fallback: distance, edit limits, correction
 # ---------------------------------------------------------------------------
 
@@ -450,11 +476,14 @@ def test_the_statement_binds_exactly_the_parameters_search_passes():
 
 
 def test_each_trigram_and_rank_measure_is_computed_once():
-    """similarity() and ts_rank() are the statement's costly measures. All of them sit in
-    base0, which is MATERIALIZED, so no later CTE computes one again."""
+    """similarity() and ts_rank() are the statement's costly measures. A doc's sit in
+    base0 and a section title's in section_hits, both MATERIALIZED, so no later CTE
+    computes one again; a section reuses its page's rank."""
     sql = search._SEARCH_SQL.text
     base0 = sql[sql.index("base0 AS MATERIALIZED ("):sql.index("\nbase AS (")]
-    assert sql.count("similarity(") == base0.count("similarity(") == 4
+    section_hits = sql[sql.index("section_hits AS MATERIALIZED ("):sql.index("\nhits AS (")]
+    assert base0.count("similarity(") == 4 and section_hits.count("similarity(") == 1
+    assert sql.count("similarity(") == 5
     assert sql.count("ts_rank(") == base0.count("ts_rank(") == 2
 
 

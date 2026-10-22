@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Compass, Zap, Sparkles, BookOpen, Map, LayoutGrid, Library } from 'lucide-react'
+import { Compass, Zap, Sparkles, BookOpen, Map, Layers, Book } from 'lucide-react'
 import type { SearchResponse } from '../services/api'
 import { errorMessage } from '../services/api'
 import { usePrefetch } from '../hooks/usePrefetch'
@@ -20,8 +20,8 @@ const KIND_ICONS = {
   cosmetics:        Sparkles,
   walkthrough:      BookOpen,
   level:            Map,
-  type:             LayoutGrid,
-  walkthrough_type: Library,
+  type:             Layers,
+  walkthrough_type: Book,
 } as const
 
 function parsePrefetchTarget(result: { kind: string; navigation_url: string }) {
