@@ -70,6 +70,9 @@ async function invalidateContentKeys(redis: Redis, walkthroughSlug: string): Pro
 // The fixture's description carries a wikilink, so the structured-data spec can
 // check that JSON-LD gets the text a reader sees, not the markup.
 export const FIXTURE_DESCRIPTION = 'End-to-end fixture item by the [[levels/eidos-7|Eidos 7 page]].';
+// The fixture walkthrough's titled section. Its title is the same every run; the run's
+// slug, in the section's link, tells this run's apart.
+export const FIXTURE_SECTION_TITLE = "E2E Fixture's Section";
 export const FIXTURE_DESCRIPTION_TEXT = 'End-to-end fixture item by the Eidos 7 page.';
 
 export async function createFixtures(token: string): Promise<Fixtures> {
@@ -136,7 +139,7 @@ export async function createFixtures(token: string): Promise<Fixtures> {
     const titledSection: FixtureSection = { word: `vq${token.slice(-3)}${token}`, anchor: 'e2e-fixtures-section' };
     const untitledSection: FixtureSection = { word: `vu${token.slice(-3)}${token}`, anchor: 'section-2' };
     const content = [
-      { order: 1, section_title: "E2E Fixture's Section", text: `E2E fixture step by ${titledSection.word}.` },
+      { order: 1, section_title: FIXTURE_SECTION_TITLE, text: `E2E fixture step by ${titledSection.word}.` },
       { order: 2, text: `E2E fixture step by ${untitledSection.word}.` },
     ];
     const wt = await pool.query(

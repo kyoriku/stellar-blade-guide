@@ -476,11 +476,14 @@ def test_the_statement_binds_exactly_the_parameters_search_passes():
 
 
 def test_each_trigram_and_rank_measure_is_computed_once():
-    """similarity() and ts_rank() are the statement's costly measures. All of them sit in
-    base0, which is MATERIALIZED, so no later CTE computes one again."""
+    """similarity() and ts_rank() are the statement's costly measures. A doc's sit in
+    base0 and a section title's in section_hits, both MATERIALIZED, so no later CTE
+    computes one again; a section reuses its page's rank."""
     sql = search._SEARCH_SQL.text
     base0 = sql[sql.index("base0 AS MATERIALIZED ("):sql.index("\nbase AS (")]
-    assert sql.count("similarity(") == base0.count("similarity(") == 4
+    section_hits = sql[sql.index("section_hits AS MATERIALIZED ("):sql.index("\nhits AS (")]
+    assert base0.count("similarity(") == 4 and section_hits.count("similarity(") == 1
+    assert sql.count("similarity(") == 5
     assert sql.count("ts_rank(") == base0.count("ts_rank(") == 2
 
 

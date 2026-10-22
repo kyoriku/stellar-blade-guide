@@ -7,9 +7,10 @@ Type, category and level pages are matched by their names and page titles.
 
 Results are tiered (see _SEARCH_SQL): every word in a title or name, then a near
 title, then every word anywhere, then any word in a title when nothing else
-matched. A query with no result holding every word gets one typo correction
-(_correct) and runs again. Body-only hits get a snippet showing the match and,
-for a walkthrough, a link to the section it is in.
+matched. A walkthrough section whose title holds every word is a result of its own,
+titled with the section and linking it. A query with no result holding every word
+gets one typo correction (_correct) and runs again. Body-only hits get a snippet
+showing the match and, for a walkthrough, a link to the section it is in.
 """
 import itertools
 import json
@@ -147,13 +148,32 @@ def _names(column: str) -> str:
     return "(" + both_configs(column, "A") + ")"
 
 
+# A walkthrough's titled sections in page order, as rows e(blk, pos) of w.content. The
+# statement's section rows, the typo vocabulary and search_eval's robustness check all
+# read sections this way.
+_SECTIONS_OF = ("jsonb_array_elements(CASE WHEN jsonb_typeof(w.content) = 'array' THEN w.content "
+                "ELSE '[]'::jsonb END) WITH ORDINALITY AS e(blk, pos)")
+_TITLED = ("jsonb_typeof(e.blk) = 'object' AND jsonb_typeof(e.blk->'section_title') = 'string' "
+           "AND btrim(e.blk->>'section_title') <> ''")
+_SECTION_TITLE = both_configs("(e.blk->>'section_title')", "A")
+
+
 # Tiers, best first. 4: every word in the title or name (subtitle included for a
 # walkthrough), split the parser's way or Postgres's, or the exact title; or every
-# word in the title plus the doc's own type names, at least one in the title, scored
-# 0.30 lower. 3: a whole-title typo, by trigram similarity; when some result holds
-# every word, a near title stays here only at similarity 0.8 and otherwise drops to
-# 1. 2: every word anywhere: title, body, type, place. 1: those near titles, or, only
-# when nothing reached tiers 2-4, titles with any word.
+# word in the title plus the doc's type names or category, at least one in the title,
+# scored 0.30 lower. 3: a whole-title typo, by trigram similarity; when some result
+# holds every word, a near title stays here only at similarity 0.8 and otherwise drops
+# to 1. 2: every word anywhere: title, body, type, place, category, 0.25 higher when the
+# doc's own words (all but its text) hold them. 1: those near titles, or, only when
+# nothing reached tiers 2-4, titles with any word.
+#
+# A walkthrough found only in its text gives way to its sections whose titles hold
+# every word, each a row of its own in tier 4: an exact title at 4.70 (4.79 when the
+# page's title also names a query word), just under (or over) a collectible or
+# walkthrough titled the same; any other at 3.70-4.24, under every title match. No
+# section ranks above a type, level or category page whose name holds every word, and
+# on a type or level name, one whose title isn't the query ranks after the collectibles
+# found through their type or place.
 _SEARCH_SQL = text(f"""
 WITH p AS (SELECT CAST(:q AS text) AS q, CAST(:all_q AS text) AS all_q, CAST(:any_q AS text) AS any_q, CAST(:lit_q AS text) AS lit_q,
                   CAST(:phrase_q AS text) AS phrase_q, CAST(:last AS text) AS last, CAST(:n_terms AS int) AS n_terms,
@@ -200,13 +220,22 @@ places AS MATERIALIZED (   -- each location's level and location names, folded i
   SELECT loc.id, lv.display_order * 100000 + loc.display_order * 1000 AS ord,
          setweight(to_tsvector('english', lv.name || ' ' || loc.name), 'C') AS fold
   FROM locations loc JOIN levels lv ON lv.id = loc.level_id),
+walkthrough_cats AS (   -- each category's name, folded into its walkthroughs as a type's names are into its items
+  SELECT x.mtype, setweight(to_tsvector('english', x.name), 'C') AS fold
+  FROM unnest(CAST(:cat_names AS text[]), CAST(:cat_types AS text[])) AS x(name, mtype)),
 docs AS (
   -- "|| ''::tsvector" decodes a stored vector once here, not again for every use below
   SELECT 'item' AS kind, c.id, c.title, NULL::text AS singular, c.search_vector || t.fold || pl.fold AS v, 0 AS page,
          pl.ord + c.display_order AS ord, t.grp AS a, t.slug AS b, t.id AS type_id, t.fold AS f
   FROM collectibles c JOIN primary_type pt ON pt.collectible_id = c.id JOIN types t ON t.id = pt.type_id
   JOIN places pl ON pl.id = c.location_id
-  UNION ALL SELECT 'walkthrough', w.id, w.title, NULL, w.search_vector || ''::tsvector, 0, w.display_order, w.mission_type, w.slug, NULL, ''::tsvector FROM walkthroughs w
+  -- the category joins the text only when it names a query word or the last two joined: otherwise it can't
+  -- change a match or a rank, and joining it to every page's vector costs more than the rest of the walkthroughs
+  UNION ALL SELECT 'walkthrough', w.id, w.title, NULL,
+                   CASE WHEN wc.fold @@ qq.tq_any OR coalesce(wc.fold @@ qq.jq, false) THEN w.search_vector || wc.fold
+                        ELSE w.search_vector || ''::tsvector END,
+                   0, w.display_order, w.mission_type, w.slug, NULL, coalesce(wc.fold, ''::tsvector)
+    FROM walkthroughs w LEFT JOIN walkthrough_cats wc ON wc.mtype = w.mission_type CROSS JOIN qq
   UNION ALL SELECT 'type', t.id, t.title, t.singular, {_names("t.title || ' ' || t.singular || ' ' || t.page_title || ' ' || t.grp")}, 1, t.display_order, t.grp, t.slug, NULL, ''::tsvector FROM types t
   UNION ALL SELECT 'walkthrough_type', x.ord::int, x.name, NULL, {_names("x.name || ' walkthroughs'")}, 1, x.ord::int, x.slug, x.mtype, NULL, ''::tsvector
     FROM unnest(CAST(:cat_names AS text[]), CAST(:cat_slugs AS text[]), CAST(:cat_types AS text[])) WITH ORDINALITY AS x(name, slug, mtype, ord)
@@ -218,6 +247,8 @@ base0 AS MATERIALIZED (       -- every per-document measure, computed once
          greatest(similarity(replace(lower(d.title), ' ', ''), replace(qq.q, ' ', '')),
                   coalesce(similarity(replace(lower(d.singular), ' ', ''), replace(qq.q, ' ', '')), 0)) AS sim_joined,
          greatest(ts_rank(d.v, qq.tq_body), coalesce(ts_rank(d.v, qq.jq), 0)) AS rk, d.v @@ qq.tq_body OR coalesce(d.v @@ qq.jq, false) AS body_hit, d.v @@ qq.tq_phrase AS phrase,
+         -- the query parsed as the page text was: "s2rv1c2-001" finds a page whose parser read "-001"
+         d.kind = 'walkthrough' AND d.v @@ qq.tq_plain AS plain_hit,
          (lower(d.title) = qq.q OR lower(coalesce(d.singular, '')) = qq.q) AS exact,
          (qq.stars > 0 AND length(d.title) - length(replace(d.title, '★', '')) = qq.stars) AS star_match,
          -- the item's own words (title, type, place, cycle) hold every query word; tested only on body hits
@@ -231,9 +262,26 @@ base AS (
     (b.f <> ''::tsvector AND qq.n_terms >= 2 AND b.vt @@ qq.tq_any
      AND ((b.vt || b.f) @@ qq.tq_title OR coalesce((b.vt || b.f) @@ qq.jq, false))) AS fold_all,
     (b.sim >= 0.45 OR b.sim_joined >= 0.6) AS t3,
-    b.body_hit AND (b.kind <> 'walkthrough' OR qq.n_terms <= 1 OR b.phrase OR b.rk >= 0.01) AS t2
+    b.body_hit AND (b.kind <> 'walkthrough' OR qq.n_terms <= 1 OR b.phrase OR b.rk >= 0.01) AS t2,
+    -- its own words hold every query word: an item's (structural), or a walkthrough's title, subtitle and category
+    b.structural OR (b.kind = 'walkthrough' AND b.body_hit
+                     AND ((b.vt || b.f) @@ qq.tq_body OR coalesce((b.vt || b.f) @@ qq.jq, false))) AS own
   FROM base0 b, qq),
-hits AS (SELECT bool_or(title_all OR fold_all OR t2) AS strict, bool_or(t3) AS near FROM base),
+sections AS MATERIALIZED (   -- the titled sections of walkthroughs found in their text alone
+  SELECT b.id AS wid, b.ord AS page_ord, b.title AS page_title, b.rk, b.a, b.b, e.pos::int AS pos,
+         e.blk->>'section_title' AS title, {_SECTION_TITLE} AS v
+  FROM base b JOIN walkthroughs w ON w.id = b.id CROSS JOIN LATERAL {_SECTIONS_OF}
+  WHERE b.kind = 'walkthrough' AND (b.body_hit OR b.plain_hit) AND NOT (b.title_all OR b.fold_all)
+    AND e.pos < 1000 AND {_TITLED}),
+section_hits AS MATERIALIZED (   -- those whose title holds every word, by the rule the page's text met (so no
+  -- section shows below four letters of one word, and none shows for a word its page holds only elsewhere)
+  SELECT s.*, lower(s.title) = qq.q AS exact, s.v @@ qq.tq_lit AS literal, similarity(s.title, qq.q) AS sim,
+         (qq.stars > 0 AND length(s.title) - length(replace(s.title, '★', '')) = qq.stars) AS star_match,
+         to_tsvector('english', s.page_title) @@ qq.tq_any AS page_names
+  FROM sections s, qq
+  WHERE lower(s.title) = qq.q OR s.v @@ qq.tq_body OR s.v @@ qq.tq_plain OR coalesce(s.v @@ qq.jq, false)),
+hits AS (SELECT coalesce(bool_or(title_all OR fold_all OR t2), false) OR EXISTS (SELECT 1 FROM section_hits) AS strict,
+                bool_or(t3) AS near FROM base),
 tiered AS (
   SELECT b.*, CASE WHEN b.title_all OR b.fold_all THEN 4
       WHEN b.t3 AND (NOT h.strict OR greatest(b.sim, b.sim_joined) >= 0.8) THEN 3
@@ -241,13 +289,33 @@ tiered AS (
       WHEN b.t3 THEN 1
       WHEN NOT (h.strict OR h.near) AND b.vt @@ qq.tq_any THEN 1 END AS t
   FROM base b, hits h, qq),
+section_hubs AS (   -- nothing holds every word: a walkthrough whose title and two or more section titles hold one counts as a page
+  SELECT b.id FROM base b JOIN walkthroughs w ON w.id = b.id CROSS JOIN LATERAL {_SECTIONS_OF} CROSS JOIN qq
+  WHERE (SELECT NOT (strict OR coalesce(near, false)) FROM hits) AND b.kind = 'walkthrough' AND b.title_any
+    AND {_TITLED} AND {_SECTION_TITLE} @@ qq.tq_any
+  GROUP BY b.id HAVING count(*) >= 2),
+ranked AS (   -- every candidate but the section rows; a walkthrough that gives way to its sections is left out
+  SELECT b.kind, b.id, b.title, b.a, b.b, b.type_id, b.t, b.page, b.ord, b.title_all, b.own, b.t + CASE b.t
+      WHEN 4 THEN 0.30 * b.exact::int + 0.25 * b.literal::int + 0.20 * b.page + 0.15 * b.sim + 0.09 * b.rk / (1 + b.rk) + 0.05 * b.star_match::int - 0.30 * (NOT b.title_all)::int
+      WHEN 3 THEN 0.85 * greatest(b.sim, b.sim_joined) + 0.10 * b.page + 0.05 * b.star_match::int
+      WHEN 2 THEN least(0.99, 0.40 * b.phrase::int + 0.25 * b.own::int + 0.20 * b.title_any::int + 0.35 * b.rk / (1 + b.rk))
+      WHEN 1 THEN 0.50 * greatest(b.sim, b.sim_joined) + 0.30 * greatest(b.page, (h.id IS NOT NULL)::int) + 0.05 * b.star_match::int END AS score
+  FROM tiered b LEFT JOIN section_hubs h ON b.kind = 'walkthrough' AND h.id = b.id
+  WHERE b.t IS NOT NULL AND NOT (b.kind = 'walkthrough' AND b.id IN (SELECT wid FROM section_hits))),
 top AS (
-  SELECT *, t + CASE t
-      WHEN 4 THEN 0.30 * exact::int + 0.25 * literal::int + 0.20 * page + 0.15 * sim + 0.09 * rk / (1 + rk) + 0.05 * star_match::int - 0.30 * (NOT title_all)::int
-      WHEN 3 THEN 0.85 * greatest(sim, sim_joined) + 0.10 * page + 0.05 * star_match::int
-      WHEN 2 THEN least(0.99, 0.40 * phrase::int + 0.25 * structural::int + 0.20 * title_any::int + 0.35 * rk / (1 + rk))
-      WHEN 1 THEN 0.50 * greatest(sim, sim_joined) + 0.30 * page + 0.05 * star_match::int END AS score
-  FROM tiered WHERE t IS NOT NULL ORDER BY score DESC, page DESC, ord, id LIMIT :limit),
+  SELECT kind, id, title, a, b, type_id, t, page, ord, NULL::int AS wid, NULL::int AS pos, score FROM ranked
+  UNION ALL
+  -- capped under every type, level or category page whose name holds every word, and, on a type or level
+  -- name, a title that isn't the query under every collectible found through its type or place
+  SELECT 'section', -(s.wid * 1000 + s.pos), s.title, s.a, s.b, NULL, 4, 0, s.page_ord * 1000 + s.pos, s.wid, s.pos,
+    least((SELECT coalesce(min(score), 9.001) - 0.001 FROM ranked WHERE page = 1 AND t = 4 AND title_all),
+          CASE WHEN NOT s.exact AND EXISTS (SELECT 1 FROM ranked WHERE kind IN ('type', 'level') AND t = 4 AND title_all)
+               THEN (SELECT coalesce(min(score), 9.001) - 0.001 FROM ranked WHERE kind = 'item' AND t = 2 AND own)
+               ELSE 9 END,
+          CASE WHEN s.exact THEN 4.70 + 0.09 * s.page_names::int
+               ELSE 3.70 + 0.25 * s.literal::int + 0.15 * s.sim + 0.09 * s.rk / (1 + s.rk) END + 0.05 * s.star_match::int)
+  FROM section_hits s
+  ORDER BY score DESC, page DESC, ord, id LIMIT :limit),
 results AS (
   SELECT 0 AS part, top.kind, top.id, top.title, top.a, top.b, top.type_id, top.t AS tier, top.score,
     c.description, c.cycle, ty.singular AS type_name, lv2.name AS level_name, loc2.name AS location_name, w.subtitle, w.available_after,
@@ -259,12 +327,14 @@ results AS (
       WHEN 'walkthrough_type' THEN (SELECT count(*) FROM walkthroughs w2 WHERE w2.mission_type = top.b)
       WHEN 'level' THEN (SELECT coalesce(sum(coalesce(c2.quantity, 1)), 0) FROM locations l2 JOIN collectibles c2 ON c2.location_id = l2.id WHERE l2.level_id = top.id)
     END AS n,
+    sw.title AS page_title, sw.content -> (top.pos - 1) AS section,
     top.score AS k1, top.page AS k2, top.ord AS k3
   FROM top
   LEFT JOIN collectibles c ON top.kind = 'item' AND c.id = top.id
   LEFT JOIN types ty ON top.kind = 'item' AND ty.id = top.type_id
   LEFT JOIN locations loc2 ON loc2.id = c.location_id LEFT JOIN levels lv2 ON lv2.id = loc2.level_id
-  LEFT JOIN walkthroughs w ON top.kind = 'walkthrough' AND w.id = top.id)
+  LEFT JOIN walkthroughs w ON top.kind = 'walkthrough' AND w.id = top.id
+  LEFT JOIN walkthroughs sw ON top.kind = 'section' AND sw.id = top.wid)
 SELECT *, CASE WHEN part = 0 THEN (SELECT json_agg(json_build_array(x, tsvector_to_array(to_tsvector('english', x)))) FROM unnest(CAST(:plain AS text[])) x) END AS stems
 FROM (
   SELECT * FROM results
@@ -272,7 +342,7 @@ FROM (
   -- each matched collectible type's full title list in page order, for the anchor suffixes (_build_slug_map).
   -- The keys sort as k1 DESC, k2 DESC, k3: type and level negated, location and item not.
   SELECT 1, 'slug', c.id, c.title, NULL, NULL, ctm.type_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-         -ctm.type_id, -lv.display_order, loc.display_order * 100000 + c.display_order
+         NULL, NULL, -ctm.type_id, -lv.display_order, loc.display_order * 100000 + c.display_order
   FROM collectible_type_mappings ctm JOIN collectibles c ON c.id = ctm.collectible_id
   JOIN locations loc ON c.location_id = loc.id JOIN levels lv ON loc.level_id = lv.id
   WHERE ctm.type_id IN (SELECT type_id FROM top WHERE kind = 'item')
@@ -514,6 +584,24 @@ def _walkthrough_body_snippet(row, rxs, words=(), phrase=None) -> tuple[str | No
     return None, row["subtitle"]
 
 
+def _section_snippet(page_title: str, block) -> str:
+    """A section result's snippet: its page, then the start of its text."""
+    text = " ".join(section_text(block).split())
+    if not text:
+        return page_title
+    return f"{page_title} · {(text[:120] + '...') if len(text) > 120 else text}"
+
+
+def _section_result(r) -> SearchResult:
+    """A walkthrough section found by its title: a walkthrough result titled with the
+    section, linking the page's own anchor for it (the page alone when there is none)."""
+    block = r["section"] if isinstance(r["section"], dict) else {}
+    anchor = _section_anchor(block)
+    url = f"/walkthroughs/{url_type(r['a'])}/{r['b']}" + (f"#{anchor}" if anchor else "")
+    return SearchResult(kind="walkthrough", id=r["id"], title=r["title"], snippet=_section_snippet(r["page_title"], block),
+                        navigation_url=url, score=float(r["score"]))
+
+
 def _item_body_snippet(row, rxs) -> str:
     """A collectible found beyond its title: the matching description fragment, else
     its type, the place a query word matched and a non-base cycle, then the usual
@@ -570,6 +658,9 @@ async def _execute_search(db: AsyncSession, q: str, limit: int) -> tuple[list[Se
 
     results = []
     for r in found:
+        if r["kind"] == "section":
+            results.append(_section_result(r))
+            continue
         kind = r["kind"]
         if kind == "item":
             anchor = slug_maps.get(r["type_id"], {}).get(r["id"]) or _slugify_title(r["title"])

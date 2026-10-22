@@ -11,20 +11,29 @@ Usage (from server/):
 scripts/search-baseline.json (gitignored). The default mode asks the same queries
 again, prints the before/after tables and sweeps, runs the stored-column checks, and
 exits 1 when:
-  - a title that is #1 today is no longer #1, unless a page of the same name or the
-    item's own type page now leads;
+  - a title that is #1 today is no longer #1, unless a page of the same name, the item's
+    own type page, or a walkthrough section of the same title now leads;
   - a level page in today's top 5 for a level + type query leaves the top 5;
   - an item that today's full-text match puts in its top 5 leaves the top 20 (matched
-    by title, so identical-title duplicates count as present);
+    by title, so identical-title duplicates count as present; a walkthrough by its page,
+    so its section results count), outside the category names in ALLOWED_TEXT_DROPS;
   - a typing state whose target is in today's top 5 leaves the top 5, outside the
     broad prefixes in ALLOWED_TYPING_DROPS;
-  - a name query doesn't put its page first, or a query in EXPECT_FIRST loses its lead;
+  - a name query doesn't put its page first, or a query in EXPECT_FIRST loses its lead,
+    or one in EXPECT_SECTION_FIRST isn't led by that section as a result of its own;
+  - two results of one query share a kind and id (the client keys rows by them);
+  - a query in EXPECT_UNCORRECTED comes back typo-corrected;
+  - where today's first result is a type or level page, a section result whose title
+    isn't the query ranks above a collectible from today's top 5;
+  - a titled walkthrough section isn't found by its own title, or a page gives two
+    sections one anchor;
   - a search_vector column drifts from its expression, the SQL extraction and the
     Python twin in app/services/search_text.py disagree, a walkthrough nests text
     deeper than MAX_DEPTH, or the cycle rule indexes a base cycle;
   - a robustness check fails: a malformed or very large row errors in a stored
-    expression, an adversarial string strips links differently in SQL and in
-    _strip_links, or a hostile query errors or builds tsquery text from what was typed;
+    expression, a malformed content errors where the statement reads its sections, an
+    adversarial string strips links differently in SQL and in _strip_links, or a hostile
+    query errors or builds tsquery text from what was typed;
   - a body-only hit near the top doesn't show a query word in its visible snippet;
   - a link to an item whose title its type page shows more than once carries
     another card's anchor;
@@ -95,7 +104,7 @@ from sqlalchemy import text  # noqa: E402
 
 from app.config.settings import settings  # noqa: E402
 from app.core.colours import CYAN, GRAY, GREEN, RED, RESET, YELLOW  # noqa: E402
-from app.core.navigation import NAV_LEVEL_SLUGS  # noqa: E402
+from app.core.navigation import NAV_LEVEL_SLUGS, url_type  # noqa: E402
 from app.services import search, search_text  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -121,6 +130,17 @@ EXTRA = [
     "memory stick", "costumes", "skin", "appearance", "drone skin", "camp locations", "weapon upgrade",
     "cosmetics", "eve outfits", "black nano suit", "supply chest xion", "spire 4 memorystick", "new gam",
     "new game plu", "boss", "weapon core", "missable", "emilia", "platinum",
+    # Sections as results, and the fishing pages (2026-10-21): every fish, every bait, the
+    # quirks those pages exposed, "X guide", and the type names whose items sections must not
+    # push out of the top 5.
+    "goldfish", "mudskipper", "betta", "butterflyfish", "porcupinefish", "lobster", "flying fish", "triggerfish",
+    "footballfish", "sea bass", "mackerel", "red seabream", "koi", "channel catfish", "salmon", "mahi-mahi",
+    "halibut", "ocean sunfish", "sailfish", "pacific bluefin tuna", "arowana", "pirarucu", "great white shark",
+    "whale shark", "dunkleosteus", "nikke dlc catches", "small shrimp", "wriggling insect", "fish slice",
+    "special bait", "fantastic bait", "strange bait", "mystery bait", "fishing requests", "fishing data", "shark",
+    "eidos 7 guide", "xion guide", "fishing guide", "the guide", "prayer meeting guide", "arowanna",
+    "small shirmp", "lily", "camps", "memorystick", "overview", "starting the quest", "the plant",
+    "drone upgrade",
 ]
 # What the plan promises leads (plan section 5); None means no results at all.
 EXPECT_FIRST = {
@@ -129,7 +149,7 @@ EXPECT_FIRST = {
     "omnibolt": "Scavenger Adam", "memory in the": "Memories in the Doll",
     "memories in the doll": "Memories in the Doll", "sentinel 82": "Sentinel 82's Report",
     "obvlisiohn": "Oblivion", "black learl": "Black Pearl", "boss challgen": "Boss: Scarlet",
-    "mystery bai": "Fantastic Bait", "box hunter": "Supply Boxes", "amelia": None,
+    "mystery bai": "Bait and Fishing Data", "box hunter": "Supply Boxes", "amelia": None,
     "lily outfits": "Lily Outfits", "lyle": "Stolen Treasure", "fishing": "Fishing",
     "eidos": "Eidos 7", "recruit passcode": "Recruit Passcode Specialists", "precious treasure": "Precious Treasure",
     "side quests": "Side Quests", "bulletin board": "Bulletin Board Requests", "nanosuit": "Nano Suits",
@@ -142,6 +162,27 @@ EXPECT_FIRST = {
     f"burst reovery gear {STAR * 3}": f"Burst Recovery Gear {STAR * 3}",
     "yorha no.2 type b uniform": "YoRHa No.2 Type B Uniform", "black pearl location": "Black Pearl",
     "new gam": "EVE Protocol", "missable": None, "emilia": None,
+    # 2026-10-21. A value starting "/" is the exact link the first result must have; a
+    # title also matches a walkthrough row by its page's title.
+    "mystery bait": "Bait and Fishing Data", "eidos 7 guide": "Eidos 7", "xion guide": "Xion",
+    "fishing guide": "Fishing", "drone upgrade": "Drone Upgrade Modules",
+    "crater supply camp": "/collectibles/camps#crater-supply-camp", "lily": "Lily Outfits",
+    "memorystick": "Memorysticks",
+}
+# Queries a walkthrough section must lead, as a result of its own: the link it must have.
+# (Before sections were results, the page's row could carry the same link.)
+EXPECT_SECTION_FIRST = {
+    "goldfish": "/walkthroughs/fishing/all-fish#goldfish", "arowana": "/walkthroughs/fishing/all-fish#arowana",
+    "arowanna": "/walkthroughs/fishing/all-fish#arowana", "porcupinefish": "/walkthroughs/fishing/all-fish#porcupinefish",
+    "channel catfish": "/walkthroughs/fishing/all-fish#channel-catfish",
+    "halibut": "/walkthroughs/fishing/all-fish#halibut", "whale shark": "/walkthroughs/fishing/all-fish#whale-shark",
+    "small shrimp": "/walkthroughs/fishing/bait-and-fishing-data#small-shrimp",
+    "wriggling insect": "/walkthroughs/fishing/bait-and-fishing-data#wriggling-insect",
+    "fish slice": "/walkthroughs/fishing/bait-and-fishing-data#fish-slice",
+    "special bait": "/walkthroughs/fishing/bait-and-fishing-data#special-bait",
+    "fantastic bait": "/walkthroughs/fishing/bait-and-fishing-data#fantastic-bait",
+    "strange bait": "/walkthroughs/fishing/bait-and-fishing-data#strange-bait",
+    "fishing requests": "/walkthroughs/fishing/fishing-overview#the-fishing-requests",
 }
 SHORT_CATEGORY_NAMES = [
     ("nier", "nier-dlc"), ("nikke", "nikke-dlc"), ("nier dlc", "nier-dlc"), ("nikke dlc", "nikke-dlc"),
@@ -149,14 +190,23 @@ SHORT_CATEGORY_NAMES = [
 ]
 # Prefixes that dozens of equally good titles share: their targets may leave the top 5.
 ALLOWED_TYPING_DROPS = {"lo", "legi", "legio", "centr", "fi"}
+# Category names: the category's own walkthroughs now fill the top 20, ahead of pages
+# that only mention it, so those pages may leave it.
+ALLOWED_TEXT_DROPS = {"side quests", "side quest", "bulletin board", "bulletin board request", "bulletin board requests"}
+# Queries the typo fallback must leave as typed: nothing on the site is spelled like them.
+EXPECT_UNCORRECTED = {"platinum", "missable", "amelia", "emilia", "box hunter"}
 TIMING_QUERIES = BRIEF + [
     "boss", "eve", "xion", "supply", "the", "su", "bo", "ma", "st", "fi", "ad",
     "beta core eidos seven", "spire 4 memorystick upper", "black nano suit red", "weapon core crater hidden",
 ]
 # Dev server time, p90. The plan's 12 ms came from a prototype estimate that left out
 # reading the stored vectors (about 5 ms); the statement as built measured p90 11.9 to
-# 13.0 ms on a quiet dev database (2026-10-18), so the budget is 15. The real latency
-# gates are the prod timing gate below and the post-deploy rollback trigger.
+# 13.0 ms on a quiet dev database (2026-10-18), so the budget is 15. Section results
+# (2026-10-21) cost about 2 ms more: 11.9 to 13.8 ms run on their own, and 12.4 to 15.4
+# inside a full check, where this gate runs. Most of it is reading the content of every
+# walkthrough a broad word like "supply" matches, for its section titles (about 2.7 ms
+# on "supply", 0.5 on a specific query). The real latency gates are the prod timing
+# gate below and the post-deploy rollback trigger.
 TIMING_BUDGET_MS = 15.0
 VISIBLE = 44          # snippet characters the narrowest results row shows
 PAGE_KINDS = {"type", "walkthrough_type", "level"}
@@ -402,12 +452,52 @@ async def snapshot():
 # Check
 # ---------------------------------------------------------------------------
 
+# Walkthrough pages by title and titles by page, filled by load_pages(): a section result
+# stands for its page wherever results are compared.
+PAGES = {"by_title": {}, "title_of": {}}
+
+
+async def load_pages(s):
+    for title, mission_type, slug in (await s.execute(text("SELECT title, mission_type, slug FROM walkthroughs"))).all():
+        url = f"/walkthroughs/{url_type(mission_type)}/{slug}"
+        PAGES["by_title"].setdefault(title.lower(), set()).add(url)
+        PAGES["title_of"][url] = title
+
+
+def page_url(url):
+    return url.partition("#")[0]
+
+
+def _parts(row):
+    """(kind, id, title, url) of a result row, dict or snapshot list."""
+    return (row["kind"], row["id"], row["title"], row["url"]) if isinstance(row, dict) else tuple(row[:4])
+
+
+def ident(row):
+    """What a row is when asking whether it's still there: a walkthrough row, page or
+    section, is its page; anything else its family and title."""
+    kind, _, title, url = _parts(row)
+    return ("walkthrough", page_url(url)) if fam(kind) == "walkthrough" else (fam(kind), title.lower())
+
+
 def matches(row, tgt):
-    """Whether a result row (dict or snapshot list) is the target."""
-    kind, title, url = (row["kind"], row["title"], row["url"]) if isinstance(row, dict) else (row[0], row[2], row[3])
+    """Whether a result row (dict or snapshot list) is the target. A walkthrough row, page
+    or section, is its page: it meets a walkthrough's title, never a collectible's that a
+    section happens to share."""
+    kind, _, title, url = _parts(row)
     if "url" in tgt:
         return url == tgt["url"]
+    if fam(kind) == "walkthrough":
+        return tgt.get("family") in (None, "walkthrough") and \
+            page_url(url) in PAGES["by_title"].get(tgt["title"].lower(), ())
     return (tgt.get("family") in (None, fam(kind))) and title.lower() == tgt["title"].lower()
+
+
+def names_a_word(text, q):
+    """Whether `text` holds a word of the query where a word starts (its first four
+    letters, as visible_word reads a snippet)."""
+    return any(re.search(r"(?<![^\W_])" + re.escape(w[:4]), text.lower())
+               for w in re.findall(r"[^\W_]+", q.lower()) if len(w) >= 2)
 
 
 def rank(rows, tgt):
@@ -440,7 +530,20 @@ def visible_word(snippet, q, corrected):
 
 
 def fmt(rows, n=5):
-    return "; ".join(r["title"] if isinstance(r, dict) else r[2] for r in rows[:n]) or "-"
+    """Titles, a section result as "Section (Page)"."""
+    def name(row):
+        _, rid, title, url = _parts(row)
+        return f"{title} ({PAGES['title_of'].get(page_url(url), '?')})" if rid < 0 else title
+    return "; ".join(name(r) for r in rows[:n]) or "-"
+
+
+def lead_is(row, want):
+    """EXPECT_FIRST: a link starting "/" must be the row's exactly; a title is the row's
+    own or, for a walkthrough row, its page's."""
+    if want.startswith("/"):
+        return row["url"] == want
+    return want == row["title"] or (fam(row["kind"]) == "walkthrough"
+                                    and want == PAGES["title_of"].get(page_url(row["url"])))
 
 
 async def stored_column_checks():
@@ -873,12 +976,88 @@ async def anchor_checks():
     return problems
 
 
-async def robustness_checks():
-    """Inputs no real row or log holds yet, checked on every run: malformed and very
-    large rows, adversarial links, and hostile queries."""
+async def section_checks():
+    """Every titled walkthrough section is found by its own title, as a result linking
+    it, or through its page's row when the page's own words already hold the title. Its
+    anchor must be one the page renders: never empty, never shared by two sections of a
+    page. Searched at the API's 50-row maximum, so a title on 33 pages fits."""
     async with AsyncSessionLocal() as s:
         await s.execute(text("SET TRANSACTION READ ONLY"))
-        problems = await shape_checks(s) + await link_checks(s) + await query_checks(s)
+        rows = (await s.execute(text("SELECT title, mission_type, slug, content FROM walkthroughs ORDER BY id"))).all()
+    problems, places, count = [], defaultdict(list), 0
+    for title, mission_type, slug, content in rows:
+        page, anchors = f"/walkthroughs/{url_type(mission_type)}/{slug}", Counter()
+        for block in content if isinstance(content, list) else []:
+            heading = block.get("section_title") if isinstance(block, dict) else None
+            if not isinstance(heading, str) or not heading.strip():
+                continue
+            count += 1
+            anchor = search._section_anchor(block)
+            if anchor is None:
+                problems.append(f"{title!r}: section {heading!r} has no anchor")
+                continue
+            anchors[anchor] += 1
+            places[normalize(heading)].append((page, anchor))
+        problems += [f"{title!r}: {n} sections share #{anchor}" for anchor, n in anchors.items() if n > 1]
+    for q, where in sorted(places.items()):
+        found = (await ask(q, 50))[0]
+        urls, keys = {r["url"] for r in found}, [(r["kind"], r["id"]) for r in found]
+        if len(set(keys)) != len(keys):
+            problems.append(f"{q!r}: two results share a kind and id")
+        problems += [f"{q!r}: neither {page}#{anchor} nor its page comes up"
+                     for page, anchor in where if f"{page}#{anchor}" not in urls and page not in urls]
+    print(f"{CYAN}Sections{RESET}: {count} titled sections on {len(rows)} pages, each searched by its title "
+          f"({len(places)} titles): {GREEN + 'all found' + RESET if not problems else RED + str(len(problems)) + ' problem(s)' + RESET}")
+    return problems
+
+
+# The statement's section reading over contents passed as text, with the block fetched
+# back by position as the results do, and each title's vector.
+SECTION_SHAPES_SQL = text(
+    "SELECT w.ord, e.pos, e.blk, (w.content -> (e.pos::int - 1)) = e.blk AS same, "
+    f"({search._SECTION_TITLE}) IS NULL AS null_vector "
+    "FROM (SELECT ord, CAST(content AS jsonb) AS content FROM unnest(CAST(:content AS text[])) "
+    "WITH ORDINALITY AS u(content, ord)) w "
+    f"CROSS JOIN LATERAL {search._SECTIONS_OF} WHERE {search._TITLED} ORDER BY w.ord, e.pos")
+
+
+async def section_shape_checks(s):
+    """Malformed contents through the statement's section reading: no errors, the block
+    fetched back by position is the one read, every title has a vector, and the Python
+    side builds each one's snippet and anchor."""
+    walkthroughs, _ = malformed_rows()
+    contents = _rows_params("walkthroughs", walkthroughs)["content"]
+    problems, read = [], 0
+    for start in range(0, len(contents), 250):
+        try:
+            async with s.begin_nested():
+                got = (await s.execute(SECTION_SHAPES_SQL, {"content": contents[start:start + 250]})).all()
+        except Exception as exc:
+            problems.append(f"reading the sections of contents {start}-{start + 249} failed: {_first_line(exc)}")
+            continue
+        for ordinal, pos, block, same, null_vector in got:
+            read += 1
+            if not same or null_vector:
+                problems.append(f"content {start + ordinal - 1}, section {pos}: fetched back {same}, "
+                                f"null vector {null_vector}")
+            try:
+                search._section_snippet("Page", block)
+                search._section_anchor(block)
+            except Exception as exc:
+                problems.append(f"section {repr(block)[:120]}: {type(exc).__name__}: {_first_line(exc)}")
+    print(f"{CYAN}Section reading{RESET}: {read} titled sections in {len(contents)} malformed contents: "
+          f"{GREEN + 'all hold' + RESET if not problems else RED + str(len(problems)) + ' problem(s)' + RESET}")
+    return problems
+
+
+async def robustness_checks():
+    """Inputs no real row or log holds yet, checked on every run: malformed and very
+    large rows, malformed contents where the statement reads sections, adversarial
+    links, and hostile queries."""
+    async with AsyncSessionLocal() as s:
+        await s.execute(text("SET TRANSACTION READ ONLY"))
+        problems = (await shape_checks(s) + await section_shape_checks(s) + await link_checks(s)
+                    + await query_checks(s))
         await s.rollback()
     return problems
 
@@ -901,6 +1080,7 @@ async def check():
         await s.execute(text("SET TRANSACTION READ ONLY"))
         singular_by_url = {f"/{group}/{slug}": name for name, slug, group in (await s.execute(text(
             "SELECT name, slug, coalesce(category_group, 'collectibles') FROM collectible_types"))).all()}
+        await load_pages(s)
 
     stats = defaultdict(Counter)
     for q, entry in queries.items():
@@ -926,7 +1106,11 @@ async def check():
                 # the Cans page's singular, and also a document's title): the plan ranks it first.
                 same_name_page = lead and lead["kind"] in PAGE_KINDS and q in (
                     lead["title"].lower(), singular_by_url.get(lead["url"], "").lower())
-                if not (own_type or same_name_page):
+                # A section of the same title leads only when its page also names a query word
+                # ("fantastic bait": Bait and Fishing Data).
+                same_title_section = (lead and lead["id"] < 0 and lead["title"].lower() == q
+                                      and names_a_word(PAGES["title_of"].get(page_url(lead["url"]), ""), q))
+                if not (own_type or same_name_page or same_title_section):
                     violations["exact title no longer first"].append(f"{q!r}: now #{'-' if ra is None else ra + 1}, "
                                                                      f"led by {fmt(now, 1)}")
             if "grid" in tgroups and rb is not None and rb < 5 and (ra is None or ra >= 5):
@@ -938,19 +1122,35 @@ async def check():
                     f"{q!r} -> {tgt['title']!r}: #{rb + 1} -> {'-' if ra is None else '#' + str(ra + 1)}")
             if "name" in tgroups and (not now or now[0]["url"] != tgt["url"]):
                 violations["name query not led by its page"].append(f"{q!r}: led by {fmt(now, 1)}, want {tgt['url']}")
-        if groups != ["typing"]:
-            present = {(fam(r["kind"]), r["title"].lower()) for r in now}
+        if groups != ["typing"] and q not in ALLOWED_TEXT_DROPS:
+            present = {ident(r) for r in now}
             for b in before[:5]:
-                if b[4] and (fam(b[0]), b[2].lower()) not in present:
+                if b[4] and ident(b) not in present:
                     violations["full-text match left the top 20"].append(f"{q!r}: {b[2]!r} (was in today's top 5)")
         if q in EXPECT_FIRST:
             want = EXPECT_FIRST[q]
-            got = now[0]["title"] if now else None
-            if got != want:
-                violations["expected lead lost"].append(f"{q!r}: led by {got!r}, want {want!r}")
+            if (want is None) != (not now) or (want is not None and not lead_is(now[0], want)):
+                violations["expected lead lost"].append(f"{q!r}: led by {fmt(now, 1)}, want {want!r}")
+        if q in EXPECT_SECTION_FIRST and not (now and now[0]["id"] < 0 and now[0]["url"] == EXPECT_SECTION_FIRST[q]):
+            violations["expected section lead lost"].append(
+                f"{q!r}: led by {fmt(now, 1)} ({now[0]['url'] if now else '-'}), want {EXPECT_SECTION_FIRST[q]}")
+        keys = [(r["kind"], r["id"]) for r in now]
+        if len(set(keys)) != len(keys):
+            violations["two results share a kind and id"].append(f"{q!r}: {sorted({k for k in keys if keys.count(k) > 1})}")
+        if q in EXPECT_UNCORRECTED and corrected:
+            violations["typo-corrected though right as typed"].append(f"{q!r} -> {corrected!r}")
+        if before and before[0][0] in ("type", "level"):
+            # Sections whose title isn't the query rank after the collectibles a type or level holds.
+            kept = {(fam(b[0]), b[2].lower()) for b in before[:5] if fam(b[0]) == "item"}
+            for i, r in enumerate(now):
+                if r["id"] < 0 and r["title"].lower() != q and any(
+                        (fam(x["kind"]), x["title"].lower()) in kept for x in now[i + 1:]):
+                    violations["section above a type's or level's own collectible"].append(f"{q!r}: {fmt([r])} at #{i + 1}")
+                    break
         if ("brief" in groups or "extra" in groups):
             for r in now[:5]:
-                if 2 <= r["score"] < 3 and not visible_word(r["snippet"], q, corrected):
+                # A section result's match is its title, not its snippet.
+                if 2 <= r["score"] < 3 and r["id"] >= 0 and not visible_word(r["snippet"], q, corrected):
                     violations["body hit without a visible query word"].append(
                         f"{q!r}: {r['title']!r}, snippet {(r['snippet'] or '')[:VISIBLE]!r}")
 
@@ -975,6 +1175,8 @@ async def check():
         violations["stored column"].append(p)
     for p in await anchor_checks():
         violations["anchor differs from its card"].append(p)
+    for p in await section_checks():
+        violations["section not found by its title"].append(p)
     for p in await robustness_checks():
         violations["robustness"].append(p)
     timing_ok, _ = await timing(report_budget=True)

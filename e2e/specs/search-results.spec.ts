@@ -1,13 +1,13 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
-import { readFixtures, redisClient, searchKey, type Fixtures } from '../helpers/db';
+import { FIXTURE_SECTION_TITLE, readFixtures, redisClient, searchKey, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 import { holdRoute } from '../helpers/route';
 
 // Where search results lead, in the drawer's search below lg and the bar's from lg
-// up: a type page and a walkthrough category by name, and a walkthrough found only by
-// a word in its text, at the section holding that word. Then what the bar's panel
-// shows while a search is on its way, and that a trailing space or a lone letter
-// sends nothing.
+// up: a type page and a walkthrough category by name, a walkthrough found only by a
+// word in its text, at the section holding that word, and a section found by its own
+// title, as a result of its own. Then what the bar's panel shows while a search is on
+// its way, and that a trailing space or a lone letter sends nothing.
 //
 // Real queries mean real Redis keys, and a response cached earlier (they live an
 // hour) would answer instead of the code under test, so every key a test can use is
@@ -48,8 +48,11 @@ const rowTitled = (panel: Locator, title: string) =>
 // this run's own, and teardown sweeps those too.
 const queries = () => [
   'nano', 'x', 'side quests', fx.titledSection.word.slice(0, 5),
-  fx.titledSection.word, fx.untitledSection.word, fx.token,
+  fx.titledSection.word, fx.untitledSection.word, fx.token, FIXTURE_SECTION_TITLE.toLowerCase(),
 ];
+
+// Joins a section result's page to the start of its text.
+const DOT = String.fromCharCode(0xb7);
 
 async function clearSearchKeys(): Promise<void> {
   const redis = redisClient();
@@ -120,6 +123,19 @@ for (const layout of [PHONE, DESKTOP]) {
         await expect(page.locator(`[id="${anchor}"]`)).toHaveCount(1);
       });
     }
+
+    test("a section's title finds it as a result of its own, naming its page, that opens it", async ({ page }) => {
+      const { word, anchor } = fx.titledSection;
+      await page.goto('/');
+      await (await layout.open(page)).fill(FIXTURE_SECTION_TITLE.toLowerCase());
+      // Every run's fixture has this section; the run's own slug picks its row out.
+      const row = layout.panel(page).locator(`a[href="/walkthroughs/e2e-fixture/${fx.walkthroughSlug}#${anchor}"]`);
+      await expect(row.locator('p').first()).toHaveText(FIXTURE_SECTION_TITLE);
+      await expect(row.locator('p').nth(1)).toHaveText(`${fx.walkthroughTitle} ${DOT} E2E fixture step by ${word}.`);
+      await row.click();
+      await expect(page).toHaveURL(new RegExp(`#${anchor}$`));
+      await expect(page.locator(`[id="${anchor}"]`)).toHaveCount(1);
+    });
 
     test('the first five characters of that word already link its section', async ({ page }) => {
       const { word, anchor } = fx.titledSection;

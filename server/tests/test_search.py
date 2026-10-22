@@ -493,13 +493,14 @@ class _FakeSession:
 
 def _row(kind, id, title, *, a=None, b=None, type_id=None, tier=4, description=None, cycle="Base",
          type_name=None, level_name=None, location_name=None, subtitle=None, available_after=None,
-         content=None, extra=None, n=None, stems=None):
-    """One result row of the search statement (part 0)."""
+         content=None, extra=None, n=None, page_title=None, section=None, stems=None):
+    """One result row of the search statement (part 0). A section row has kind "section",
+    its page's title and its content block."""
     return {"part": 0, "kind": kind, "id": id, "title": title, "a": a, "b": b, "type_id": type_id,
             "tier": tier, "score": tier + 0.5, "description": description, "cycle": cycle,
             "type_name": type_name, "level_name": level_name, "location_name": location_name,
             "subtitle": subtitle, "available_after": available_after, "content": content, "extra": extra,
-            "n": n, "k1": 0, "k2": 0, "k3": 0, "stems": stems}
+            "n": n, "page_title": page_title, "section": section, "k1": 0, "k2": 0, "k3": 0, "stems": stems}
 
 
 def _slug_row(type_id, id, title):
@@ -715,6 +716,44 @@ async def test_walkthrough_snippet_fallback_order(content, extra, available_afte
                  stems=_stems("omnibolt"))]
     results, _ = await _execute_search(_FakeSession(rows), "omnibolt", 20)
     assert results[0].snippet.endswith(expected)
+
+
+# ---------------------------------------------------------------------------
+# A section found by its title is a result of its own
+
+async def test_a_section_result_is_a_walkthrough_titled_with_the_section():
+    block = {"order": 2, "section_title": "Finding Frank's Bag",
+             "text": "The [[collectibles/camps#x|omnibolt]] sits behind the crates."}
+    rows = [_row("section", -7002, "Finding Frank's Bag", a="side-quest", b="lost-device",
+                 page_title="Lost Device", section=block),
+            _row("walkthrough", 8, "Frank's Bag", a="side-quest", b="franks-bag", subtitle="Find it")]
+    results, _ = await _execute_search(_FakeSession(rows), "finding franks bag", 20)
+
+    section = results[0]
+    assert (section.kind, section.id, section.title) == ("walkthrough", -7002, "Finding Frank's Bag")
+    # The navigation spelling, the page's own anchor for the section, and the page named first.
+    assert section.navigation_url == "/walkthroughs/side-quests/lost-device#finding-franks-bag"
+    assert section.snippet == f"Lost Device {DOT} The omnibolt sits behind the crates."
+
+
+async def test_a_section_snippet_is_cut_like_a_description_or_is_just_the_page():
+    long_text = " ".join(["omnibolt"] * 30)
+    rows = [_row("section", -7001, "Long", a="main-story", b="x", page_title="Page",
+                 section={"order": 1, "section_title": "Long", "text": long_text}),
+            _row("section", -7002, "Bare", a="main-story", b="x", page_title="Page",
+                 section={"order": 2, "section_title": "Bare"})]
+    results, _ = await _execute_search(_FakeSession(rows), "q", 20)
+    assert results[0].snippet == f"Page {DOT} {long_text[:120]}..."
+    assert results[1].snippet == "Page"
+
+
+async def test_a_section_whose_title_gives_no_anchor_links_its_page():
+    # The page renders an empty id for a Greek-only title, which nothing can land on.
+    greek = chr(0x3B1) + chr(0x3B2)
+    rows = [_row("section", -7001, greek, a="main-story", b="x", page_title="Page",
+                 section={"order": 1, "section_title": greek, "text": "Text."})]
+    results, _ = await _execute_search(_FakeSession(rows), "q", 20)
+    assert results[0].navigation_url == "/walkthroughs/main-story/x"
 
 
 @pytest.mark.parametrize("cycle, place_matches, expected_tag", [

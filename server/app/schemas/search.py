@@ -4,6 +4,9 @@ from typing import Optional
 
 class SearchResult(BaseModel):
     kind: str           # "collectibles"|"upgrades"|"cosmetics"|"walkthrough"|"level"|"type"|"walkthrough_type"
+    # A walkthrough section found by its title is a "walkthrough" result titled with the
+    # section and linking it, with id -(walkthrough id * 1000 + its position), so it never
+    # equals a page's id. Clients only use ids as keys.
     id: int
     title: str
     snippet: Optional[str]   # description excerpt, subtitle, or None
