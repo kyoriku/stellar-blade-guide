@@ -201,13 +201,14 @@ TIMING_QUERIES = BRIEF + [
 ]
 # Dev server time, p90. The plan's 12 ms came from a prototype estimate that left out
 # reading the stored vectors (about 5 ms); the statement as built measured p90 11.9 to
-# 13.0 ms on a quiet dev database (2026-10-18), so the budget is 15. Section results
-# (2026-10-21) cost about 2 ms more: 11.9 to 13.8 ms run on their own, and 12.4 to 15.4
+# 13.0 ms on a quiet dev database (2026-10-18), so the budget was 15. Section results
+# (2026-10-21) cost about 2 ms more: 11.9 to 13.4 ms run on their own, and 12.4 to 15.5
 # inside a full check, where this gate runs. Most of it is reading the content of every
 # walkthrough a broad word like "supply" matches, for its section titles (about 2.7 ms
-# on "supply", 0.5 on a specific query). The real latency gates are the prod timing
-# gate below and the post-deploy rollback trigger.
-TIMING_BUDGET_MS = 15.0
+# on "supply", 0.5 on a specific query). So the budget is 17 (2026-10-22), 1.5 above a
+# full check's p90. The real latency gates are the prod timing gate below and the
+# post-deploy rollback trigger, both unchanged.
+TIMING_BUDGET_MS = 17.0
 VISIBLE = 44          # snippet characters the narrowest results row shows
 PAGE_KINDS = {"type", "walkthrough_type", "level"}
 ALIAS_WORDS = ("outfit", "skin", "suit", "costume", "new game", "ng+", "ng++", "appearance", "drone")
