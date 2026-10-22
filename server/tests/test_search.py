@@ -623,6 +623,79 @@ async def test_body_hit_in_an_untitled_section_links_section_order():
     assert results[0].snippet.startswith("The omnibolt")
 
 
+# Fishing Overview's wording, cut down: three sections that name the query, two of them
+# only in passing.
+CLYDES_SHOP = {"order": 4, "section_title": "Clyde's Shop",
+               "text": "Everything costs Fishing Score: - Fantastic Fishing Data: 1,200 - Special Bait: 36"}
+SELLING_FISH = {"order": 5, "section_title": "Selling Fish to Barry",
+                "text": "Barry's shop is in Xion. Keep one Halibut: three Bulletin Board requests each ask for one."}
+FISHING_REQUESTS = {"order": 6, "section_title": "The Fishing Requests",
+                    "text": "Six fishing requests appear on the Bulletin Board in Xion. "
+                            "Where Is The Fantastic Bait?: 20 species, then the Fantastic Bait."}
+
+
+def _overview(stems):
+    return [_row("walkthrough", 501, "Fishing Overview", a="fishing", b="fishing-overview", tier=2, extra=[],
+                 content=[CLYDES_SHOP, SELLING_FISH, FISHING_REQUESTS], stems=stems)]
+
+
+async def test_a_tie_goes_to_the_section_holding_the_words_as_a_phrase():
+    # Clyde's Shop has "Fantastic" and "Bait" too, but apart.
+    results, _ = await _execute_search(_FakeSession(_overview(_stems("fantastic", "bait"))), "fantastic bait", 20)
+    assert results[0].navigation_url.endswith("#the-fishing-requests")
+
+
+async def test_then_to_the_section_naming_the_phrase_in_its_first_sentence():
+    # Both name the Bulletin Board once; The Fishing Requests is about it.
+    results, _ = await _execute_search(_FakeSession(_overview(_stems("bulletin", "board"))), "bulletin board", 20)
+    assert results[0].navigation_url.endswith("#the-fishing-requests")
+
+
+async def test_a_tie_goes_to_the_section_whose_title_holds_a_query_word_first():
+    content = [{"order": 1, "section_title": "Arriving in Xion", "text": "Adam waits by the gate."},
+               {"order": 2, "section_title": "Following Adam", "text": "Keep close to Adam."}]
+    rows = [_row("walkthrough", 3, "Xion", a="main-story", b="xion", tier=2, extra=[], content=content,
+                 stems=_stems("adam"))]
+    results, _ = await _execute_search(_FakeSession(rows), "adam", 20)
+    assert results[0].navigation_url.endswith("#following-adam")
+
+
+async def test_a_full_tie_still_goes_to_the_earlier_section():
+    content = [{"order": 1, "section_title": "Arrival", "text": "The omnibolt is here."},
+               {"order": 2, "section_title": "Departure", "text": "The omnibolt is here."}]
+    rows = [_row("walkthrough", 3, "Xion", a="main-story", b="xion", tier=2, extra=[], content=content,
+                 stems=_stems("omnibolt"))]
+    results, _ = await _execute_search(_FakeSession(rows), "omnibolt", 20)
+    assert results[0].navigation_url.endswith("#arrival")
+
+
+async def test_more_distinct_words_still_win_over_a_title_or_a_phrase():
+    content = [{"order": 1, "section_title": "Omnibolt", "text": "Nothing else."},
+               {"order": 2, "section_title": "Cave", "text": "Omnibolt and crowbar together."}]
+    rows = [_row("walkthrough", 3, "Xion", a="main-story", b="xion", tier=2, extra=[], content=content,
+                 stems=_stems("omnibolt", "crowbar"))]
+    results, _ = await _execute_search(_FakeSession(rows), "omnibolt crowbar", 20)
+    assert results[0].navigation_url.endswith("#cave")
+
+async def test_more_distinct_words_still_win_over_the_phrase():
+    # "Omnibolts" and "omnibolt" are two matched strings to one; the phrase only breaks ties.
+    content = [{"order": 1, "section_title": "Cave", "text": "Omnibolts here, an omnibolt there, a crowbar on the floor."},
+               {"order": 2, "section_title": "Gate", "text": "Use the omnibolt crowbar."}]
+    rows = [_row("walkthrough", 3, "Xion", a="main-story", b="xion", tier=2, extra=[], content=content,
+                 stems=[["omnibolts", ["omnibolt"]], ["crowbar", ["crowbar"]]])]
+    results, _ = await _execute_search(_FakeSession(rows), "omnibolts crowbar", 20)
+    assert results[0].navigation_url.endswith("#cave")
+
+
+async def test_a_title_word_wins_a_tie_over_the_phrase():
+    content = [{"order": 1, "section_title": "Requests", "text": "Where is the fantastic bait?"},
+               {"order": 2, "section_title": "Bait Shop", "text": "Fantastic prices on every bait."}]
+    rows = [_row("walkthrough", 3, "Xion", a="main-story", b="xion", tier=2, extra=[], content=content,
+                 stems=_stems("fantastic", "bait"))]
+    results, _ = await _execute_search(_FakeSession(rows), "fantastic bait", 20)
+    assert results[0].navigation_url.endswith("#bait-shop")
+
+
 @pytest.mark.parametrize("content, extra, available_after, expected", [
     # 1. a matching section wins
     ([{"order": 1, "section_title": "Cave", "text": "Grab the omnibolt."}], ["An omnibolt reward"],

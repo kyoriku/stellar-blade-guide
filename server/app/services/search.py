@@ -455,17 +455,49 @@ def _fragment(text: str | None, rxs: list, room: int) -> str | None:
     return ("…" if start > 0 else "") + text[start:start + 160].rstrip()
 
 
-def _walkthrough_body_snippet(row, rxs) -> tuple[str | None, str | None]:
+def _alternatives(word: str, stems) -> str:
+    return "(?:" + "|".join(re.escape(x) for x in sorted({word, *stems}, key=len, reverse=True)) + ")"
+
+
+def _word_rxs(typed) -> list[re.Pattern]:
+    """One pattern per typed word of two or more characters that has stems (so not a
+    stopword), matching the word or a stem where a word starts. `typed` is
+    [(word, stems)] in typed order."""
+    return [re.compile(r"(?<![^\W_])" + _alternatives(w, st), re.I) for w, st in typed if st and len(w) >= 2]
+
+
+def _phrase_rx(typed) -> re.Pattern | None:
+    """The typed words in order, stopwords included, each as itself or a stem plus any
+    ending, with anything but letters and digits between: "fantastic bait" finds "the
+    Fantastic Bait", "chapter of trial" finds "Chapter of Trial". None for a single word."""
+    if len(typed) < 2:
+        return None
+    return re.compile(r"(?<![^\W_])" + r"[\W_]+".join(_alternatives(w, st) + r"[^\W_]*" for w, st in typed), re.I)
+
+
+def _first_sentence(text: str) -> str:
+    return re.split(r"(?<=[.!?])\s+", text, maxsplit=1)[0]
+
+
+def _walkthrough_body_snippet(row, rxs, words=(), phrase=None) -> tuple[str | None, str | None]:
     """(anchor, snippet) for a walkthrough found in its body: the section matching the
     most distinct query words, as "Section title: fragment"; else a matching objective
-    or reward, else a matching available_after, else the subtitle."""
+    or reward, else a matching available_after, else the subtitle. Sections matching as
+    many go by, in turn: more of the typed `words` in the section's title, the typed
+    `phrase` in it, that phrase in its first sentence, then the earlier section."""
     blocks = [b for b in row["content"] if isinstance(b, dict)] if isinstance(row["content"], list) else []
-    best, best_score = None, 0
-    for b in blocks:
+    best, best_key = None, None
+    for i, b in enumerate(blocks):
         title = b.get("section_title") if isinstance(b.get("section_title"), str) else ""
-        found = {m.group(0).lower() for rx in rxs if rx for m in rx.finditer(f"{title} {section_text(b)}")}
-        if len(found) > best_score:
-            best, best_score = b, len(found)
+        body = " ".join(section_text(b).split())
+        whole = f"{title} {body}"
+        found = {m.group(0).lower() for rx in rxs if rx for m in rx.finditer(whole)}
+        if not found:
+            continue
+        key = (len(found), sum(1 for rx in words if rx.search(title)),
+               bool(phrase and phrase.search(whole)), bool(phrase and phrase.search(_first_sentence(body))), -i)
+        if best_key is None or key > best_key:
+            best, best_key = b, key
     if best is not None:
         label = best.get("section_title") if isinstance(best.get("section_title"), str) else ""
         if label and VISIBLE - len(label) - 3 < 12:
@@ -526,6 +558,10 @@ async def _execute_search(db: AsyncSession, q: str, limit: int) -> tuple[list[Se
     # Words for highlighting: what was typed plus its stems; alias words only as a fallback.
     kept = [x for w, stems in (found[0]["stems"] or []) if stems for x in [w] + stems] if found else []
     rxs = [_match_rx(kept), _match_rx(parsed["concept_words"])]
+    # The typed words in order with their stems, for choosing a walkthrough's section.
+    stems = {w: st for w, st in (found[0]["stems"] or [])} if found else {}
+    typed = [(w, stems.get(w) or []) for w in parsed["plain"]]
+    words, phrase = _word_rxs(typed), _phrase_rx(typed)
     lists = defaultdict(list)
     for r in rows:
         if r["part"] == 1:
@@ -544,7 +580,7 @@ async def _execute_search(db: AsyncSession, q: str, limit: int) -> tuple[list[Se
             url = f"/walkthroughs/{url_type(r['a'])}/{r['b']}"
             snippet = r["subtitle"]
             if r["tier"] == 2:
-                anchor, snippet = _walkthrough_body_snippet(r, rxs)
+                anchor, snippet = _walkthrough_body_snippet(r, rxs, words, phrase)
                 if anchor:
                     url += f"#{anchor}"
         elif kind == "type":
