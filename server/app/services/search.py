@@ -365,11 +365,13 @@ def _search_params(q: str, parsed: dict, limit: int) -> dict:
 # Typo fallback
 # ---------------------------------------------------------------------------
 
-# Every word a title or name holds, including the hidden levels' ("challenge").
-_VOCAB_SQL = text("""
+# Every word a title or name holds, including the hidden levels' ("challenge") and the
+# walkthrough sections'.
+_VOCAB_SQL = text(f"""
     SELECT title FROM collectibles UNION SELECT title FROM walkthroughs UNION SELECT name FROM levels
     UNION SELECT initcap(replace(slug, '-', ' ')) FROM collectible_types UNION SELECT name FROM collectible_types
     UNION SELECT unnest(CAST(:cat_names AS text[]))
+    UNION SELECT e.blk->>'section_title' FROM walkthroughs w CROSS JOIN LATERAL {_SECTIONS_OF} WHERE {_TITLED}
 """)
 
 
