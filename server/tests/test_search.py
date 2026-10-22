@@ -237,19 +237,19 @@ async def test_cache_miss_populates_cache(search_client, fake_redis, monkeypatch
     ]
     monkeypatch.setattr(search_route, "_execute_search", AsyncMock(return_value=(results, None)))
 
-    assert await fake_redis.get("search:eidos:20:v2") is None
+    assert await fake_redis.get("search:eidos:20:v3") is None
 
     response = await search_client.get("/api/search/?q=eidos")
     assert response.status_code == 200
 
-    cached = json.loads(await fake_redis.get("search:eidos:20:v2"))
+    cached = json.loads(await fake_redis.get("search:eidos:20:v3"))
     assert cached == response.json()
 
 
 async def test_cache_hit_skips_execute(search_client, fake_redis, monkeypatch):
     """On a cache hit the route returns cached data without calling _execute_search."""
     cached_data = {"query": "eidos", "total": 0, "results": [], "corrected": None}
-    await fake_redis.set("search:eidos:20:v2", json.dumps(cached_data))
+    await fake_redis.set("search:eidos:20:v3", json.dumps(cached_data))
 
     mock_execute = AsyncMock(
         side_effect=AssertionError("_execute_search must not be called on a cache hit")
@@ -274,10 +274,21 @@ async def test_unversioned_key_from_before_the_rework_is_never_read(search_clien
     search_route._execute_search.assert_awaited_once()
 
 
+async def test_key_from_the_previous_version_is_never_read(search_client, fake_redis, monkeypatch):
+    """A v2 entry holds results from the ranking before; the image being replaced keeps
+    writing them while it drains, and the new one must not serve them."""
+    await fake_redis.set("search:eidos:20:v2", json.dumps({"query": "eidos", "total": 0, "results": []}))
+    monkeypatch.setattr(search_route, "_execute_search", AsyncMock(return_value=([], None)))
+
+    await search_client.get("/api/search/?q=eidos")
+
+    search_route._execute_search.assert_awaited_once()
+
+
 async def test_cached_response_from_before_corrected_existed_still_validates(search_client, fake_redis):
     """A cached dict without `corrected` goes back through the response model on a
     hit; the field is optional, so it can't 500."""
-    await fake_redis.set("search:eidos:20:v2", json.dumps({"query": "eidos", "total": 0, "results": []}))
+    await fake_redis.set("search:eidos:20:v3", json.dumps({"query": "eidos", "total": 0, "results": []}))
 
     response = await search_client.get("/api/search/?q=eidos")
 
@@ -529,6 +540,25 @@ async def test_hidden_pseudo_levels_are_never_candidates():
     nav_levels = session.calls[0][1]["nav_levels"]
     assert nav_levels == sorted(NAV_LEVEL_SLUGS)
     assert "default" not in nav_levels and "boss-challenge" not in nav_levels
+
+
+async def test_guide_drops_out_of_the_words_but_not_the_query():
+    """"eidos 7 guide" asks for "eidos" and "7"; the whole query still decides exact and
+    near titles."""
+    session = _FakeSession([])
+    await _execute_search(session, "eidos 7 guide", 20)
+    params = session.calls[0][1]
+    assert params["q"] == "eidos 7 guide"
+    assert (params["all_q"], params["last"]) == ("'eidos'", "7")
+
+async def test_a_typo_next_to_guide_is_corrected_on_the_words_that_must_match():
+    # Corrected with "guide" still in it, "goldfsh guide" needed both words in one title.
+    rows = [_row("walkthrough", 502, "All Fish", a="fishing", b="all-fish", subtitle="Every fish")]
+    session = _FakeSession([], rows, vocab=["Goldfish", "Prayer Meeting Guide"])
+    results, corrected = await _execute_search(session, "goldfsh guide", 20)
+    assert corrected == "goldfish"
+    assert session.calls[2][1]["q"] == "goldfish"
+    assert [r.title for r in results] == ["All Fish"]
 
 
 async def test_each_kind_links_its_page_and_says_what_it_is():

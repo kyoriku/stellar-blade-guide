@@ -47,7 +47,7 @@ def walkthrough_cache_keys(normalized_type: str, slug: str) -> tuple[str, str]:
 # version is a suffix because an unversioned key always ends in its limit's digits and
 # a versioned one never does, whatever the query; a prefix would collide (the old key
 # for the query "v2:nano" is "search:v2:nano:20").
-SEARCH_CACHE_VERSION = 2
+SEARCH_CACHE_VERSION = 3
 
 
 def search_cache_key(q: str, limit: int) -> str:

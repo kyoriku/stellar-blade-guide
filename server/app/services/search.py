@@ -118,6 +118,20 @@ def build_query(q: str) -> dict:
     )
 
 
+_GUIDE_RX = re.compile(r"(?<![^\W_])guides?(?![^\W_])")
+
+
+def search_terms(q: str) -> str:
+    """The words a result must hold: the query without "guide" or "guides" when another
+    word of four or more characters, or a number, is left ("eidos 7 guide" means the
+    Eidos 7 page). Exact and near titles still go by the whole query. A shorter remainder
+    keeps the word, since "the guide" without it would match every title starting "the"."""
+    rest = " ".join(_GUIDE_RX.sub(" ", q).split())
+    if rest != q and any(len(w) >= 4 or w.isdigit() for w in re.findall(r"[^\W_]+", rest)):
+        return rest
+    return q
+
+
 # ---------------------------------------------------------------------------
 # The statement
 # ---------------------------------------------------------------------------
@@ -494,16 +508,16 @@ async def _execute_search(db: AsyncSession, q: str, limit: int) -> tuple[list[Se
     answers 500 and is never cached as an empty result."""
     if not q or not q.isprintable():
         return [], None
-    parsed = build_query(q)
+    parsed = build_query(search_terms(q))
     if parsed["empty"]:
         return [], None
     rows = (await db.execute(_SEARCH_SQL, _search_params(q, parsed, limit))).mappings().all()
     found = [r for r in rows if r["part"] == 0]
     corrected = None
     if all(r["tier"] == 1 for r in found):   # nothing held every word, or nothing matched at all
-        alt = await _correct(db, q)
+        alt = await _correct(db, search_terms(q))   # "goldfsh guide" -> "goldfish"
         if alt and alt != q:
-            alt_parsed = build_query(alt)
+            alt_parsed = build_query(search_terms(alt))
             alt_rows = (await db.execute(_SEARCH_SQL, _search_params(alt, alt_parsed, limit))).mappings().all()
             alt_found = [r for r in alt_rows if r["part"] == 0]
             if alt_found and not all(r["tier"] == 1 for r in alt_found):

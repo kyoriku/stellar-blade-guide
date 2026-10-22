@@ -44,7 +44,7 @@ export function redisClient(): Redis {
 // builds it for the client's limit of 20. `q` is the query as the server normalizes
 // it: for the text specs type, trimmed and lowercased.
 export function searchKey(q: string): string {
-  return `search:${q}:20:v2`;
+  return `search:${q}:20:v3`;
 }
 
 // Every cached search whose query holds the run token, at any limit or key version.
