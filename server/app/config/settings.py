@@ -116,14 +116,18 @@ class Settings:
     CLOUDINARY_API_KEY: str = os.getenv('CLOUDINARY_API_KEY', '')
     CLOUDINARY_API_SECRET: str = os.getenv('CLOUDINARY_API_SECRET', '')
 
+    # OAuth callbacks are built, never read from env: each provider must get back exactly
+    # the URI registered with it, https://stellarbladeguide.com/api/auth/<provider>/callback
+    # in production. In dev, Vite's /api proxy carries the :3000 one to uvicorn.
+
     # OAuth - Google
     GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID', '')
     GOOGLE_CLIENT_SECRET: str = os.getenv('GOOGLE_CLIENT_SECRET', '')
-    GOOGLE_REDIRECT_URI: str = os.getenv('GOOGLE_REDIRECT_URI', '')
+    GOOGLE_REDIRECT_URI: str = f'{FRONTEND_URL}{API_PREFIX}/auth/google/callback'
 
     # OAuth - Discord
     DISCORD_CLIENT_ID: str = os.getenv('DISCORD_CLIENT_ID', '')
     DISCORD_CLIENT_SECRET: str = os.getenv('DISCORD_CLIENT_SECRET', '')
-    DISCORD_REDIRECT_URI: str = os.getenv('DISCORD_REDIRECT_URI', '')
+    DISCORD_REDIRECT_URI: str = f'{FRONTEND_URL}{API_PREFIX}/auth/discord/callback'
 
 settings = Settings()
