@@ -3,3 +3,6 @@
 client/public/assets/images
 # Keep Finder junk out of the build context (and therefore out of dist/).
 **/.DS_Store
+# Never bake a local server/.env into an image: settings.py's load_dotenv() would fill
+# every variable the host leaves unset from it, DEBUG and the prod credentials included.
+**/.env
