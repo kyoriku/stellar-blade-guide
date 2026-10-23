@@ -29,8 +29,8 @@ def get_client_ip(request: Request) -> str:
     request and refuses one a client sends (403, Error 1000), and Railway's Edge Rule
     turns away anything that skipped Cloudflare. Otherwise the connection's client
     address: the socket peer, or the X-Forwarded-For entry uvicorn picks when the peer
-    is a proxy it trusts (127.0.0.1 by default; every peer under Railway's
-    FORWARDED_ALLOW_IPS=*, where it is the first entry). No other header is
+    is a proxy it trusts (127.0.0.1 by default; every peer under the Dockerfile's
+    --forwarded-allow-ips '*', where it is the first entry). No other header is
     read: each can carry text the client wrote (Cloudflare appends to X-Forwarded-For
     and passes the others through). Never empty: slowapi skips the limit for an empty
     key.
