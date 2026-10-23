@@ -55,21 +55,21 @@ uv run uvicorn app.main:app --reload       # dev server on :8000
 
 ## Environment Variables
 
-Configuration is read from `server/.env` (gitignored). Secrets should be generated fresh per environment (`openssl rand -hex 32` works for the two signing/shared secrets).
+Configuration is read from `server/.env` (gitignored). Every non-secret default is production's value, and an unset `ENVIRONMENT` means production, so a local `server/.env` starts with `ENVIRONMENT=development`. Secrets should be generated fresh per environment (`openssl rand -hex 32` works for the two signing/shared secrets).
 
 | Variable | Purpose |
 |---|---|
-| `ENVIRONMENT` | `development` or `production`; production enables secure cookies and the origin check |
-| `DEBUG` | `True` enables `/docs` and relaxes origin/bot checks for local development |
+| `ENVIRONMENT` | `production` (the default) or `development`, nothing else. Production gives the auth cookies `Secure` and `Domain=.stellarbladeguide.com`, refuses `DEBUG=True`, and refuses to start without the variables listed below the table |
+| `DEBUG` | `True` enables `/docs` and turns off the origin check and bot filter for local development; needs `ENVIRONMENT=development` |
 | `DATABASE_URL` | PostgreSQL DSN; `postgresql://` or `postgresql+asyncpg://` (normalized automatically) |
 | `REDIS_URL` | Redis instance used for the cache, rate limiter, and sessions |
 | `CACHE_TTL` | response-cache TTL in seconds (defaults to 30 days; dev setups often use a shorter value) |
-| `ALLOWED_HOSTS` | comma-separated Host-header allowlist for TrustedHost validation |
+| `ALLOWED_HOSTS` | comma-separated Host-header allowlist for TrustedHost validation. Replaces the default: the site's two hosts and `healthcheck.railway.app`, plus `localhost` and `127.0.0.1` in development |
 | `JWT_SECRET_KEY` | signing key for access tokens; required at startup |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | access-token lifetime |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | refresh-token lifetime |
-| `FRONTEND_URL` | base URL used in OAuth redirects and password-reset emails |
-| `OPENAI_API_KEY` | comment and avatar moderation (moderation fails open if unreachable) |
+| `FRONTEND_URL` | the origin the browser uses (default `https://stellarbladeguide.com`). Builds the OAuth callbacks, `{FRONTEND_URL}/api/auth/{google,discord}/callback`, the redirects after sign-in, and password-reset links |
+| `OPENAI_API_KEY` | comment and avatar moderation (comment moderation fails open if OpenAI is unreachable; avatar moderation fails closed with a 503) |
 | `RESEND_API_KEY` | transactional email (password reset) |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary account (user avatars only) |
 | `CLOUDINARY_API_KEY` | Cloudinary API key (avatars only) |
@@ -85,14 +85,14 @@ Configuration is read from `server/.env` (gitignored). Secrets should be generat
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with cache-purge permission (`prod_seed.py` only) |
 | `GOOGLE_CLIENT_ID` | Google OAuth client id |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `GOOGLE_REDIRECT_URI` | Google OAuth callback URL |
 | `DISCORD_CLIENT_ID` | Discord OAuth client id |
 | `DISCORD_CLIENT_SECRET` | Discord OAuth client secret |
-| `DISCORD_REDIRECT_URI` | Discord OAuth callback URL |
-| `ORIGIN_SECRET` | shared secret required on API requests in production (origin check middleware) |
+| `ORIGIN_SECRET` | shared secret every request must carry in production, added by Cloudflare (origin check middleware); `DEBUG` skips the check, so dev never uses it |
 | `LOG_LEVEL` | logging level (default `INFO`) |
 
-`ORIGIN_SECRET` is read directly from the environment rather than through `settings.py`.
+Production refuses to start unless each of these is set and non-empty: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET_KEY`, `ORIGIN_SECRET`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` (`REQUIRED_IN_PRODUCTION` in `app/config/settings.py`). The error names the missing variables and never prints a value. Production sets nothing else: every other variable it reads defaults to production's value.
+
+`ORIGIN_SECRET` is read directly from the environment rather than through `settings.py`. uvicorn's trust in proxy headers is not a variable: the Dockerfile's start command passes `--forwarded-allow-ips '*'`.
 
 Starter template for `server/.env` (the table above explains each value):
 
@@ -104,13 +104,11 @@ LOG_LEVEL=INFO
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/stellarblade
 REDIS_URL=redis://localhost:6379
 CACHE_TTL=2592000                # 30-day default; dev setups often use a shorter value
-ALLOWED_HOSTS=localhost,127.0.0.1
 
 JWT_SECRET_KEY=                  # openssl rand -hex 32
 ACCESS_TOKEN_EXPIRE_MINUTES=15
 REFRESH_TOKEN_EXPIRE_DAYS=7
 FRONTEND_URL=http://localhost:3000
-ORIGIN_SECRET=                   # openssl rand -hex 32
 
 OPENAI_API_KEY=your_openai_api_key
 RESEND_API_KEY=your_resend_api_key
@@ -131,12 +129,13 @@ PROD_REDIS_URL=
 CLOUDFLARE_ZONE_ID=
 CLOUDFLARE_API_TOKEN=
 
+# Register http://localhost:3000/api/auth/google/callback and .../discord/callback on
+# the OAuth clients: the callbacks are built from FRONTEND_URL and reach uvicorn
+# through Vite's /api proxy.
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
-DISCORD_REDIRECT_URI=http://localhost:8000/api/auth/discord/callback
 ```
 
 ## API
@@ -228,7 +227,7 @@ Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalid
 
 Schema changes are one-off manual scripts written into `scripts/migrations/` as needed (there is no Alembic). Each runs once with `uv run python scripts/migrations/<script>.py` alongside an update to the matching SQLAlchemy model; executed scripts are kept out of the repo, so the directory is empty between schema changes. The exception is the two stored generated `search_vector` columns, which sit outside the ORM because nothing writes them: their expressions live in `app/services/search_text.py`, and each column's comment holds a hash of its expression, so `seed_db.py` and the migration can spot a stale one and rebuild it.
 
-Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.13 image serves the API and the built SPA from a single origin as a non-root user.
+Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.13 image serves the API and the built SPA from a single origin as a non-root user. Its start command trusts the X-Forwarded headers from any peer (`--proxy-headers --forwarded-allow-ips '*'`), since Railway's proxy is the only one that reaches the container; a custom start command set in Railway would replace it. The service's variables are exactly the production-required list under Environment Variables.
 
 ## Testing
 
