@@ -48,9 +48,16 @@ DATABASE + HTTP CLIENT — per test file, not here:
 # future test that forgot its get_db override would otherwise reach it. The
 # dummy URL keeps the asyncpg dialect the engine's connect_args are written
 # for; it is parsed but never connected to.
+#
+# ENVIRONMENT is forced too, because an unset one now means production. That would
+# stop app/config/settings.py at import for the production secrets CI lacks, and it
+# would give every response Secure, Domain=.stellarbladeguide.com cookies, which the
+# test client at http://test never sends back (the auth and OAuth tests rely on its
+# cookie jar). A test that wants production monkeypatches settings.ENVIRONMENT.
 import os
 
 os.environ["DATABASE_URL"] = "postgresql+asyncpg://test:test@localhost:5432/test"
+os.environ["ENVIRONMENT"] = "development"
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-not-used-in-production")
 os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
 
