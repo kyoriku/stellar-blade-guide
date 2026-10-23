@@ -1560,6 +1560,24 @@ async def test_oauth_unconfigured_provider_stays_a_loud_501(oauth, provider, mon
     assert "not configured" in r.json()["detail"]
 
 
+# ── The callback each provider is sent ───────────────────────────────────────
+#
+# Built from FRONTEND_URL in settings, never read from the environment. In production
+# that is https://stellarbladeguide.com/api/auth/<provider>/callback, byte for byte what
+# each provider has registered; test_settings.py pins the FRONTEND_URL default.
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_oauth_callback_is_built_from_frontend_url(provider):
+    uri = getattr(settings, f"{provider.upper()}_REDIRECT_URI")
+    assert uri == f"{settings.FRONTEND_URL}/api/auth/{provider}/callback"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_oauth_callback_is_the_route_that_answers_it(provider):
+    paths = {settings.API_PREFIX + route.path for route in auth_routes.router.routes}
+    assert urlsplit(getattr(settings, f"{provider.upper()}_REDIRECT_URI")).path in paths
+
+
 # ── Provider names go through the site's username rule ───────────────────────
 #
 # Registration and Settings validate a typed name. The OAuth create step used to store

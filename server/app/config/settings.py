@@ -3,9 +3,52 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _env(name: str, default: str) -> str:
+    # Unset and empty both take the default, and every default in this file is
+    # production's value. Railway passes a blank value or an unresolved reference as ''.
+    return os.getenv(name) or default
+
+
+# Unset means production; dev sets ENVIRONMENT=development in server/.env.
+_ENVIRONMENT = _env('ENVIRONMENT', 'production')
+_DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+# What production cannot serve without, checked by name before anything below reads it.
+# A missing one stops every worker at import, so the deploy fails Railway's health check
+# instead of going live with OAuth, email or avatars broken, or the whole site
+# (ORIGIN_SECRET 404s every request, REDIS_URL takes auth down). Names only, never values.
+REQUIRED_IN_PRODUCTION = (
+    'DATABASE_URL', 'REDIS_URL', 'JWT_SECRET_KEY', 'ORIGIN_SECRET', 'OPENAI_API_KEY',
+    'RESEND_API_KEY', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET',
+    'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'DISCORD_CLIENT_ID', 'DISCORD_CLIENT_SECRET',
+)
+
+if _ENVIRONMENT not in ('production', 'development'):
+    # 'prod' or 'Production' would otherwise get dev cookies at every == 'production' check.
+    raise RuntimeError(f"ENVIRONMENT must be 'production' or 'development', not {_ENVIRONMENT!r}")
+if _ENVIRONMENT == 'production':
+    if _DEBUG:
+        # DEBUG turns off the origin check and the bot filter and serves /docs, which is
+        # never right in production. It also stops a dev setup that lost its ENVIRONMENT.
+        raise RuntimeError('DEBUG=true needs ENVIRONMENT=development')
+    _missing = [name for name in REQUIRED_IN_PRODUCTION if not os.getenv(name)]
+    if _missing:
+        raise RuntimeError(f"Missing environment variables: {', '.join(_missing)}")
+
+
+def _allowed_hosts() -> list[str]:
+    # The site's two hosts and the Host Railway's health checks send; development adds
+    # loopback. ALLOWED_HOSTS replaces the whole list.
+    hosts = 'stellarbladeguide.com,www.stellarbladeguide.com,healthcheck.railway.app'
+    if _ENVIRONMENT == 'development':
+        hosts += ',localhost,127.0.0.1'
+    return [h.strip() for h in _env('ALLOWED_HOSTS', hosts).split(',') if h.strip()]
+
+
 class Settings:
     # Environment
-    ENVIRONMENT: str = os.getenv('ENVIRONMENT', 'development')
+    ENVIRONMENT: str = _ENVIRONMENT
 
     # Database
     DATABASE_URL: str = os.getenv('DATABASE_URL', '').replace(
@@ -18,7 +61,7 @@ class Settings:
     REDIS_URL: str = os.getenv('REDIS_URL', 'redis://localhost:6379')
     
     # Cache TTL (in seconds)
-    CACHE_TTL: int = int(os.getenv('CACHE_TTL', 2592000))  # 30 days — Redis + CDN s-maxage
+    CACHE_TTL: int = int(_env('CACHE_TTL', '2592000'))  # 30 days — Redis + CDN s-maxage
     SWR_TTL: int = 604800  # 7 days — CDN stale-while-revalidate
     # Search is the one cached content route with no invalidation path: its URLs
     # carry an arbitrary ?q=, so they cannot be enumerated for a by-URL purge and
@@ -36,22 +79,14 @@ class Settings:
     API_PREFIX: str = "/api"
     PROJECT_NAME: str = "Stellar Blade Guide API"
 
-    # Trusted hosts (TrustedHostMiddleware). Defaults to the production hosts so a
-    # missing env var fails to a working config; override via ALLOWED_HOSTS.
-    # healthcheck.railway.app is included so Railway health checks pass host validation.
-    ALLOWED_HOSTS: list[str] = [
-        h.strip() for h in os.getenv(
-            'ALLOWED_HOSTS',
-            'stellarbladeguide.com,www.stellarbladeguide.com,healthcheck.railway.app,localhost,127.0.0.1'
-        ).split(',') if h.strip()
-    ]
-    
-    # Logging
-    LOG_LEVEL: str = os.getenv('LOG_LEVEL', 'INFO')
-    DEBUG: bool = os.getenv('DEBUG', 'False').lower() == 'true'
+    # Trusted hosts (TrustedHostMiddleware)
+    ALLOWED_HOSTS: list[str] = _allowed_hosts()
 
-    # Auth
-    JWT_SECRET_KEY: str = os.getenv('JWT_SECRET_KEY', '')
+    # Logging
+    LOG_LEVEL: str = _env('LOG_LEVEL', 'INFO')
+    DEBUG: bool = _DEBUG
+
+    # Auth (app/core/auth.py reads JWT_SECRET_KEY itself)
     # The client proactively refreshes every 14 min (AuthContext.tsx) — keep this
     # above that cadence or sessions expire between refreshes.
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 15))
@@ -66,7 +101,9 @@ class Settings:
     # first refresh past this age, however often it rotated. The idle window above
     # slides on every rotation, so without this an open tab would never sign in again.
     SESSION_MAX_AGE_DAYS: int = int(os.getenv('SESSION_MAX_AGE_DAYS', 90))
-    FRONTEND_URL: str = os.getenv('FRONTEND_URL', 'https://stellarbladeguide.com')
+    # The origin the browser uses: the site in production, Vite on :3000 in dev. Every
+    # absolute URL the server sends out is built from it.
+    FRONTEND_URL: str = _env('FRONTEND_URL', 'https://stellarbladeguide.com').rstrip('/')
 
     # OpenAI
     OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY', '')
@@ -79,14 +116,18 @@ class Settings:
     CLOUDINARY_API_KEY: str = os.getenv('CLOUDINARY_API_KEY', '')
     CLOUDINARY_API_SECRET: str = os.getenv('CLOUDINARY_API_SECRET', '')
 
+    # OAuth callbacks are built, never read from env: each provider must get back exactly
+    # the URI registered with it, https://stellarbladeguide.com/api/auth/<provider>/callback
+    # in production. In dev, Vite's /api proxy carries the :3000 one to uvicorn.
+
     # OAuth - Google
     GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID', '')
     GOOGLE_CLIENT_SECRET: str = os.getenv('GOOGLE_CLIENT_SECRET', '')
-    GOOGLE_REDIRECT_URI: str = os.getenv('GOOGLE_REDIRECT_URI', '')
+    GOOGLE_REDIRECT_URI: str = f'{FRONTEND_URL}{API_PREFIX}/auth/google/callback'
 
     # OAuth - Discord
     DISCORD_CLIENT_ID: str = os.getenv('DISCORD_CLIENT_ID', '')
     DISCORD_CLIENT_SECRET: str = os.getenv('DISCORD_CLIENT_SECRET', '')
-    DISCORD_REDIRECT_URI: str = os.getenv('DISCORD_REDIRECT_URI', '')
+    DISCORD_REDIRECT_URI: str = f'{FRONTEND_URL}{API_PREFIX}/auth/discord/callback'
 
 settings = Settings()

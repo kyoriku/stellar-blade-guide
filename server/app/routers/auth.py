@@ -621,7 +621,7 @@ def _refusals_redirect_to_login(provider: str):
 @limiter.limit("20/minute")
 async def google_login(request: Request):
     """Redirect user to Google's OAuth consent screen."""
-    if not GOOGLE_CLIENT_ID or not GOOGLE_REDIRECT_URI:
+    if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
     params = (
         f"client_id={GOOGLE_CLIENT_ID}"
@@ -650,7 +650,7 @@ async def google_callback(
         request.state.reject_reason = "oauth-code-missing"
         raise HTTPException(status_code=400, detail="Bad request")
     
-    if not GOOGLE_CLIENT_ID or not GOOGLE_REDIRECT_URI:
+    if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
 
     # No pooled DB connection is held here — the first db.execute() happens after
@@ -716,7 +716,7 @@ async def google_callback(
 @limiter.limit("20/minute")
 async def discord_login(request: Request):
     """Redirect user to Discord's OAuth consent screen."""
-    if not DISCORD_CLIENT_ID or not DISCORD_REDIRECT_URI:
+    if not DISCORD_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Discord OAuth not configured")
     params = (
         f"client_id={DISCORD_CLIENT_ID}"
@@ -744,7 +744,7 @@ async def discord_callback(
         request.state.reject_reason = "oauth-code-missing"
         raise HTTPException(status_code=400, detail="Bad request")
 
-    if not DISCORD_CLIENT_ID or not DISCORD_REDIRECT_URI:
+    if not DISCORD_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Discord OAuth not configured")
 
     # No pooled DB connection is held here — the first db.execute() happens after

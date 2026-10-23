@@ -177,8 +177,8 @@ async def test_an_invalid_cf_connecting_ip_never_reaches_the_line(api_log):
 
 
 async def test_client_ip_from_the_connection_is_neutralised_and_capped(api_log):
-    # The fallback is the connection's client, which under Railway's
-    # FORWARDED_ALLOW_IPS=* is the first X-Forwarded-For entry, unvalidated text a
+    # The fallback is the connection's client, which under the Dockerfile's
+    # --forwarded-allow-ips '*' is the first X-Forwarded-For entry, unvalidated text a
     # client can write. The outer logger writes the line even for requests that
     # origin_check rejects, so the IP column is as untrusted as the path.
     hostile = "1.2.3.4" + ANSI_PROBE + "9" * 60

@@ -60,8 +60,7 @@ class Collectible(Base):
     __tablename__ = 'collectibles'
 
     # IDs are permanent once user_progress references them: new collectibles get
-    # max_id+1, never renumbered. Gaps are fine — IDs are identity, not display
-    # order (see scripts/renumber_ids.py deprecation header).
+    # max_id+1, never renumbered. Gaps are fine — IDs are identity, not display order.
     id = Column(Integer, primary_key=True)
     location_id = Column(Integer, ForeignKey('locations.id', ondelete='CASCADE'), nullable=False)
     title = Column(String(255), nullable=False)
