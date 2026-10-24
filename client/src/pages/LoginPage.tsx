@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
 import { oauthErrorNotice, type OAuthNotice } from '../utils/oauthError'
 import { returnPath } from '../utils/returnPath'
+import { CURRENT_PASSWORD_MAX_LENGTH, CURRENT_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 
@@ -54,6 +55,10 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     setOauthNotice(null)
+    if (passwordTooLong(password, CURRENT_PASSWORD_MAX_LENGTH)) {
+      setError(CURRENT_PASSWORD_TOO_LONG)
+      return
+    }
     setIsSubmitting(true)
     try {
       await login(email, password)

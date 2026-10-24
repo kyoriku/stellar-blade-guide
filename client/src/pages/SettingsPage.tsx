@@ -4,6 +4,13 @@ import { User, KeyRound, Trash2, Save, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
 import { isValidUsername, USERNAME_RULE } from '../utils/validateUsername'
+import {
+  CURRENT_PASSWORD_MAX_LENGTH,
+  CURRENT_PASSWORD_TOO_LONG,
+  NEW_PASSWORD_MAX_LENGTH,
+  NEW_PASSWORD_TOO_LONG,
+  passwordTooLong,
+} from '../utils/validatePassword'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 
@@ -125,6 +132,14 @@ export default function SettingsPage() {
     e.preventDefault()
     setPasswordError(null)
     setPasswordSuccess(false)
+    if (passwordTooLong(currentPassword, CURRENT_PASSWORD_MAX_LENGTH)) {
+      setPasswordError(CURRENT_PASSWORD_TOO_LONG)
+      return
+    }
+    if (passwordTooLong(newPassword, NEW_PASSWORD_MAX_LENGTH)) {
+      setPasswordError(NEW_PASSWORD_TOO_LONG)
+      return
+    }
     setPasswordLoading(true)
     try {
       const res = await authFetch(`${API_BASE_URL}/auth/change-password`, {
