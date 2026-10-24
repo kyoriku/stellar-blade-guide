@@ -92,7 +92,7 @@ Configuration is read from `server/.env` (gitignored). Every non-secret default 
 
 Production refuses to start unless each of these is set and non-empty: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET_KEY`, `ORIGIN_SECRET`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` (`REQUIRED_IN_PRODUCTION` in `app/config/settings.py`). The error names the missing variables and never prints a value. Production sets nothing else: every other variable it reads defaults to production's value.
 
-`ORIGIN_SECRET` is read directly from the environment rather than through `settings.py`. uvicorn's trust in proxy headers is not a variable: the Dockerfile's start command passes `--forwarded-allow-ips '*'`.
+`ORIGIN_SECRET` is read directly from the environment rather than through `settings.py`. uvicorn trusts no proxy headers: the Dockerfile's start command passes `--no-proxy-headers`, so the visitor's address comes only from `CF-Connecting-IP`.
 
 Starter template for `server/.env` (the table above explains each value):
 
@@ -227,7 +227,7 @@ Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalid
 
 Schema changes are one-off manual scripts written into `scripts/migrations/` as needed (there is no Alembic). Each runs once with `uv run python scripts/migrations/<script>.py` alongside an update to the matching SQLAlchemy model; executed scripts are kept out of the repo, so the directory is empty between schema changes. The exception is the two stored generated `search_vector` columns, which sit outside the ORM because nothing writes them: their expressions live in `app/services/search_text.py`, and each column's comment holds a hash of its expression, so `seed_db.py` and the migration can spot a stale one and rebuild it.
 
-Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.14 image serves the API and the built SPA from a single origin as a non-root user. Its start command trusts the X-Forwarded headers from any peer (`--proxy-headers --forwarded-allow-ips '*'`), since Railway's proxy is the only one that reaches the container; a custom start command set in Railway would replace it. The service's variables are exactly the production-required list under Environment Variables.
+Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.14 image serves the API and the built SPA from a single origin as a non-root user. Its start command passes `--no-proxy-headers`: nothing in the app reads the request scheme, and the visitor's address comes only from Cloudflare's `CF-Connecting-IP`; a custom start command set in Railway would replace it. The service's variables are exactly the production-required list under Environment Variables.
 
 ## Testing
 
