@@ -19,8 +19,9 @@
       "version": "22"
     },
     // Astral's uv (Python package manager) per your project conventions.
+    // Pinned to the uv in the Dockerfile's COPY --from line; bump both together.
     "ghcr.io/va-h/devcontainers-features/uv:1": {
-      "version": "latest"
+      "version": "0.12.21"
     },
     // Common shell utilities (zsh, oh-my-zsh, etc.) — quality of life inside the container.
     // "ghcr.io/devcontainers/features/common-utils:2": {

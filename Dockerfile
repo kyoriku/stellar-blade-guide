@@ -1,21 +1,27 @@
 # Stage 1: Build the client
 FROM node:22-alpine AS client-builder
 WORKDIR /client
+# node:22-alpine bundles npm 10; the dev container, which writes package-lock.json,
+# runs npm 11 (not 12: see .devcontainer/devcontainer.json).
+RUN npm install -g npm@11
 COPY client/package*.json ./
 RUN npm ci
 COPY client/ ./
 RUN npm run build
 
 # Stage 2: Run the server
-FROM python:3.13-slim
+FROM python:3.14-slim
 WORKDIR /server
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv, pinned to the version that writes uv.lock. Bump it together with the uv
+# feature in .devcontainer/devcontainer.json.
+COPY --from=ghcr.io/astral-sh/uv:0.12.21 /uv /usr/local/bin/uv
 
-# Install Python dependencies
-COPY server/pyproject.toml server/uv.lock ./
-RUN uv sync --locked --no-dev --no-editable
+# Install Python dependencies. uv sync reads .python-version, so it comes in with the lock.
+# With downloads off, a pin this image's Python can't meet fails the build instead of
+# fetching a Python into /root that appuser can't run. Bump FROM with .python-version.
+COPY server/pyproject.toml server/uv.lock server/.python-version ./
+RUN UV_PYTHON_DOWNLOADS=never uv sync --locked --no-dev --no-editable
 
 # Copy server code
 COPY server/ ./
