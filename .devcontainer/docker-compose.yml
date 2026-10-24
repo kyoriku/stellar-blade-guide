@@ -49,9 +49,12 @@ services:
 
     command: sleep infinity
 
+    # 3000 is open to the network so a phone on the same wifi can load the dev
+    # site. The phone reaches the API through Vite's /api proxy, so 8000 stays
+    # on 127.0.0.1. The servers inside have to listen on 0.0.0.0 for these to work.
     ports:
       - "3000:3000"
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/stellarblade
@@ -70,19 +73,22 @@ services:
       redis:
         condition: service_healthy
 
+  # postgres and redis publish no ports: the dev container reaches them over the
+  # compose network. If a Mac tool ever needs one, publish it on 127.0.0.1 with a
+  # spare host port, since the Mac's own Postgres and Redis hold 5432 and 6379.
   postgres:
-    image: postgres:16-alpine
+    # Same major and Debian base as Railway's Postgres. Alpine's Postgres sorts
+    # text differently from Debian's, so ORDER BY on names wouldn't match prod.
+    image: postgres:17
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: stellarblade
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    # Exposed to host so you can connect with TablePlus/psql from your Mac.
-    # Format: "host:container". If 5432 is taken, change host side e.g. "5433:5432".
-    ports:
-      - "5432:5432"
+      # Named for the major: a data directory only starts under the Postgres
+      # major that created it.
+      - postgres17-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d stellarblade"]
       interval: 5s
@@ -90,12 +96,14 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine
+    # Matches Railway's Redis down to the minor version: newer minors add
+    # commands that prod wouldn't accept.
+    image: redis:8.4
     restart: unless-stopped
     volumes:
-      - redis-data:/data
-    ports:
-      - "6379:6379"
+      # Named for the major, like postgres17-data: an older Redis can refuse to
+      # load data saved by a newer one.
+      - redis8-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -103,8 +111,8 @@ services:
       retries: 5
 
 volumes:
-  postgres-data:
-  redis-data:
+  postgres17-data:
+  redis8-data:
   server-venv:
   client-node-modules:
   claude-config:
