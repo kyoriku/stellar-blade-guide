@@ -32,7 +32,10 @@ services:
       - claude-config:/init/claude
 
   dev:
-    image: mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
+    # Python 3.14, as server/.python-version and prod's python:3.14-slim. The 3- pins the
+    # image's own major as 1- did; major 1 never had a 3.14 build. Unlike 1-3.12, it ships
+    # no Yarn apt repo.
+    image: mcr.microsoft.com/devcontainers/python:3-3.14-bookworm
 
     volumes:
       # Bind-mount the entire repo. On macOS the speed comes from the named
