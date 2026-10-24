@@ -37,7 +37,7 @@ def get_client():
 
 
 def upload(dry_run=True, overwrite=False):
-    start = time.time()
+    start = time.perf_counter()
     bucket = os.getenv('R2_BUCKET')
 
     files = sorted(p for p in STAGING_DIR.rglob('*.webp'))
@@ -108,9 +108,9 @@ def upload(dry_run=True, overwrite=False):
                 errors.append(f"{key}: {e}")
             done = uploaded + len(errors)
             if done % 500 == 0 or done == len(pending):
-                print(f"\033[90m[{done}/{len(pending)}] {uploaded} uploaded, {len(errors)} errors ({time.time() - start:.0f}s)\033[0m")
+                print(f"\033[90m[{done}/{len(pending)}] {uploaded} uploaded, {len(errors)} errors ({time.perf_counter() - start:.0f}s)\033[0m")
 
-    elapsed = time.time() - start
+    elapsed = time.perf_counter() - start
     print(f"\n\033[36m=== Summary ===\033[0m")
     print(f"\033[32m✓ Uploaded: {uploaded}\033[0m")
     print(f"\033[90m→ Skipped (already in bucket): {skipped}\033[0m")

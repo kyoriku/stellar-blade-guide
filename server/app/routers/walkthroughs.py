@@ -55,14 +55,14 @@ async def get_all_walkthroughs(request: Request, db: AsyncSession = Depends(get_
         return cached_data
 
     request.state.cache_status = "MISS"
-    db_start = time.time()
+    db_start = time.perf_counter()
 
     result = await db.execute(
         select(WalkthroughModel).order_by(WalkthroughModel.display_order)
     )
     walkthroughs = result.scalars().all()
 
-    request.state.db_time = (time.time() - db_start) * 1000
+    request.state.db_time = (time.perf_counter() - db_start) * 1000
 
     response = [_serialize_list_item(w) for w in walkthroughs]
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
@@ -95,7 +95,7 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
         return cached_data
 
     request.state.cache_status = "MISS"
-    db_start = time.time()
+    db_start = time.perf_counter()
 
     result = await db.execute(
         select(WalkthroughModel)
@@ -108,7 +108,7 @@ async def get_walkthroughs_by_type(walkthrough_type: str, request: Request, db: 
         raise HTTPException(
             status_code=404, detail="No walkthroughs found for this type")
 
-    request.state.db_time = (time.time() - db_start) * 1000
+    request.state.db_time = (time.perf_counter() - db_start) * 1000
 
     response = [_serialize_list_item(w) for w in walkthroughs]
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL)
@@ -177,7 +177,7 @@ async def get_walkthrough_by_slug(
         return cached_data
 
     request.state.cache_status = "MISS"
-    db_start = time.time()
+    db_start = time.perf_counter()
 
     walkthrough = await lookup_walkthrough(db, normalized_type, slug)
 
@@ -187,7 +187,7 @@ async def get_walkthrough_by_slug(
             detail=f"Walkthrough not found: {walkthrough_type}/{slug}"
         )
 
-    request.state.db_time = (time.time() - db_start) * 1000
+    request.state.db_time = (time.perf_counter() - db_start) * 1000
 
     response = _serialize_full(walkthrough)
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL)

@@ -36,7 +36,7 @@ async def get_collectibles_by_level(level_name: str, request: Request, db: Async
         return cached_data
 
     request.state.cache_status = "MISS"
-    db_start = time.time()
+    db_start = time.perf_counter()
 
     level = await _resolve_level(level_name, db)
 
@@ -48,7 +48,7 @@ async def get_collectibles_by_level(level_name: str, request: Request, db: Async
     result = await db.execute(stmt)
     locations = result.unique().scalars().all()
 
-    request.state.db_time = (time.time() - db_start) * 1000
+    request.state.db_time = (time.perf_counter() - db_start) * 1000
 
     response = []
     for loc in locations:
@@ -76,7 +76,7 @@ async def get_all_collectibles(request: Request, db: AsyncSession = Depends(get_
         return cached_data
 
     request.state.cache_status = "MISS"
-    db_start = time.time()
+    db_start = time.perf_counter()
 
     stmt = select(Collectible).options(
         joinedload(Collectible.types),
@@ -87,7 +87,7 @@ async def get_all_collectibles(request: Request, db: AsyncSession = Depends(get_
     result = await db.execute(stmt)
     collectibles = result.unique().scalars().all()
 
-    request.state.db_time = (time.time() - db_start) * 1000
+    request.state.db_time = (time.perf_counter() - db_start) * 1000
 
     response = [{
         **_serialize_collectible(c),
