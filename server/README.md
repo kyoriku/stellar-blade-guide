@@ -4,7 +4,7 @@ The FastAPI backend for [Stellar Blade Guide](../README.md). It serves all guide
 
 ## Stack
 
-- **Python 3.13** + **FastAPI** (fully async)
+- **Python 3.14** + **FastAPI** (fully async)
 - **SQLAlchemy 2.0** (async, `asyncpg` driver) + **Pydantic v2**
 - **PostgreSQL** (content, users, progress, comments) + **Redis** (cache, rate limiting, sessions)
 - **PyJWT** + **passlib/argon2** for auth
@@ -227,7 +227,7 @@ Seeding upserts by `id`, deletes rows no longer present in the JSON, and invalid
 
 Schema changes are one-off manual scripts written into `scripts/migrations/` as needed (there is no Alembic). Each runs once with `uv run python scripts/migrations/<script>.py` alongside an update to the matching SQLAlchemy model; executed scripts are kept out of the repo, so the directory is empty between schema changes. The exception is the two stored generated `search_vector` columns, which sit outside the ORM because nothing writes them: their expressions live in `app/services/search_text.py`, and each column's comment holds a hash of its expression, so `seed_db.py` and the migration can spot a stale one and rebuild it.
 
-Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.13 image serves the API and the built SPA from a single origin as a non-root user. Its start command trusts the X-Forwarded headers from any peer (`--proxy-headers --forwarded-allow-ips '*'`), since Railway's proxy is the only one that reaches the container; a custom start command set in Railway would replace it. The service's variables are exactly the production-required list under Environment Variables.
+Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.14 image serves the API and the built SPA from a single origin as a non-root user. Its start command trusts the X-Forwarded headers from any peer (`--proxy-headers --forwarded-allow-ips '*'`), since Railway's proxy is the only one that reaches the container; a custom start command set in Railway would replace it. The service's variables are exactly the production-required list under Environment Variables.
 
 ## Testing
 
