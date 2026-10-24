@@ -35,10 +35,9 @@ services:
     image: mcr.microsoft.com/devcontainers/python:1-3.12-bookworm
 
     volumes:
-      # Bind-mount the entire repo. `cached` is a macOS optimization — host is
-      # the source of truth, container reads are cached. Big perf win for
-      # Vite/FastAPI hot reload.
-      - ..:/workspaces/stellar-blade-guide:cached
+      # Bind-mount the entire repo. On macOS the speed comes from the named
+      # volumes below, which keep .venv and node_modules off the file share.
+      - ..:/workspaces/stellar-blade-guide
 
       # Named volumes for container-managed artifacts. Permissions fixed by
       # the volume-init service before this container starts.
