@@ -1,0 +1,51 @@
+"""Production trusts no proxy headers.
+
+Railway runs the Dockerfile's start command (it has no custom one), so this parses that
+command the way uvicorn does, with every variable set that could turn trust back on.
+"""
+
+import json
+import shlex
+from pathlib import Path
+
+from uvicorn.config import Config
+from uvicorn.main import main as uvicorn_main
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+
+DOCKERFILE = Path(__file__).resolve().parents[2] / "Dockerfile"
+
+
+def _start_command_args():
+    """The arguments the Dockerfile's CMD passes to uvicorn, once sh fills in $PORT."""
+    (cmd,) = [line for line in DOCKERFILE.read_text().splitlines() if line.startswith("CMD ")]
+    shell, flag, script = json.loads(cmd.removeprefix("CMD "))
+    assert (shell, flag) == ("/bin/sh", "-c")
+    program, *args = shlex.split(script.replace("$PORT", "8000"))
+    assert program.endswith("/uvicorn")
+    return args
+
+
+async def _stand_in_app(scope, receive, send):
+    # Config.load() would import app.main:app; any ASGI app shows what wraps it.
+    pass
+
+
+def test_production_start_command_trusts_no_proxy_headers(monkeypatch):
+    # Each of these turns trust on when the command leaves it to the environment.
+    monkeypatch.setenv("FORWARDED_ALLOW_IPS", "*")
+    monkeypatch.setenv("UVICORN_FORWARDED_ALLOW_IPS", "*")
+    monkeypatch.setenv("UVICORN_PROXY_HEADERS", "true")
+    params = uvicorn_main.make_context("uvicorn", _start_command_args()).params
+    assert params["app"] == "app.main:app"
+    assert params["proxy_headers"] is False
+    # What uvicorn builds from them: no proxy-headers layer around the app. ws="none"
+    # skips loading the websockets library, which only adds its deprecation warnings.
+    config = Config(
+        _stand_in_app,
+        proxy_headers=params["proxy_headers"],
+        forwarded_allow_ips=params["forwarded_allow_ips"],
+        ws="none",
+        log_config=None,
+    )
+    config.load()
+    assert not isinstance(config.loaded_app, ProxyHeadersMiddleware)
