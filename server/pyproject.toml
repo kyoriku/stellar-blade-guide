@@ -41,3 +41,6 @@ dev = [
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.uv]
+exclude-newer = "7 days"
