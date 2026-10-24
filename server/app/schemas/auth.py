@@ -3,6 +3,7 @@ from typing import Annotated
 from email_validator import validate_email, EmailNotValidError
 from pydantic import AfterValidator, BaseModel, field_validator
 
+from app.core.passwords import password_problem
 from app.core.usernames import username_problem
 
 
@@ -20,10 +21,31 @@ def _validate_email(v: str) -> str:
 FriendlyEmail = Annotated[str, AfterValidator(_validate_email)]
 
 
+def _new_password(v: str) -> str:
+    problem = password_problem(v, new=True)
+    if problem:
+        raise ValueError(problem)
+    return v
+
+
+def _current_password(v: str) -> str:
+    problem = password_problem(v, new=False)
+    if problem:
+        raise ValueError(problem)
+    return v
+
+
+# A password being set (register, change, reset) and one checked against the stored hash
+# (login, change's current password). A new one stops at 128 and needs the minimum; a
+# checked one stops at passlib's 4096, which every stored password already meets.
+NewPassword = Annotated[str, AfterValidator(_new_password)]
+CurrentPassword = Annotated[str, AfterValidator(_current_password)]
+
+
 class RegisterRequest(BaseModel):
     email: FriendlyEmail
     username: str
-    password: str
+    password: NewPassword
 
     @field_validator("username")
     @classmethod
@@ -34,17 +56,10 @@ class RegisterRequest(BaseModel):
             raise ValueError(problem)
         return v
 
-    @field_validator("password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
-
 
 class LoginRequest(BaseModel):
     email: FriendlyEmail
-    password: str
+    password: CurrentPassword
 
 
 class TokenResponse(BaseModel):
@@ -54,15 +69,8 @@ class TokenResponse(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
+    current_password: CurrentPassword
+    new_password: NewPassword
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -71,11 +79,4 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def password_strong(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        return v
+    new_password: NewPassword

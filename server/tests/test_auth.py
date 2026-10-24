@@ -14,6 +14,7 @@ all token operations hit the same in-memory FakeRedis.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 import uuid
@@ -218,6 +219,171 @@ async def test_login_nonexistent_email_returns_401(auth_client):
         "password": "password123",
     })
     assert r.status_code == 401
+
+
+# ── Password length and encoding ──────────────────────────────────────────────
+#
+# passlib refuses a password over 4096 characters, and argon2 one with a lone surrogate,
+# with errors nothing caught: a 500 on every route that takes a password. Each model now
+# refuses them first, with a 422 that says why. A new password stops at 128; one checked
+# against a stored hash keeps passlib's 4096, so no stored password is ever refused.
+
+# The limits as numbers, not the module's constants, so a changed constant fails here too.
+NEW_MAX = 128
+CURRENT_MAX = 4096
+FAR_OVER = 1_000_000  # ASCII, so about 1 MB of JSON
+NEW_TOO_LONG = {"detail": "Password must be at most 128 characters"}
+CURRENT_TOO_LONG = {"detail": "Password must be at most 4096 characters"}
+CANT_USE = {"detail": "Password contains a character that can't be used"}
+SURROGATE = "password" + chr(0xD800)
+
+
+def _over(limit: int, too_long: dict) -> list:
+    """Just over the limit, far over it, and a lone surrogate, with the 422 each gets."""
+    return [
+        pytest.param("p" * (limit + 1), too_long, id="just-over"),
+        pytest.param("p" * FAR_OVER, too_long, id="far-over"),
+        pytest.param(SURROGATE, CANT_USE, id="lone-surrogate"),
+    ]
+
+
+def _json(payload: dict, headers: dict | None = None) -> dict:
+    """Request kwargs for a body built with json.dumps, which writes a lone surrogate as an
+    ASCII escape, as JSON.stringify does; the test client's json= can't encode one."""
+    return {"content": json.dumps(payload), "headers": {"Content-Type": "application/json", **(headers or {})}}
+
+
+async def _account(db, password: str) -> User:
+    """An account whose password was set before the new cap, written straight to the table."""
+    user = User(email="long@example.com", username="longpass", password_hash=hash_password(password))
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def _bearer(client, email: str, password: str) -> dict:
+    r = await client.post("/api/auth/login", **_json({"email": email, "password": password}))
+    assert r.status_code == 200
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+async def _planted_reset_token(redis, user) -> str:
+    token = str(uuid.uuid4())
+    await redis.set(f"password_reset:{token}", str(user.id), ex=3600)
+    return token
+
+
+async def test_register_accepts_a_new_password_at_the_limit(auth_client):
+    # The emoji one is 128 characters but 512 UTF-8 bytes: the limit counts characters.
+    for i, password in enumerate(("p" * NEW_MAX, chr(0x1F600) * NEW_MAX)):
+        email = f"atmax{i}@example.com"
+        r = await auth_client.post("/api/auth/register", **_json({"email": email, "username": f"atmax{i}", "password": password}))
+        assert r.status_code == 201
+        r = await auth_client.post("/api/auth/login", **_json({"email": email, "password": password}))
+        assert r.status_code == 200
+
+
+@pytest.mark.parametrize("password, detail", _over(NEW_MAX, NEW_TOO_LONG))
+async def test_register_refuses_a_new_password_over_the_limit(auth_client, password, detail):
+    r = await auth_client.post("/api/auth/register", **_json({"email": "over@example.com", "username": "overpass", "password": password}))
+    assert (r.status_code, r.json()) == (422, detail)
+
+
+async def test_login_accepts_a_stored_password_at_passlibs_limit(auth_client, auth_db_session):
+    # 4096 is the most passlib ever let through, so it is the longest password any
+    # account can hold.
+    user = await _account(auth_db_session, "p" * CURRENT_MAX)
+    r = await auth_client.post("/api/auth/login", **_json({"email": user.email, "password": "p" * CURRENT_MAX}))
+    assert r.status_code == 200
+
+
+@pytest.mark.parametrize("password, detail", _over(CURRENT_MAX, CURRENT_TOO_LONG))
+async def test_login_refuses_the_same_way_for_any_email(auth_client, test_user, password, detail):
+    # A known password account used to get a 500 here and an unknown email a 401, which
+    # told them apart. The model now answers before the user lookup.
+    for email in (test_user.email, "nobody@example.com"):
+        r = await auth_client.post("/api/auth/login", **_json({"email": email, "password": password}))
+        assert (r.status_code, r.json()) == (422, detail)
+
+
+async def test_login_has_no_minimum(auth_client, test_user):
+    r = await auth_client.post("/api/auth/login", json={"email": test_user.email, "password": "abc"})
+    assert r.status_code == 401
+
+
+async def test_a_stored_password_over_the_new_cap_keeps_working(auth_client, auth_db_session):
+    # 129 characters was accepted before the cap. It still signs in and still works as the
+    # current password; only setting it again is refused.
+    old = "p" * (NEW_MAX + 1)
+    user = await _account(auth_db_session, old)
+    headers = await _bearer(auth_client, user.email, old)
+    r = await auth_client.post("/api/auth/change-password", **_json({"current_password": old, "new_password": old}, headers))
+    assert (r.status_code, r.json()) == (422, NEW_TOO_LONG)
+    r = await auth_client.post("/api/auth/change-password", **_json({"current_password": old, "new_password": "a-new-password-1"}, headers))
+    assert r.status_code == 204
+
+
+async def test_change_password_accepts_both_fields_at_their_limits(auth_client, auth_db_session):
+    user = await _account(auth_db_session, "p" * CURRENT_MAX)
+    headers = await _bearer(auth_client, user.email, "p" * CURRENT_MAX)
+    new = "q" * NEW_MAX
+    r = await auth_client.post("/api/auth/change-password", **_json({"current_password": "p" * CURRENT_MAX, "new_password": new}, headers))
+    assert r.status_code == 204
+    r = await auth_client.post("/api/auth/login", **_json({"email": user.email, "password": new}))
+    assert r.status_code == 200
+
+
+@pytest.mark.parametrize("password, detail", _over(CURRENT_MAX, CURRENT_TOO_LONG))
+async def test_change_password_refuses_a_current_password_over_its_limit(authenticated_client, password, detail):
+    r = await authenticated_client.post("/api/auth/change-password", **_json({"current_password": password, "new_password": "a-new-password-1"}))
+    assert (r.status_code, r.json()) == (422, detail)
+
+
+@pytest.mark.parametrize("password, detail", _over(NEW_MAX, NEW_TOO_LONG))
+async def test_change_password_refuses_a_new_password_over_its_limit(authenticated_client, password, detail):
+    r = await authenticated_client.post("/api/auth/change-password", **_json({"current_password": "password123", "new_password": password}))
+    assert (r.status_code, r.json()) == (422, detail)
+
+
+async def test_change_password_with_both_fields_over_says_both(authenticated_client):
+    # The app-wide handler joins every message. The client checks both fields first, so a
+    # browser never sees this, but it is the answer an API caller gets.
+    r = await authenticated_client.post("/api/auth/change-password", **_json({"current_password": "p" * (CURRENT_MAX + 1), "new_password": "p" * (NEW_MAX + 1)}))
+    assert (r.status_code, r.json()) == (422, {"detail": "Password must be at most 4096 characters; Password must be at most 128 characters"})
+
+
+async def test_reset_accepts_a_new_password_at_the_limit(auth_client, auth_db_session, reset_mail, fake_redis):
+    user = await _account(auth_db_session, "password123")
+    token = await _planted_reset_token(fake_redis, user)
+    r = await auth_client.post("/api/auth/reset-password", **_json({"token": token, "new_password": "q" * NEW_MAX}))
+    assert r.status_code == 204
+    r = await auth_client.post("/api/auth/login", **_json({"email": user.email, "password": "q" * NEW_MAX}))
+    assert r.status_code == 200
+
+
+@pytest.mark.parametrize("password, detail", _over(NEW_MAX, NEW_TOO_LONG))
+async def test_reset_refuses_a_new_password_over_the_limit_and_keeps_the_link(auth_client, auth_db_session, reset_mail, fake_redis, password, detail):
+    # The token used to be spent before the hash failed, and the cooldown then held back
+    # a new link for 15 minutes. The model now refuses first, so the same link still works.
+    user = await _account(auth_db_session, "password123")
+    token = await _planted_reset_token(fake_redis, user)
+    r = await auth_client.post("/api/auth/reset-password", **_json({"token": token, "new_password": password}))
+    assert (r.status_code, r.json()) == (422, detail)
+    assert await fake_redis.get(f"password_reset:{token}") == str(user.id)
+    r = await auth_client.post("/api/auth/reset-password", **_json({"token": token, "new_password": "a-new-password-1"}))
+    assert r.status_code == 204
+
+
+async def test_new_passwords_keep_their_minimum(authenticated_client):
+    short = {"detail": "Password must be at least 8 characters"}
+    for path, payload in (
+        ("/api/auth/register", {"email": "short@example.com", "username": "shortpass", "password": "abc"}),
+        ("/api/auth/change-password", {"current_password": "password123", "new_password": "abc"}),
+        ("/api/auth/reset-password", {"token": "any-token", "new_password": "abc"}),
+    ):
+        r = await authenticated_client.post(path, json=payload)
+        assert (r.status_code, r.json()) == (422, short)
 
 
 # ── Token refresh ─────────────────────────────────────────────────────────────
