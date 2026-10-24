@@ -11,6 +11,12 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "dev",
   "workspaceFolder": "/workspaces/stellar-blade-guide",
+  // The workspace is bind-mounted from the Mac and the uv cache lives in the
+  // container, so hardlinks can't cross between them. uv falls back to
+  // copying anyway; setting it explicitly silences the warning.
+  "containerEnv": {
+    "UV_LINK_MODE": "copy"
+  },
   // Layer additional tooling onto the base Python image. Features are
   // pre-built scriptlets maintained by the devcontainers community.
   "features": {
