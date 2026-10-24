@@ -1,3 +1,4 @@
+import hmac
 import os
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -25,7 +26,14 @@ async def origin_check_middleware(request: Request, call_next):
         return await call_next(request)
 
     provided = request.headers.get("x-origin-secret", "")
-    if not ORIGIN_SECRET or provided != ORIGIN_SECRET:
+    # Constant time, on bytes: compare_digest raises TypeError on a non-ASCII str, and
+    # the header is whatever the client sent. The secret goes second, so the work
+    # follows its length. surrogatepass is for an env value that isn't UTF-8, which
+    # os.getenv hands over as lone surrogates; it gives different strings different
+    # bytes, so this still matches exactly when provided == ORIGIN_SECRET.
+    if not ORIGIN_SECRET or not hmac.compare_digest(
+        provided.encode(), ORIGIN_SECRET.encode(errors="surrogatepass")
+    ):
         # Printed by the logging middleware, so this 404 is distinguishable from
         # the router's unknown-path 404 in the access log.
         request.state.reject_reason = "origin-secret"
