@@ -19,7 +19,8 @@
       "version": "22"
     },
     // Astral's uv (Python package manager) per your project conventions.
-    // Pinned to the uv in the Dockerfile's COPY --from line; bump both together.
+    // Pinned with the uv in the Dockerfile's COPY --from line and setup-uv's version and
+    // checksum in .github/workflows/ci.yml; bump all three together.
     "ghcr.io/va-h/devcontainers-features/uv:1": {
       "version": "0.12.21"
     },
@@ -36,6 +37,7 @@
   // npm is pinned to 11 because min-release-age in .npmrc needs npm 11.10+,
   // and the npm 10 bundled with Node 22 silently ignores it. Not 12: it blocks
   // dependency install scripts by default, which Railway's build doesn't.
+  // The Dockerfile's client stage and .github/workflows/ci.yml install the same npm 11.
   "postCreateCommand": {
     "claude": "curl -fsSL https://claude.ai/install.sh | bash",
     "server": "cd server && uv sync",

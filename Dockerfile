@@ -2,7 +2,8 @@
 FROM node:22-alpine AS client-builder
 WORKDIR /client
 # node:22-alpine bundles npm 10; the dev container, which writes package-lock.json,
-# runs npm 11 (not 12: see .devcontainer/devcontainer.json).
+# runs npm 11 (not 12: see .devcontainer/devcontainer.json), and so does CI
+# (.github/workflows/ci.yml). Move all three together.
 RUN npm install -g npm@11
 COPY client/package*.json ./
 RUN npm ci
@@ -14,7 +15,8 @@ FROM python:3.14-slim
 WORKDIR /server
 
 # Install uv, pinned to the version that writes uv.lock. Bump it together with the uv
-# feature in .devcontainer/devcontainer.json.
+# feature in .devcontainer/devcontainer.json and setup-uv's version and checksum in
+# .github/workflows/ci.yml.
 COPY --from=ghcr.io/astral-sh/uv:0.12.21 /uv /usr/local/bin/uv
 
 # Install Python dependencies. uv sync reads .python-version, so it comes in with the lock.
