@@ -47,10 +47,10 @@ async def search(
         return cached
 
     request.state.cache_status = "MISS"
-    db_start = time.time()
+    db_start = time.perf_counter()
 
     results, corrected = await _execute_search(db, q_normalized, limit)
-    request.state.db_time = (time.time() - db_start) * 1000
+    request.state.db_time = (time.perf_counter() - db_start) * 1000
     response = SearchResponse(query=q_normalized, total=len(results), results=results, corrected=corrected)
     request.state.search_total = response.total
     request.state.search_corrected = corrected

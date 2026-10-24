@@ -112,12 +112,12 @@ async def log_requests_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
 
-    start_time = time.time()
+    start_time = time.perf_counter()
 
     try:
         response = await call_next(request)
     except Exception as exc:
-        duration_ms = (time.time() - start_time) * 1000
+        duration_ms = (time.perf_counter() - start_time) * 1000
         client_ip = sanitize_log_field(get_client_ip(request), LOG_IP_MAX)
         path = sanitize_log_field(request.url.path, LOG_PATH_MAX)
         # An exception message can echo request input, so it is as untrusted as the path.
@@ -128,7 +128,7 @@ async def log_requests_middleware(request: Request, call_next):
         )
         raise
 
-    duration_ms = (time.time() - start_time) * 1000
+    duration_ms = (time.perf_counter() - start_time) * 1000
 
     # Only log API routes
     if not request.url.path.startswith("/api/"):

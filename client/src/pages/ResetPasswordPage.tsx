@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
+import { NEW_PASSWORD_MAX_LENGTH, NEW_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -34,6 +35,10 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (passwordTooLong(password, NEW_PASSWORD_MAX_LENGTH)) {
+      setError(NEW_PASSWORD_TOO_LONG)
+      return
+    }
     setIsSubmitting(true)
     try {
       const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {

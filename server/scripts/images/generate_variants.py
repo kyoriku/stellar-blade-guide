@@ -258,7 +258,7 @@ def collect_sources():
 
 
 def main():
-    start = time.time()
+    start = time.perf_counter()
     print("\033[36m=== Generate R2 WebP Variants ===\033[0m")
     print(f"Source: {BASE_IMAGES_DIR} (masters tree at native resolution + {SITE_DIR_NAME}/)")
     print(f"Output: {STAGING_DIR}")
@@ -324,11 +324,11 @@ def main():
                 errors.append(err)
             done += 1
             if done % 200 == 0 or done == len(sources):
-                elapsed = time.time() - start
+                elapsed = time.perf_counter() - start
                 print(f"\033[90m[{done}/{len(sources)}] {created} created, {skipped} skipped, {len(errors)} errors ({elapsed:.0f}s)\033[0m")
 
     staged = sum(1 for _ in STAGING_DIR.rglob('*.webp'))
-    elapsed = time.time() - start
+    elapsed = time.perf_counter() - start
     minutes, seconds = int(elapsed // 60), int(elapsed % 60)
 
     print(f"\n\033[36m=== Summary ===\033[0m")

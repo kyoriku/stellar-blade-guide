@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { isValidUsername } from './validateUsername'
 
-// Mirrors the server-side rule (username_valid in server/app/schemas/users.py):
+// Mirrors the server-side rule (username_problem in server/app/core/usernames.py):
 // 3–50 chars, letters/numbers/hyphens/underscores, at least one alphanumeric.
 
 describe('isValidUsername', () => {

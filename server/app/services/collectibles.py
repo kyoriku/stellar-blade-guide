@@ -157,7 +157,7 @@ async def _get_items_by_type(type_name: str, category: str, request: Request, db
         return cached_data
 
     request.state.cache_status = "MISS"
-    db_start = time.time()
+    db_start = time.perf_counter()
 
     collectible_type = await _resolve_type(type_name, category, db)
 
@@ -177,7 +177,7 @@ async def _get_items_by_type(type_name: str, category: str, request: Request, db
     if not collectibles:
         raise HTTPException(status_code=404, detail=f"No {category} found for this type")
 
-    request.state.db_time = (time.time() - db_start) * 1000
+    request.state.db_time = (time.perf_counter() - db_start) * 1000
 
     response = _group_by_level(collectibles, type_id=collectible_type.id)
     await set_cache(cache_key, response, ttl=settings.CACHE_TTL)

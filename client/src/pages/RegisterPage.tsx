@@ -4,6 +4,7 @@ import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
 import { returnPath } from '../utils/returnPath'
+import { NEW_PASSWORD_MAX_LENGTH, NEW_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 
@@ -26,6 +27,10 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (passwordTooLong(password, NEW_PASSWORD_MAX_LENGTH)) {
+      setError(NEW_PASSWORD_TOO_LONG)
+      return
+    }
     setIsSubmitting(true)
     try {
       await register(email, username, password)

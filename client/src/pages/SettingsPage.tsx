@@ -4,6 +4,13 @@ import { User, KeyRound, Trash2, Save, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
 import { isValidUsername, USERNAME_RULE } from '../utils/validateUsername'
+import {
+  CURRENT_PASSWORD_MAX_LENGTH,
+  CURRENT_PASSWORD_TOO_LONG,
+  NEW_PASSWORD_MAX_LENGTH,
+  NEW_PASSWORD_TOO_LONG,
+  passwordTooLong,
+} from '../utils/validatePassword'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 
@@ -27,6 +34,8 @@ export default function SettingsPage() {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const currentPasswordId = useId()
+  const newPasswordId = useId()
 
   // ── Logout all ─────────────────────────────────────────────────────────────
   const [logoutAllLoading, setLogoutAllLoading] = useState(false)
@@ -123,6 +132,14 @@ export default function SettingsPage() {
     e.preventDefault()
     setPasswordError(null)
     setPasswordSuccess(false)
+    if (passwordTooLong(currentPassword, CURRENT_PASSWORD_MAX_LENGTH)) {
+      setPasswordError(CURRENT_PASSWORD_TOO_LONG)
+      return
+    }
+    if (passwordTooLong(newPassword, NEW_PASSWORD_MAX_LENGTH)) {
+      setPasswordError(NEW_PASSWORD_TOO_LONG)
+      return
+    }
     setPasswordLoading(true)
     try {
       const res = await authFetch(`${API_BASE_URL}/auth/change-password`, {
@@ -302,14 +319,16 @@ export default function SettingsPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                <label htmlFor={currentPasswordId} className="block text-sm font-medium text-gray-300 mb-1.5">
                   Current password
                 </label>
                 <div className="relative">
                   <input
+                    id={currentPasswordId}
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
                     required
                     className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
                     placeholder="••••••••"
@@ -326,14 +345,16 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                <label htmlFor={newPasswordId} className="block text-sm font-medium text-gray-300 mb-1.5">
                   New password
                 </label>
                 <div className="relative">
                   <input
+                    id={newPasswordId}
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
                     required
                     className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
                     placeholder="••••••••"
