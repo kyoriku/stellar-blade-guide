@@ -28,42 +28,23 @@
     //   "username": "vscode"
     // }
   },
-  // Run AFTER the container is built, ONCE. Installs Claude Code (native
-  // installer) and the project's Python and JS dependencies.
+  // Runs once, after the container is created: Claude Code (native installer)
+  // plus the Python and JS dependencies. The object form runs each step in
+  // parallel, so one failing doesn't skip the others.
   //
-  // The `|| true` on the dependency installs is intentional — if your repo
-  // is missing a server/ or client/ at any point, container creation still
-  // succeeds and you can debug from inside.
-  "postCreateCommand": "npm install -g npm@12 && curl -fsSL https://claude.ai/install.sh | bash && (cd server && uv sync || true) && (cd client && npm ci || true)",
-  // Forward these ports from the container to your Mac. Open localhost:3000
-  // in Safari/Chrome and you're hitting Vite running inside the container.
-  "forwardPorts": [
-    3000,
-    8000,
-    5432,
-    6379
-  ],
-  "portsAttributes": {
-    "3000": {
-      "label": "Vite (frontend)",
-      "onAutoForward": "notify"
-    },
-    "8000": {
-      "label": "FastAPI (backend)",
-      "onAutoForward": "notify"
-    },
-    "5432": {
-      "label": "Postgres",
-      "onAutoForward": "silent"
-    },
-    "6379": {
-      "label": "Redis",
-      "onAutoForward": "silent"
-    }
+  // npm is pinned to 11 because min-release-age in .npmrc needs npm 11.10+,
+  // and the npm 10 bundled with Node 22 silently ignores it. Not 12: it blocks
+  // dependency install scripts by default, which Railway's build doesn't.
+  "postCreateCommand": {
+    "claude": "curl -fsSL https://claude.ai/install.sh | bash",
+    "server": "cd server && uv sync",
+    "client": "npm install -g npm@11 && cd client && npm ci"
   },
+  // docker-compose.yml publishes the ports, so VS Code shouldn't auto-forward
+  // its own copies on top of them.
   "otherPortsAttributes": {
-  "onAutoForward": "ignore"
- },
+    "onAutoForward": "ignore"
+  },
   // VS Code-specific settings. Ignored when using pure terminal workflow.
   "customizations": {
     "vscode": {
