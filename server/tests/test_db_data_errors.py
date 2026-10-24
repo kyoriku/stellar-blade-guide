@@ -9,7 +9,8 @@ a route that has no guard at all.
 SQLite raises none of these errors (it stores a NUL, binds any id up to int8, raising a
 plain OverflowError only from 2**63, and raises a plain UnicodeEncodeError for a lone
 surrogate), so the stand-in database raises what the dev Postgres did, translated by
-SQLAlchemy's own asyncpg dialect. There (2026-10-17, SQLAlchemy 2.0.44, asyncpg 0.30.0)
+SQLAlchemy's own asyncpg dialect. There (2026-10-17, SQLAlchemy 2.0.44, asyncpg 0.30.0;
+again 2026-10-24, SQLAlchemy 2.0.45, asyncpg 0.31.0)
 all three arrived as a plain DBAPIError, never sqlalchemy.exc.DataError, whose orig
 carries an SQLSTATE in class 22.
 """
