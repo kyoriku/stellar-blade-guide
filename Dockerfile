@@ -37,8 +37,9 @@ RUN useradd --no-create-home --shell /bin/false appuser
 USER appuser
 
 EXPOSE 8000
-# Railway's proxy is the only peer that reaches the container, so its X-Forwarded-For and
-# X-Forwarded-Proto are trusted from any address. The flag outranks the FORWARDED_ALLOW_IPS
-# and UVICORN_FORWARDED_ALLOW_IPS variables, and the quotes keep sh from globbing the *.
-# A custom start command set in Railway would replace this line and drop the trust.
-CMD ["/bin/sh", "-c", "/server/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*' --workers 2 --limit-max-requests 50000"]
+# No proxy trust: the scheme and client address stay the connection's own (Railway's proxy).
+# Nothing reads the scheme, and the visitor's address comes only from Cloudflare's
+# CF-Connecting-IP (app/core/security.py). --no-proxy-headers rather than dropping the flags,
+# so no FORWARDED_ALLOW_IPS or UVICORN_* variable can turn trust back on. A custom start
+# command set in Railway would replace this line.
+CMD ["/bin/sh", "-c", "/server/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers --workers 2 --limit-max-requests 50000"]

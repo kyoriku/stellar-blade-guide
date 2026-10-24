@@ -48,6 +48,11 @@ app = FastAPI(
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
     openapi_url="/openapi.json" if settings.DEBUG else None,
+    # Every client path matches its route exactly, and the SPA catch-all answers a slash
+    # variant first (a 404 for GET and HEAD under /api/, a 405 for any other method). A
+    # slash redirect could only come from a crafted path, and its absolute Location would
+    # carry the request scheme, which is http with no proxy trust.
+    redirect_slashes=False,
 )
 
 add_exception_handlers(app)

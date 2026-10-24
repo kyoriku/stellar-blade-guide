@@ -177,10 +177,10 @@ async def test_an_invalid_cf_connecting_ip_never_reaches_the_line(api_log):
 
 
 async def test_client_ip_from_the_connection_is_neutralised_and_capped(api_log):
-    # The fallback is the connection's client, which under the Dockerfile's
-    # --forwarded-allow-ips '*' is the first X-Forwarded-For entry, unvalidated text a
-    # client can write. The outer logger writes the line even for requests that
-    # origin_check rejects, so the IP column is as untrusted as the path.
+    # The fallback is the connection's client: Railway's proxy in production, but in
+    # dev, where uvicorn trusts the 127.0.0.1 Vite proxy, the first X-Forwarded-For
+    # entry, unvalidated text a client can write. The outer logger writes the line even
+    # for requests that origin_check rejects, so the IP column is as untrusted as the path.
     hostile = "1.2.3.4" + ANSI_PROBE + "9" * 60
     async with _client(_app_with(), client=(hostile, 123)) as c:
         await c.get("/api/health")
@@ -466,8 +466,9 @@ async def test_the_correction_is_neutralised_and_capped_like_the_text(api_log):
 #
 # Every request through Cloudflare carries CF-Connecting-IP, the rate limiter's key.
 # An /api/ request without a valid one means a Cloudflare setting stopped sending it
-# (the key would fall back to X-Forwarded-For text) or the origin secret was used to
-# skip Cloudflare, so outside DEBUG the logger raises a WARNING for each one.
+# (the key would fall back to Railway's proxy address, one bucket for everyone) or the
+# origin secret was used to skip Cloudflare, so outside DEBUG the logger raises a
+# WARNING for each one.
 
 def _cf_warnings(caplog):
     return [
