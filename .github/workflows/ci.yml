@@ -19,6 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with:
+          # The uv that writes uv.lock. Pinned with the Dockerfile's COPY --from line and
+          # the uv feature in .devcontainer/devcontainer.json; bump all three together.
+          version: "0.12.21"
+          # sha256 of that version's uv-x86_64-unknown-linux-gnu.tar.gz, from its release's
+          # .sha256 asset. It moves with the version: v5 knows no checksum for a uv newer
+          # than itself, so without this the download would go unverified.
+          checksum: "23f02075b652bb1df64178cfae41b5caf160822e720e2663568f3f5d63bc52c0"
       - run: uv sync --frozen
       - run: uv run pytest
 
@@ -34,6 +42,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: client/package-lock.json
+      # Node 22 bundles npm 10, which ignores .npmrc's min-release-age (it needs 11.10+).
+      # Pinned with the Dockerfile's client stage and devcontainer.json's postCreateCommand;
+      # move all three together (not 12: see devcontainer.json).
+      - run: npm install -g npm@11 && npm --version
       - run: npm ci
       - run: npm run lint
       - run: npm test
