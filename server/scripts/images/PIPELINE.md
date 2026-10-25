@@ -180,6 +180,12 @@ zero residual), then clears the ledger. At the end of a run that completes,
 failed step stops the run before that), and `prod_seed.py` offers to invoke it
 after a successful seed + purge.
 
+Each run with something to prune writes `server/logs/prune/prune-<id>.log`
+(gitignored): every line it prints, and every key it deletes as it deletes it,
+plus an error's traceback or an interruption. Once the ledger is cleared, that
+log is the only record of what went. When `prod_seed.py` starts it, the id is
+the seed's run id, so the two logs pair up; by hand, it's the time.
+
 ## Seeding prod
 
 Prod's Postgres and Redis have had no public address since Railway's TCP

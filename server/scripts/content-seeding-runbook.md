@@ -159,6 +159,7 @@ Through the tunnel, Postgres doesn't check its password, so a stale one in `serv
 - `server/seed-data/README.md`: the content format, including paragraphs, lists and id ranges.
 - `server/scripts/images/PIPELINE.md`: the image pipeline and its Seeding prod section. If it disagrees with this doc, trust it, since it's versioned with the code.
 - `server/logs/seed/`: one log per prod run, named by its run id.
+- `server/logs/prune/`: one log per `prune_bucket.py` run, with every key it deleted. A prune that `prod_seed.py` started has the seed's run id in its name.
 - `CLAUDE.md` in the repo root (local, not committed): the conventions Claude Code follows.
 
 This reflects the pipeline as of late Oct 2026, including the seed reliability update.
