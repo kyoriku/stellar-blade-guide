@@ -382,3 +382,27 @@ def test_a_connection_that_never_opens_names_the_timeout():
     assert done.returncode == 2
     assert ("Couldn't build the URL list: no answer from the database within 1 s. "
             "Nothing was purged.") in done.stdout
+
+
+@pytest.mark.parametrize('argv,unknown', [
+    (['--dryrun'], '--dryrun'),             # a mistyped --dry-run used to purge for real
+    (['--dry-run', '--al'], '--al'),
+    (['dry-run'], 'dry-run'),
+])
+def test_an_unknown_flag_stops_before_anything_is_purged(monkeypatch, capsys, argv, unknown):
+    purged, cleared = _stub_main(monkeypatch, argv)
+    with pytest.raises(SystemExit) as stopped:
+        purge_api_cache.main()
+    assert stopped.value.code == purge_api_cache.EXIT_PERMANENT
+    assert purged == [] and cleared == []
+    out = capsys.readouterr().out
+    assert f'Unknown option {unknown!r}: nothing was purged' in out
+    assert 'Full surface' not in out
+
+
+def test_every_flag_it_reads_is_accepted():
+    assert purge_api_cache.unknown_flags(
+        ['--dry-run', '--all', '--run-id', 'X', '--run-id=Y', '--clear-ledger',
+         '--singular-walkthroughs']) == []
+    # The flags prod_seed.py passes.
+    assert purge_api_cache.unknown_flags(['--clear-ledger', '--all']) == []

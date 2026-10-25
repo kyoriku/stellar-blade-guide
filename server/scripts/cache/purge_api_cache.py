@@ -15,6 +15,8 @@ Usage:
                                     # spelling of a type (side-quest), read from the
                                     # PROD database; leaves the ledger alone
 
+Any other argument stops it with exit 2 before anything is derived or purged.
+
 The purge covers every change the ledger (scripts/cache/purge_manifest.py) still owes,
 from this run and any earlier run that stopped before its purge succeeded. --run-id
 defaults to $SEED_RUN_ID, which prod_seed.py exports when it seeds; with it, the purge
@@ -468,6 +470,26 @@ def check_narrowed(narrowed, full_urls, removed_urls=()):
         raise RuntimeError('manifest reports changes but the narrowed set is empty')
 
 
+# Every flag main() reads. Anything else stops the run before anything happens: a mistyped
+# --dry-run used to purge for real.
+FLAGS = ('--dry-run', '--all', '--singular-walkthroughs', '--clear-ledger', '--run-id')
+
+
+def unknown_flags(args):
+    """The arguments main() would otherwise ignore. --run-id takes a value, as --run-id X or
+    --run-id=X."""
+    unknown, i = [], 0
+    while i < len(args):
+        arg = args[i]
+        if arg == '--run-id':
+            i += 2
+            continue
+        if arg not in FLAGS and not arg.startswith('--run-id='):
+            unknown.append(arg)
+        i += 1
+    return unknown
+
+
 def _flag_value(args, name):
     """Support both --run-id=X and --run-id X."""
     for i, arg in enumerate(args):
@@ -480,6 +502,11 @@ def _flag_value(args, name):
 
 def main():
     args = sys.argv[1:]
+    unknown = unknown_flags(args)
+    if unknown:
+        print(f'\033[31m✗ Unknown option {unknown[0]!r}: nothing was purged. The options are '
+              f'{", ".join(FLAGS)}.\033[0m')
+        sys.exit(EXIT_PERMANENT)
     dry_run = '--dry-run' in args
     force_all = '--all' in args
     singular = '--singular-walkthroughs' in args

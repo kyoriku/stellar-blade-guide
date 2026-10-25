@@ -284,7 +284,9 @@ database, never the user name, password or query.
 the five API prefixes that this run, or an earlier run still owed a purge,
 changed. They are derived live by `scripts/cache/purge_api_cache.py` (FastAPI
 route table x DB slugs x client navigation constants, batched per the purge
-API's limits, every response verified; `--dry-run` lists without purging).
+API's limits, every response verified; `--dry-run` lists without purging, and
+an unknown flag stops it with nothing purged, so a mistyped `--dry-run` can't
+purge for real).
 Images are never purged by a seed: their URLs are immutable and content
 changes always rename, so the ~14k-object image cache stays warm across seeds.
 
