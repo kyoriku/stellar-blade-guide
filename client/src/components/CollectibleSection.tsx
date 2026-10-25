@@ -4,6 +4,7 @@ import ImageGallery from './ImageGallery'
 import TypeBadge from './TypeBadge';
 import { FileText, List } from 'lucide-react'
 import { parseDescription } from '../utils/parseDescription'
+import { textBlocks } from '../utils/textBlocks'
 import { cycleLabel } from '../constants/cycleLabels'
 
 // CollectibleTypeDetailPage augments collectibles with presentation-only
@@ -147,11 +148,23 @@ function CollectibleSection({
                   <div className="flex gap-3">
                     <FileText className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5 hidden" />
                     <div className="space-y-3">
-                      {(collectible.description.content ?? '').split('\n\n').map((paragraph, idx) => (
-                        <p key={idx} className="text-gray-300 leading-relaxed">
-                          {parseDescription(paragraph)}
-                        </p>
-                      ))}
+                      {textBlocks(collectible.description.content ?? '').map((block, idx) =>
+                        block.kind === 'list' ? (
+                          // The walkthrough text list's markup, so both read alike.
+                          <ul key={idx} className="space-y-1.5">
+                            {block.items.map((item, itemIdx) => (
+                              <li key={itemIdx} className="flex gap-2 text-gray-300 leading-relaxed">
+                                <span className="text-cyan-400 font-bold">•</span>
+                                <span className="flex-1">{parseDescription(item)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p key={idx} className="text-gray-300 leading-relaxed">
+                            {parseDescription(block.text)}
+                          </p>
+                        )
+                      )}
                     </div>
                   </div>
                 ) : (

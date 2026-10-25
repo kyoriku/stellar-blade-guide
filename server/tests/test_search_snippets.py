@@ -214,3 +214,34 @@ def test_the_place_tag_needs_a_query_word_in_it(words, place):
 def test_a_description_match_shows_the_fragment_and_no_tags():
     snippet = search._item_body_snippet(_item(cycle="NG+"), [search._match_rx(["buy"])])
     assert snippet == "Buy them."
+
+
+# ---------------------------------------------------------------------------
+# A list in a description reads as one line (search_text.plain_text)
+# ---------------------------------------------------------------------------
+
+def _text(content):
+    return {"type": "text", "content": content}
+
+
+@pytest.mark.parametrize("word, snippet", [
+    ("gigas", ELLIPSIS + "Basin, Gigas at Oil Storage Facility (Urgent Information), Brute in Forbidden Area "
+              "(Life of the Scavengers), Stalker at Solar Tower in the Great Desert (Reboot!"),
+    ("behemoth", ELLIPSIS + "Tooth), Behemoth in Northern Great Desert (Encounter)"),
+])
+def test_a_body_snippet_reads_a_list_as_one_line(word, snippet):
+    from tests.test_search_text import WEAPON_CORE
+    shown = search._item_body_snippet(_item(description=_text(WEAPON_CORE)), [search._match_rx([word])])
+    assert shown == snippet
+    assert "- " not in shown and "\n" not in shown
+
+
+def test_a_title_snippet_reads_a_list_as_one_line():
+    assert search._extract_snippet(_text("Bosses:\n\n- a\n- [[levels/xion|Xion]]")) == "Bosses: a, Xion"
+
+
+def test_a_list_descriptions_items_are_left_as_they_are():
+    # The list type renders its items as plain text, so they never become lists.
+    items = {"type": "list", "items": ["- a\n- b", "Buy them."]}
+    assert search._extract_snippet(items) == "- a\n- b"
+    assert search._item_body_snippet(_item(description=items), [search._match_rx(["buy"])]) == f"- a - b {DOT} Buy them."

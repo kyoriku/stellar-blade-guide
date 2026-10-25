@@ -26,7 +26,7 @@ from app.core.navigation import (
 )
 from app.schemas.search import SearchResult
 from app.services.search_text import (
-    BASE_CYCLES, both_configs, description_strings, list_strings, section_text, strip_links,
+    BASE_CYCLES, both_configs, description_strings, list_strings, plain_text, section_text, strip_links,
 )
 
 _strip_links = strip_links
@@ -491,7 +491,7 @@ def _extract_snippet(description: dict | None) -> str | None:
         return None
     text_content = description.get("content")
     if text_content:
-        cleaned = _strip_links(text_content)
+        cleaned = _strip_links(plain_text(text_content))   # a list reads as one line
         return (cleaned[:120] + '...') if len(cleaned) > 120 else cleaned
     items = description.get("items")
     if items:
@@ -604,11 +604,20 @@ def _section_result(r) -> SearchResult:
                         navigation_url=url, score=float(r["score"]))
 
 
+def _shown_strings(description) -> list[str]:
+    """A description's strings as the page shows them: its content through plain_text, so a
+    list reads as one line, and a list description's items as they are."""
+    strings = description_strings(description)
+    if strings and isinstance(description, dict) and isinstance(description.get("content"), str):
+        strings[0] = plain_text(strings[0])
+    return strings
+
+
 def _item_body_snippet(row, rxs) -> str:
     """A collectible found beyond its title: the matching description fragment, else
     its type, the place a query word matched and a non-base cycle, then the usual
     description start ("Passcode · Eidos 7 · Beside the locked gate…")."""
-    description = " · ".join(_strip_links(s) for s in description_strings(row["description"]))
+    description = " · ".join(_strip_links(s) for s in _shown_strings(row["description"]))
     frag = _fragment(description, rxs, VISIBLE)
     if frag:
         return frag

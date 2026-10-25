@@ -240,6 +240,37 @@ def walkthrough_strings(content, objectives=None, rewards=None) -> list[str]:
             + list_strings(objectives) + list_strings(rewards))
 
 
+def text_blocks(text: str) -> list[tuple[str, str | list[str]]]:
+    """client/src/utils/textBlocks.ts in Python, the rule the site renders text by: blank
+    lines separate blocks, and a block of two or more lines that all start with "- " is a
+    list, its items without the "- ". Anything else is a paragraph, newlines and all.
+    str.split on purpose: splitlines would also break at a carriage return or a Unicode
+    line separator, where the client doesn't. tests/test_search_text.py and the client's
+    tests pin the same cases."""
+    blocks = []
+    for block in text.split("\n\n"):
+        lines = block.split("\n")
+        if len(lines) > 1 and all(line.startswith("- ") for line in lines):
+            blocks.append(("list", [line[2:] for line in lines]))
+        else:
+            blocks.append(("paragraph", block))
+    return blocks
+
+
+def plain_text(text):
+    """Description content on one line, as plainText in client/src/utils/descriptionText.ts
+    gives it: unchanged unless it holds a list; otherwise its blocks joined by a space (a
+    paragraph's own newlines too) and each list's items by ", ". Anything not a string
+    comes back as it is."""
+    if not isinstance(text, str):
+        return text
+    blocks = text_blocks(text)
+    if not any(kind == "list" for kind, _ in blocks):
+        return text
+    return " ".join(", ".join(value) if kind == "list" else value.replace("\n", " ")
+                    for kind, value in blocks)
+
+
 def too_deep(content) -> list[str]:
     """Key paths of strings that sit deeper than MAX_DEPTH under keys the index reads,
     such as "content[3].fish[0].spots.night[1]". The index would skip them silently."""

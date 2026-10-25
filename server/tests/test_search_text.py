@@ -434,3 +434,83 @@ def _link_corpus():
 def test_strip_links_reads_wikilinks_as_the_original_pattern_did():
     for text in _link_corpus():
         assert search_text.strip_links(text) == ORIGINAL_LINK.sub(r"\1", text), text
+
+
+# ---------------------------------------------------------------------------
+# Text blocks: the rule the site lays text out by
+# ---------------------------------------------------------------------------
+
+EN, EM, LS = chr(0x2013), chr(0x2014), chr(0x2028)   # kept out of the source as literals
+
+
+def _p(text):
+    return ("paragraph", text)
+
+
+def _list(*items):
+    return ("list", list(items))
+
+
+# The same cases, in the same order, as client/src/utils/textBlocks.test.ts (the blocks)
+# and descriptionText.test.ts (the plain text).
+TEXT_CASES = [
+    ("no newline", "Buy them.", [_p("Buy them.")], "Buy them."),
+    ("empty", "", [_p("")], ""),
+    ("blank lines only", "\n\n", [_p(""), _p("")], "\n\n"),
+    ("two paragraphs", "First.\n\nSecond.", [_p("First."), _p("Second.")], "First.\n\nSecond."),
+    ("an intro and a list", "Bosses:\n\n- a\n- b", [_p("Bosses:"), _list("a", "b")], "Bosses: a, b"),
+    ("only a list", "- a\n- b", [_list("a", "b")], "a, b"),
+    ("a list, then text", "Intro:\n\n- a\n- b\n\nThen.", [_p("Intro:"), _list("a", "b"), _p("Then.")],
+     "Intro: a, b Then."),
+    ('a single "- " line', "Intro\n\n- a", [_p("Intro"), _p("- a")], "Intro\n\n- a"),
+    ("a hyphen mid-line", "left - right\nup - down", [_p("left - right\nup - down")], "left - right\nup - down"),
+    ('"-" with no space', "-a\n-b", [_p("-a\n-b")], "-a\n-b"),
+    ("a list after a single newline", "Intro:\n- a\n- b", [_p("Intro:\n- a\n- b")], "Intro:\n- a\n- b"),
+    ("a newline after the last item", "- a\n- b\n", [_p("- a\n- b\n")], "- a\n- b\n"),
+    ("a blank line holding a space", "Intro\n \n- a\n- b", [_p("Intro\n \n- a\n- b")], "Intro\n \n- a\n- b"),
+    ("en and em dash lines", f"{EN} a\n{EM} b", [_p(f"{EN} a\n{EM} b")], f"{EN} a\n{EM} b"),
+    ("a nested list", "- a\n  - b", [_p("- a\n  - b")], "- a\n  - b"),
+    ("three newlines before a list", "Intro\n\n\n- a\n- b", [_p("Intro"), _p("\n- a\n- b")], "Intro\n\n\n- a\n- b"),
+    ("trailing spaces", "- a  \n- b ", [_list("a  ", "b ")], "a  , b "),
+    ("an empty item", "- \n- b", [_list("", "b")], ", b"),
+    ("a carriage return", "- a\r\n- b", [_list("a\r", "b")], "a\r, b"),
+    ("a Unicode line separator", f"- a{LS}- b", [_p(f"- a{LS}- b")], f"- a{LS}- b"),
+    ("a link in an item", "- [[levels/xion|Xion]]\n- b", [_list("[[levels/xion|Xion]]", "b")],
+     "[[levels/xion|Xion]], b"),
+    ("a paragraph with its own newline beside a list", "One\ntwo\n\n- a\n- b", [_p("One\ntwo"), _list("a", "b")],
+     "One two a, b"),
+]
+
+# Weapon Core [856], the entry the rule was shared for.
+WEAPON_CORE_INTRO = ("Available to purchase from D1G-g2r. Costs 2 Damaged Weapon Cores each, with 2 in stock. "
+                     "Damaged Weapon Cores are dropped by certain side quest and overworld bosses:")
+WEAPON_CORE_ITEMS = [
+    "Corrupter in Wasteland Basin",
+    "Gigas at Oil Storage Facility ([[walkthroughs/side-quests/urgent-information|Urgent Information]])",
+    "Brute in Forbidden Area ([[walkthroughs/side-quests/life-of-the-scavengers|Life of the Scavengers]])",
+    "Stalker at Solar Tower in the Great Desert ([[walkthroughs/side-quests/reboot-great-desert|Reboot!!!]])",
+    "Abaddon in Buried Ruins ([[walkthroughs/side-quests/an-eye-for-an-eye-a-tooth-for-a-tooth"
+    "|An Eye for an Eye, a Tooth for a Tooth]])",
+    "Behemoth in Northern Great Desert ([[walkthroughs/side-quests/encounter|Encounter]])",
+]
+WEAPON_CORE = WEAPON_CORE_INTRO + "\n\n" + "\n".join(f"- {item}" for item in WEAPON_CORE_ITEMS)
+
+
+@pytest.mark.parametrize("name, text, blocks, plain", TEXT_CASES, ids=[case[0] for case in TEXT_CASES])
+def test_text_blocks_sort_text_as_the_client_does(name, text, blocks, plain):
+    assert search_text.text_blocks(text) == blocks
+
+
+@pytest.mark.parametrize("name, text, blocks, plain", TEXT_CASES, ids=[case[0] for case in TEXT_CASES])
+def test_plain_text_reads_a_list_as_one_line_as_the_client_does(name, text, blocks, plain):
+    assert search_text.plain_text(text) == plain
+
+
+def test_weapon_cores_bosses_are_an_intro_and_six_items():
+    assert search_text.text_blocks(WEAPON_CORE) == [_p(WEAPON_CORE_INTRO), _list(*WEAPON_CORE_ITEMS)]
+    assert search_text.plain_text(WEAPON_CORE) == WEAPON_CORE_INTRO + " " + ", ".join(WEAPON_CORE_ITEMS)
+
+
+@pytest.mark.parametrize("value", [None, 5, ["- a", "- b"], {"content": "- a\n- b"}])
+def test_plain_text_leaves_anything_but_a_string_as_it_is(value):
+    assert search_text.plain_text(value) == value
