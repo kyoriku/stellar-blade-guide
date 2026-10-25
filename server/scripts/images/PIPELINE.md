@@ -270,7 +270,11 @@ still owed, and what to run next:
 A dropped tunnel ends the step within about 30 s, and prod rolls back an
 abandoned transaction by itself (`idle_in_transaction_session_timeout` 30 s,
 `transaction_timeout` 2 min). Ctrl+C stops the running step at once and logs
-where it landed. A second run while one is going stops at once and leaves the
+where it landed, and so does closing the terminal or a kill. Ctrl+D at a prompt
+counts as no. An error of `prod_seed.py`'s own is logged at ERROR as
+`[CRASHED]`, with its traceback, and a flag typo as `Not run`. Every log ends
+with `Exit N`, so `grep -L "Exit " logs/seed/*.log` lists the runs that were
+killed outright. A second run while one is going stops at once and leaves the
 tunnels to it. Run prod seeds from the main checkout: the ledger lives in it.
 
 The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
