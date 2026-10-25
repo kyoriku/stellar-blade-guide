@@ -180,6 +180,12 @@ zero residual), then clears the ledger. At the end of a run that completes,
 failed step stops the run before that), and `prod_seed.py` offers to invoke it
 after a successful seed + purge.
 
+Each run with something to prune writes `server/logs/prune/prune-<id>.log`
+(gitignored): every line it prints, and every key it deletes as it deletes it,
+plus an error's traceback or an interruption. Once the ledger is cleared, that
+log is the only record of what went. When `prod_seed.py` starts it, the id is
+the seed's run id, so the two logs pair up; by hand, it's the time.
+
 ## Seeding prod
 
 Prod's Postgres and Redis have had no public address since Railway's TCP
@@ -264,13 +270,23 @@ still owed, and what to run next:
 A dropped tunnel ends the step within about 30 s, and prod rolls back an
 abandoned transaction by itself (`idle_in_transaction_session_timeout` 30 s,
 `transaction_timeout` 2 min). Ctrl+C stops the running step at once and logs
-where it landed. A second run while one is going stops at once and leaves the
+where it landed, and so does closing the terminal or a kill. Ctrl+D at a prompt
+counts as no. An error of `prod_seed.py`'s own is logged at ERROR as
+`[CRASHED]`, with its traceback, and a flag typo as `Not run`. Every log ends
+with `Exit N`, so `grep -L "Exit " logs/seed/*.log` lists the runs that were
+killed outright. A second run while one is going stops at once and leaves the
 tunnels to it. Run prod seeds from the main checkout: the ledger lives in it.
 
 The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
 (`diff_collectibles.py --prod`, `cache_stats.py --prod`,
 `search_eval.py --timing --prod`, `purge_api_cache.py --singular-walkthroughs`,
-the `--prod` migrations) need the same tunnels open.
+the `--prod` migrations) need the same tunnels open. All but the migrations
+first check that what they read answers (`check_connections.py`, 10 s rather
+than 30). If it doesn't, they stop with nothing done and exit 2. When the URL
+goes through a tunnel, they print the `railway connect` line to run. A refused
+password or a URL its driver would misread also exits 2, saying the setup
+needs fixing. They show URLs as the header does: scheme, host, port and
+database, never the user name, password or query.
 
 ## What a prod seed purges
 
@@ -278,7 +294,9 @@ the `--prod` migrations) need the same tunnels open.
 the five API prefixes that this run, or an earlier run still owed a purge,
 changed. They are derived live by `scripts/cache/purge_api_cache.py` (FastAPI
 route table x DB slugs x client navigation constants, batched per the purge
-API's limits, every response verified; `--dry-run` lists without purging).
+API's limits, every response verified; `--dry-run` lists without purging, and
+an unknown flag stops it with nothing purged, so a mistyped `--dry-run` can't
+purge for real).
 Images are never purged by a seed: their URLs are immutable and content
 changes always rename, so the ~14k-object image cache stays warm across seeds.
 

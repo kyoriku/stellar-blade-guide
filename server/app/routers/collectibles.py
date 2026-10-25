@@ -16,6 +16,7 @@ from app.services.collectibles import (
     _serialize_collectible,
     _resolve_level,
     _get_items_by_type,
+    entry_order,
 )
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ async def get_collectibles_by_level(level_name: str, request: Request, db: Async
     stmt = select(Location).filter(Location.level_id == level.id).options(
         joinedload(Location.collectibles).joinedload(Collectible.types),
         joinedload(Location.collectibles).joinedload(Collectible.images)
-    ).order_by(Location.display_order)
+    ).order_by(Location.display_order, Location.id)
 
     result = await db.execute(stmt)
     locations = result.unique().scalars().all()
@@ -52,7 +53,7 @@ async def get_collectibles_by_level(level_name: str, request: Request, db: Async
 
     response = []
     for loc in locations:
-        collectibles = sorted(loc.collectibles, key=lambda c: c.display_order)
+        collectibles = sorted(loc.collectibles, key=entry_order)
         response.append({
             "level_id": level.id,
             "location_id": loc.id,
@@ -82,7 +83,7 @@ async def get_all_collectibles(request: Request, db: AsyncSession = Depends(get_
         joinedload(Collectible.types),
         joinedload(Collectible.location).joinedload(Location.level),
         joinedload(Collectible.images)
-    ).order_by(Collectible.display_order)
+    ).order_by(Collectible.display_order, Collectible.id)   # 64 entries share display_order 1
 
     result = await db.execute(stmt)
     collectibles = result.unique().scalars().all()

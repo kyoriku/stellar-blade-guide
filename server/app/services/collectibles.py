@@ -13,7 +13,12 @@ from app.db.database import LIKE_ESCAPE, escape_like
 
 
 def _serialize_collectible(c) -> dict:
-    """Convert a Collectible ORM object to a response dict."""
+    """Convert a Collectible ORM object to a response dict.
+
+    Types are sorted by name, the order the badges show (CollectibleSection sorts them too):
+    the relationship has no order of its own, so a cache rebuild could otherwise change the
+    bytes, and the ETag, of the same data. Not an order_by on the relationship: prod's
+    collation skips spaces at first, so it would order some names unlike the badges."""
     return {
         "id": c.id,
         "title": c.title,
@@ -22,12 +27,19 @@ def _serialize_collectible(c) -> dict:
         "cycle": c.cycle,
         "quantity": c.quantity,
         "subtype": c.subtype,
-        "types": [t.name for t in c.types],
+        "types": sorted(t.name for t in c.types),
         "images": [
             {"id": img.id, "url": img.cloudinary_url, "alt": img.alt_text, "order": img.display_order}
             for img in c.images
         ]
     }
+
+
+def entry_order(c):
+    """A location's entries in display_order, then by id: tied entries (Default once had two
+    at 1) keep one order, so the same data gives the same bytes, and the client numbers
+    duplicate titles' anchors in the order search does (by id)."""
+    return (c.display_order, c.id)
 
 
 def _normalize_slug(slug: str) -> str:
@@ -169,7 +181,7 @@ async def _get_items_by_type(type_name: str, category: str, request: Request, db
         joinedload(Collectible.types),
         joinedload(Collectible.location).joinedload(Location.level),
         joinedload(Collectible.images)
-    ).order_by(Collectible.display_order)
+    ).order_by(Collectible.display_order, Collectible.id)   # id breaks ties, for fixed bytes
 
     result = await db.execute(stmt)
     collectibles = result.unique().scalars().all()

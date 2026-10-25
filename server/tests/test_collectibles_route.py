@@ -533,3 +533,80 @@ async def test_get_all_collectibles_reports_cache_status(
     assert seen["cache_status"] == "MISS"
     await client.get("/api/collectibles/")
     assert seen["cache_status"] == "HIT"
+
+
+# ── A fixed order: the same data gives the same bytes, whatever the query plan ──
+
+async def test_a_two_type_entry_lists_its_types_in_name_order(
+    collectibles_client, collectibles_db_session
+):
+    """The badges sort by name, and the payload now does too, so a cache rebuild can't
+    change its bytes or its ETag. Passcode gets the lower id and its mapping goes in first,
+    so a read in id or insertion order would put it first."""
+    level = await _seed_level(collectibles_db_session, name="Eidos 7")
+    loc = await _seed_location(collectibles_db_session, level.id, name="Silent Street")
+    passcode = await _seed_type(collectibles_db_session, "Passcode", "collectibles", "passcodes", 5)
+    memorystick = await _seed_type(collectibles_db_session, "Memorystick", "collectibles", "memorysticks", 4)
+    item = await _seed_collectible(collectibles_db_session, loc.id, passcode,
+                                   title="The Last Words of the Hopeless")
+    await collectibles_db_session.execute(
+        text("INSERT INTO collectible_type_mappings (collectible_id, type_id) VALUES (:cid, :tid)"),
+        {"cid": item.id, "tid": memorystick.id},
+    )
+    await collectibles_db_session.commit()
+
+    in_name_order = ["Memorystick", "Passcode"]
+    level_page = (await collectibles_client.get("/api/levels/eidos-7")).json()
+    assert level_page[0]["collectibles"][0]["types"] == in_name_order
+    for slug in ("passcodes", "memorysticks"):
+        type_page = (await collectibles_client.get(f"/api/collectibles/{slug}")).json()
+        assert type_page[0]["locations"][0]["collectibles"][0]["types"] == in_name_order
+    everything = (await collectibles_client.get("/api/collectibles/")).json()
+    assert everything[0]["types"] == in_name_order
+
+
+def test_tied_entries_keep_id_order():
+    """The level route's order within a location. SQLite reads rows in id order anyway, so a
+    request can't show a tie going wrong; the key can."""
+    from types import SimpleNamespace
+
+    from app.services.collectibles import entry_order
+
+    later = SimpleNamespace(id=189, display_order=1)
+    earlier = SimpleNamespace(id=60, display_order=1)
+    second = SimpleNamespace(id=61, display_order=2)
+    assert [c.id for c in sorted([later, second, earlier], key=entry_order)] == [60, 189, 61]
+
+
+async def test_every_collectibles_query_breaks_ties_by_id(
+    collectibles_client, collectibles_db_session, collectibles_db_engine
+):
+    """The type, level and all-list queries end their ORDER BY on an id, for entries,
+    locations and images alike: 64 entries share display_order 1 in the all-list."""
+    from sqlalchemy import event
+
+    level = await _seed_level(collectibles_db_session, name="Eidos 7")
+    loc = await _seed_location(collectibles_db_session, level.id)
+    ctype = await _seed_type(collectibles_db_session, "Weapon Core", "upgrades", "weapon-cores")
+    await _seed_collectible(collectibles_db_session, loc.id, ctype)
+
+    statements = []
+    def listener(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    event.listen(collectibles_db_engine.sync_engine, "before_cursor_execute", listener)
+    try:
+        for path in ("/api/upgrades/weapon-cores", "/api/levels/eidos-7", "/api/collectibles/"):
+            statements.clear()
+            assert (await collectibles_client.get(path)).status_code == 200
+            ordered = [s.split("ORDER BY", 1)[1] for s in statements
+                       if "ORDER BY" in s and "collectible_images" in s]
+            assert ordered, path
+            order = ordered[-1]
+            if path.startswith("/api/levels"):
+                assert "locations.display_order, locations.id" in order
+            else:
+                assert "collectibles.display_order, collectibles.id" in order
+            assert "collectible_images_1.display_order, collectible_images_1.id" in order
+    finally:
+        event.remove(collectibles_db_engine.sync_engine, "before_cursor_execute", listener)

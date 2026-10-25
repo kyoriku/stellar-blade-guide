@@ -138,14 +138,16 @@ Most failures stop the run before anything is written or purged, and the run pri
 | --- | --- | --- |
 | `[STOPPED] Checking prod connections`, after 30 s of retries | A tunnel isn't open | Open both tabs. On the Mac, `lsof` should show two `ssh` listeners. |
 | A tab is running, but nothing listens on its port | The tunnel failed quietly | Ctrl+C it and rerun without `2>/dev/null` to see the error. That prints the password, so don't share the output. |
-| `ConnectionRefusedError` from the diff or another `--prod` script | The tunnels are closed | Open them first. |
+| `✗ Prod Postgres didn't answer` (or Redis) from the diff or another `--prod` script, after about 10 s | That tunnel isn't open | Run the `railway connect` line it prints in a Mac tab, then rerun. A `--prod` migration says `ConnectionRefusedError` instead. |
+| `✗ Prod Redis can't be used as set up` (or Postgres) | The line above it says why: usually an old Redis password, or a second `@` in a URL | See the next two rows. |
 | `Name or service not known` for Postgres | `PROD_DATABASE_URL` has a second `@` or a stray character before the host | Keep exactly one `@`, right before the host. Write an `@` in a password as `%40`. |
 | Redis refuses the password | `server/.env` has an old Redis password | Copy it from the Redis service's Variables tab in Railway. |
 | The diff lists more than your change | Something else on disk differs from prod | Check that seed-data is on a clean, pulled `main`. |
 | A seed stops with entries it can't seed | A data error, such as an unknown level or type | Fix the listed entries and rerun. Nothing was written. |
 | `[FAILED] <step>` with a next command | A seeder, the cache clear or the purge failed | Run what it says: usually a rerun, or `uv run scripts/prod_seed.py --purge-only`. |
 | `[FAILED] Checking walkthrough files` with `still marked [VERIFY]` | A walkthrough still has a `[VERIFY]` marker. Dev seeds accept it; prod doesn't | Confirm or remove the marker, commit, then rerun. `uv run scripts/db/seed_walkthroughs.py --check` catches it before you commit. |
-| `[INTERRUPTED] during <step>` | You pressed Ctrl+C mid-run | Run the command it prints: the seed again, or `--purge-only` if the seeding had finished. |
+| `[INTERRUPTED] during <step>` | You pressed Ctrl+C mid-run, or the terminal closed | Run the command it prints: the seed again, or `--purge-only` if the seeding had finished. |
+| `[CRASHED] prod_seed.py stopped on an error of its own` | A fault in the script itself, not in a step | The run's log in `server/logs/seed/` has the traceback, and the lines before it show what ran. Run it again: its header says what's still owed a purge. |
 | `[FAILED] Checking collectible files` (or walkthrough files) with `still point at the local masters folder` | The URL swap never reached those entries, and their images would break on prod | Run the image pipeline (step 3: `uv run scripts/dev_workflow.py collectibles`, or `walkthroughs`), commit, then rerun. Nothing was written. `uv run scripts/db/seed_collectibles.py --check` (or `seed_walkthroughs.py --check`) catches it before you commit. |
 | `Another prod seed is running.` | A run is already going | Wait for it to finish, and leave the tunnels open: that run is using them. |
 | Old text after a seed | Browsers keep a page's data for up to an hour and may show it once more while fetching the new copy; search results are kept for up to an hour | Reload. If it's still old, wait an hour and reload twice. A private window skips your own browser's copy. |
@@ -158,6 +160,7 @@ Through the tunnel, Postgres doesn't check its password, so a stale one in `serv
 - `server/seed-data/README.md`: the content format, including paragraphs, lists and id ranges.
 - `server/scripts/images/PIPELINE.md`: the image pipeline and its Seeding prod section. If it disagrees with this doc, trust it, since it's versioned with the code.
 - `server/logs/seed/`: one log per prod run, named by its run id.
+- `server/logs/prune/`: one log per `prune_bucket.py` run, with every key it deleted. A prune that `prod_seed.py` started has the seed's run id in its name.
 - `CLAUDE.md` in the repo root (local, not committed): the conventions Claude Code follows.
 
 This reflects the pipeline as of late Oct 2026, including the seed reliability update.

@@ -15,6 +15,8 @@ Usage:
                                     # spelling of a type (side-quest), read from the
                                     # PROD database; leaves the ledger alone
 
+Any other argument stops it with exit 2 before anything is derived or purged.
+
 The purge covers every change the ledger (scripts/cache/purge_manifest.py) still owes,
 from this run and any earlier run that stopped before its purge succeeded. --run-id
 defaults to $SEED_RUN_ID, which prod_seed.py exports when it seeds; with it, the purge
@@ -64,6 +66,7 @@ import requests
 from dotenv import load_dotenv
 
 from scripts.cache import purge_manifest
+from scripts.db import check_connections as cc
 
 load_dotenv()
 
@@ -467,6 +470,26 @@ def check_narrowed(narrowed, full_urls, removed_urls=()):
         raise RuntimeError('manifest reports changes but the narrowed set is empty')
 
 
+# Every flag main() reads. Anything else stops the run before anything happens: a mistyped
+# --dry-run used to purge for real.
+FLAGS = ('--dry-run', '--all', '--singular-walkthroughs', '--clear-ledger', '--run-id')
+
+
+def unknown_flags(args):
+    """The arguments main() would otherwise ignore. --run-id takes a value, as --run-id X or
+    --run-id=X."""
+    unknown, i = [], 0
+    while i < len(args):
+        arg = args[i]
+        if arg == '--run-id':
+            i += 2
+            continue
+        if arg not in FLAGS and not arg.startswith('--run-id='):
+            unknown.append(arg)
+        i += 1
+    return unknown
+
+
 def _flag_value(args, name):
     """Support both --run-id=X and --run-id X."""
     for i, arg in enumerate(args):
@@ -477,12 +500,13 @@ def _flag_value(args, name):
     return None
 
 
-def _mask(url):
-    return re.sub(r"//([^:/@]+):[^@]*@", r"//\1:*****@", url)
-
-
 def main():
     args = sys.argv[1:]
+    unknown = unknown_flags(args)
+    if unknown:
+        print(f'\033[31m✗ Unknown option {unknown[0]!r}: nothing was purged. The options are '
+              f'{", ".join(FLAGS)}.\033[0m')
+        sys.exit(EXIT_PERMANENT)
     dry_run = '--dry-run' in args
     force_all = '--all' in args
     singular = '--singular-walkthroughs' in args
@@ -493,12 +517,15 @@ def main():
     if singular:
         # The stale URLs were cached from prod, so they are derived from prod, the way
         # prod_seed.py points its child here. Set before the app import, which builds
-        # the engine from DATABASE_URL.
+        # the engine from DATABASE_URL. The check comes before that import too: a closed
+        # tunnel stops here with the line to run, and a URL its driver would misread stops
+        # before anything parses it, since a parser's error quotes the password.
         prod_db = os.environ.get('PROD_DATABASE_URL')
         if not prod_db:
             raise RuntimeError('--singular-walkthroughs needs PROD_DATABASE_URL (server/.env)')
+        print(f'  Database: {cc.mask("Postgres", prod_db)}')
         os.environ['DATABASE_URL'] = prod_db
-        print(f'  Database: {_mask(prod_db)}')
+        cc.require(['Postgres'])
 
     try:
         from app.main import app  # route table is the source of truth for shapes

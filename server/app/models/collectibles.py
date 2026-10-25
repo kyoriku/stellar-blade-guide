@@ -72,7 +72,8 @@ class Collectible(Base):
     
     location = relationship('Location', back_populates='collectibles')
     types = relationship('CollectibleType', secondary=collectible_type_mappings, back_populates='collectibles')
-    images = relationship('CollectibleImage', back_populates='collectible', cascade='all, delete-orphan', order_by='CollectibleImage.display_order')
+    images = relationship('CollectibleImage', back_populates='collectible', cascade='all, delete-orphan',
+                          order_by='[CollectibleImage.display_order, CollectibleImage.id]')
 
 class CollectibleImage(Base):
     __tablename__ = 'collectible_images'

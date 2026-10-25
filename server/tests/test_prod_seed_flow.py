@@ -14,6 +14,7 @@ import signal
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -53,9 +54,11 @@ def _load(names, **globals_):
                 and any(isinstance(t, ast.Name) and t.id in CONSTANTS for t in node.targets))]
     found = {n.name for n in keep if isinstance(n, ast.FunctionDef)}
     assert found == names, f"missing from prod_seed.py: {names - found}"
-    ns = {"argparse": argparse, "os": os, "signal": signal, "subprocess": subprocess,
+    ns = {"argparse": argparse, "os": os, "signal": signal, "subprocess": subprocess, "sys": sys,
           "CYAN": "", "GREEN": "", "RED": "", "YELLOW": "", "RESET": "",
           "LOG_PATH": "logs/seed/seed-test.log", "log": _Log(), "_stopped_at_check": False,
+          # The real one ignores SIGINT, which would change pytest's own handling of Ctrl+C.
+          "_hold_signals": lambda: None,
           **globals_}
     exec(compile(ast.Module(body=keep, type_ignores=[]), str(PROD_SEED), "exec"), ns)  # noqa: S102 -- prod_seed.py's own functions
     return ns
@@ -83,8 +86,8 @@ class _IO:
         return outcomes.pop(0) if len(outcomes) > 1 else outcomes[0]
 
     def ask(self, prompt):
-        if self.answer is KeyboardInterrupt:
-            raise KeyboardInterrupt
+        if isinstance(self.answer, type) and issubclass(self.answer, BaseException):
+            raise self.answer
         return self.answer
 
     def owed(self):
@@ -133,10 +136,13 @@ def test_no_fallback_is_accepted_and_changes_nothing():
 
 
 def test_an_unknown_flag_stops_before_anything_runs(capsys):
+    ns = _load({"parse_args"})
     with pytest.raises(SystemExit) as stopped:
-        _opts("--purge-al")
+        ns["parse_args"](["--purge-al"])
     assert stopped.value.code == 2
-    assert "unrecognized arguments: --purge-al" in capsys.readouterr().err
+    assert capsys.readouterr().err.startswith("usage: prod_seed.py")
+    # Through the log, so the run's log file says why nothing ran instead of staying empty.
+    assert "Not run: unrecognized arguments: --purge-al" in ns["log"].text("WARNING")
 
 
 # ── A clean run ──────────────────────────────────────────────────────────────
@@ -282,12 +288,13 @@ def test_purge_only_with_purge_all_purges_everything_even_with_nothing_owed():
 
 # ── Ctrl+C ───────────────────────────────────────────────────────────────────
 
-def _interrupt(*argv, **io_kwargs):
+def _interrupt(*argv, raised=KeyboardInterrupt, **io_kwargs):
     ns = _load(FUNCTIONS)
     io = _IO(**io_kwargs)
-    with pytest.raises(KeyboardInterrupt):
-        ns["run_seed"](ns["parse_args"](list(argv)), {}, io)
-    return ns["interrupted"](io), io, ns["log"]
+    opts = ns["parse_args"](list(argv))
+    with pytest.raises(raised):
+        ns["run_seed"](opts, {}, io)
+    return ns["interrupted"](io, opts), io, ns["log"]
 
 
 def test_ctrl_c_at_the_prompt_aborts_with_nothing_run():
@@ -344,7 +351,20 @@ class _LockFree(_LockHeld):
         pass
 
 
-def _entry_point(tmp_path, fcntl, argv=(), seed=lambda: 0):
+class _Signals:
+    """signal, as the entry point uses it, recording instead of installing: pytest keeps its
+    own handlers."""
+    SIGINT, SIGHUP, SIGTERM = signal.SIGINT, signal.SIGHUP, signal.SIGTERM
+    SIG_IGN, default_int_handler = signal.SIG_IGN, signal.default_int_handler
+
+    def __init__(self):
+        self.set = []
+
+    def signal(self, sig, handler):
+        self.set.append((sig, handler))
+
+
+def _entry_point(tmp_path, fcntl, argv=(), seed=lambda: 0, **overrides):
     """Run prod_seed.py's own `if __name__ == "__main__"` block around its real main(), with
     everything after the lock stubbed. Returns (exit status, reminders printed, log)."""
     tree = ast.parse(PROD_SEED.read_text(encoding="utf-8"))
@@ -357,16 +377,18 @@ def _entry_point(tmp_path, fcntl, argv=(), seed=lambda: 0):
         return seed()
 
     ns = {"__name__": "__main__", "argparse": argparse, "os": os, "time": time,
-          "SimpleNamespace": SimpleNamespace, "fcntl": fcntl,
-          "sys": SimpleNamespace(argv=["prod_seed.py", *argv], exit=sys.exit),
+          "SimpleNamespace": SimpleNamespace, "fcntl": fcntl, "traceback": traceback,
+          "signal": _Signals(), "_hold_signals": lambda: None, "_redact": str,
+          "EXIT_INTERRUPTED": 130,
+          "sys": SimpleNamespace(argv=["prod_seed.py", *argv], exit=sys.exit, stderr=sys.stderr),
           "LOG_DIR": tmp_path, "LOG_PATH": tmp_path / "seed-test.log", "RUN_ID": "test",
           "PROD_DATABASE_URL": "postgresql://db", "PROD_REDIS_URL": "redis://cache",
           "_mask": lambda name, url: name, "_ledger": lambda: SimpleNamespace(owed=list),
           "scripts_dir": tmp_path, "run_logged": None, "_tunnel_commands": lambda: TUNNELS,
-          "run_seed": run_seed, "interrupted": lambda io: 130, "offer_bucket_prune": lambda: None,
+          "run_seed": run_seed, "interrupted": lambda io, opts: 130, "offer_bucket_prune": lambda: None,
           "remind_to_close_tunnels": lambda: reminders.append("reminded"),
           "CYAN": "", "GREEN": "", "RED": "", "YELLOW": "", "RESET": "", "log": _Log(),
-          "_run_lock": None, "_run_started": False}
+          "_run_lock": None, "_run_started": False, "_seed_started": False, **overrides}
     with pytest.raises(SystemExit) as ended:
         exec(compile(ast.Module(body=keep, type_ignores=[]), str(PROD_SEED), "exec"), ns)  # noqa: S102 -- prod_seed.py's own entry point
     return ended.value.code, len(reminders), ns["log"]
@@ -393,11 +415,101 @@ def _ctrl_c():
 ])
 def test_a_run_holding_the_lock_reminds_you_to_close_the_tunnels_however_it_ends(
         tmp_path, argv, seed, status):
-    assert _entry_point(tmp_path, _LockFree, argv, seed)[:2] == (status, 1)
+    code, reminders, log = _entry_point(tmp_path, _LockFree, argv, seed)
+    assert (code, reminders) == (status, 1)
+    # Every log ends with its exit status: one without it was killed outright.
+    assert log.records[-1] == ("INFO", f"Exit {status}")
 
 
 def test_a_flag_argparse_rejects_stops_before_the_lock_and_reminds_of_nothing(tmp_path):
-    assert _entry_point(tmp_path, _LockFree, ("--purge-al",))[:2] == (2, 0)
+    code, reminders, log = _entry_point(tmp_path, _LockFree, ("--purge-al",))
+    assert (code, reminders) == (2, 0)
+    assert "Not run: unrecognized arguments: --purge-al" in log.text("WARNING")
+    assert log.records[-1] == ("INFO", "Exit 2")
+
+
+# ── Every way out is in the log ──────────────────────────────────────────────
+
+def test_an_error_of_its_own_is_logged_with_its_traceback(tmp_path):
+    """It used to reach only the terminal, and the log ended with the tunnel reminder and no
+    ERROR line, so grep -l ERROR missed the run."""
+    def broken():
+        raise RuntimeError("ledger unreadable near sekret-91")
+
+    code, reminders, log = _entry_point(tmp_path, _LockFree, seed=broken,
+                                        _redact=lambda text: text.replace("sekret-91", "*****"))
+    assert (code, reminders) == (1, 1)
+    errors = log.text("ERROR")
+    assert "[CRASHED] prod_seed.py stopped on an error of its own:" in errors
+    assert "Traceback (most recent call last)" in errors
+    assert "RuntimeError: ledger unreadable near *****" in errors and "sekret-91" not in log.text()
+    assert log.records[-1] == ("INFO", "Exit 1")
+
+
+def test_ctrl_c_before_the_first_step_is_logged(tmp_path):
+    """The header reads the ledger before run_seed starts; a Ctrl+C there left a partial log."""
+    def owed():
+        raise KeyboardInterrupt
+
+    code, reminders, log = _entry_point(tmp_path, _LockFree, _ledger=lambda: SimpleNamespace(owed=owed))
+    assert (code, reminders) == (130, 1)
+    assert "Interrupted: nothing was run" in log.text("WARNING") and log.text("ERROR") == ""
+    assert log.records[-1] == ("INFO", "Exit 130")
+
+
+def test_ctrl_c_after_a_step_says_the_lines_above_stand(tmp_path):
+    def again(io, opts):
+        raise KeyboardInterrupt
+
+    code, _, log = _entry_point(tmp_path, _LockFree, seed=_ctrl_c, interrupted=again)
+    assert code == 130
+    assert "Interrupted: after the lines above" in log.text("WARNING")
+
+
+def test_ctrl_d_at_a_prompt_reads_as_ctrl_c_there(tmp_path):
+    """EOFError used to escape as a traceback, and at the prune offer a good seed exited 1."""
+    def eof():
+        raise EOFError
+
+    seen = []
+    code, _, log = _entry_point(tmp_path, _LockFree, seed=eof,
+                                interrupted=lambda io, opts: seen.append(io.step) or 1)
+    assert (code, seen) == (1, [None]) and "[CRASHED]" not in log.text()
+    code, _, log = _entry_point(tmp_path, _LockFree, offer_bucket_prune=eof)
+    assert code == 0 and "Prune offer interrupted" in log.text("WARNING")
+    # And at the confirmation itself, the step is None: nothing was run.
+    code, _io, log = _interrupt(raised=EOFError, answer=EOFError)
+    assert code == 1 and "Aborted: nothing was run" in log.text("WARNING")
+
+
+def test_a_closed_terminal_or_a_kill_takes_the_ctrl_c_path(tmp_path):
+    signals = _Signals()
+    _entry_point(tmp_path, _LockFree, signal=signals)
+    assert signals.set[:2] == [(signal.SIGHUP, signal.default_int_handler),
+                               (signal.SIGTERM, signal.default_int_handler)]
+
+
+def test_the_ending_ignores_further_signals():
+    """A second Ctrl+C while the ending is logged would cut the log and the tunnel reminder."""
+    signals = _Signals()
+    _load({"_hold_signals"}, signal=signals)["_hold_signals"]()
+    assert signals.set == [(signal.SIGINT, signal.SIG_IGN), (signal.SIGHUP, signal.SIG_IGN),
+                           (signal.SIGTERM, signal.SIG_IGN)]
+    # failed() and interrupted() call it first, before their owed and next-command lines.
+    tree = ast.parse(PROD_SEED.read_text(encoding="utf-8"))
+    for name in ("failed", "interrupted"):
+        func = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == name)
+        first = func.body[1] if isinstance(func.body[0], ast.Expr) and isinstance(
+            func.body[0].value, ast.Constant) else func.body[0]
+        assert ast.unparse(first) == "_hold_signals()", name
+
+
+def test_ctrl_c_mid_seed_keeps_purge_all_in_the_command_it_prints():
+    code, _io, log = _interrupt("--purge-all", interrupt_at="seed_collectibles.py")
+    assert code == 130
+    assert "Run it again: uv run python scripts/prod_seed.py --purge-all" in log.text("ERROR")
+    code, _io, log = _interrupt("--purge-all", interrupt_at="purge_api_cache.py")
+    assert "Next: uv run python scripts/prod_seed.py --purge-only --purge-all" in log.text("ERROR")
 
 
 # ── run_logged ends the whole step on Ctrl+C ─────────────────────────────────
@@ -427,6 +539,37 @@ def test_ctrl_c_kills_the_step_and_its_children_at_once():
         time.sleep(0.1)
     else:
         pytest.fail("the grandchild outlived the step")
+
+
+def test_any_error_reading_a_step_kills_it_too():
+    """A step left running unread would carry on writing to prod with no one watching."""
+    ns = _load({"run_logged", "_redact"}, _SECRETS=[])
+    started = []
+
+    def info(line):
+        if line.startswith("ready") and not started:
+            started.append(line)
+            raise RuntimeError("the log couldn't be written")
+
+    ns["log"].info = info
+    cmd = ["sh", "-c", 'sleep 60 & echo "ready $!"; wait']
+    with pytest.raises(RuntimeError):
+        ns["run_logged"](cmd)
+    grandchild = int(started[0].split()[1])
+    for _ in range(50):
+        if not _alive(grandchild):
+            break
+        time.sleep(0.1)
+    else:
+        pytest.fail("the grandchild outlived the step")
+
+
+def test_bytes_that_arent_utf8_are_shown_escaped():
+    """They used to stop the read, and with it the step's logging."""
+    ns = _load({"run_logged", "_redact"}, _SECRETS=[])
+    code, tail = ns["run_logged"]([sys.executable, "-c",
+                                   "import sys; sys.stdout.buffer.write(b'caf\\xff\\n'); print('done')"])
+    assert code == 0 and tail == ["caf\\xff", "done"]
 
 
 def _alive(pid):
@@ -506,8 +649,11 @@ def test_the_prune_offer_runs_prune_bucket_as_an_interactive_step(tmp_path, code
         return code, []
 
     ns = _load({"offer_bucket_prune"}, scripts_dir=tmp_path, run_logged=run_logged,
-               input=lambda prompt: "y")
+               input=lambda prompt: "y", RUN_ID="20261025-130659")
     ns["offer_bucket_prune"]()
     assert [cmd[-1] for cmd, _ in calls] == ["scripts/images/prune_bucket.py"]
     assert calls[0][1].get("interactive") is True
     assert logged in ns["log"].text()
+    # prune_bucket.py names its own log after the run id, and the seed log says where it is.
+    assert calls[0][1]["env"]["SEED_RUN_ID"] == "20261025-130659"
+    assert "prune_bucket.py keeps its own log: logs/prune/prune-20261025-130659.log" in ns["log"].text()

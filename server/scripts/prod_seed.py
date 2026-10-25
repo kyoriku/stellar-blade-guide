@@ -38,7 +38,10 @@ Every run writes a timestamped log to server/logs/seed/ (gitignored). That file
 is the only record a purge happened at all, so it carries the run ID, the URLs
 purged, the Cloudflare response status, and each retry separately with its real
 error text. `grep -l ERROR logs/seed/*.log` finds the runs that failed or were
-interrupted.
+interrupted. Every way a run ends is logged, including an error of this script's
+own ([CRASHED], with its traceback), a Ctrl+D at a prompt, a closed terminal and
+a flag typo. Every log ends with `Exit N`, so `grep -L "Exit " logs/seed/*.log`
+lists the runs that were killed outright.
 """
 
 import argparse
@@ -51,6 +54,7 @@ import sys
 import os
 import re
 import time
+import traceback
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -391,6 +395,10 @@ def run_logged(cmd, env=None, cwd=None, interactive=False):
     terminal instead. Read line by line through a pipe, a prompt that doesn't end its
     line would only show once it had been answered. Its output isn't logged, only its
     exit status, and a Ctrl+C reaches it directly.
+
+    Any exception here, not only a Ctrl+C, ends the step before it goes on up: a step left
+    running unread would carry on writing to prod with no one watching. Bytes that aren't
+    UTF-8 are shown escaped rather than stopping the read.
     """
     child_env = dict(env or os.environ)
     child_env["PYTHONUNBUFFERED"] = "1"
@@ -399,7 +407,7 @@ def run_logged(cmd, env=None, cwd=None, interactive=False):
         proc = subprocess.Popen(cmd, env=child_env, cwd=cwd)
         try:
             proc.wait()
-        except KeyboardInterrupt:
+        except BaseException:
             proc.kill()
             proc.wait()
             raise
@@ -407,7 +415,8 @@ def run_logged(cmd, env=None, cwd=None, interactive=False):
         return proc.returncode, []
     proc = subprocess.Popen(
         cmd, env=child_env, cwd=cwd, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, bufsize=1, process_group=0)
+        stderr=subprocess.STDOUT, text=True, errors="backslashreplace", bufsize=1,
+        process_group=0)
     tail = []
     try:
         for line in proc.stdout:
@@ -416,7 +425,7 @@ def run_logged(cmd, env=None, cwd=None, interactive=False):
             if line.strip():
                 tail.append(line.strip())
         proc.wait()
-    except KeyboardInterrupt:
+    except BaseException:
         try:
             os.killpg(proc.pid, signal.SIGKILL)
         except ProcessLookupError:
@@ -447,9 +456,11 @@ def offer_bucket_prune():
     if answer != "y":
         log.info("  → Ledger kept. Later: uv run python scripts/images/prune_bucket.py\n")
         return
+    # prune_bucket.py names its own log after the run id, so the two logs pair up.
+    log.info(f"  prune_bucket.py keeps its own log: logs/prune/prune-{RUN_ID}.log")
     code, _ = run_logged(
         ["uv", "run", "python", "scripts/images/prune_bucket.py"],
-        cwd=scripts_dir.parent, interactive=True)
+        env={**os.environ, "SEED_RUN_ID": RUN_ID}, cwd=scripts_dir.parent, interactive=True)
     if code == 0:
         log.info("  → prune_bucket.py finished: the prune ledger is empty\n")
     else:
@@ -471,6 +482,14 @@ def parse_args(argv):
                              "(with --purge-all, every API URL)")
     parser.add_argument("--no-fallback", action="store_true",
                         help="no longer needed: a failed purge never escalates; does nothing")
+
+    def refuse(message):
+        # Logged as well, so the run's log says why nothing ran rather than staying empty.
+        parser.print_usage(sys.stderr)
+        log.warning(f"{RED}Not run:{RESET} {message}")
+        parser.exit(2)
+
+    parser.error = refuse
     return parser.parse_args(argv)
 
 
@@ -494,8 +513,16 @@ def owed_lines(owed):
     return lines
 
 
+def _hold_signals():
+    """Once the run's ending is being logged, a second Ctrl+C, a closed terminal or a kill
+    must not cut it short: the log would lose its last lines, and you the tunnel reminder."""
+    for sig in (signal.SIGINT, signal.SIGHUP, signal.SIGTERM):
+        signal.signal(sig, signal.SIG_IGN)
+
+
 def failed(label, code, tail, kind, opts, io):
     """Log a failed step, what is owed, and what to run next. Returns the exit status."""
+    _hold_signals()
     reason = tail[-1] if tail else f"exit {code}"
     log.error(f"{RED}[FAILED]{RESET} {label} (exit {code}): {reason}")
     owed = io.owed()
@@ -604,9 +631,10 @@ def run_seed(opts, env, io):
     return 0
 
 
-def interrupted(io):
-    """Log a Ctrl+C: where it landed, what is owed, and what to run next. Returns the exit
-    status."""
+def interrupted(io, opts):
+    """Log a Ctrl+C (or a Ctrl+D at a prompt, a closed terminal, a kill): where it landed,
+    what is owed, and what to run next. Returns the exit status."""
+    _hold_signals()
     step = io.step
     if step is None:
         log.warning(f"{RED}Aborted: nothing was run{RESET}")
@@ -617,11 +645,12 @@ def interrupted(io):
     log.error(f"{RED}[INTERRUPTED]{RESET} during {step}: that step was stopped at once")
     for line in owed_lines(io.owed()):
         log.error(line)
+    all_flag = " --purge-all" if opts.purge_all else ""
     if step in (CLEAR_STEP[0], PURGE_LABEL, "the wait before the last cache clear"):
-        log.error("  → The seeding finished. Next: uv run python scripts/prod_seed.py --purge-only")
+        log.error(f"  → The seeding finished. Next: uv run python scripts/prod_seed.py --purge-only{all_flag}")
     else:
         log.error("  → A seeder's changes are all in prod or not at all. "
-                  "Run it again: uv run python scripts/prod_seed.py")
+                  f"Run it again: uv run python scripts/prod_seed.py{all_flag}")
     log.info(f"  Log: {LOG_PATH}")
     return EXIT_INTERRUPTED
 
@@ -629,7 +658,7 @@ def interrupted(io):
 def main():
     opts = parse_args(sys.argv[1:])
 
-    global _run_lock, _run_started
+    global _run_lock, _run_started, _seed_started
     _run_lock = open(LOG_DIR / "prod_seed.lock", "w")  # noqa: SIM115 -- held for the whole run
     try:
         fcntl.flock(_run_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -681,14 +710,15 @@ def main():
         clock=time.monotonic,
         tunnel_commands=_tunnel_commands,
     )
+    _seed_started = True
     try:
         code = run_seed(opts, env, io)
-    except KeyboardInterrupt:
-        return interrupted(io)
+    except (KeyboardInterrupt, EOFError):       # Ctrl+D at a prompt reads like Ctrl+C there
+        return interrupted(io, opts)
     if code == 0 and not opts.purge_only:
         try:
             offer_bucket_prune()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError):
             log.warning(f"{YELLOW}Prune offer interrupted:{RESET} the ledger is kept. "
                         f"Later: uv run python scripts/images/prune_bucket.py")
     return code
@@ -697,11 +727,40 @@ def main():
 # Held for the whole run: the OS releases the lock when the process exits, however it does.
 _run_lock = None
 
+# Set once run_seed starts, so an interrupt that lands outside it says whether anything ran.
+_seed_started = False
+
 
 if __name__ == "__main__":
+    # Closing the terminal, a VS Code reload or a kill ends the run the way Ctrl+C does: the
+    # step's whole group is killed at once and the log says where the run stopped.
+    signal.signal(signal.SIGHUP, signal.default_int_handler)
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
+    code = 1
     try:
-        sys.exit(main())
+        code = main()
+    except KeyboardInterrupt:
+        # Outside a step: the flags, the lock, the header, or just after a step ended.
+        _hold_signals()
+        log.warning(f"{RED}Interrupted:{RESET} "
+                    + ("after the lines above" if _seed_started else "nothing was run"))
+        code = EXIT_INTERRUPTED
+    except SystemExit as stopped:
+        # argparse: --help, or a flag it refused (logged as "Not run").
+        code = 0 if stopped.code is None else stopped.code if isinstance(stopped.code, int) else 1
+    except Exception:  # noqa: BLE001 -- whatever it is, the log must say so
+        # prod_seed.py's own failure, not a step's. The log file's formatter drops exc_info,
+        # so the traceback goes in the message, every secret replaced.
+        _hold_signals()
+        log.error(f"{RED}[CRASHED]{RESET} prod_seed.py stopped on an error of its own:\n"
+                  + _redact(traceback.format_exc()))
+        code = 1
     finally:
+        _hold_signals()
+        # Every log ends with this, so `grep -L "Exit " logs/seed/*.log` lists the runs that
+        # were killed outright.
+        log.info(f"Exit {code}")
         # Every way out once this run holds the lock: done, aborted, a failed step, Ctrl+C.
         if _run_started:
             remind_to_close_tunnels()
+    sys.exit(code)
