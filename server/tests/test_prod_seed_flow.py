@@ -423,3 +423,77 @@ def _alive(pid):
     except (FileNotFoundError, ProcessLookupError):
         return False
     return state != "Z"
+
+
+# ── An interactive step keeps the terminal ───────────────────────────────────
+
+_PROMPTING_CHILD = ("import os\n"
+                    "print(f'same group {os.getpgrp() == os.getpgid(os.getppid())}', flush=True)\n"
+                    "answer = input(\"Type 'prune' to delete: \")\nprint(f'got {answer!r}')")
+
+
+def test_an_interactive_step_shows_its_prompt_before_it_is_answered():
+    """prune_bucket.py asks for a typed 'prune' on a line it doesn't end. Read line by line
+    through a pipe, that prompt only showed once it had been answered, so the run looked
+    stuck. An interactive step keeps the terminal, pipes here that this test reads as they fill,
+    and stays in the foreground process group, where a terminal lets it read."""
+    import threading
+
+    run_logged = next(node for node in ast.parse(PROD_SEED.read_text(encoding="utf-8")).body
+                      if isinstance(node, ast.FunctionDef) and node.name == "run_logged")
+    runner = (
+        "import os, signal, subprocess, sys\n"
+        "class log:\n"
+        "    info = warning = error = staticmethod(lambda message: print(message, file=sys.stderr))\n"
+        "_redact = str\n"
+        f"{ast.unparse(run_logged)}\n"
+        f"sys.exit(run_logged([sys.executable, '-c', {_PROMPTING_CHILD!r}], interactive=True)[0])\n")
+    proc = subprocess.Popen([sys.executable, "-c", runner], stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    seen = bytearray()
+    prompt_shown = threading.Event()
+
+    def read():
+        while chunk := proc.stdout.read1(1024):
+            seen.extend(chunk)
+            if b"Type 'prune' to delete: " in seen:
+                prompt_shown.set()
+
+    reader = threading.Thread(target=read, daemon=True)
+    reader.start()
+    shown_before_the_answer = prompt_shown.wait(10)
+    try:
+        proc.stdin.write(b"prune\n")
+        proc.stdin.close()
+    except BrokenPipeError:     # the runner already ended; the assertions below say why
+        pass
+    proc.wait(timeout=10)
+    reader.join(5)
+    logged = proc.stderr.read()      # the stand-in log writes to stderr
+    assert shown_before_the_answer, f"the prompt only showed after the answer: {bytes(seen)!r}"
+    assert b"got 'prune'" in seen and proc.returncode == 0
+    assert b"same group True" in seen, "the child left its parent's process group: a terminal would stop its read"
+    assert b"exit 0" in logged      # its output isn't logged, but its exit status is
+
+
+@pytest.mark.parametrize(("code", "logged"), [
+    (0, "prune_bucket.py finished: the prune ledger is empty"),
+    (1, "prune_bucket.py exited 1; ledger kept"),
+], ids=["finished", "failed"])
+def test_the_prune_offer_runs_prune_bucket_as_an_interactive_step(tmp_path, code, logged):
+    """The seed log is the run's only record, so it says how the prune ended (exit 0 always
+    leaves the ledger empty) though prune_bucket.py's own output goes to the terminal."""
+    (tmp_path / "images").mkdir()
+    (tmp_path / "images" / "prune-pending.json").write_text('["stellar-blade/x.webp"]', encoding="utf-8")
+    calls = []
+
+    def run_logged(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        return code, []
+
+    ns = _load({"offer_bucket_prune"}, scripts_dir=tmp_path, run_logged=run_logged,
+               input=lambda prompt: "y")
+    ns["offer_bucket_prune"]()
+    assert [cmd[-1] for cmd, _ in calls] == ["scripts/images/prune_bucket.py"]
+    assert calls[0][1].get("interactive") is True
+    assert logged in ns["log"].text()

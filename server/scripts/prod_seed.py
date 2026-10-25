@@ -369,7 +369,7 @@ def _redact(text):
     return out
 
 
-def run_logged(cmd, env=None, cwd=None, own_group=True):
+def run_logged(cmd, env=None, cwd=None, interactive=False):
     """Run a child process, streaming its output live to the terminal and into
     the log file line by line.
 
@@ -379,16 +379,31 @@ def run_logged(cmd, env=None, cwd=None, own_group=True):
     from a 403 afterwards. Children get PYTHONUNBUFFERED because print() into a
     pipe is block-buffered, which would otherwise batch all output to the end.
 
-    A child that doesn't read the terminal runs in its own process group, so a
-    Ctrl+C reaches only this script, which then ends the whole step at once: uv
-    and its Python child alike, before any cleanup can wait on a dead tunnel.
+    The child runs in its own process group, so a Ctrl+C reaches only this script,
+    which then ends the whole step at once: uv and its Python child alike, before
+    any cleanup can wait on a dead tunnel.
+
+    An interactive child (prune_bucket.py, which asks for a typed 'prune') keeps the
+    terminal instead. Read line by line through a pipe, a prompt that doesn't end its
+    line would only show once it had been answered. Its output isn't logged, only its
+    exit status, and a Ctrl+C reaches it directly.
     """
     child_env = dict(env or os.environ)
     child_env["PYTHONUNBUFFERED"] = "1"
+    if interactive:
+        log.info("  (it runs in the terminal; its output isn't in this log)")
+        proc = subprocess.Popen(cmd, env=child_env, cwd=cwd)
+        try:
+            proc.wait()
+        except KeyboardInterrupt:
+            proc.kill()
+            proc.wait()
+            raise
+        log.info(f"  → exit {proc.returncode}")
+        return proc.returncode, []
     proc = subprocess.Popen(
         cmd, env=child_env, cwd=cwd, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, bufsize=1,
-        process_group=0 if own_group else None)
+        stderr=subprocess.STDOUT, text=True, bufsize=1, process_group=0)
     tail = []
     try:
         for line in proc.stdout:
@@ -399,10 +414,7 @@ def run_logged(cmd, env=None, cwd=None, own_group=True):
         proc.wait()
     except KeyboardInterrupt:
         try:
-            if own_group:
-                os.killpg(proc.pid, signal.SIGKILL)
-            else:
-                proc.kill()
+            os.killpg(proc.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
         proc.wait()
@@ -433,9 +445,11 @@ def offer_bucket_prune():
         return
     code, _ = run_logged(
         ["uv", "run", "python", "scripts/images/prune_bucket.py"],
-        cwd=scripts_dir.parent, own_group=False)
-    if code != 0:
-        log.warning("  → prune_bucket did not complete; ledger kept."
+        cwd=scripts_dir.parent, interactive=True)
+    if code == 0:
+        log.info("  → prune_bucket.py finished: the prune ledger is empty\n")
+    else:
+        log.warning(f"  → prune_bucket.py exited {code}; ledger kept."
                     " Later: uv run python scripts/images/prune_bucket.py\n")
 
 
