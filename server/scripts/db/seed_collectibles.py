@@ -1,6 +1,10 @@
 """
-Usage: 
+Usage:
   uv run scripts/db/seed_collectibles.py
+
+Seeds every collectible in one transaction, so a run that stops before its COMMIT leaves the
+database exactly as it was, and a reader sees either the old rows or the new ones, never a
+mix. Exits 1 on any failure, so prod_seed.py stops before its purge.
 """
 
 import sys
@@ -8,6 +12,7 @@ from pathlib import Path
 import json
 import glob
 import asyncio
+import contextlib
 
 from sqlalchemy import select, delete, text
 from sqlalchemy.orm import selectinload
@@ -15,11 +20,21 @@ from sqlalchemy.orm import selectinload
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from app.db.database import get_db, AsyncSessionLocal
-from app.models.collectibles import Level, Location, CollectibleType, Collectible, CollectibleImage
+from redis.exceptions import RedisError
+
+from app.core import cache
 from app.core.cache import invalidate_cache_pattern
+from app.models.collectibles import Level, Location, CollectibleType, Collectible, CollectibleImage
 from scripts.images.paths import normalize_image_path
 from scripts.cache import purge_manifest
+from scripts.db.seed_guard import (
+    NO_ANSWER, NO_ANSWER_SECONDS, Watchdog, failure_line, seed_engine, seed_sessionmaker,
+    watch_engine,
+)
+
+# The Redis patterns this seeder clears (tests/test_cache_isolation.py reads them).
+CACHE_PATTERNS = ["collectibles:*", "cosmetics:*", "upgrades:*", "search:*"]
+BATCH_SIZE = 50
 
 
 def load_all_seed_files():
@@ -31,7 +46,7 @@ def load_all_seed_files():
 
     all_data = []
     json_files = sorted(glob.glob(str(seed_dir / '*' / '*.json')))
-    
+
     print(f"\033[96m━━━ STEP 1: Loading Data ━━━\033[0m")
     print(f"Found {len(json_files)} JSON files\n")
 
@@ -41,7 +56,7 @@ def load_all_seed_files():
             all_data.extend(data)
             rel_path = Path(json_file).relative_to(seed_dir)
             print(f"   {rel_path}: {len(data)} items")
-    
+
     return all_data
 
 
@@ -53,12 +68,15 @@ async def reset_collectibles_sequence(db):
     counter DOWNWARD: a sequence ahead of MAX(id) (deletion history) is
     healthy, and lowering it mints colliding ids. If this sync is ever reused
     outside a fresh seed, use GREATEST(MAX(id), last_value) instead.
+
+    It runs after the COMMIT: setval isn't transactional, so inside the
+    transaction a rollback would leave it changed.
     """
     print("\n\033[96m━━━ STEP 5: Resetting Collectibles Sequence ━━━\033[0m")
-    
+
     result = await db.execute(text("SELECT MAX(id) FROM collectibles"))
     max_id = result.scalar() or 0
-    
+
     if max_id > 0:
         await db.execute(
             text(f"SELECT setval(pg_get_serial_sequence('collectibles', 'id'), {max_id}, true)")
@@ -69,16 +87,17 @@ async def reset_collectibles_sequence(db):
             text("SELECT setval(pg_get_serial_sequence('collectibles', 'id'), 1, false)")
         )
         print(f"  ✓ Collectibles sequence reset to 1 (table is empty)")
-    
+
     print()
 
 
 async def seed_database():
+    """Seed, then clear Redis. Returns the exit status: 0 only when every step succeeded."""
     # STEP 1: Load seed data
     seed_data = load_all_seed_files()
     if not seed_data:
-        print("\033[31m✗ No seed data found!\033[0m")
-        return
+        print("\033[31m✗ No seed data found! Nothing was written.\033[0m")
+        return 1
 
     added = 0
     updated = 0      # existing rows that actually differ, not rows merely present
@@ -87,13 +106,18 @@ async def seed_database():
     errors = 0
 
     run_id = purge_manifest.current_run_id()
-    purge_manifest.begin(purge_manifest.SECTION_COLLECTIBLES, run_id)
     changed_levels = set()
     changed_type_slugs = set()
 
-    async with AsyncSessionLocal() as db:
+    phase = {"now": "writing"}
+    watchdog = Watchdog(NO_ANSWER_SECONDS, 1, lambda: f"\033[31m{NO_ANSWER[phase['now']]}\033[0m")
+    engine = seed_engine("seed_collectibles")
+    watch_engine(engine, watchdog)
+    watchdog.start()
+
+    async with seed_sessionmaker(engine)() as db:
         try:
-            # Snapshot image rows BEFORE the truncate below destroys them.
+            # Snapshot image rows BEFORE the delete below removes them.
             # Without this an image-only edit is undetectable: the collectible
             # row itself is untouched, so is_modified() would say "unchanged"
             # and the purge would skip a page whose pictures just changed.
@@ -108,34 +132,43 @@ async def seed_database():
             for rows in prev_images.values():
                 rows.sort()
 
-            # STEP 2: Truncate images and reset identity to 1
+            # STEP 2: Remove the images and restart their ids at 1, as TRUNCATE ... RESTART
+            # IDENTITY did, but inside the transaction: DELETE takes no lock that blocks a
+            # reader, and ALTER SEQUENCE ... RESTART is rolled back with everything else.
             print(f"\n\033[96m━━━ STEP 2: Resetting Image IDs ━━━\033[0m")
-            await db.execute(text("TRUNCATE TABLE collectible_images RESTART IDENTITY"))
-            await db.commit()
+            await db.execute(text("DELETE FROM collectible_images"))
+            sequence = (await db.execute(
+                text("SELECT pg_get_serial_sequence('collectible_images', 'id')"))).scalar()
+            if not sequence:
+                await db.rollback()
+                print("\033[31m✗ collectible_images.id has no sequence to restart. "
+                      "Nothing was written.\033[0m")
+                return 1
+            await db.execute(text(f"ALTER SEQUENCE {sequence} RESTART"))
             print(f"  ✓ Image IDs reset to 1")
 
             # STEP 3: Seed collectibles
             print(f"\n\033[96m━━━ STEP 3: Seeding {len(seed_data)} Collectibles ━━━\033[0m\n")
-            
+
             # Pre-cache all lookups
             print("Loading reference data...")
-            
+
             levels = {
                 l.name: l for l in (await db.execute(select(Level))).scalars()
             }
             print(f"  Cached {len(levels)} levels")
-            
+
             types = {
                 t.name: t for t in (await db.execute(select(CollectibleType))).scalars()
             }
             print(f"  Cached {len(types)} types")
-            
+
             locations = {
-                (loc.level_id, loc.name): loc 
+                (loc.level_id, loc.name): loc
                 for loc in (await db.execute(select(Location))).scalars()
             }
             print(f"  Cached {len(locations)} locations")
-            
+
             existing_collectibles = {
                 c.id: c for c in (
                     await db.execute(
@@ -148,14 +181,15 @@ async def seed_database():
             # Track which IDs are in the seed data
             seed_ids = set()
 
-            batch_size = 50
             batch_count = 0
 
             for item in seed_data:
+                # Problems with an entry are counted and listed, and the whole seed is rolled
+                # back after the loop. A database error isn't caught here: it ends the run.
                 try:
                     collectible_id = item.get("id")
                     seed_ids.add(collectible_id)
-                    
+
                     # Get level from cache
                     level = levels.get(item['level'])
                     if not level:
@@ -224,10 +258,10 @@ async def seed_database():
                         existing.subtype = item.get("subtype")
                         existing.types = collectible_types
                         collectible_instance = existing
-                        # Must be read here, before the batch commit below
-                        # flushes and resets attribute history. is_modified
-                        # compares each attribute against its loaded value, so
-                        # re-assigning an identical value is not a change.
+                        # Must be read here, before the batch flush below resets
+                        # attribute history. is_modified compares each attribute
+                        # against its loaded value, so re-assigning an identical
+                        # value is not a change.
                         row_changed = db.is_modified(existing, include_collections=True)
                     else:
                         new_collectible = Collectible(
@@ -247,7 +281,7 @@ async def seed_database():
                         added += 1
                         row_changed = True
 
-                    # Re-add images (table was truncated at start so no need to delete first)
+                    # Re-add images (the table was emptied above, so no need to delete first)
                     new_images = []
                     for img in item.get('images', []):
                         if not img.get('url'):
@@ -273,29 +307,31 @@ async def seed_database():
                         unchanged += 1
 
                     batch_count += 1
-                    if batch_count >= batch_size:
-                        await db.commit()
+                    if batch_count >= BATCH_SIZE:
+                        await db.flush()
                         batch_count = 0
-                        print(f"  ✓ Committed batch ({added + updated} processed)")
+                        print(f"  ✓ Prepared batch ({added + updated} processed)")
 
-                except Exception as e:
-                    print(f"\033[31m✗ Error with '{item.get('title', 'Unknown')}': {e}\033[0m")
-                    import traceback
-                    traceback.print_exc()
-                    await db.rollback()
-                    batch_count = 0
+                except (KeyError, TypeError, ValueError, AttributeError) as e:
+                    print(f"\033[31m✗ Error with '{item.get('title', 'Unknown')}': "
+                          f"{type(e).__name__}: {e}\033[0m")
                     errors += 1
 
-            # Commit any remaining
-            if batch_count > 0:
-                await db.commit()
-                print(f"  ✓ Committed final batch")
+            # Flush the rest, so the orphan check and the commit see every row
+            await db.flush()
+            print(f"  ✓ Prepared final batch")
+
+            if errors:
+                await db.rollback()
+                print(f"\n\033[31m✗ {errors} problem(s) with the seed data (listed above). "
+                      f"Nothing was written.\033[0m")
+                return 1
 
             # STEP 4: Delete collectibles not in seed data
             print(f"\n\033[96m━━━ STEP 4: Cleaning Up Orphaned Collectibles ━━━\033[0m")
-            
+
             orphaned_ids = set(existing_collectibles.keys()) - seed_ids
-            
+
             if orphaned_ids:
                 print(f"  Found {len(orphaned_ids)} collectibles not in seed data")
 
@@ -306,8 +342,10 @@ async def seed_database():
                 level_name_by_location = {
                     loc.id: level_name_by_id.get(loc.level_id) for loc in locations.values()
                 }
+                orphan_titles = {}
                 for orphan_id in orphaned_ids:
                     orphan = existing_collectibles[orphan_id]
+                    orphan_titles[orphan_id] = orphan.title
                     orphan_level = level_name_by_location.get(orphan.location_id)
                     if orphan_level:
                         changed_levels.add(orphan_level)
@@ -318,40 +356,72 @@ async def seed_database():
                     delete(Collectible).where(Collectible.id.in_(orphaned_ids))
                 )
                 deleted = result.rowcount
-                
-                await db.commit()
                 print(f"  \033[33m✓ Deleted {deleted} orphaned collectibles\033[0m")
-                
+
                 for orphan_id in sorted(orphaned_ids):
-                    orphan = existing_collectibles[orphan_id]
-                    print(f"    - ID {orphan_id}: {orphan.title}")
+                    print(f"    - ID {orphan_id}: {orphan_titles[orphan_id]}")
             else:
                 print(f"  ✓ No orphaned collectibles found")
 
+            # Redis has to answer before anything is committed: a commit it couldn't follow
+            # with a clear would leave prod serving the old pages.
+            try:
+                await cache.redis_client.ping()
+            except RedisError as e:
+                await db.rollback()
+                print(f"\033[31m✗ Redis didn't answer ({type(e).__name__}: {e}), so nothing "
+                      f"was committed.\033[0m")
+                return 1
+
+            # Recorded before the COMMIT: if the commit lands and its answer is lost, the next
+            # run still purges these.
+            try:
+                purge_manifest.record(
+                    purge_manifest.SECTION_COLLECTIBLES, run_id,
+                    level_names=changed_levels,
+                    type_slugs=changed_type_slugs,
+                )
+            except OSError as e:
+                await db.rollback()
+                print(f"\033[31m✗ Couldn't write the purge manifest ({type(e).__name__}: {e}). "
+                      f"Nothing was written.\033[0m")
+                return 1
+            phase["now"] = "committing"
+            await db.commit()
+            phase["now"] = "committed"
+            print("  ✓ Committed")
+
             # STEP 5: Reset collectibles sequence to match max ID
             await reset_collectibles_sequence(db)
+            await db.commit()
 
         except Exception as e:
-            print(f"\033[31m✗ Fatal error: {e}\033[0m")
-            import traceback
-            traceback.print_exc()
-            await db.rollback()
-            return
+            if phase["now"] == "writing":
+                with contextlib.suppress(Exception):
+                    await db.rollback()
+            print(f"\033[31m{failure_line(phase['now'], e)}\033[0m")
+            return 1
+
+    await engine.dispose()
+    watchdog.stop()
 
     # STEP 6: Clear Redis cache
     print(f"\n\033[96m━━━ STEP 6: Clearing Cache ━━━\033[0m")
-    try:
-        total = 0
-        for pattern in ["collectibles:*", "cosmetics:*", "upgrades:*", "search:*"]:
+    total = 0
+    for pattern in CACHE_PATTERNS:
+        try:
             count = await invalidate_cache_pattern(pattern)
-            if count:
-                print(f"\033[32m[CLEARED]\033[0m {pattern} ({count} keys)")
-            else:
-                print(f"\033[90m[SKIP]\033[0m {pattern} (no keys)")
-            total += count
-        print(f"\033[32m✓ {total} keys cleared\033[0m")
-    except Exception as e:
-        print(f"\033[31m✗ Failed to clear Redis cache: {e}\033[0m")
+        except RedisError as e:
+            print(f"\033[31m✗ Committed, but clearing Redis failed on {pattern} "
+                  f"({type(e).__name__}: {e}). The edge and Redis serve the old pages until a "
+                  f"purge succeeds: run it again, or prod_seed.py --purge-only.\033[0m")
+            return 1
+        if count:
+            print(f"\033[32m[CLEARED]\033[0m {pattern} ({count} keys)")
+        else:
+            print(f"\033[90m[SKIP]\033[0m {pattern} (no keys)")
+        total += count
+    print(f"\033[32m✓ {total} keys cleared\033[0m")
 
     # Final summary
     print(f"\n\033[96m{'━' * 60}\033[0m")
@@ -363,27 +433,12 @@ async def seed_database():
         print(f"\033[33m  Deleted: {deleted}\033[0m")
     else:
         print(f"\033[92m  Deleted: {deleted}\033[0m")
-    if errors:
-        print(f"\033[31m  Errors: {errors}\033[0m")
-    else:
-        print(f"\033[92m  Errors: {errors}\033[0m")
-
-    if errors:
-        # Items that errored were skipped mid-loop, so the changed set is
-        # incomplete. Leaving the section 'running' makes the purge widen to
-        # the full surface rather than trust a partial record.
-        print(f"\033[33m  Purge manifest: left incomplete ({errors} error(s)) "
-              f"— the purge will widen to the full surface\033[0m")
-    else:
-        purge_manifest.complete(
-            purge_manifest.SECTION_COLLECTIBLES, run_id,
-            level_names=changed_levels,
-            type_slugs=changed_type_slugs,
-        )
-        print(f"\033[92m  Purge manifest: {len(changed_levels)} level(s), "
-              f"{len(changed_type_slugs)} type(s) changed\033[0m")
+    print(f"\033[92m  Errors: {errors}\033[0m")
+    print(f"\033[92m  Purge manifest: {len(changed_levels)} level(s), "
+          f"{len(changed_type_slugs)} type(s) changed\033[0m")
     print(f"\033[96m{'━' * 60}\033[0m")
+    return 0
 
 
 if __name__ == "__main__":
-    asyncio.run(seed_database())
+    sys.exit(asyncio.run(seed_database()))

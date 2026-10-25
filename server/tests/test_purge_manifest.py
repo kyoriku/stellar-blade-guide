@@ -1,12 +1,13 @@
-"""Unit tests for the changed-entity manifest and the narrowed purge scope.
+"""Unit tests for the purge ledger and the narrowed purge scope.
 
-The manifest exists to make a purge smaller, and the whole risk of making a
-purge smaller is making it too small: a URL that should have been purged and
-was not serves stale content for up to 30 days (s-maxage=30d). So most of what
-is pinned here is the *widening* behaviour — every way the manifest can be
-ambiguous must raise ManifestUnusable, because the caller's response to that is
-to purge the full surface.
+The ledger exists so the next run purges what an earlier run changed, and so a purge can be
+smaller than the full surface. Both risks run the same way: a URL that should have been
+purged and was not serves stale content for up to 30 days (s-maxage=30d). So what is pinned
+here is that a record is never lost (other runs carry forward, a file that can't be read is
+set aside rather than overwritten, a seeder run by hand never touches the file) and that
+every ambiguity raises ManifestUnusable, whose answer is a full-surface purge.
 """
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -25,111 +26,178 @@ RUN = 'run-abc'
 
 @pytest.fixture(autouse=True)
 def isolated_manifest(tmp_path, monkeypatch):
-    """Never touch the real manifest under scripts/cache/."""
+    """Never touch the real ledger under scripts/cache/."""
     monkeypatch.setattr(purge_manifest, 'MANIFEST_PATH', tmp_path / 'purge-manifest.json')
     monkeypatch.delenv(purge_manifest.RUN_ID_ENV, raising=False)
 
 
-# --------------------------------------------------------------------------
-# load(): every ambiguity must widen
-
-def test_missing_manifest_is_unusable():
-    with pytest.raises(ManifestUnusable, match='missing'):
-        purge_manifest.load(RUN)
-
-
-def test_no_run_id_is_unusable():
-    """A purge with no run id cannot prove a manifest belongs to it."""
-    purge_manifest.complete(SECTION_COLLECTIBLES, RUN, level_names=['Xion'])
-    with pytest.raises(ManifestUnusable, match='no run id'):
-        purge_manifest.load(None)
+def record_both(run, **facts):
+    """What one run's two seeders record, each section with its own facts."""
+    purge_manifest.record(SECTION_COLLECTIBLES, run, level_names=facts.get('level_names', ()),
+                          type_slugs=facts.get('type_slugs', ()))
+    purge_manifest.record(SECTION_WALKTHROUGHS, run, pairs=facts.get('pairs', ()),
+                          pairs_removed=facts.get('pairs_removed', ()))
 
 
-def test_run_id_mismatch_is_unusable():
-    """The stale-manifest case: a previous run's changed set must never be
-    purged in place of this run's."""
-    purge_manifest.complete(SECTION_COLLECTIBLES, RUN, level_names=['Xion'])
-    with pytest.raises(ManifestUnusable, match='belongs to run'):
-        purge_manifest.load('a-different-run')
+FACTS_ONLY = ('level_names', 'type_slugs', 'pairs', 'pairs_removed')
 
 
-def test_corrupt_manifest_is_unusable():
-    purge_manifest.MANIFEST_PATH.write_text('{not json', encoding='utf-8')
-    with pytest.raises(ManifestUnusable):
-        purge_manifest.load(RUN)
-
-
-def test_section_that_began_but_never_completed_is_unusable():
-    """A seeder that crashed partway leaves 'running'. Its changes are real but
-    unrecorded, so trusting the other section would under-purge."""
-    purge_manifest.complete(SECTION_COLLECTIBLES, RUN, level_names=['Xion'])
-    purge_manifest.begin(SECTION_WALKTHROUGHS, RUN)
-    with pytest.raises(ManifestUnusable, match='never completed'):
-        purge_manifest.load(RUN)
-
-
-def test_unknown_status_is_unusable():
-    purge_manifest.MANIFEST_PATH.write_text(
-        '{"run_id": "run-abc", "sections": {"collectibles": {"status": "weird"}}}',
-        encoding='utf-8')
-    with pytest.raises(ManifestUnusable, match='unknown status'):
-        purge_manifest.load(RUN)
-
-
-def test_unknown_section_is_unusable():
-    purge_manifest.MANIFEST_PATH.write_text(
-        '{"run_id": "run-abc", "sections": {"mystery": {"status": "complete"}}}',
-        encoding='utf-8')
-    with pytest.raises(ManifestUnusable, match='unknown section'):
-        purge_manifest.load(RUN)
-
-
-def test_no_sections_is_unusable():
-    purge_manifest.MANIFEST_PATH.write_text(
-        '{"run_id": "run-abc", "sections": {}}', encoding='utf-8')
-    with pytest.raises(ManifestUnusable, match='no sections'):
-        purge_manifest.load(RUN)
+def facts(changed):
+    return {key: changed[key] for key in FACTS_ONLY}
 
 
 # --------------------------------------------------------------------------
 # load(): the trustworthy cases
 
 def test_explicitly_empty_change_set_is_trustworthy():
-    """The one case that legitimately purges nothing: both seeders completed and
-    genuinely changed nothing. Distinct from absence, which raises."""
-    purge_manifest.complete(SECTION_COLLECTIBLES, RUN)
-    purge_manifest.complete(SECTION_WALKTHROUGHS, RUN)
+    """Both seeders recorded and genuinely changed nothing: nothing to purge."""
+    record_both(RUN)
     changed = purge_manifest.load(RUN)
-    assert changed == {'level_names': [], 'type_slugs': [], 'pairs': [], 'pairs_removed': []}
+    assert facts(changed) == {'level_names': [], 'type_slugs': [], 'pairs': [], 'pairs_removed': []}
+    assert changed['runs'] == [RUN] and changed['earlier_runs'] == []
 
 
 def test_sections_are_merged():
-    purge_manifest.complete(SECTION_COLLECTIBLES, RUN,
-                            level_names=['Xion'], type_slugs=[('cans', 'collectibles')])
-    purge_manifest.complete(SECTION_WALKTHROUGHS, RUN, pairs=[('main-story', 'alpha')])
+    record_both(RUN, level_names=['Xion'], type_slugs=[('cans', 'collectibles')],
+                pairs=[('main-story', 'alpha')])
     changed = purge_manifest.load(RUN)
     assert changed['level_names'] == ['Xion']
     assert changed['type_slugs'] == [('cans', 'collectibles')]
     assert changed['pairs'] == [('main-story', 'alpha')]
 
 
-def test_begin_discards_a_previous_runs_manifest():
-    purge_manifest.complete(SECTION_COLLECTIBLES, 'older-run', level_names=['Stale'])
-    purge_manifest.begin(SECTION_COLLECTIBLES, RUN)
-    purge_manifest.complete(SECTION_COLLECTIBLES, RUN, level_names=['Fresh'])
-    assert purge_manifest.load(RUN)['level_names'] == ['Fresh']
+def test_an_earlier_runs_changes_carry_forward():
+    """The re-run blind spot: a run that committed and then stopped (Redis, the purge, a
+    Ctrl+C) must still be purged by the next run, whose own diff no longer sees it."""
+    purge_manifest.record(SECTION_COLLECTIBLES, 'older-run', level_names=['Stale'])
+    record_both(RUN, level_names=['Fresh'])
+    changed = purge_manifest.load(RUN)
+    assert changed['level_names'] == ['Fresh', 'Stale']
+    assert changed['runs'] == ['older-run', RUN]
+    assert changed['earlier_runs'] == ['older-run']
 
 
-def test_unorchestrated_seed_leaves_no_manifest():
-    """A seeder run by hand has no run id, so it must not leave a manifest a
-    later purge could key off."""
-    purge_manifest.complete(SECTION_COLLECTIBLES, 'older-run', level_names=['Stale'])
-    purge_manifest.begin(SECTION_COLLECTIBLES, None)
+def test_recording_again_for_a_run_replaces_its_section():
+    purge_manifest.record(SECTION_COLLECTIBLES, RUN, level_names=['First'])
+    purge_manifest.record(SECTION_COLLECTIBLES, RUN, level_names=['Second'])
+    purge_manifest.record(SECTION_WALKTHROUGHS, RUN)
+    assert purge_manifest.load(RUN)['level_names'] == ['Second']
+
+
+def test_a_load_without_a_run_id_returns_everything_owed():
+    """prod_seed.py --purge-only has no seeders of its own: it purges what is owed."""
+    purge_manifest.record(SECTION_COLLECTIBLES, 'older-run', level_names=['Stale'])
+    changed = purge_manifest.load(None)
+    assert changed['level_names'] == ['Stale'] and changed['earlier_runs'] == ['older-run']
+
+
+def test_a_missing_ledger_owes_nothing_without_a_run_id():
+    changed = purge_manifest.load(None)
+    assert facts(changed) == {'level_names': [], 'type_slugs': [], 'pairs': [], 'pairs_removed': []}
+    assert changed['runs'] == []
+
+
+# --------------------------------------------------------------------------
+# load(): every ambiguity must widen
+
+def test_this_run_missing_a_section_is_unusable():
+    """A seeder of this run that never recorded must not be read as "changed nothing"."""
+    purge_manifest.record(SECTION_COLLECTIBLES, RUN, level_names=['Xion'])
+    with pytest.raises(ManifestUnusable, match='recorded no walkthroughs'):
+        purge_manifest.load(RUN)
+
+
+def test_a_missing_ledger_is_unusable_for_a_run():
+    with pytest.raises(ManifestUnusable, match='recorded no'):
+        purge_manifest.load(RUN)
+
+
+def test_corrupt_ledger_is_unusable():
+    purge_manifest.MANIFEST_PATH.write_text('{not json', encoding='utf-8')
+    with pytest.raises(ManifestUnusable, match='unreadable'):
+        purge_manifest.load(RUN)
+
+
+def test_unknown_section_is_unusable():
+    purge_manifest.MANIFEST_PATH.write_text(
+        json.dumps({'runs': {RUN: {'mystery': {}}}, 'widen': False}), encoding='utf-8')
+    with pytest.raises(ManifestUnusable, match='unknown section'):
+        purge_manifest.load(None)
+
+
+# --------------------------------------------------------------------------
+# record(): a record is never lost
+
+def test_a_seeder_run_by_hand_never_touches_the_ledger():
+    """No run id means a dev seed, or one run by hand: it must neither write a record a
+    later prod purge could key off nor delete what an earlier prod run still owes."""
+    purge_manifest.record(SECTION_COLLECTIBLES, 'older-run', level_names=['Owed'])
+    before = purge_manifest.MANIFEST_PATH.read_bytes()
+    purge_manifest.record(SECTION_COLLECTIBLES, None, level_names=['Dev'])
+    purge_manifest.record(SECTION_WALKTHROUGHS, None, pairs=[('main-story', 'dev')])
+    assert purge_manifest.MANIFEST_PATH.read_bytes() == before
+
+
+def test_without_a_run_id_no_ledger_is_created():
+    purge_manifest.record(SECTION_COLLECTIBLES, None, level_names=['Dev'])
     assert not purge_manifest.MANIFEST_PATH.exists()
 
 
+def test_an_unreadable_ledger_is_set_aside_and_widens(capsys):
+    """Overwriting it would drop whatever earlier runs it held, so it is moved aside, never
+    deleted, and the next purge covers the full surface."""
+    purge_manifest.MANIFEST_PATH.write_text('{not json', encoding='utf-8')
+    record_both(RUN, level_names=['Xion'])
+    aside = list(purge_manifest.MANIFEST_PATH.parent.glob('purge-manifest.json.unreadable-*'))
+    assert len(aside) == 1 and aside[0].read_text(encoding='utf-8') == '{not json'
+    assert 'moved to purge-manifest.json.unreadable-' in capsys.readouterr().out
+    with pytest.raises(ManifestUnusable, match='unreadable or never completed'):
+        purge_manifest.load(RUN)
+
+
+def test_the_format_before_the_ledger_carries_forward_as_an_earlier_run():
+    """A record left by the previous version of this file (a run whose purge failed)."""
+    purge_manifest.MANIFEST_PATH.write_text(json.dumps({
+        'run_id': 'v1-run',
+        'sections': {
+            'collectibles': {'status': 'complete', 'level_names': ['Xion'], 'type_slugs': [['cans', 'collectibles']]},
+            'walkthroughs': {'status': 'complete', 'pairs': [['main-story', 'alpha']]},
+        },
+    }), encoding='utf-8')
+    record_both(RUN)
+    changed = purge_manifest.load(RUN)
+    assert changed['level_names'] == ['Xion']
+    assert changed['type_slugs'] == [('cans', 'collectibles')]
+    assert changed['pairs'] == [('main-story', 'alpha')]
+    assert changed['earlier_runs'] == ['v1-run']
+
+
+def test_a_section_the_old_format_left_running_widens():
+    """The old seeders committed in batches before recording, so a 'running' section means
+    changes nobody wrote down."""
+    purge_manifest.MANIFEST_PATH.write_text(json.dumps({
+        'run_id': 'v1-run', 'sections': {'collectibles': {'status': 'running'}},
+    }), encoding='utf-8')
+    record_both(RUN)
+    with pytest.raises(ManifestUnusable, match='never completed'):
+        purge_manifest.load(RUN)
+
+
+def test_owed_lists_runs_and_sections():
+    purge_manifest.record(SECTION_COLLECTIBLES, 'older-run', level_names=['Stale'])
+    record_both(RUN)
+    assert purge_manifest.owed() == [('older-run', ['collectibles']),
+                                     (RUN, ['collectibles', 'walkthroughs'])]
+
+
+def test_owed_names_an_unreadable_ledger():
+    purge_manifest.MANIFEST_PATH.write_text('{not json', encoding='utf-8')
+    [(label, sections)] = purge_manifest.owed()
+    assert 'unreadable' in label and sections == []
+
+
 def test_clear_removes_and_is_idempotent():
-    purge_manifest.complete(SECTION_COLLECTIBLES, RUN, level_names=['Xion'])
+    record_both(RUN, level_names=['Xion'])
     purge_manifest.clear()
     purge_manifest.clear()
     assert not purge_manifest.MANIFEST_PATH.exists()
@@ -302,8 +370,7 @@ GONE_URL = '/api/walkthroughs/main-story/burning-xion'
 
 
 def test_manifest_round_trips_removed_pairs_separately():
-    purge_manifest.complete(SECTION_WALKTHROUGHS, RUN,
-                            pairs=[('main-story', 'alpha')], pairs_removed=[GONE])
+    record_both(RUN, pairs=[('main-story', 'alpha')], pairs_removed=[GONE])
     changed = purge_manifest.load(RUN)
     assert changed['pairs'] == [('main-story', 'alpha')]
     assert changed['pairs_removed'] == [GONE]
@@ -315,7 +382,7 @@ def test_manifest_written_before_the_split_reads_as_no_removals():
     purge_manifest.MANIFEST_PATH.write_text(
         '{"run_id": "run-abc", "sections": {"walkthroughs": '
         '{"status": "complete", "pairs": [["main-story", "alpha"]]}}}', encoding='utf-8')
-    assert purge_manifest.load(RUN)['pairs_removed'] == []
+    assert purge_manifest.load(None)['pairs_removed'] == []
 
 
 def test_deleted_walkthrough_narrows_to_its_url_and_index_instead_of_widening():
