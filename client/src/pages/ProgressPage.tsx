@@ -81,29 +81,6 @@ function StatRow({
   )
 }
 
-// Card-header rollup: counts + percent (StatRow's value styling) paired with
-// the 16px ring, mirroring the account dropdown's "42% ◔" motif. Loading →
-// pulsing chip; loaded with no matching stat → nothing.
-function HeaderStat({ stat, loading }: { stat?: Stat; loading: boolean }) {
-  if (loading) {
-    return <span aria-hidden className="h-4 w-16 bg-gray-700/50 rounded animate-pulse" />
-  }
-  if (!stat) return null
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="text-xs text-gray-400 tabular-nums">
-        {stat.completed}/{stat.total}<span className="text-cyan-400"> · </span>
-        {pct(stat.completed, stat.total)}%
-      </span>
-      <CompletionRing
-        fraction={stat.total > 0 ? stat.completed / stat.total : 0}
-        size={16}
-        strokeWidth={2.5}
-      />
-    </span>
-  )
-}
-
 function SectionCard({
   Icon,
   title,
@@ -248,12 +225,6 @@ export default function ProgressPage() {
                   key={key}
                   Icon={Icon}
                   title={label}
-                  headerEnd={
-                    <HeaderStat
-                      loading={!stats}
-                      stat={stats?.categories.find(c => c.category === key)}
-                    />
-                  }
                 >
                   <TwoColRows count={rows.length}>
                     {rows.map(r => {

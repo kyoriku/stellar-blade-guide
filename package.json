@@ -10,7 +10,7 @@
     "build": "cd client && npm run build",
     "start": "cd server && uv run uvicorn app.main:app --host 0.0.0.0",
     "e2e": "cd e2e && npx playwright test",
-    "e2e:install": "cd e2e && npm ci && npx playwright install chromium"
+    "e2e:install": "cd e2e && npm ci && npx playwright install --with-deps chromium"
   },
   "keywords": [],
   "author": "",
