@@ -195,11 +195,14 @@ Keep the `postgresql://` scheme and the `default` user name, and never add
 check the password, so a stale one in server/.env goes unnoticed. Redis checks
 its password.
 
-Write any `@`, `/`, `?` or `#` in a password as `%40`, `%2F`, `%3F` or `%23`.
-SQLAlchemy ends the Postgres password at the first `@`, so a second one puts
-the rest of the password in the host, and redis-py ends the Redis host at the
-first `/`, `?` or `#`. The connection check stops on a URL either would
-misread, before anything connects.
+Write any `@`, `/`, `?`, `#` or `%` in a password as `%40`, `%2F`, `%3F`, `%23`
+or `%25`. SQLAlchemy ends the Postgres password at the first `@`, so a second
+one puts the rest of the password in the host, redis-py ends the Redis host at
+the first `/`, `?` or `#`, and both read `%` and two hex digits as one
+character. The connection check stops on a URL whose host either would
+misread, before anything connects. It can't see a `%` slip, which changes only
+the password: Redis then refuses the password, which stops the check too, and
+Postgres through the tunnel never checks it.
 
 While the Postgres tunnel is open, anything on the Mac, every container
 included, can log in to prod Postgres as `postgres` without a password. Open the
@@ -215,11 +218,14 @@ tunnels only for the run, and don't run a Claude Code task while they're open.
    last write would fail, and its ssh would be left holding the port.
 2. On the Mac, `lsof -nP -iTCP:15432 -iTCP:16379 -sTCP:LISTEN` should list two
    `ssh` listeners.
-3. If the seed changes collectibles, first run
+3. Before every prod seed, even one that only changes walkthroughs (it reseeds
+   collectibles from disk too), run
    `uv run python scripts/db/diff_collectibles.py --prod` in the devcontainer
    from server/ (a local, untracked script). Its Ids and Locations lines must
    both read `none · none`: the seed deletes every collectible only the database
-   has, and that cascades to users' progress.
+   has, and that cascades to users' progress. A new entry is the one exception:
+   the Ids line lists its id under `JSON only`, which is fine when that is
+   exactly your new ids and the Ids line's `DB only` reads `none`.
 4. In the devcontainer, from server/: `uv run python scripts/prod_seed.py`.
    `--purge-all` purges every API URL instead of only the changed ones;
    `--no-fallback` is no longer needed and does nothing. Its header names any
@@ -274,7 +280,7 @@ changed. They are derived live by `scripts/cache/purge_api_cache.py` (FastAPI
 route table x DB slugs x client navigation constants, batched per the purge
 API's limits, every response verified; `--dry-run` lists without purging).
 Images are never purged by a seed: their URLs are immutable and content
-changes always rename, so the ~10k-object image cache stays warm across seeds.
+changes always rename, so the ~14k-object image cache stays warm across seeds.
 
 There is no fallback. A purge that fails stops the run, keeps the ledger and
 names the next command. A partial purge is harmless: the ledger keeps every
