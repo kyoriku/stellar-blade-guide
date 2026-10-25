@@ -157,6 +157,83 @@ zero residual), then clears the ledger. `dev_workflow` prints this command
 whenever the ledger is non-empty, and `prod_seed.py` offers to invoke it
 after a successful seed + purge.
 
+## Seeding prod
+
+Prod's Postgres and Redis have had no public address since Railway's TCP
+proxies were removed on 2026-10-21. `prod_seed.py` reaches them through two SSH
+tunnels you open by hand on the Mac with the Railway CLI, and server/.env points
+at them (the devcontainer reaches the Mac's 127.0.0.1 as host.docker.internal):
+
+    PROD_DATABASE_URL=postgresql://postgres:<postgres password>@host.docker.internal:15432/railway
+    PROD_REDIS_URL=redis://default:<redis password>@host.docker.internal:16379
+
+Keep the `postgresql://` scheme and the `default` user name, and never add
+`sslmode=`: the asyncpg driver rejects it. Through the tunnel Postgres doesn't
+check the password, so a stale one in server/.env goes unnoticed. Redis checks
+its password.
+
+Write any `@`, `/`, `?` or `#` in a password as `%40`, `%2F`, `%3F` or `%23`.
+SQLAlchemy ends the Postgres password at the first `@`, so a second one puts
+the rest of the password in the host, and redis-py ends the Redis host at the
+first `/`, `?` or `#`. The connection check stops on a URL either would
+misread, before anything connects.
+
+While the Postgres tunnel is open, anything on the Mac, every container
+included, can log in to prod Postgres as `postgres` without a password. Open the
+tunnels only for the run, and don't run a Claude Code task while they're open.
+
+1. Open one Mac tab for each tunnel:
+
+       railway connect Postgres --tunnel-only -P 15432 --environment production 2>/dev/null
+       railway connect Redis --tunnel-only -P 16379 --environment production 2>/dev/null
+
+   `2>/dev/null` keeps the passwords the CLI prints off the screen. Never pipe
+   its output (through grep, say): Ctrl+C would kill the reader first, the CLI's
+   last write would fail, and its ssh would be left holding the port.
+2. On the Mac, `lsof -nP -iTCP:15432 -iTCP:16379 -sTCP:LISTEN` should list two
+   `ssh` listeners.
+3. If the seed changes collectibles, first run
+   `uv run python scripts/db/diff_collectibles.py --prod` in the devcontainer
+   from server/ (a local, untracked script). Its Ids and Locations lines must
+   both read `none · none`: the seed deletes every collectible only the database
+   has, and that cascades to users' progress.
+4. In the devcontainer, from server/: `uv run python scripts/prod_seed.py`, with
+   `--purge-all` or `--no-fallback` if needed. Before the typed confirmation it
+   sends each a real query (`SELECT 1`, an authenticated `PING`). A closed
+   tunnel is retried for 30 s, while a refused password or a URL its driver
+   would misread stops it at once; either way nothing runs, and it prints both
+   commands above.
+5. When it ends, it reminds you to close both tunnels: Ctrl+C in each tab. You
+   can close them as soon as it prints `Prod seed complete`, because the
+   bucket-prune offer after that doesn't use them. Never close a tab or window
+   with a tunnel running: the CLI dies without stopping its ssh, which keeps
+   the port and the open door.
+6. Run the `lsof` line again. No output means both are closed. If an `ssh` is
+   still listed, `kill <pid>`.
+
+To check the tunnels without seeding, run it and answer anything but
+`seed prod`.
+
+After a run that stopped partway (a dropped tunnel, Ctrl+C, a failed step),
+prod may be partly written while Redis and the edge still serve the old pages.
+A dropped Redis tunnel doesn't even stop the run: the seeders log
+`Redis error on CLEAR …`, count 0 keys and carry on, so the run can still end in
+`Prod seed complete`. Treat any `Redis error` line in a run as a partial run.
+
+To recover, run it again, then `uv run python scripts/cache/purge_api_cache.py --all`
+in the devcontainer. The re-run's scoped purge only sees rows that still differ,
+so it would miss what the stopped run wrote. `--all` builds its URL list from the
+dev database, which holds the same content, and needs no tunnel. It only reaches
+URLs that some current row produces, though: if the stopped run renamed, moved
+or removed a walkthrough (check the seed-data git diff for the old slug or
+type), purge its old URL by hand, or run `prod_seed.py --purge-all` and accept
+the image-cache blast radius.
+
+The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
+(`diff_collectibles.py --prod`, `cache_stats.py --prod`,
+`search_eval.py --timing --prod`, `purge_api_cache.py --singular-walkthroughs`,
+the `--prod` migrations) need the same tunnels open.
+
 ## What a prod seed purges
 
 `prod_seed.py` purges only the seeded API surface: every cached GET URL
