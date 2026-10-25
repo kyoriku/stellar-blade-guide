@@ -1,6 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,7 +15,9 @@ load_dotenv()
 
 # Uploads r2-staging/ to the R2 bucket 1:1 (staging layout == object keys).
 # Immutable caching: objects are never overwritten; a changed image gets a new
-# key (see PIPELINE.md "Replacing an image").
+# key (see PIPELINE.md "Replacing an image"). The one exception, --overwrite,
+# replaces existing objects in place and then purges exactly those URLs at the
+# edge, the only time anything purges an image.
 
 STAGING_DIR = Path(__file__).parent.parent.parent.parent / 'r2-staging'
 
@@ -36,7 +39,9 @@ def get_client():
     )
 
 
-def upload(dry_run=True, overwrite=False):
+def upload(dry_run=True, overwrite=False, replaced=None):
+    """Upload r2-staging/. In overwrite mode, `replaced` (a list) is filled before the first
+    PUT with every key that already exists in the bucket: the URLs the edge must then purge."""
     start = time.perf_counter()
     bucket = os.getenv('R2_BUCKET')
 
@@ -70,8 +75,10 @@ def upload(dry_run=True, overwrite=False):
         # exception to skip-if-in-bucket; URLs and headers are unchanged.
         pending = to_upload
         skipped = 0
-        replacing = sum(1 for _, key in to_upload if key in existing)
-        print(f"\033[31m=== OVERWRITE MODE: {replacing} existing objects will be replaced in place ({len(to_upload) - replacing} new) ===\033[0m")
+        replacing = [key for _, key in to_upload if key in existing]
+        if replaced is not None:
+            replaced[:] = replacing
+        print(f"\033[31m=== OVERWRITE MODE: {len(replacing)} existing objects will be replaced in place ({len(to_upload) - len(replacing)} new) ===\033[0m")
     else:
         pending = [(f, key) for f, key in to_upload if key not in existing]
         skipped = len(to_upload) - len(pending)
@@ -130,25 +137,52 @@ def upload(dry_run=True, overwrite=False):
     return True
 
 
-if __name__ == '__main__':
+def purge_replaced(keys):
+    """Purge exactly the replaced objects' URLs at the edge. True when every one was purged.
+
+    Only these URLs: nothing else in the image cache changed. Browsers that cached the old
+    bytes keep them until their own cache expires (immutable, up to a year), which is why
+    --overwrite is for quality-only refreshes and a content change gets a new name."""
+    from scripts.cache.purge_api_cache import purge
+
+    base = os.getenv('R2_PUBLIC_BASE_URL').rstrip('/')
+    urls = [f"{base}/{key}" for key in sorted(keys)]
+    print(f"\n\033[36m=== Purging the {len(urls)} replaced image URLs at the edge ===\033[0m")
+    try:
+        purged = purge(urls)
+    except RuntimeError as e:   # TransientPurgeError, CloudflareRefused
+        print(f"\033[31m✗ Purging the replaced image URLs failed: {e}. The edge keeps serving "
+              f"their old bytes until a purge succeeds. Run upload_r2.py --overwrite again: it "
+              f"uploads the same bytes and purges the same URLs.\033[0m")
+        return False
+    print(f"\033[32m✓ Purged {purged} replaced image URLs; nothing else was purged\033[0m")
+    return True
+
+
+def main(argv, ask=input):
     print("\033[36m=== R2 Upload Script ===\033[0m")
 
-    overwrite = '--overwrite' in sys.argv[1:]
+    overwrite = '--overwrite' in argv
 
     required = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET', 'R2_PUBLIC_BASE_URL']
+    if overwrite:
+        # Checked before anything uploads: replaced objects must be purged afterwards.
+        required += ['CLOUDFLARE_ZONE_ID', 'CLOUDFLARE_API_TOKEN']
     missing = [k for k in required if not os.getenv(k)]
     if missing:
         print(f"\033[31m✗ Missing env vars in .env: {', '.join(missing)}\033[0m")
-        sys.exit(1)
+        return 1
 
     if not upload(dry_run=True, overwrite=overwrite):
-        sys.exit(1)
+        return 1
 
     print("\n\033[36m=== Confirmation ===\033[0m")
     if overwrite:
         print("OVERWRITE MODE: the objects listed above will be REPLACED IN PLACE.")
-        print("URLs and headers are unchanged; edge/browser caches serve old bytes")
-        print("until purged or naturally expired. Content changes must rename instead.")
+        print("URLs and headers are unchanged. After uploading, this purges exactly the replaced")
+        print("URLs at the edge; browsers that cached them keep the old bytes until their cache")
+        print("expires, so content changes must rename instead. If the run stops before it")
+        print("reports that purge, run it again with --overwrite.")
         confirm_word = 'overwrite'
     else:
         print("This will upload the files listed above to R2 with immutable cache headers.")
@@ -156,13 +190,21 @@ if __name__ == '__main__':
         confirm_word = 'yes'
     print(f"\n\033[33mType '{confirm_word}' to proceed:\033[0m ", end='')
     try:
-        confirm = input().strip().lower()
+        confirm = ask().strip().lower()
     except EOFError:
         confirm = ''
 
-    if confirm == confirm_word:
-        print()
-        if not upload(dry_run=False, overwrite=overwrite):
-            sys.exit(1)
-    else:
+    if confirm != confirm_word:
         print("\n\033[90mCancelled - no files uploaded\033[0m")
+        return 0
+    print()
+    replaced = []
+    uploaded_ok = upload(dry_run=False, overwrite=overwrite, replaced=replaced)
+    # Purged whatever each upload's outcome: a replaced object may have changed even if the
+    # client saw an error, and purging one that didn't is harmless.
+    purged_ok = purge_replaced(replaced) if overwrite and replaced else True
+    return 0 if uploaded_ok and purged_ok else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

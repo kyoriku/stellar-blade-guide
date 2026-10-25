@@ -77,7 +77,10 @@ documented exclusions (promo art, not captures).
    `--overwrite` flag exists for sanctioned replace-in-place refreshes only
    (see "Replacing an image" for why this is never the default): it bypasses
    the skip, states the replacement count in the dry run, and requires typing
-   `overwrite` instead of `yes`.
+   `overwrite` instead of `yes`. After uploading, it purges exactly the
+   replaced URLs at the edge, so it needs `CLOUDFLARE_*` in server/.env; if
+   that purge fails, or the run stops before reporting it, run it again with
+   `--overwrite`.
 3. `update_r2_urls.py` : rewrites staged local `/assets/images/...` paths in
    seed JSON to R2 URLs by direct derivation, guarded on the staged file
    existing in `r2-staging/`. Dry run before every write. R2 URLs are a pure
@@ -130,6 +133,17 @@ replacement-by-recapture auto-versions by construction. Instead:
 2. Point the seed JSON entry at the new capture (local path, any accepted
    form) and run the workflow. The old image is now unreferenced, so the
    prune gate below surfaces it in the same run.
+
+Never bring a pruned key back with different bytes: the edge may still hold
+the old ones for up to a year, and nothing would purge them. That can only
+happen to a fixed-name file (`Site/`, the two DLC promo images), so give the
+new image a new name instead.
+
+The one in-place exception is `upload_r2.py --overwrite`, for quality-only
+refreshes. Once the upload finishes it purges exactly the URLs it replaced,
+and that is the only time anything purges an image. Browsers that cached the
+old bytes keep them until their own cache expires, which is why a content
+change must still rename.
 
 ## Removing images: the prune gate (two stages, never silent)
 
@@ -268,3 +282,5 @@ copy keeps showing the identical correct image until natural cache turnover.
 Any change to what an image DEPICTS must still rename. The same refresh
 retired the 1080p compression step (`compress_images.py` deleted; the
 `*_1080p` trees removed) so the pipeline sources directly from masters.
+Today `--overwrite` purges exactly the URLs it replaced, so a refresh like
+that no longer needs a zone-wide purge.
