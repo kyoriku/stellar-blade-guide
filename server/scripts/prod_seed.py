@@ -9,6 +9,19 @@ Requires PROD_DATABASE_URL, PROD_REDIS_URL, CLOUDFLARE_ZONE_ID and
 CLOUDFLARE_API_TOKEN to be set in server/.env (gitignored). Exits before
 doing anything if any are missing.
 
+Prod's Postgres and Redis have no public address. PROD_DATABASE_URL and
+PROD_REDIS_URL point at SSH tunnels you open by hand first, one Mac tab each
+(scripts/images/PIPELINE.md, Seeding prod):
+
+  railway connect Postgres --tunnel-only -P 15432 --environment production 2>/dev/null
+  railway connect Redis --tunnel-only -P 16379 --environment production 2>/dev/null
+
+Before the typed confirmation, the run sends each a real query
+(scripts/db/check_connections.py) and stops, with nothing run, if either fails.
+It ends by reminding you to close both tunnels with Ctrl+C in their tabs: while
+the Postgres one is open, anything on the Mac, every container included, can
+log in to prod Postgres without a password.
+
 Every run writes a timestamped log to server/logs/seed/ (gitignored). That file
 is the only record a purge happened at all, so it carries the run ID, which
 purge path ran, the Cloudflare response status, and each retry separately with
@@ -24,6 +37,7 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlsplit
 from zoneinfo import ZoneInfo
 
 import requests
@@ -61,6 +75,11 @@ EXIT_PERMANENT = 2   # purge_api_cache.py: the identical call fails identically
 
 BLAST_RADIUS = ("a full-zone purge also drops every img.stellarbladeguide.com object; "
                 "the image cache then refills from R2 over the following days")
+
+# The devcontainer reaches the Mac's tunnels at this host. A URL pointing anywhere else
+# isn't going through one.
+TUNNEL_HOST = "host.docker.internal"
+TUNNEL_DEFAULT_PORTS = {"Postgres": 15432, "Redis": 16379}
 
 
 class _PlainFormatter(logging.Formatter):
@@ -161,17 +180,167 @@ STEPS = [
 ]
 
 
-def _mask(url):
-    return re.sub(r"//([^:/@]+):[^@]*@", r"//\1:*****@", url)
+def _split_url(url):
+    """(userinfo, host, port, path) as the URL is written: the credentials end at its LAST
+    '@', so a raw '/', '?', '#' or '@' in a password stays with them. That's the host the
+    user meant; a driver can read another (_reading). userinfo is None when there is no
+    '@'. None when the host or port doesn't parse.
+    scripts/db/check_connections.py has the same function; a test keeps the two in step."""
+    scheme, sep, tail = url.partition("://")
+    if not sep or not scheme:
+        return None
+    userinfo, at, rest = tail.rpartition("@")
+    if not at:
+        userinfo, rest = None, tail
+    for mark in ("?", "#"):
+        rest = rest.split(mark, 1)[0]
+    hostport, slash, path = rest.partition("/")
+    try:
+        parts = urlsplit("//" + hostport)
+        host, port = parts.hostname, parts.port
+    except ValueError:
+        return None
+    if not host:
+        return None
+    return userinfo, host, port, (slash + path if slash else "")
+
+
+def _reading(name, url):
+    """(host, port, database) as the driver for name reads url: SQLAlchemy for Postgres,
+    which ends the password at the FIRST '@', and redis-py for Redis, which ends the host at
+    the first '/', '?' or '#'. None when it can't parse url.
+    scripts/db/check_connections.py reads them the same way; a test keeps the two in step."""
+    from redis.asyncio.connection import parse_url
+    from sqlalchemy.engine import make_url
+
+    try:
+        if name == "Postgres":
+            found = make_url(url)
+            return found.host, found.port, found.database
+        found = parse_url(url)
+        return found.get("host"), found.get("port"), found.get("db")
+    except Exception:       # its message quotes the URL, password included
+        return None
+
+
+def _url_problem(name, url):
+    """Why the connection check will stop on url before connecting, or None, in its words
+    (check_connections.url_problem, which also says how to fix it; a test keeps the two in
+    step)."""
+    driver = "SQLAlchemy" if name == "Postgres" else "redis-py"
+    if url.count("@") > 1:
+        return "the URL has more than one @"
+    found = _reading(name, url)
+    if found is None or not found[0]:
+        return f"{driver} can't parse the URL"
+    written = _split_url(url)
+    if written is None or (found[0].lower(), found[1]) != (written[1].lower(), written[2]):
+        return f"{driver} reads a different host from the one written"
+    return None
+
+
+def _mask(name, url):
+    """Where the driver for name will connect, never the credentials: no user name, no
+    password, no query string. A URL the connection check will stop on isn't shown, since
+    the host a driver misreads holds part of the password."""
+    problem = _url_problem(name, url)
+    if problem is not None:
+        return f"(not shown: {problem})"
+    host, port, database = _reading(name, url)
+    if ":" in host:
+        host = f"[{host}]"
+    scheme = url.partition("://")[0]
+    credentials = "*****@" if _split_url(url)[0] is not None else ""
+    return (f"{scheme}://{credentials}{host}" + (f":{port}" if port else "")
+            + (f"/{database}" if database not in (None, "") else ""))
+
+
+def _url_secrets(url):
+    """The forms a URL's credentials take in a child's output: the userinfo, its password,
+    any password= query value, each also percent-decoded. A userinfo with no ':' counts
+    whole (a password pasted without its user name)."""
+    parsed = _split_url(url)
+    candidates = []
+    if parsed is not None and parsed[0]:
+        userinfo = parsed[0]
+    elif parsed is None:
+        # Too broken to parse (a dropped '/', say): everything between the scheme and the
+        # last '@' is credentials.
+        head, at, _ = url.rpartition("@")
+        userinfo = head.partition(":")[2].lstrip("/") if at else ""
+    else:
+        userinfo = ""
+    if userinfo:
+        _, colon, password = userinfo.partition(":")
+        candidates += [userinfo, password] if colon else [userinfo]
+    candidates += parse_qs(url.partition("?")[2]).get("password", [])
+    found = set()
+    for value in candidates:
+        for form in (value, unquote(value)):
+            if form:
+                found.add(form)
+    return sorted(found, key=len, reverse=True)
+
+
+def _tunnel_ports(urls):
+    """(name, port) for each (name, url) written to go through a tunnel opened on the Mac.
+    By the host as written, not as a driver reads it: that's what the tunnel was opened
+    for, so a URL the check stops on as misread still gets its tunnel named."""
+    found = []
+    for name, url in urls:
+        parsed = _split_url(url)
+        if parsed is not None and parsed[1] == TUNNEL_HOST and parsed[2]:
+            found.append((name, parsed[2]))
+    return found
+
+
+def _tunnel_commands():
+    """The railway connect line for each tunnel, with the ports server/.env points at."""
+    ports = dict(TUNNEL_DEFAULT_PORTS)
+    ports.update(_tunnel_ports((("Postgres", PROD_DATABASE_URL), ("Redis", PROD_REDIS_URL))))
+    return [f"railway connect {name} --tunnel-only -P {port} --environment production 2>/dev/null"
+            for name, port in ports.items()]
+
+
+def remind_to_close_tunnels():
+    """The run's last word when it went through tunnels: an open Postgres tunnel lets anything
+    on the Mac, every container included, into prod without a password."""
+    tunnels = _tunnel_ports((("Postgres", PROD_DATABASE_URL), ("Redis", PROD_REDIS_URL)))
+    if not tunnels:
+        return
+    ports = " ".join(f"-iTCP:{port}" for _, port in tunnels)
+    if _stopped_at_check:
+        # The tunnels may never have been opened, and the user may be about to retry.
+        log.info(f"\n{YELLOW}[TUNNELS]{RESET} If you opened a tunnel and aren't running this again "
+                 f"now, close it with Ctrl+C in its tab, then check on the Mac that nothing is "
+                 f"listening (no output means closed):")
+    else:
+        names = " and ".join(name for name, _ in tunnels)
+        which = ("tunnels with Ctrl+C in their tabs" if len(tunnels) > 1
+                 else "tunnel with Ctrl+C in its tab")
+        log.info(f"\n{YELLOW}[TUNNELS]{RESET} Close the {names} {which}, then check on the Mac "
+                 f"that nothing is listening (no output means closed):")
+    log.info(f"  lsof -nP {ports} -sTCP:LISTEN\n")
+
+
+# Set when the connection check stops the run, so the closing reminder doesn't tell the
+# user to close tunnels the STOPPED message just told them to open.
+_stopped_at_check = False
+
+# Longest first, so no fragment of a secret survives a replace.
+_SECRETS = sorted(
+    {CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID,
+     *_url_secrets(PROD_DATABASE_URL), *_url_secrets(PROD_REDIS_URL)} - {""},
+    key=len, reverse=True)
 
 
 def _redact(text):
     """The zone ID sits in the purge URL, so it can surface in a child's error
-    text or a requests exception message. Nothing secret reaches the log file."""
+    text or a requests exception message, and a driver's error can quote part of
+    a database URL. Nothing secret reaches the log file."""
     out = str(text)
-    for secret in (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID):
-        if secret:
-            out = out.replace(secret, "*****")
+    for secret in _SECRETS:
+        out = out.replace(secret, "*****")
     return out
 
 
@@ -320,15 +489,9 @@ def main():
     log.info(f"\n{CYAN}--- Prod seed ---{RESET}")
     log.info(f"  Run ID:   {RUN_ID}")
     log.info(f"  Log:      {LOG_PATH}")
-    log.info(f"  Database: {_mask(PROD_DATABASE_URL)}")
-    log.info(f"  Redis:    {_mask(PROD_REDIS_URL)}")
+    log.info(f"  Database: {_mask('Postgres', PROD_DATABASE_URL)}")
+    log.info(f"  Redis:    {_mask('Redis', PROD_REDIS_URL)}")
     log.info(f"  Purge:    {purge_plan}")
-
-    answer = input(f"\nType {CYAN}seed prod{RESET} to continue: ").strip()
-    if answer != "seed prod":
-        log.error(f"{RED}Aborted: nothing was run{RESET}")
-        sys.exit(1)
-    log.info("  Confirmed, starting\n")
 
     env = os.environ.copy()
     env["DATABASE_URL"] = PROD_DATABASE_URL
@@ -340,6 +503,31 @@ def main():
     # of this one's. It is also the log filename, so a log line and a manifest
     # can be matched up afterwards.
     env["SEED_RUN_ID"] = RUN_ID
+
+    # Before the typed confirmation, through the same env, engine and Redis client
+    # the seeders get: a closed tunnel or a refused password stops the run here.
+    label = "Checking prod connections"
+    log.info(f"\n{CYAN}[RUNNING]{RESET} {label}")
+    code, _ = run_logged(["uv", "run", "python", "scripts/db/check_connections.py"],
+                         env=env, cwd=scripts_dir.parent)
+    if code != 0:
+        global _stopped_at_check
+        _stopped_at_check = True
+        log.error(f"{RED}[STOPPED]{RESET} {label} (exit {code}): nothing was run")
+        log.error("  → If the tunnels aren't open, run these in two Mac tabs, then run this again:")
+        for command in _tunnel_commands():
+            log.error(f"      {command}")
+        log.error("  → More: scripts/images/PIPELINE.md, Seeding prod")
+        sys.exit(1)
+    log.info(f"{GREEN}[SUCCESS]{RESET} {label}")
+
+    answer = input(f"\nType {CYAN}seed prod{RESET} to continue: ").strip()
+    if answer != "seed prod":
+        # A warning, not an error: answering 'no' is also how a run checks the tunnels
+        # without seeding, and `grep -l ERROR logs/seed/*.log` is for runs that failed.
+        log.warning(f"{RED}Aborted: nothing was run{RESET}")
+        sys.exit(1)
+    log.info("  Confirmed, starting\n")
 
     for label, cmd in STEPS:
         log.info(f"{CYAN}[RUNNING]{RESET} {label}")
@@ -381,4 +569,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        # Every way out once the run has started: done, aborted, a failed step, Ctrl+C.
+        remind_to_close_tunnels()
