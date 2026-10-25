@@ -72,6 +72,23 @@ def test_only_check_mode_refuses_verify_markers():
     assert _call_lines(check_main, "check_markers") and _call_lines(check_main, "check_depth")
 
 
+def test_check_mode_refuses_a_local_image_path_and_names_the_walkthrough(tmp_path, monkeypatch, capsys):
+    """Dev serves /assets/images/... and prod doesn't, so a path the URL swap never turned into
+    an R2 URL stops prod_seed.py's first step. A dev seed still takes it, for the preview."""
+    folder = tmp_path / "seed-data" / "walkthroughs" / "side-quests"
+    folder.mkdir(parents=True)
+    (folder / "1-a.json").write_text(
+        '{"title": "Lost Ark", "thumbnail_url": "/assets/images/Walkthroughs/Side_Quests/Lost_Ark/a.jpg",'
+        ' "content": [{"order": 1, "text": "Go."}]}', encoding="utf-8")
+    monkeypatch.setattr(seed_walkthroughs, "project_root", tmp_path)
+    assert seed_walkthroughs.check_main() == 1
+    out = capsys.readouterr().out
+    assert "✗ Lost Ark: 1 image path(s) still point at the local masters folder" in out
+    assert "/assets/images/Walkthroughs/Side_Quests/Lost_Ark/a.jpg" in out
+    tree = ast.parse((SCRIPTS / "db" / "seed_walkthroughs.py").read_text(encoding="utf-8"))
+    assert not _call_lines(_function(tree, "seed_walkthroughs"), "check_local_paths")
+
+
 def test_check_mode_fails_when_there_are_no_walkthrough_files(tmp_path, monkeypatch, capsys):
     """A missing or empty seed-data folder used to pass --check and then seed nothing."""
     monkeypatch.setattr(seed_walkthroughs, "project_root", tmp_path)

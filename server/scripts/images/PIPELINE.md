@@ -218,7 +218,9 @@ tunnels only for the run, and don't run a Claude Code task while they're open.
    sends each a real query (`SELECT 1`, an authenticated `PING`). A closed
    tunnel is retried for 30 s, while a refused password or a URL its driver
    would misread stops it at once; either way nothing runs, and it prints both
-   commands above.
+   commands above. After the confirmation, both seeders' `--check` stop the
+   run before anything is written if a walkthrough is still marked `[VERIFY]`
+   or an image path is still local.
 5. When it ends, it reminds you to close both tunnels: Ctrl+C in each tab. You
    can close them as soon as it prints `Prod seed complete`, because the
    bucket-prune offer after that doesn't use them. Never close a tab or window

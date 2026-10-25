@@ -21,6 +21,8 @@ PROD_REDIS_URL point at SSH tunnels you open by hand first, one Mac tab each
 
 Before the typed confirmation, the run sends each a real query
 (scripts/db/check_connections.py) and stops, with nothing run, if either fails.
+After it, both seeders' --check read the seed files and stop the run before any
+write if a walkthrough is still marked [VERIFY] or an image path is still local.
 It ends by reminding you to close both tunnels with Ctrl+C in their tabs: while
 the Postgres one is open, anything on the Mac, every container included, can
 log in to prod Postgres without a password.
@@ -185,9 +187,11 @@ CLOUDFLARE_API_TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
 
 STEPS = [
     # First, before anything writes: a refusal from the walkthrough seeder itself would
-    # land after the collectibles are written. This one only reads the seed files.
+    # land after the collectibles are written. These only read the seed files.
     ("Checking walkthrough files", [
      "uv", "run", "python", "scripts/db/seed_walkthroughs.py", "--check"]),
+    ("Checking collectible files", [
+     "uv", "run", "python", "scripts/db/seed_collectibles.py", "--check"]),
     ("Seeding prod collectibles database", [
      "uv", "run", "python", "scripts/db/seed_collectibles.py"]),
     ("Seeding prod walkthroughs database", [

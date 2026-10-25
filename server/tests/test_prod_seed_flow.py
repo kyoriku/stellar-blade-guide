@@ -117,6 +117,7 @@ def _run(*argv, **io_kwargs):
 
 
 SEED_STEPS = ["scripts/db/check_connections.py", "scripts/db/seed_walkthroughs.py --check",
+              "scripts/db/seed_collectibles.py --check",
               "scripts/db/seed_collectibles.py", "scripts/db/seed_walkthroughs.py",
               "scripts/cache/clear_content_cache.py", "scripts/cache/purge_api_cache.py --clear-ledger"]
 
@@ -163,12 +164,25 @@ def test_a_seeder_failure_stops_before_the_clear_and_the_purge():
     reason = "✗ 2 problem(s) with the seed data (listed above). Nothing was written."
     code, io, log, _ = _run(exits={"seed_collectibles.py": [(1, ["...", reason])]})
     assert code == 1
-    assert io.scripts() == SEED_STEPS[:3]
+    assert io.scripts() == SEED_STEPS[:4]
     errors = log.text("ERROR")
     assert f"[FAILED] Seeding prod collectibles database (exit 1): {reason}" in errors
     assert "Owed a purge: nothing" in errors
     assert "Fix the cause, then run it again: uv run python scripts/prod_seed.py" in errors
     assert TUNNELS[0] in errors
+
+
+def test_a_local_image_path_stops_the_run_before_any_seeder_writes():
+    """An image path the URL swap never turned into an R2 URL works on dev and breaks on prod,
+    so both seeders' --check run before either seeder writes."""
+    reason = ("✗ Luke's Memory [817]: 1 image path(s) still point at the local masters folder, "
+              "such as /assets/images/Wasteland/Plant/a.jpg. Run the image pipeline "
+              "(dev_workflow.py collectibles), commit, then seed prod.")
+    code, io, log, _ = _run(exits={"seed_collectibles.py --check": [(1, ["...", reason])]})
+    assert code == 1
+    assert io.scripts() == SEED_STEPS[:3]
+    assert "scripts/db/seed_collectibles.py" not in io.scripts()
+    assert f"[FAILED] Checking collectible files (exit 1): {reason}" in log.text("ERROR")
 
 
 def test_a_seeder_failure_after_an_earlier_commit_names_what_is_owed():

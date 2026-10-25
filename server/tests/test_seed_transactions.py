@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import text
@@ -101,6 +102,29 @@ def test_the_script_exits_with_the_seeders_status(name):
     main = next(node for node in tree.body
                 if isinstance(node, ast.If) and "__main__" in ast.unparse(node.test))
     assert "sys.exit(asyncio.run(" in ast.unparse(main)
+
+
+@pytest.mark.parametrize("name", SEEDERS)
+@pytest.mark.parametrize("status", [0, 1])
+def test_check_mode_exits_with_the_checks_status_before_any_seed(name, status):
+    """prod_seed.py runs both --check against prod before any seeder writes. A check that fell
+    through to the seed would write the very entries it had just refused."""
+    path, seed_name = SEEDERS[name]
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    entry = next(node for node in tree.body
+                 if isinstance(node, ast.If) and "__main__" in ast.unparse(node.test))
+    seeded = []
+
+    def run_entry(argv):
+        ns = {"__name__": "__main__", "sys": SimpleNamespace(argv=[path.name, *argv], exit=sys.exit),
+              "check_main": lambda: status, seed_name: lambda: "the seed",
+              "asyncio": SimpleNamespace(run=lambda coro: seeded.append(coro) or 0)}
+        with pytest.raises(SystemExit) as ended:
+            exec(compile(ast.Module(body=[entry], type_ignores=[]), str(path), "exec"), ns)  # noqa: S102 -- the seeder's own entry point
+        return ended.value.code
+
+    assert run_entry(["--check"]) == status and seeded == []
+    assert run_entry([]) == 0 and seeded == ["the seed"]
 
 
 def test_the_manual_clear_covers_both_seeders_patterns():

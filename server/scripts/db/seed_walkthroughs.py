@@ -4,8 +4,9 @@ Usage:
   uv run scripts/db/seed_walkthroughs.py --check   # only load and check the files; no DB, no Redis
 
 Both refuse a file whose text sits deeper than search can index (see check_depth), and both
-exit 1 when there are no walkthrough files at all. prod_seed.py runs --check before any
-seeder writes.
+exit 1 when there are no walkthrough files at all. --check also refuses a walkthrough still
+marked [VERIFY] or still holding a local image path; prod_seed.py runs it before any seeder
+writes.
 
 Seeding runs in one transaction, so a run that stops before its COMMIT leaves the database
 exactly as it was. Exits 1 on any failure, so prod_seed.py stops before its purge.
@@ -29,7 +30,7 @@ from redis.exceptions import RedisError
 from app.core import cache
 from app.core.cache import invalidate_cache_pattern
 from app.models.walkthroughs import Walkthrough
-from scripts.images.paths import normalize_image_path, normalize_content_images
+from scripts.images.paths import local_image_paths, normalize_image_path, normalize_content_images
 from scripts.cache import purge_manifest
 from scripts.db.seed_guard import (
     NO_ANSWER, NO_ANSWER_SECONDS, Watchdog, failure_line, seed_engine, seed_sessionmaker,
@@ -105,6 +106,24 @@ def check_markers(walkthrough_data):
     for title in marked:
         print(f"\033[31m✗ {title}: still marked [VERIFY]; confirm or remove it before seeding prod\033[0m")
     return not marked
+
+
+def check_local_paths(walkthrough_data):
+    """True when no walkthrough still holds a local image path (scripts/images/paths.py).
+
+    Dev serves /assets/images/... from the masters folder, which the production image leaves
+    out, so a path the URL swap never turned into an R2 URL would break on prod. Only --check
+    runs this: dev seeds keep accepting them, since new images are previewed before the swap.
+    """
+    ok = True
+    for item in walkthrough_data:
+        paths = local_image_paths(item)
+        if paths:
+            ok = False
+            print(f"\033[31m✗ {item.get('title', '?')}: {len(paths)} image path(s) still point at the "
+                  f"local masters folder, such as {paths[0]}. Run the image pipeline "
+                  f"(dev_workflow.py walkthroughs), commit, then seed prod.\033[0m")
+    return ok
 
 
 def temporary_slug(walkthrough_id):
@@ -380,6 +399,7 @@ def check_main():
         return 1
     ok = check_depth(data)
     ok = check_markers(data) and ok
+    ok = check_local_paths(data) and ok
     return 0 if ok else 1
 
 

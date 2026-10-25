@@ -1,10 +1,14 @@
 """
 Usage:
-  uv run scripts/db/seed_collectibles.py
+  uv run scripts/db/seed_collectibles.py           # seed
+  uv run scripts/db/seed_collectibles.py --check   # only load and check the files; no DB, no Redis
 
 Seeds every collectible in one transaction, so a run that stops before its COMMIT leaves the
 database exactly as it was, and a reader sees either the old rows or the new ones, never a
 mix. Exits 1 on any failure, so prod_seed.py stops before its purge.
+
+--check refuses an entry still holding a local image path, which works on dev and breaks on
+prod; prod_seed.py runs it before any seeder writes.
 """
 
 import sys
@@ -25,7 +29,7 @@ from redis.exceptions import RedisError
 from app.core import cache
 from app.core.cache import invalidate_cache_pattern
 from app.models.collectibles import Level, Location, CollectibleType, Collectible, CollectibleImage
-from scripts.images.paths import normalize_image_path
+from scripts.images.paths import local_image_paths, normalize_image_path
 from scripts.cache import purge_manifest
 from scripts.db.seed_guard import (
     NO_ANSWER, NO_ANSWER_SECONDS, Watchdog, failure_line, seed_engine, seed_sessionmaker,
@@ -440,5 +444,28 @@ async def seed_database():
     return 0
 
 
+def check_main():
+    """--check: load the seed files and refuse local image paths (scripts/images/paths.py).
+    Dev serves /assets/images/... from the masters folder, which the production image leaves
+    out, so a path the URL swap never turned into an R2 URL would break on prod. Dev seeds
+    keep accepting them, since new images are previewed before the swap. 0 when every check
+    passes, else 1."""
+    seed_data = load_all_seed_files()
+    if not seed_data:
+        print("\033[31m✗ No seed data found!\033[0m")
+        return 1
+    ok = True
+    for item in seed_data:
+        paths = local_image_paths(item)
+        if paths:
+            ok = False
+            print(f"\033[31m✗ {item.get('title', '?')} [{item.get('id', '?')}]: {len(paths)} image "
+                  f"path(s) still point at the local masters folder, such as {paths[0]}. Run the "
+                  f"image pipeline (dev_workflow.py collectibles), commit, then seed prod.\033[0m")
+    return 0 if ok else 1
+
+
 if __name__ == "__main__":
+    if "--check" in sys.argv:
+        sys.exit(check_main())
     sys.exit(asyncio.run(seed_database()))
