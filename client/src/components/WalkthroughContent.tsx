@@ -2,6 +2,7 @@ import { type WalkthroughContent as WalkthroughContentType } from '../services/a
 import { Lightbulb, AlertTriangle, Skull } from 'lucide-react'
 import ImageGallery from './ImageGallery'
 import { parseDescription } from '../utils/parseDescription'
+import { textBlocks } from '../utils/textBlocks'
 
 interface WalkthroughContentProps {
   content: WalkthroughContentType;
@@ -39,17 +40,14 @@ function WalkthroughContent({ content, onImageClick, priority }: WalkthroughCont
         )}
 
         <div className="space-y-4 mb-4">
-          {content.text.split('\n\n').map((block, idx) => {
-            const lines = block.split('\n');
-            const isList = lines.length > 1 && lines.every(line => line.startsWith('- '));
-
-            if (isList) {
+          {textBlocks(content.text).map((block, idx) => {
+            if (block.kind === 'list') {
               return (
                 <ul key={idx} className="space-y-1.5">
-                  {lines.map((line, lineIdx) => (
+                  {block.items.map((item, lineIdx) => (
                     <li key={lineIdx} className="flex gap-2 text-gray-300 leading-relaxed">
                       <span className="text-cyan-400 font-bold">•</span>
-                      <span className="flex-1">{parseDescription(line.slice(2))}</span>
+                      <span className="flex-1">{parseDescription(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -58,7 +56,7 @@ function WalkthroughContent({ content, onImageClick, priority }: WalkthroughCont
 
             return (
               <p key={idx} className="text-gray-300 leading-relaxed">
-                {parseDescription(block)}
+                {parseDescription(block.text)}
               </p>
             );
           })}
@@ -68,24 +66,21 @@ function WalkthroughContent({ content, onImageClick, priority }: WalkthroughCont
           <div className="flex gap-3 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 mb-4">
             <Lightbulb className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1 text-cyan-200 text-sm leading-relaxed space-y-2">
-              {content.tip.split('\n\n').map((block, idx) => {
-                const lines = block.split('\n');
-                const isList = lines.length > 1 && lines.every(line => line.startsWith('- '));
-
-                if (isList) {
+              {textBlocks(content.tip).map((block, idx) => {
+                if (block.kind === 'list') {
                   return (
                     <ul key={idx} className="space-y-1">
-                      {lines.map((line, lineIdx) => (
+                      {block.items.map((item, lineIdx) => (
                         <li key={lineIdx} className="flex gap-2">
                           <span className="text-blue-400 font-bold">•</span>
-                          <span className="flex-1">{parseDescription(line.slice(2))}</span>
+                          <span className="flex-1">{parseDescription(item)}</span>
                         </li>
                       ))}
                     </ul>
                   );
                 }
 
-                return <p key={idx}>{parseDescription(block)}</p>;
+                return <p key={idx}>{parseDescription(block.text)}</p>;
               })}
             </div>
           </div>
@@ -95,24 +90,21 @@ function WalkthroughContent({ content, onImageClick, priority }: WalkthroughCont
           <div className="flex gap-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 mb-4">
             <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1 text-orange-200 text-sm leading-relaxed space-y-2">
-              {content.warning.split('\n\n').map((block, idx) => {
-                const lines = block.split('\n');
-                const isList = lines.length > 1 && lines.every(line => line.startsWith('- '));
-
-                if (isList) {
+              {textBlocks(content.warning).map((block, idx) => {
+                if (block.kind === 'list') {
                   return (
                     <ul key={idx} className="space-y-1">
-                      {lines.map((line, lineIdx) => (
+                      {block.items.map((item, lineIdx) => (
                         <li key={lineIdx} className="flex gap-2">
                           <span className="text-orange-400 font-bold">•</span>
-                          <span className="flex-1">{parseDescription(line.slice(2))}</span>
+                          <span className="flex-1">{parseDescription(item)}</span>
                         </li>
                       ))}
                     </ul>
                   );
                 }
 
-                return <p key={idx}>{parseDescription(block)}</p>;
+                return <p key={idx}>{parseDescription(block.text)}</p>;
               })}
             </div>
           </div>
