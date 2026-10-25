@@ -348,6 +348,10 @@ def remind_to_close_tunnels():
 # user to close tunnels the STOPPED message just told them to open.
 _stopped_at_check = False
 
+# Set once this run holds the lock. Until then nothing has run, and when another run holds the
+# lock its tunnels must stay open, so the closing reminder isn't printed.
+_run_started = False
+
 # Longest first, so no fragment of a secret survives a replace.
 _SECRETS = sorted(
     {CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID,
@@ -607,14 +611,16 @@ def interrupted(io):
 def main():
     opts = parse_args(sys.argv[1:])
 
-    global _run_lock
+    global _run_lock, _run_started
     _run_lock = open(LOG_DIR / "prod_seed.lock", "w")  # noqa: SIM115 -- held for the whole run
     try:
         fcntl.flock(_run_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
-        log.error(f"{RED}Another prod seed is running.{RESET} Wait for it to finish; "
-                  f"its log is the newest in {LOG_DIR}.")
+        # A warning, like an aborted prompt: nothing ran, and `grep -l ERROR` finds failed runs.
+        log.warning(f"{RED}Another prod seed is running.{RESET} Wait for it to finish, and leave "
+                    f"the tunnels open: that run is using them.")
         return 1
+    _run_started = True
 
     if opts.purge_only:
         purge_plan = ("every API URL (--purge-only --purge-all), no seeding" if opts.purge_all
@@ -678,5 +684,6 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     finally:
-        # Every way out once the run has started: done, aborted, a failed step, Ctrl+C.
-        remind_to_close_tunnels()
+        # Every way out once this run holds the lock: done, aborted, a failed step, Ctrl+C.
+        if _run_started:
+            remind_to_close_tunnels()

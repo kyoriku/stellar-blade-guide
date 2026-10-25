@@ -247,8 +247,8 @@ still owed, and what to run next:
 A dropped tunnel ends the step within about 30 s, and prod rolls back an
 abandoned transaction by itself (`idle_in_transaction_session_timeout` 30 s,
 `transaction_timeout` 2 min). Ctrl+C stops the running step at once and logs
-where it landed. A second run while one is going stops at once. Run prod seeds
-from the main checkout: the ledger lives in it.
+where it landed. A second run while one is going stops at once and leaves the
+tunnels to it. Run prod seeds from the main checkout: the ledger lives in it.
 
 The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
 (`diff_collectibles.py --prod`, `cache_stats.py --prod`,

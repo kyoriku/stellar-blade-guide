@@ -12,8 +12,10 @@ import ast
 import os
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -311,6 +313,77 @@ def test_the_run_lock_is_taken_before_anything_runs():
              for c in ast.walk(main) if isinstance(c, ast.Call)}
     assert "LOCK_NB" in ast.unparse(main)
     assert calls["flock"] < calls["run_seed"]
+
+
+class _LockHeld:
+    """fcntl, as a second run finds it: another run holds the lock."""
+    LOCK_EX, LOCK_NB = 2, 4
+
+    @staticmethod
+    def flock(fd, flags):
+        raise BlockingIOError
+
+
+class _LockFree(_LockHeld):
+    @staticmethod
+    def flock(fd, flags):
+        pass
+
+
+def _entry_point(tmp_path, fcntl, argv=(), seed=lambda: 0):
+    """Run prod_seed.py's own `if __name__ == "__main__"` block around its real main(), with
+    everything after the lock stubbed. Returns (exit status, reminders printed, log)."""
+    tree = ast.parse(PROD_SEED.read_text(encoding="utf-8"))
+    keep = [node for node in tree.body
+            if (isinstance(node, ast.FunctionDef) and node.name in {"parse_args", "main"})
+            or (isinstance(node, ast.If) and "__main__" in ast.unparse(node.test))]
+    reminders = []
+
+    def run_seed(opts, env, io):
+        return seed()
+
+    ns = {"__name__": "__main__", "argparse": argparse, "os": os, "time": time,
+          "SimpleNamespace": SimpleNamespace, "fcntl": fcntl,
+          "sys": SimpleNamespace(argv=["prod_seed.py", *argv], exit=sys.exit),
+          "LOG_DIR": tmp_path, "LOG_PATH": tmp_path / "seed-test.log", "RUN_ID": "test",
+          "PROD_DATABASE_URL": "postgresql://db", "PROD_REDIS_URL": "redis://cache",
+          "_mask": lambda name, url: name, "_ledger": lambda: SimpleNamespace(owed=list),
+          "scripts_dir": tmp_path, "run_logged": None, "_tunnel_commands": lambda: TUNNELS,
+          "run_seed": run_seed, "interrupted": lambda io: 130, "offer_bucket_prune": lambda: None,
+          "remind_to_close_tunnels": lambda: reminders.append("reminded"),
+          "CYAN": "", "GREEN": "", "RED": "", "YELLOW": "", "RESET": "", "log": _Log(),
+          "_run_lock": None, "_run_started": False}
+    with pytest.raises(SystemExit) as ended:
+        exec(compile(ast.Module(body=keep, type_ignores=[]), str(PROD_SEED), "exec"), ns)  # noqa: S102 -- prod_seed.py's own entry point
+    return ended.value.code, len(reminders), ns["log"]
+
+
+def test_a_run_the_lock_refuses_leaves_the_tunnels_to_the_run_holding_it(tmp_path):
+    """The closing reminder is for this run's own tunnels. A run the lock refused used to end
+    by telling you to close the tunnels the running seed was using."""
+    code, reminders, log = _entry_point(tmp_path, _LockHeld)
+    assert (code, reminders) == (1, 0)
+    assert "leave the tunnels open: that run is using them" in log.text("WARNING")
+    assert log.text("ERROR") == ""      # nothing ran: grep -l ERROR finds failed runs only
+
+
+def _ctrl_c():
+    raise KeyboardInterrupt
+
+
+@pytest.mark.parametrize(("argv", "seed", "status"), [
+    ((), lambda: 0, 0),                    # done
+    ((), lambda: 1, 1),                    # a failed step
+    ((), _ctrl_c, 130),                    # Ctrl+C
+    (("--purge-only",), lambda: 0, 0),
+])
+def test_a_run_holding_the_lock_reminds_you_to_close_the_tunnels_however_it_ends(
+        tmp_path, argv, seed, status):
+    assert _entry_point(tmp_path, _LockFree, argv, seed)[:2] == (status, 1)
+
+
+def test_a_flag_argparse_rejects_stops_before_the_lock_and_reminds_of_nothing(tmp_path):
+    assert _entry_point(tmp_path, _LockFree, ("--purge-al",))[:2] == (2, 0)
 
 
 # ── run_logged ends the whole step on Ctrl+C ─────────────────────────────────
