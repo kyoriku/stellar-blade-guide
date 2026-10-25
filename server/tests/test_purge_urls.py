@@ -106,6 +106,7 @@ def _stub_main(monkeypatch, argv):
     purged, cleared = [], []
     monkeypatch.setattr(purge_api_cache, 'purge', lambda urls: purged.extend(urls) or len(urls))
     monkeypatch.setattr(purge_api_cache.purge_manifest, 'clear', lambda: cleared.append(True))
+    monkeypatch.setattr(purge_api_cache.cc, 'require', lambda names, **kwargs: None)
     monkeypatch.setattr(sys, 'argv', ['purge_api_cache.py', *argv])
     return purged, cleared
 
@@ -114,11 +115,16 @@ def test_singular_flag_reads_prod_and_leaves_the_seed_manifest(monkeypatch, caps
     monkeypatch.setenv('PROD_DATABASE_URL', 'postgresql+asyncpg://seeder:hunter2@prod.example:5432/sbg')
     monkeypatch.setenv('DATABASE_URL', 'postgresql+asyncpg://dev.example/sbg')
     purged, cleared = _stub_main(monkeypatch, ['--singular-walkthroughs'])
+    checked = []
+    monkeypatch.setattr(purge_api_cache.cc, 'require',
+                        lambda names, **kwargs: checked.append((names, os.environ['DATABASE_URL'])))
 
     purge_api_cache.main()
 
-    # The stale copies were cached from prod, so they are derived from prod.
+    # The stale copies were cached from prod, so they are derived from prod, after a check
+    # that prod answers.
     assert os.environ['DATABASE_URL'] == 'postgresql+asyncpg://seeder:hunter2@prod.example:5432/sbg'
+    assert checked == [(['Postgres'], 'postgresql+asyncpg://seeder:hunter2@prod.example:5432/sbg')]
     assert purged == [
         f'{PUBLIC_BASE}/api/walkthroughs/side-quest',
         f'{PUBLIC_BASE}/api/walkthroughs/side-quest/looking-at-you',
@@ -126,7 +132,8 @@ def test_singular_flag_reads_prod_and_leaves_the_seed_manifest(monkeypatch, caps
     # A pending seed manifest describes other URLs; this purge must not spend it.
     assert cleared == []
     out = capsys.readouterr().out
-    assert 'seeder:*****@prod.example' in out and 'hunter2' not in out
+    assert '  Database: postgresql+asyncpg://*****@prod.example:5432/sbg' in out
+    assert 'seeder' not in out and 'hunter2' not in out
 
 
 def test_singular_flag_refuses_without_the_prod_database(monkeypatch):

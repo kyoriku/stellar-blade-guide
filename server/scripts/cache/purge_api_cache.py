@@ -64,6 +64,7 @@ import requests
 from dotenv import load_dotenv
 
 from scripts.cache import purge_manifest
+from scripts.db import check_connections as cc
 
 load_dotenv()
 
@@ -477,10 +478,6 @@ def _flag_value(args, name):
     return None
 
 
-def _mask(url):
-    return re.sub(r"//([^:/@]+):[^@]*@", r"//\1:*****@", url)
-
-
 def main():
     args = sys.argv[1:]
     dry_run = '--dry-run' in args
@@ -493,12 +490,15 @@ def main():
     if singular:
         # The stale URLs were cached from prod, so they are derived from prod, the way
         # prod_seed.py points its child here. Set before the app import, which builds
-        # the engine from DATABASE_URL.
+        # the engine from DATABASE_URL. The check comes before that import too: a closed
+        # tunnel stops here with the line to run, and a URL its driver would misread stops
+        # before anything parses it, since a parser's error quotes the password.
         prod_db = os.environ.get('PROD_DATABASE_URL')
         if not prod_db:
             raise RuntimeError('--singular-walkthroughs needs PROD_DATABASE_URL (server/.env)')
+        print(f'  Database: {cc.mask("Postgres", prod_db)}')
         os.environ['DATABASE_URL'] = prod_db
-        print(f'  Database: {_mask(prod_db)}')
+        cc.require(['Postgres'])
 
     try:
         from app.main import app  # route table is the source of truth for shapes

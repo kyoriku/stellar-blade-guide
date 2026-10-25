@@ -138,7 +138,8 @@ Most failures stop the run before anything is written or purged, and the run pri
 | --- | --- | --- |
 | `[STOPPED] Checking prod connections`, after 30 s of retries | A tunnel isn't open | Open both tabs. On the Mac, `lsof` should show two `ssh` listeners. |
 | A tab is running, but nothing listens on its port | The tunnel failed quietly | Ctrl+C it and rerun without `2>/dev/null` to see the error. That prints the password, so don't share the output. |
-| `ConnectionRefusedError` from the diff or another `--prod` script | The tunnels are closed | Open them first. |
+| `✗ Prod Postgres didn't answer` (or Redis) from the diff or another `--prod` script, after about 10 s | That tunnel isn't open | Run the `railway connect` line it prints in a Mac tab, then rerun. A `--prod` migration says `ConnectionRefusedError` instead. |
+| `✗ Prod Redis can't be used as set up` (or Postgres) | The line above it says why: usually an old Redis password, or a second `@` in a URL | See the next two rows. |
 | `Name or service not known` for Postgres | `PROD_DATABASE_URL` has a second `@` or a stray character before the host | Keep exactly one `@`, right before the host. Write an `@` in a password as `%40`. |
 | Redis refuses the password | `server/.env` has an old Redis password | Copy it from the Redis service's Variables tab in Railway. |
 | The diff lists more than your change | Something else on disk differs from prod | Check that seed-data is on a clean, pulled `main`. |

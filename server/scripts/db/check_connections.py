@@ -3,6 +3,7 @@ Check that the Postgres and Redis this process is pointed at answer a real query
 
 Usage:
   uv run python scripts/db/check_connections.py [--wait SECONDS]   # default 30
+  uv run python scripts/db/check_connections.py --only postgres    # or redis: just that one
 
 prod_seed.py runs it first, before its typed confirmation, with the same
 DATABASE_URL and REDIS_URL it gives the seeders, so the check reaches exactly
@@ -21,8 +22,17 @@ A connection that is refused, reset, lost or too slow is retried until --wait
 runs out: a tunnel can take a moment to carry traffic. Anything else stops at
 once, because waiting won't fix it: a refused password, an unknown database, a
 URL key the driver rejects, a server that refuses TLS. Exits 0 when both
-answered, 1 if not. However a connection's cleanup behaves, the process is gone
-within --wait plus 20 seconds.
+answered, 1 when one didn't answer in time, 3 when one stopped at once.
+However a connection's cleanup behaves, the process is gone within --wait plus
+20 seconds.
+
+The other scripts that read prod (search_eval.py, cache_stats.py,
+purge_api_cache.py --singular-walkthroughs, and the local diff and migrations)
+call require() once they have pointed DATABASE_URL or REDIS_URL at prod, before
+anything imports the app's engine or Redis client. It runs this file as a child,
+waits 10 s rather than 30, and stops the script with exit 2 and the railway
+connect line to run when prod doesn't answer. They show URLs with mask(), the
+same display as prod_seed.py's header.
 
 Through the SSH tunnel, prod Postgres doesn't check the password (the
 connection arrives from inside its own container), so SELECT 1 proves the
@@ -39,9 +49,13 @@ text.
 
 import argparse
 import asyncio
+import errno
 import importlib
 import os
+import signal
+import socket
 import ssl
+import subprocess
 import sys
 import threading
 import time
@@ -54,7 +68,23 @@ sys.path.insert(0, str(project_root))
 from app.core.colours import GREEN, RED, RESET, YELLOW  # noqa: E402
 
 TUNNEL_HOST = "host.docker.internal"
+# The tunnels' usual ports, for a tunnel URL that names none (prod_seed.py uses the same).
+TUNNEL_DEFAULT_PORTS = {"Postgres": 15432, "Redis": 16379}
 DEFAULT_WAIT = 30.0
+# What require() gives a script: it isn't the first step of a long run, and 10 s still
+# covers a tunnel that has just been opened.
+SCRIPT_WAIT = 10.0
+
+# The CLI's exit statuses.
+EXIT_NO_ANSWER = 1      # a service didn't answer before --wait ran out
+EXIT_STOPPED = 3        # a service stopped the check at once: waiting wouldn't fix it
+# What a script that require()s prod exits with when prod doesn't answer or can't be used:
+# nothing ran, the same as argparse's own 2.
+EXIT_UNREACHABLE = 2
+EXIT_INTERRUPTED = 130
+
+# The variable each service's URL is read from, by the app and by require().
+URL_VARIABLES = {"Postgres": "DATABASE_URL", "Redis": "REDIS_URL"}
 # A cold Postgres attempt is about 18 round trips (startup, SQLAlchemy's first-connect
 # queries, BEGIN, SELECT 1, ROLLBACK), so this leaves room for a slow link. A tunnel that
 # accepts and never answers is still bounded by --wait.
@@ -162,6 +192,35 @@ def where(name, url):
     return shown + (f"/{database}" if database not in (None, "") else "")
 
 
+def mask(name, url):
+    """A URL for display, as prod_seed.py's header shows it: the scheme, '*****@' when the
+    URL carries credentials, and where the driver will connect. Never the user name, the
+    password or the query string, and a URL url_problem refuses isn't shown at all, since
+    the host a driver misreads holds part of the password. prod_seed.py keeps its own copy
+    (_mask); a test keeps the two equal."""
+    problem = url_problem(name, url)
+    if problem is not None:
+        return f"(not shown: {problem[0]})"
+    scheme = url.partition("://")[0]
+    credentials = "*****@" if split_url(url)[0] is not None else ""
+    return f"{scheme}://{credentials}{where(name, url)}"
+
+
+def tunnel_commands(pairs):
+    """The railway connect line for each (name, url) written to reach prod through a tunnel
+    on the Mac, going by the host as written: that's what the tunnel was opened for. The port
+    is the URL's, or the tunnel's usual one when it names none. A URL anywhere else gets no
+    line. prod_seed.py's _tunnel_commands gives the same lines; a test keeps them equal."""
+    lines = []
+    for name, url in pairs:
+        parsed = split_url(url)
+        if parsed is None or parsed[1] != TUNNEL_HOST:
+            continue
+        port = parsed[2] or TUNNEL_DEFAULT_PORTS[name]
+        lines.append(f"railway connect {name} --tunnel-only -P {port} --environment production 2>/dev/null")
+    return lines
+
+
 def secrets_in(*urls):
     """Every form a URL's credentials can take in error text, longest first so no fragment
     survives a replace: the userinfo, its password, both percent-decoded, and any password=
@@ -258,11 +317,109 @@ def describe(exc, secrets):
     return redact(f"{label}: {text}" if text else label, secrets)
 
 
+def lost(exc):
+    """True when exc says a connection to Postgres or Redis was refused, dropped or timed
+    out, which is what a closed or dropped tunnel looks like, as opposed to the database
+    refusing a statement. Narrower than retryable(), which only ever sees a probe's errors:
+    a broken pipe to this script's own output, a file error, or anything from requests (the
+    Cloudflare calls) isn't a lost tunnel."""
+    import asyncpg
+    import redis
+
+    links = list(_chain(exc))
+    if any(type(e).__module__.split(".")[0] == "requests" for e in links):
+        return False
+    for e in links:
+        if getattr(e, "connection_invalidated", False):      # SQLAlchemy saw a disconnect
+            return True
+        if isinstance(e, (ConnectionRefusedError, ConnectionResetError, ConnectionAbortedError,
+                          socket.gaierror, TimeoutError)):
+            return True
+        if isinstance(e, OSError) and (e.errno in (errno.ENETUNREACH, errno.EHOSTUNREACH)
+                                       or str(e).startswith("Multiple exceptions:")):
+            return True     # the second: asyncio's text when every address of a host refused
+        if isinstance(e, (asyncpg.exceptions.PostgresConnectionError,     # SQLSTATE class 08
+                          asyncpg.exceptions.CannotConnectNowError)):
+            return True
+        if (isinstance(e, (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError))
+                and not isinstance(e, redis.exceptions.AuthenticationError)):
+            return True
+    return False
+
+
+def _subject(names):
+    return " or ".join(names)
+
+
+def _service_urls(names):
+    """(name, url) for each service, from the variables the app reads them from."""
+    return [(name, os.environ.get(URL_VARIABLES[name], "")) for name in names]
+
+
+def _advice(pairs, dropped):
+    """The arrow line and the railway connect line(s) for the tunnels these URLs go through.
+    Nothing when none does, so a URL pointing anywhere else isn't told to open a tunnel."""
+    commands = tunnel_commands(pairs)
+    if not commands:
+        return []
+    if dropped:
+        head = ("If its tunnel dropped, reopen it in a Mac tab" if len(commands) == 1
+                else "If a tunnel dropped, reopen it in a Mac tab")
+    else:
+        head = ("If its tunnel isn't open, run this in a Mac tab" if len(commands) == 1
+                else "If the tunnels aren't open, run these in two Mac tabs")
+    return [f"  → {head}, then run this again:"] + [f"      {command}" for command in commands]
+
+
+def _culprit(exc):
+    """The link of exc that says what happened: the driver's own error, not the wrappers
+    SQLAlchemy puts around it, else the system's."""
+    import asyncpg
+    import redis
+
+    links = list(_chain(exc))
+    for kinds in ((asyncpg.exceptions.PostgresError, redis.exceptions.RedisError), (OSError,)):
+        for e in links:
+            if isinstance(e, kinds):
+                return e
+    return exc
+
+
+def _reason(exc, secrets):
+    """describe() of the culprit, except that a timeout, which carries no text, says what
+    happened."""
+    culprit = _culprit(exc)
+    if isinstance(culprit, TimeoutError) and not str(culprit).strip():
+        return "no answer in time"
+    return describe(culprit, secrets)
+
+
+def no_answer_message(names, seconds):
+    """A script's last words when its watchdog ends it (scripts/db/seed_guard.py): the
+    database stopped answering partway through."""
+    lines = [(f"{RED}✗ No answer from prod {_subject(names)} for {seconds:g} s; its tunnel may "
+              f"have dropped.{RESET}")]
+    return "\n".join(lines + _advice(_service_urls(names), dropped=True))
+
+
+def lost_message(names, reason):
+    """A script's last words when its connection to prod was lost partway through."""
+    lines = [f"{RED}✗ Lost prod {_subject(names)} partway through ({reason}).{RESET}"]
+    return "\n".join(lines + _advice(_service_urls(names), dropped=True))
+
+
+def report_lost(names, exc):
+    """Print lost_message for exc (one lost() is true for), its text redacted."""
+    secrets = secrets_in(*(url for _, url in _service_urls(names)))
+    print(lost_message(names, _reason(exc, secrets)), flush=True)
+
+
 async def wait_for(name, url, probe, answered, *, deadline, wait, secrets, out,
                    attempt_timeout=ATTEMPT_TIMEOUT, interval=RETRY_INTERVAL,
-                   clock=time.monotonic, sleep=asyncio.sleep):
+                   clock=time.monotonic, sleep=asyncio.sleep, stopped=None):
     """Run probe until it succeeds, a failure can't be retried, or the deadline passes.
-    Writes its lines through out as they happen. Returns True when it answered."""
+    Writes its lines through out as they happen. Returns True when it answered. A failure
+    that can't be retried adds name to the stopped list, when one is given."""
     shown = redact(where(name, url), secrets)
     tries = 0
     last = None
@@ -280,6 +437,8 @@ async def wait_for(name, url, probe, answered, *, deadline, wait, secrets, out,
         except Exception as e:
             if not retryable(e):
                 out(f"  {RED}{name}{RESET} {shown}: stopped, {describe(e, secrets)}")
+                if stopped is not None:
+                    stopped.append(name)
                 break
             if last is None:
                 out(f"  {name} {shown}: not answering yet ({describe(e, secrets)}), "
@@ -300,15 +459,19 @@ async def wait_for(name, url, probe, answered, *, deadline, wait, secrets, out,
 
 
 async def run_checks(targets, *, wait, out, attempt_timeout=ATTEMPT_TIMEOUT,
-                     interval=RETRY_INTERVAL, clock=time.monotonic, sleep=asyncio.sleep):
+                     interval=RETRY_INTERVAL, clock=time.monotonic, sleep=asyncio.sleep,
+                     stopped=None):
     """targets: (name, url, probe, answered) tuples, probed concurrently against one
     deadline. Every URL is read first, and one its driver would misread stops the check
-    with nothing probed. True when every one answered."""
+    with nothing probed. True when every one answered. Each one that stopped the check at
+    once, rather than not answering in time, goes in the stopped list when one is given."""
     problems = [(name, url_problem(name, url)) for name, url, _, _ in targets]
     for name, problem in problems:
         if problem is not None:
             what, fix = problem
             out(f"  {RED}{name}{RESET}: stopped, {what}. {fix}")
+            if stopped is not None:
+                stopped.append(name)
     if any(problem is not None for _, problem in problems):
         return False
     secrets = secrets_in(*(url for _, url, _, _ in targets))
@@ -316,7 +479,7 @@ async def run_checks(targets, *, wait, out, attempt_timeout=ATTEMPT_TIMEOUT,
     results = await asyncio.gather(*(
         wait_for(name, url, probe, answered, deadline=deadline, wait=wait, secrets=secrets,
                  out=out, attempt_timeout=attempt_timeout, interval=interval, clock=clock,
-                 sleep=sleep)
+                 sleep=sleep, stopped=stopped)
         for name, url, probe, answered in targets))
     return all(results)
 
@@ -376,7 +539,8 @@ def _urls():
         return os.environ.get("DATABASE_URL", ""), os.environ.get("REDIS_URL", "redis://localhost:6379")
 
 
-async def main(wait):
+async def main(wait, only=None, stopped=None):
+    """Check both services, or just `only` ("postgres" or "redis")."""
     db_url, redis_url = _urls()
     parsed = split_url(redis_url)
     redis_answer = ("answered PING after AUTH" if parsed and parsed[0] and ":" in parsed[0]
@@ -385,8 +549,11 @@ async def main(wait):
         ("Postgres", db_url, _probe_postgres, "answered SELECT 1"),
         ("Redis", redis_url, _probe_redis, redis_answer),
     ]
+    if only:
+        targets = [target for target in targets if target[0].lower() == only]
     try:
-        return await run_checks(targets, wait=wait, out=lambda line: print(line, flush=True))
+        return await run_checks(targets, wait=wait, out=lambda line: print(line, flush=True),
+                                stopped=stopped)
     finally:
         await _close_clients()
 
@@ -410,11 +577,67 @@ def run_with_hard_limit(make_coro, *, limit, out=print):
         timer.cancel()
 
 
+def _run_check(argv):
+    """Run the check as a child in its own process group, so a Ctrl+C reaches only this
+    script, which then ends the child at once, as prod_seed.py ends its steps. Returns the
+    child's exit status."""
+    proc = subprocess.Popen(argv, process_group=0)
+    try:
+        return proc.wait()
+    except BaseException:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.wait()
+        raise
+
+
+def require(names, *, wait=SCRIPT_WAIT):
+    """Stop this script, with nothing done, unless the prod services it reads answer.
+
+    names are "Postgres" and/or "Redis", read from DATABASE_URL and REDIS_URL, which the
+    script has just pointed at PROD_DATABASE_URL and PROD_REDIS_URL. Call it before importing
+    anything that builds the app's engine or Redis client: they parse their URL at import,
+    and a parser's error quotes the password. The check runs as a child, as prod_seed.py runs
+    it, so a connection stuck on a dead tunnel can't hold this process. Exits
+    EXIT_UNREACHABLE when the check fails, naming the tunnel to open when one could be the
+    cause, and 130 on Ctrl+C."""
+    plural = len(names) > 1
+    print(f"Checking that prod {' and '.join(names)} answer{'' if plural else 's'} "
+          f"(scripts/db/check_connections.py)", flush=True)
+    argv = [sys.executable, str(Path(__file__).resolve()), "--wait", f"{wait:g}"]
+    if not plural:
+        argv += ["--only", names[0].lower()]
+    try:
+        code = _run_check(argv)
+    except KeyboardInterrupt:
+        print("Interrupted: nothing ran.", flush=True)
+        sys.exit(EXIT_INTERRUPTED)
+    if code == 0:
+        return
+    if code == EXIT_STOPPED:
+        # A misread URL, a refused password, an unknown database: no tunnel will fix it.
+        print(f"{RED}✗ Prod {_subject(names)} can't be used as set up (see the line above), so "
+              f"this stopped before doing anything.{RESET}", flush=True)
+    else:
+        lines = [(f"{RED}✗ Prod {_subject(names)} didn't answer (see above), so this stopped "
+                  f"before doing anything.{RESET}")]
+        print("\n".join(lines + _advice(_service_urls(names), dropped=False)), flush=True)
+    sys.exit(EXIT_UNREACHABLE)
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Wait until DATABASE_URL and REDIS_URL answer a real query.")
+    parser = argparse.ArgumentParser(
+        allow_abbrev=False,
+        description="Wait until DATABASE_URL and REDIS_URL answer a real query.")
     parser.add_argument("--wait", type=float, default=DEFAULT_WAIT,
                         help=f"seconds to keep retrying connection errors (default {DEFAULT_WAIT:g})")
+    parser.add_argument("--only", choices=("postgres", "redis"),
+                        help="check just this one")
     args = parser.parse_args()
-    ok = run_with_hard_limit(lambda: main(args.wait), limit=args.wait + HARD_LIMIT_GRACE,
+    stopped = []
+    ok = run_with_hard_limit(lambda: main(args.wait, args.only, stopped),
+                             limit=args.wait + HARD_LIMIT_GRACE,
                              out=lambda line: print(line, flush=True))
-    sys.exit(0 if ok else 1)
+    sys.exit(0 if ok else EXIT_STOPPED if stopped else EXIT_NO_ANSWER)

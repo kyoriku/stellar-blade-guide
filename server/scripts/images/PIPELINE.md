@@ -270,7 +270,13 @@ tunnels to it. Run prod seeds from the main checkout: the ledger lives in it.
 The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
 (`diff_collectibles.py --prod`, `cache_stats.py --prod`,
 `search_eval.py --timing --prod`, `purge_api_cache.py --singular-walkthroughs`,
-the `--prod` migrations) need the same tunnels open.
+the `--prod` migrations) need the same tunnels open. All but the migrations
+first check that what they read answers (`check_connections.py`, 10 s rather
+than 30). If it doesn't, they stop with nothing done and exit 2. When the URL
+goes through a tunnel, they print the `railway connect` line to run. A refused
+password or a URL its driver would misread also exits 2, saying the setup
+needs fixing. They show URLs as the header does: scheme, host, port and
+database, never the user name, password or query.
 
 ## What a prod seed purges
 

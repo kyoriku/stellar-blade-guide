@@ -44,6 +44,11 @@ statements search ran before the rework (copied below, verbatim). With --prod it
 reads PROD_DATABASE_URL from server/.env, derives the app's round trip from today's
 observed 65 ms median cache miss, and passes only if the predicted p90 miss is within
 100 ms. That needs the prod migration first: the statement reads the stored columns.
+
+--prod first checks that prod answers (scripts/db/check_connections.py, through the
+Postgres tunnel), then reads through the scripts' own engine under a watchdog. Exits 2,
+with the railway connect line to run, when prod doesn't answer or stops answering partway
+through.
 """
 
 import argparse
@@ -69,7 +74,9 @@ SEO = json.loads((SERVER_DIR.parent / "client" / "src" / "constants" / "seo.json
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    # No abbreviations: --pro or --p would otherwise reach prod.
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
+                                allow_abbrev=False)
     p.add_argument("--snapshot", action="store_true", help="record today's results in scripts/search-baseline.json")
     p.add_argument("--timing", action="store_true", help="only time the statements (EXPLAIN ANALYZE)")
     p.add_argument("--prod", action="store_true", help="with --timing: time on PROD_DATABASE_URL, read-only")
@@ -83,14 +90,25 @@ def parse_args():
 
 ARGS = parse_args()
 
+# try/except import, as for the app below. check_connections imports nothing that reads
+# DATABASE_URL, so it can come before the repoint.
+try:
+    from scripts.db import check_connections as cc
+except ModuleNotFoundError:
+    sys.path.insert(0, str(SERVER_DIR))
+    from scripts.db import check_connections as cc
+
 # --prod must repoint DATABASE_URL before the app imports below: app.db.database
-# builds its engine from settings at import.
+# builds its engine from settings at import. The check comes first: a closed tunnel stops
+# here with the line to run, and a URL its driver would misread stops before anything
+# parses it, since a parser's error quotes the password.
 if ARGS.prod:
     load_dotenv(SERVER_DIR / ".env")
     if not os.getenv("PROD_DATABASE_URL"):
         print("\033[31mPROD_DATABASE_URL not set in server/.env\033[0m")
         sys.exit(1)
     os.environ["DATABASE_URL"] = os.environ["PROD_DATABASE_URL"]
+    cc.require(["Postgres"])
 
 # try/except import instead of the usual sys.path.insert-then-import: on-save
 # import sorters hoist app imports above the path bootstrap and break it.
@@ -106,6 +124,28 @@ from app.config.settings import settings  # noqa: E402
 from app.core.colours import CYAN, GRAY, GREEN, RED, RESET, YELLOW  # noqa: E402
 from app.core.navigation import NAV_LEVEL_SLUGS, url_type  # noqa: E402
 from app.services import search, search_text  # noqa: E402
+
+# Under --prod, read through the scripts' own engine under a watchdog: through a tunnel that
+# freezes, a statement's cleanup can wait for good (scripts/db/seed_guard.py). The watchdog
+# ends the run with the plain message instead.
+WATCHDOG = None
+if ARGS.prod:
+    from scripts.db.seed_guard import (
+        NO_ANSWER_SECONDS,
+        Watchdog,
+        seed_engine,
+        seed_sessionmaker,
+        watch_engine,
+    )
+
+    engine = seed_engine("search_eval")
+    AsyncSessionLocal = seed_sessionmaker(engine)
+    WATCHDOG = Watchdog(NO_ANSWER_SECONDS, cc.EXIT_UNREACHABLE,
+                        lambda: cc.no_answer_message(["Postgres"], NO_ANSWER_SECONDS))
+    watch_engine(engine, WATCHDOG)
+    # The watchdog ends the process with os._exit, which drops anything still buffered:
+    # flush every line, so the lines before a freeze survive a pipe or a file too.
+    sys.stdout.reconfigure(line_buffering=True)
 
 # ---------------------------------------------------------------------------
 # What the evaluation asks
@@ -216,10 +256,6 @@ ALIAS_WORDS = ("outfit", "skin", "suit", "costume", "new game", "ng+", "ng++", "
 
 def fam(kind):
     return "item" if kind in ("collectibles", "upgrades", "cosmetics") else kind
-
-
-def _mask(url):
-    return re.sub(r"//([^:/@]+):[^@]*@", r"//\1:*****@", url)
 
 
 def normalize(q):
@@ -441,7 +477,7 @@ async def snapshot():
     BASELINE.write_text(json.dumps({
         "created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "git_head": head,
-        "database": _mask(settings.DATABASE_URL),
+        "database": cc.mask("Postgres", settings.DATABASE_URL),
         "queries": queries,
     }, ensure_ascii=False), encoding="utf-8")
     print(f"{GREEN}Wrote {BASELINE.relative_to(SERVER_DIR)}{RESET}: {len(queries)} queries in "
@@ -1354,7 +1390,9 @@ async def timing(report_budget=False):
 async def main():
     print(f"{CYAN}--- search_eval: {'snapshot' if ARGS.snapshot else 'timing' if ARGS.timing else 'check'} / "
           f"{'prod' if ARGS.prod else 'dev'} ---{RESET}")
-    print(f"  Database: {_mask(settings.DATABASE_URL)}")
+    print(f"  Database: {cc.mask('Postgres', settings.DATABASE_URL)}")
+    if WATCHDOG is not None:
+        WATCHDOG.start()
     try:
         if ARGS.snapshot:
             return await snapshot()
@@ -1364,7 +1402,17 @@ async def main():
         return await check()
     finally:
         await engine.dispose()
+        if WATCHDOG is not None:
+            WATCHDOG.stop()
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    try:
+        sys.exit(asyncio.run(main()))
+    except Exception as e:
+        # Only a connection to prod lost partway through gets the plain message. Anything
+        # else is a bug, and keeps its traceback.
+        if not (ARGS.prod and cc.lost(e)):
+            raise
+        cc.report_lost(["Postgres"], e)
+        sys.exit(cc.EXIT_UNREACHABLE)

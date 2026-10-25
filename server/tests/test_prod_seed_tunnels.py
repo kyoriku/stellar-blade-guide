@@ -225,3 +225,32 @@ def test_the_header_reads_each_url_as_the_check_does(url, name):
     assert ns["_reading"](name, url) == cc.reading(name, url)
     problem = cc.url_problem(name, url)
     assert ns["_url_problem"](name, url) == (problem[0] if problem else None)
+
+
+# check_connections.mask and tunnel_commands show the other prod-reading scripts' URLs and
+# tunnels; prod_seed.py keeps its own copies, which must say exactly the same.
+
+MORE = [
+    "postgresql://postgres@host.docker.internal:15432/railway",              # no password
+    "redis://host.docker.internal:16379",                                    # no credentials
+    "postgresql://postgres:sekret-91@[::1]:5432/railway",
+    "postgresql+asyncpg://postgres:sekret-91@host.docker.internal/railway",  # no port
+    "redis://default:sekret-91@host.docker.internal:16379/2",                # a db index
+]
+
+
+@pytest.mark.parametrize("name", ["Postgres", "Redis"])
+@pytest.mark.parametrize("url", AWKWARD + MORE + [TUNNEL_DB, TUNNEL_REDIS, TWO_AT_PG, TWO_AT_REDIS,
+                                                  SLASH_REDIS])
+def test_check_connections_masks_every_url_as_prod_seed_does(url, name):
+    assert cc.mask(name, url) == _load()["_mask"](name, url)
+
+
+@pytest.mark.parametrize("db,cache", [
+    (TUNNEL_DB, TUNNEL_REDIS),
+    (TUNNEL_DB.replace(":15432", ":25432"), TUNNEL_REDIS.replace(":16379", ":26379")),
+    (TUNNEL_DB.replace(":15432", ""), TUNNEL_REDIS.replace(":16379", "")),
+])
+def test_check_connections_names_the_tunnels_as_prod_seed_does(db, cache):
+    ns = _load(PROD_DATABASE_URL=db, PROD_REDIS_URL=cache)
+    assert cc.tunnel_commands([("Postgres", db), ("Redis", cache)]) == ns["_tunnel_commands"]()
