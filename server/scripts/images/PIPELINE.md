@@ -197,8 +197,10 @@ tunnels only for the run, and don't run a Claude Code task while they're open.
    from server/ (a local, untracked script). Its Ids and Locations lines must
    both read `none · none`: the seed deletes every collectible only the database
    has, and that cascades to users' progress.
-4. In the devcontainer, from server/: `uv run python scripts/prod_seed.py`, with
-   `--purge-all` or `--no-fallback` if needed. Before the typed confirmation it
+4. In the devcontainer, from server/: `uv run python scripts/prod_seed.py`.
+   `--purge-all` purges every API URL instead of only the changed ones;
+   `--no-fallback` is no longer needed and does nothing. Its header names any
+   earlier run still owed a purge. Before the typed confirmation it
    sends each a real query (`SELECT 1`, an authenticated `PING`). A closed
    tunnel is retried for 30 s, while a refused password or a URL its driver
    would misread stops it at once; either way nothing runs, and it prints both
@@ -214,20 +216,25 @@ tunnels only for the run, and don't run a Claude Code task while they're open.
 To check the tunnels without seeding, run it and answer anything but
 `seed prod`.
 
-After a run that stopped partway (a dropped tunnel, Ctrl+C, a failed step),
-prod may be partly written while Redis and the edge still serve the old pages.
-A dropped Redis tunnel doesn't even stop the run: the seeders log
-`Redis error on CLEAR …`, count 0 keys and carry on, so the run can still end in
-`Prod seed complete`. Treat any `Redis error` line in a run as a partial run.
+A run that stops partway leaves prod consistent. Each seeder writes in one
+transaction, so it committed all of its changes or none, and a reader never sees
+a half-written state. What a seeder commits is recorded in
+`scripts/cache/purge-manifest.json` (the purge ledger) before its COMMIT, each
+purge covers every run the ledger still owes, and only a purge `prod_seed.py`
+started clears it. Every failure stops the run and prints what failed, what is
+still owed, and what to run next:
 
-To recover, run it again, then `uv run python scripts/cache/purge_api_cache.py --all`
-in the devcontainer. The re-run's scoped purge only sees rows that still differ,
-so it would miss what the stopped run wrote. `--all` builds its URL list from the
-dev database, which holds the same content, and needs no tunnel. It only reaches
-URLs that some current row produces, though: if the stopped run renamed, moved
-or removed a walkthrough (check the seed-data git diff for the old slug or
-type), purge its old URL by hand, or run `prod_seed.py --purge-all` and accept
-the image-cache blast radius.
+- a seeder failed: fix the cause, then run it again. To purge what an earlier
+  step already committed before that, run it with `--purge-only`.
+- the last cache clear or the purge failed: `uv run python scripts/prod_seed.py
+  --purge-only`. It checks the tunnels, asks for the same confirmation, clears
+  Redis and purges what's owed, without seeding.
+
+A dropped tunnel ends the step within about 30 s, and prod rolls back an
+abandoned transaction by itself (`idle_in_transaction_session_timeout` 30 s,
+`transaction_timeout` 2 min). Ctrl+C stops the running step at once and logs
+where it landed. A second run while one is going stops at once. Run prod seeds
+from the main checkout: the ledger lives in it.
 
 The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
 (`diff_collectibles.py --prod`, `cache_stats.py --prod`,
@@ -236,19 +243,22 @@ the `--prod` migrations) need the same tunnels open.
 
 ## What a prod seed purges
 
-`prod_seed.py` purges only the seeded API surface: every cached GET URL
-under the five API prefixes, derived live by
-`scripts/cache/purge_api_cache.py` (FastAPI route table x DB slugs x client
-navigation constants, batched per the purge API's limits,
-every response verified; `--dry-run` lists without purging). Images are
-never purged: their URLs are immutable and content changes always rename,
-so the ~10k-object image cache stays warm across seeds. Any enumeration or
-purge failure falls back loudly to a full zone purge — partial purge is
-never an outcome, because API responses carry s-maxage=30d and a missed URL
-would serve stale for up to a month. `prod_seed.py --purge-all` forces the
-old full-zone purge explicitly; use it if anything outside the API surface
-must be flushed (for example after replacing a Site/ asset in place, which
-should not happen, or if the scoped derivation is ever in doubt).
+`prod_seed.py` purges only the seeded API surface: the cached GET URLs under
+the five API prefixes that this run, or an earlier run still owed a purge,
+changed. They are derived live by `scripts/cache/purge_api_cache.py` (FastAPI
+route table x DB slugs x client navigation constants, batched per the purge
+API's limits, every response verified; `--dry-run` lists without purging).
+Images are never purged by a seed: their URLs are immutable and content
+changes always rename, so the ~10k-object image cache stays warm across seeds.
+
+There is no fallback. A purge that fails stops the run, keeps the ledger and
+names the next command. A partial purge is harmless: the ledger keeps every
+record, so the next purge repeats every URL still owed. Anything the ledger
+can't vouch for widens to the full API surface, plus every walkthrough URL it
+recorded (the surface comes from the current DB, so it can't name a renamed
+or deleted page's old URL), and never to the zone. `prod_seed.py --purge-all`
+purges every API URL that way by request; use it if the scoped derivation is
+ever in doubt.
 
 One documented exception: on 2026-07-12 every object (originals and variants)
 was deliberately re-encoded from the 4K masters and overwritten in place via
