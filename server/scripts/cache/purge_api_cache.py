@@ -4,25 +4,32 @@ Scoped Cloudflare purge for the seeded API surface.
 Usage:
   uv run python scripts/cache/purge_api_cache.py            # derive + purge
   uv run python scripts/cache/purge_api_cache.py --dry-run  # derive + list only
-  uv run python scripts/cache/purge_api_cache.py --all      # ignore the manifest,
+  uv run python scripts/cache/purge_api_cache.py --all      # ignore the narrowing,
                                                             # purge the full surface
-  uv run python scripts/cache/purge_api_cache.py --run-id X # narrow to the changed
-                                                            # entities recorded by run X
+  uv run python scripts/cache/purge_api_cache.py --run-id X # require run X's records
+  uv run python scripts/cache/purge_api_cache.py --clear-ledger
+                                    # clear the ledger once the purge succeeds;
+                                    # prod_seed.py passes it, a run by hand doesn't
   uv run python scripts/cache/purge_api_cache.py --singular-walkthroughs
                                     # one-time: the walkthrough URLs under the DB
                                     # spelling of a type (side-quest), read from the
-                                    # PROD database; leaves the seed manifest alone
+                                    # PROD database; leaves the ledger alone
 
---run-id defaults to $SEED_RUN_ID, which prod_seed.py exports, so an orchestrated
-run needs no flag. Without either, there is no run to match a manifest against and
-the purge covers the full surface. --dry-run and --all compose with everything.
+The purge covers every change the ledger (scripts/cache/purge_manifest.py) still owes,
+from this run and any earlier run that stopped before its purge succeeded. --run-id
+defaults to $SEED_RUN_ID, which prod_seed.py exports when it seeds; with it, the purge
+also requires that run's two records. Anything the ledger can't vouch for widens to the
+full surface, which then also carries every walkthrough URL the ledger recorded: the
+surface is derived from the current DB and can't name a renamed or deleted page's old URL.
+
+Only a purge prod_seed.py started clears the ledger (--clear-ledger). A run by hand, which
+also reads whatever database DATABASE_URL names, leaves it for prod_seed.py.
 
 Derives the full cached API URL space live (FastAPI route table x DB slugs x
 client navigation constants), batches purge calls at 30 URLs (Pro plan limit),
-and verifies every API response. Exits non-zero on ANY enumeration or purge
-failure so the caller (prod_seed.py) can fall back to purge_everything —
-partial purge is the one unacceptable outcome (API responses carry
-s-maxage=30d, so a missed URL would serve stale for up to a month).
+and verifies every API response. There is no fallback: a failure stops with a last line
+that names the cause, and nothing else is purged. A partial purge is harmless, since the
+ledger keeps every record until a purge succeeds and the next one repeats them.
 
 The surface is derived live and grows with the content: 125 URLs as of
 2026-09-14 (12 levels, 85 walkthroughs), up from 81 at the 2026-07-16
@@ -33,11 +40,10 @@ two together.
 Exit codes tell prod_seed.py whether retrying is worth anything:
   0  purged (or listed, under --dry-run)
   1  TRANSIENT  — Cloudflare timed out, refused with 429, or 5xx'd. Retry.
-  2  PERMANENT  — enumeration broke, the sanity floor tripped, or the token is
-                  missing/rejected. The same call fails identically, so the
-                  caller should go straight to its fallback.
-Both non-zero codes are still "fall back to a full purge" as far as safety is
-concerned; the split only decides whether to retry first.
+  2  PERMANENT  — the URL list couldn't be built (no answer from the database, an
+                  unknown route shape, the sanity floor, a record that maps to no URL)
+                  or Cloudflare refused the purge (a missing or rejected token). The
+                  same call fails identically, so retrying is pointless.
 
 Invoked by prod_seed.py with the PROD DATABASE_URL in the environment, so
 slugs are derived from exactly what was just seeded. Images are never purged:
@@ -86,12 +92,25 @@ EXIT_PERMANENT = 2
 
 # Statuses where the identical call can plausibly succeed later. 401/403 (missing
 # or unscoped token) and 400 (malformed batch) are deliberately absent: retrying
-# those just burns the retry budget before the caller's fallback runs.
+# those only repeats the same refusal.
 RETRYABLE_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
 
 
 class TransientPurgeError(RuntimeError):
     """A Cloudflare-side failure worth retrying — timeout, connection drop, 429, 5xx."""
+
+
+class CloudflareRefused(RuntimeError):
+    """Cloudflare refused the purge in a way a retry can't change: a 400, 401 or 403, or a
+    response saying it failed. Also a missing token or zone ID."""
+
+
+class UrlListError(RuntimeError):
+    """The URL list couldn't be built, so nothing was purged."""
+
+
+NO_DB_ANSWER = ('\033[31m✗ No answer from the database for {seconds} s while building the URL '
+                'list; nothing was purged.\033[0m')
 
 
 def kebab(name):
@@ -119,21 +138,38 @@ def parse_navigation():
 
 def load_db_sources():
     """Level/walkthrough slugs from the database this process was
-    pointed at (prod when invoked by prod_seed.py)."""
+    pointed at (prod when invoked by prod_seed.py).
+
+    Read through the scripts' own engine under a watchdog: through a dead tunnel the
+    read could otherwise hang for minutes (scripts/db/seed_guard.py)."""
     import asyncio
     from sqlalchemy import select
-    from app.db.database import AsyncSessionLocal
     from app.models.collectibles import Level
     from app.models.walkthroughs import Walkthrough
     from app.routers.walkthroughs import _normalize_type
+    from scripts.db.seed_guard import (
+        ANSWER_SECONDS, NO_ANSWER_SECONDS, Watchdog, seed_engine, seed_sessionmaker, watch_engine,
+    )
+
+    watchdog = Watchdog(NO_ANSWER_SECONDS, EXIT_PERMANENT,
+                        lambda: NO_DB_ANSWER.format(seconds=NO_ANSWER_SECONDS))
 
     async def q():
-        async with AsyncSessionLocal() as s:
+        engine = seed_engine('purge_api_cache')
+        watch_engine(engine, watchdog)
+        watchdog.start()
+        async with seed_sessionmaker(engine)() as s:
             levels = (await s.execute(select(Level.name))).scalars().all()
             wts = (await s.execute(select(Walkthrough.mission_type, Walkthrough.slug))).all()
+        await engine.dispose()
         return levels, wts
 
-    levels, wts = asyncio.run(q())
+    try:
+        levels, wts = asyncio.run(q())
+    except TimeoutError as e:   # carries no text of its own
+        raise RuntimeError(f'no answer from the database within {ANSWER_SECONDS} s') from e
+    finally:
+        watchdog.stop()
     if not levels or not wts:
         raise RuntimeError('DB slug query returned an empty set')
 
@@ -261,6 +297,35 @@ def removed_detail_urls(routes, removed_pairs, db):
     return derive_urls(routes, only_removed, _EMPTY_NAV, index_prefixes=set())
 
 
+def split_gone_pairs(changed, db):
+    """`changed` with every recorded walkthrough pair that no longer exists counted as a
+    removal. An earlier run's record can name a walkthrough a later run renamed or deleted:
+    its URL is gone from the current surface, yet the edge may still hold it, so it is
+    purged like any removal instead of failing the subset check."""
+    current = set(db['walkthrough_pairs'])
+    to_url = db['db_type_to_url']
+    still, gone = [], set(changed.get('pairs_removed') or [])
+    for mission_type, slug in changed.get('pairs') or []:
+        if (to_url.get(mission_type), slug) in current:
+            still.append((mission_type, slug))
+        else:
+            gone.add((mission_type, slug))
+    return {**changed, 'pairs': still, 'pairs_removed': sorted(gone)}
+
+
+def recorded_pair_urls(routes, recorded, db, nav):
+    """The detail page and type list of every walkthrough the ledger recorded, changed or
+    removed. A full-surface purge derives its list from the current DB, which can't name a
+    renamed or deleted walkthrough's old URL; these can. A pair whose type maps to no URL
+    raises, so the purge fails and the ledger keeps it."""
+    pairs = sorted(set(recorded.get('pairs') or []) | set(recorded.get('pairs_removed') or []))
+    if not pairs:
+        return []
+    only_pairs = {'level_names': [], 'type_slugs': [], 'pairs': [], 'pairs_removed': pairs}
+    scoped_db, scoped_nav, index_prefixes, _removed = scope_sources(only_pairs, db, nav)
+    return derive_urls(routes, scoped_db, scoped_nav, index_prefixes)
+
+
 def singular_walkthrough_urls(routes, db):
     """One-time: walkthrough URLs under the DB spelling of a type whose URL spelling
     differs (/api/walkthroughs/side-quest and /api/walkthroughs/side-quest/<slug>).
@@ -331,7 +396,7 @@ def purge(urls):
     zone = os.getenv('CLOUDFLARE_ZONE_ID')
     token = os.getenv('CLOUDFLARE_API_TOKEN')
     if not zone or not token:
-        raise RuntimeError('CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN not set')
+        raise CloudflareRefused('CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN not set in server/.env')
     purged = 0
     for i in range(0, len(urls), BATCH_SIZE):
         batch = urls[i:i + BATCH_SIZE]
@@ -353,11 +418,11 @@ def purge(urls):
         if response.status_code in RETRYABLE_STATUSES:
             raise TransientPurgeError(f'batch {batch_no} got HTTP {response.status_code} from Cloudflare')
         if not response.ok:
-            raise RuntimeError(f'batch {batch_no} got HTTP {response.status_code} from Cloudflare')
+            raise CloudflareRefused(f'batch {batch_no} got HTTP {response.status_code} from Cloudflare')
 
         result = response.json()
         if not result.get('success'):
-            raise RuntimeError(f'batch {batch_no} rejected: {result.get("errors")}')
+            raise CloudflareRefused(f'batch {batch_no} rejected: {result.get("errors")}')
         purged += len(batch)
         print(f"\033[90m  [{purged}/{len(urls)}] purged\033[0m")
     return purged
@@ -421,6 +486,7 @@ def main():
     dry_run = '--dry-run' in args
     force_all = '--all' in args
     singular = '--singular-walkthroughs' in args
+    may_clear = '--clear-ledger' in args
     run_id = _flag_value(args, '--run-id') or purge_manifest.current_run_id()
 
     print('\033[36m=== Scoped API cache purge ===\033[0m')
@@ -433,35 +499,47 @@ def main():
             raise RuntimeError('--singular-walkthroughs needs PROD_DATABASE_URL (server/.env)')
         os.environ['DATABASE_URL'] = prod_db
         print(f'  Database: {_mask(prod_db)}')
-    from app.main import app  # route table is the source of truth for shapes
-    nav = parse_navigation()
-    db = load_db_sources()
 
-    # The full surface is derived first regardless of scope: it is the floor
-    # check, and it is what the narrowed set is validated against. Deriving it
-    # also means an unrecognized route shape raises here, before any narrowing.
-    full_urls = derive_urls(app.routes, db, nav)
-    if len(full_urls) < SANITY_FLOOR:
-        raise RuntimeError(
-            f'derived only {len(full_urls)} URLs (< {SANITY_FLOOR}) — refusing partial purge')
+    try:
+        from app.main import app  # route table is the source of truth for shapes
+        nav = parse_navigation()
+        db = load_db_sources()
+
+        # The full surface is derived first regardless of scope: it is the floor
+        # check, and it is what the narrowed set is validated against. Deriving it
+        # also means an unrecognized route shape raises here, before any narrowing.
+        full_urls = derive_urls(app.routes, db, nav)
+        if len(full_urls) < SANITY_FLOOR:
+            raise RuntimeError(
+                f'derived only {len(full_urls)} URLs (< {SANITY_FLOOR}) — refusing partial purge')
+    except Exception as e:
+        raise UrlListError(_first_line(e)) from e
     print(f'Full surface: {len(full_urls)} cached API URLs '
           f'({len(db["levels"])} levels, {len(db["walkthrough_pairs"])} walkthroughs)')
 
     urls, scope = full_urls, 'full surface'
     if singular:
         urls, scope = singular_walkthrough_urls(app.routes, db), 'singular walkthrough spellings (one-time)'
-    elif force_all:
-        print('  --all: purging the full surface by request')
     else:
         try:
             changed = purge_manifest.load(run_id)
-            if not has_changes(changed):
-                # An explicitly complete manifest with an empty change set is
-                # the one case that legitimately purges nothing. Absence of a
-                # manifest never reaches here — load() raises for that.
-                print('  manifest: no entities changed, nothing to purge')
-                urls, scope = [], 'no changes'
-            else:
+        except purge_manifest.ManifestUnusable as e:
+            changed, unusable = None, e
+        if force_all:
+            print('  --all: purging the full surface by request')
+            urls = _full_with_recorded(app.routes, full_urls, db, nav)
+        elif changed is None:
+            # Every ambiguity widens. Under-purging serves stale content for up
+            # to 30 days; over-purging costs a cold edge for a few hours.
+            print(f'\033[33m  widening to the full surface: {unusable}\033[0m')
+            urls = _full_with_recorded(app.routes, full_urls, db, nav)
+        elif not has_changes(changed):
+            # Every run the ledger holds recorded, and none of them changed anything.
+            print('  manifest: no entities changed, nothing to purge')
+            urls, scope = [], 'no changes'
+        else:
+            try:
+                changed = split_gone_pairs(changed, db)
                 scoped_db, scoped_nav, index_prefixes, removed = scope_sources(changed, db, nav)
                 narrowed = derive_urls(app.routes, scoped_db, scoped_nav, index_prefixes)
                 check_narrowed(narrowed, full_urls, removed_detail_urls(app.routes, removed, db))
@@ -471,11 +549,11 @@ def main():
                       f'{len(changed["pairs"])} walkthrough(s) changed, '
                       f'{len(changed.get("pairs_removed", ()))} removed '
                       f'→ {len(urls)} URLs')
-        except (purge_manifest.ManifestUnusable, RuntimeError) as e:
-            # Every ambiguity widens. Under-purging serves stale content for up
-            # to 30 days; over-purging costs a cold edge for a few hours.
-            print(f'\033[33m  widening to the full surface: {e}\033[0m')
-            urls, scope = full_urls, 'full surface'
+            except RuntimeError as e:
+                print(f'\033[33m  widening to the full surface: {e}\033[0m')
+                urls = _full_with_recorded(app.routes, full_urls, db, nav)
+        if changed and changed['earlier_runs']:
+            print(f'  includes earlier run(s) not yet purged: {", ".join(changed["earlier_runs"])}')
 
     # Always name the URLs, not just how many. prod_seed.py streams this into
     # the run log, so the list is the record of exactly what was invalidated —
@@ -489,20 +567,55 @@ def main():
         return
 
     purged = purge(urls)
-    # Spent either way: a full purge covers whatever the manifest described, so
-    # leaving it behind would let a later run re-purge a stale changed set. The
-    # one-time singular purge covers none of it, so a pending manifest stays.
+    # The one-time singular purge covers none of the ledger's records, so it leaves them.
     if not singular:
-        purge_manifest.clear()
+        if may_clear:
+            try:
+                purge_manifest.clear()
+            except OSError as e:
+                print(f'\033[33m  Couldn\'t clear the ledger ({type(e).__name__}: {e}); the next '
+                      f'purge repeats these URLs\033[0m')
+        else:
+            owed = purge_manifest.owed()
+            if owed:
+                print(f'\033[33m  The ledger still lists {len(owed)} run(s) owed a purge; only a purge '
+                      f'prod_seed.py starts clears it\033[0m')
     print(f'\033[32m✓ Purged {purged} API URLs ({scope}); image cache left warm\033[0m')
+
+
+def _full_with_recorded(routes, full_urls, db, nav):
+    """The full surface plus every walkthrough URL the ledger recorded (see
+    recorded_pair_urls). A ledger that can't be read adds nothing: its records are unknown."""
+    try:
+        recorded = purge_manifest.load_all()
+    except purge_manifest.ManifestUnusable:
+        return full_urls
+    try:
+        extra = recorded_pair_urls(routes, recorded, db, nav)
+    except RuntimeError as e:
+        raise UrlListError(f'a recorded walkthrough maps to no URL: {e}') from e
+    return full_urls + sorted(set(extra) - set(full_urls))
+
+
+def _first_line(exc):
+    text = str(exc).strip()
+    return text.splitlines()[0][:300] if text else type(exc).__name__
 
 
 if __name__ == '__main__':
     try:
         main()
     except TransientPurgeError as e:
-        print(f'\033[31m✗ Scoped purge failed (transient, retryable): {e}\033[0m')
+        print(f'\033[31m✗ Cloudflare kept failing: {e}. Any batches listed above as purged are '
+              f'done; the ledger keeps every record, so the next purge repeats them.\033[0m')
         sys.exit(EXIT_TRANSIENT)
+    except UrlListError as e:
+        print(f'\033[31m✗ Couldn\'t build the URL list: {e}. Nothing was purged.\033[0m')
+        sys.exit(EXIT_PERMANENT)
+    except CloudflareRefused as e:
+        print(f'\033[31m✗ Cloudflare refused the purge: {e}. Check CLOUDFLARE_API_TOKEN and '
+              f'CLOUDFLARE_ZONE_ID in server/.env. The ledger keeps every record.\033[0m')
+        sys.exit(EXIT_PERMANENT)
     except Exception as e:
-        print(f'\033[31m✗ Scoped purge failed (permanent): {e}\033[0m')
+        print(f'\033[31m✗ Purge failed: {_first_line(e)}. The ledger keeps every record.\033[0m')
         sys.exit(EXIT_PERMANENT)
