@@ -2,11 +2,13 @@
 Regression guard: the content-cache clears used by the seeding/dev flow must
 never delete refresh-token keys, nor any other key that isn't content.
 
-invalidate_cache_pattern (app/core/cache.py) does redis KEYS(glob) + DELETE, so
+invalidate_cache_pattern (app/core/cache.py) does redis SCAN(glob) + DELETE, so
 its safety depends entirely on the globs callers pass. A caller that ever passed
 a glob overlapping `refresh:{uid}:{hash}` would silently log out every user. This
 pins that none of the real content globs can match a refresh key, and that the
-manual clear covers everything the seeders clear.
+manual clear covers everything the seeders clear. It also pins that SCAN deletes
+exactly what the KEYS it replaced matched, and that a Redis error raises instead of
+reading as "no keys".
 
 Uses the autouse fake_redis (conftest patches app.core.cache.redis_client), and
 the real key builders so every seeded key has its exact production shape.
@@ -14,6 +16,11 @@ the real key builders so every seeded key has its exact production shape.
 
 from __future__ import annotations
 
+import pytest
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
+
+from app.core import cache
 from app.core.auth import _family_key, _refresh_key
 from app.core.cache import invalidate_cache_pattern, search_cache_key, walkthrough_cache_keys
 from app.services.auth import reset_cooldown_key
@@ -84,9 +91,51 @@ async def test_the_manual_clear_removes_every_content_key_and_nothing_else(fake_
     for key in _auth_keys() + _content_keys():
         await fake_redis.set(key, "1")
 
-    await clear_content_cache.main()
+    assert await clear_content_cache.main() is True
 
     for key in _content_keys():
         assert await fake_redis.get(key) is None, key
     for key in _auth_keys():
         assert await fake_redis.get(key) == "1", key
+
+
+async def test_scan_deletes_exactly_what_keys_matched(fake_redis):
+    # More keys than one SCAN call looks at, so the cursor has to come round several
+    # times, and of shapes that sit right beside the globs.
+    keys = _auth_keys() + _content_keys()
+    keys += [f"collectibles:type:t{i}" for i in range(3 * cache.SCAN_COUNT)]
+    keys += ["walkthrough", "walkthroughs", "xcollectibles:level:a", "search", "searches:x"]
+    for key in keys:
+        await fake_redis.set(key, "1")
+
+    for pattern in sorted(set(CONTENT_PATTERNS) | set(SEED_PATTERNS)):
+        matched = set(await fake_redis.keys(pattern))
+        before = set(await fake_redis.keys("*"))
+        assert await invalidate_cache_pattern(pattern) == len(matched)
+        assert before - set(await fake_redis.keys("*")) == matched, pattern
+
+    for key in _auth_keys() + ["xcollectibles:level:a", "searches:x"]:
+        assert await fake_redis.get(key) == "1", key
+
+
+class _DeadRedis:
+    """A client whose connection is gone, the way a dropped tunnel looks to redis-py."""
+
+    async def scan_iter(self, **_):
+        raise RedisConnectionError("Error connecting to host.docker.internal:16379.")
+        yield  # an async generator, like the real scan_iter
+
+    async def delete(self, *_):
+        raise AssertionError("nothing to delete when the scan failed")
+
+
+async def test_a_redis_error_raises_instead_of_reading_as_no_keys(monkeypatch):
+    monkeypatch.setattr(cache, "redis_client", _DeadRedis())
+    with pytest.raises(RedisError):
+        await invalidate_cache_pattern("collectibles:*")
+
+
+async def test_the_manual_clear_fails_and_names_the_pattern(monkeypatch, capsys):
+    monkeypatch.setattr(cache, "redis_client", _DeadRedis())
+    assert await clear_content_cache.main() is False
+    assert "✗ Clearing collectibles:* failed: ConnectionError" in capsys.readouterr().out

@@ -58,7 +58,8 @@ def search_cache_key(q: str, limit: int) -> str:
 
 # Redis errors fail open by design: every handler below logs and returns a miss
 # so reads fall through to Postgres. Contrast core/auth.py, where Redis errors
-# deliberately raise — auth fails closed (503 via error_handler).
+# deliberately raise — auth fails closed (503 via error_handler) — and
+# invalidate_cache_pattern at the end of this file, which raises for the scripts.
 async def get_cache(key: str) -> Optional[dict]:
     try:
         data = await redis_client.get(key)
@@ -97,18 +98,6 @@ async def delete_cache(key: str) -> bool:
         logger.error(f"Redis error on DELETE {key}: {e}")
         return False
 
-async def invalidate_cache_pattern(pattern: str) -> int:
-    try:
-        keys = await redis_client.keys(pattern)
-        if keys:
-            count = await redis_client.delete(*keys)
-            logger.info(f"→ Cleared {count} cache keys matching '{pattern}'")
-            return count
-        return 0
-    except redis.RedisError as e:
-        logger.error(f"Redis error on CLEAR {pattern}: {e}")
-        return 0
-
 async def get_cache_stats() -> dict:
     try:
         info = await redis_client.info()
@@ -129,3 +118,29 @@ async def get_cache_stats() -> dict:
     except redis.RedisError as e:
         logger.error(f"Redis error getting stats: {e}")
         return {}
+
+
+# How many keys one SCAN call looks at, and how many keys one DEL takes.
+SCAN_COUNT = 500
+DELETE_CHUNK = 500
+
+
+async def invalidate_cache_pattern(pattern: str) -> int:
+    """Delete every key matching a glob; return how many were deleted.
+
+    For scripts only: the seeders and scripts/cache/clear_content_cache.py. No request
+    handler calls it. Unlike the helpers above it fails closed: a Redis error raises, so a
+    seed whose clear failed can't report success while Redis still holds the old payloads.
+
+    SCAN walks the keyspace a few hundred keys per call, each call bounded by the client's
+    2 s timeout. KEYS walked all of it in one call, which over a slow link could time out
+    and read as "no keys". SCAN takes the same glob and returns every key that exists for
+    the whole scan; a key written during it is a refill of data that's already current.
+    """
+    keys = sorted({key async for key in redis_client.scan_iter(match=pattern, count=SCAN_COUNT)})
+    deleted = 0
+    for start in range(0, len(keys), DELETE_CHUNK):
+        deleted += await redis_client.delete(*keys[start:start + DELETE_CHUNK])
+    if deleted:
+        logger.info(f"→ Cleared {deleted} cache keys matching '{pattern}'")
+    return deleted
