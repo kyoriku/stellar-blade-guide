@@ -25,6 +25,10 @@ CACHE_CONTROL = 'public, max-age=31536000, immutable'
 CONTENT_TYPE = 'image/webp'
 UPLOAD_WORKERS = 16
 
+# Exit status when the upload is declined: dev_workflow.py stops on it rather than going on to
+# swap in R2 URLs for files that were never uploaded.
+EXIT_DECLINED = 3
+
 
 def get_client():
     return boto3.client(
@@ -39,9 +43,10 @@ def get_client():
     )
 
 
-def upload(dry_run=True, overwrite=False, replaced=None):
+def upload(dry_run=True, overwrite=False, replaced=None, plan=None):
     """Upload r2-staging/. In overwrite mode, `replaced` (a list) is filled before the first
-    PUT with every key that already exists in the bucket: the URLs the edge must then purge."""
+    PUT with every key that already exists in the bucket: the URLs the edge must then purge.
+    `plan` (a dict), when given, gets 'pending': how many files this run would upload."""
     start = time.perf_counter()
     bucket = os.getenv('R2_BUCKET')
 
@@ -82,6 +87,8 @@ def upload(dry_run=True, overwrite=False, replaced=None):
     else:
         pending = [(f, key) for f, key in to_upload if key not in existing]
         skipped = len(to_upload) - len(pending)
+    if plan is not None:
+        plan['pending'] = len(pending)
 
     if dry_run:
         print("\033[33m=== DRY RUN — no uploads will be performed ===\033[0m")
@@ -173,8 +180,12 @@ def main(argv, ask=input):
         print(f"\033[31m✗ Missing env vars in .env: {', '.join(missing)}\033[0m")
         return 1
 
-    if not upload(dry_run=True, overwrite=overwrite):
+    plan = {}
+    if not upload(dry_run=True, overwrite=overwrite, plan=plan):
         return 1
+    if not plan['pending']:
+        print("\n\033[90mNothing new to upload\033[0m")
+        return 0
 
     print("\n\033[36m=== Confirmation ===\033[0m")
     if overwrite:
@@ -196,7 +207,7 @@ def main(argv, ask=input):
 
     if confirm != confirm_word:
         print("\n\033[90mCancelled - no files uploaded\033[0m")
-        return 0
+        return EXIT_DECLINED
     print()
     replaced = []
     uploaded_ok = upload(dry_run=False, overwrite=overwrite, replaced=replaced)

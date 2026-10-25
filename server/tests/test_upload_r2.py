@@ -95,7 +95,24 @@ def test_replaced_urls_are_purged_even_when_an_upload_failed(staged, monkeypatch
     assert staged == [sorted(f"{BASE}/{key}" for key in EXISTING)]
 
 
-def test_declining_uploads_and_purges_nothing(staged, monkeypatch):
+def test_declining_uploads_and_purges_nothing_and_stops_the_workflow(staged, monkeypatch):
+    """dev_workflow.py stops on this exit status, rather than swapping in R2 URLs for files
+    that were never uploaded."""
     bucket = _bucket(monkeypatch)
-    assert upload_r2.main(["--overwrite"], ask=lambda: "no") == 0
+    assert upload_r2.main(["--overwrite"], ask=lambda: "no") == upload_r2.EXIT_DECLINED == 3
+    assert upload_r2.main([], ask=lambda: "y") == 3
     assert bucket.put == [] and staged == []
+
+
+def test_nothing_new_to_upload_asks_nothing(staged, monkeypatch, capsys):
+    """Every staged key is already in the bucket: there is nothing to confirm, so a run of the
+    workflow for text-only edits isn't stopped by a prompt about zero files."""
+    bucket = _Bucket(EXISTING + [NEW])
+    monkeypatch.setattr(upload_r2, "get_client", lambda: bucket)
+
+    def no_prompt():
+        raise AssertionError("asked to confirm an empty upload")
+
+    assert upload_r2.main([], ask=no_prompt) == 0
+    assert bucket.put == [] and staged == []
+    assert "Nothing new to upload" in capsys.readouterr().out

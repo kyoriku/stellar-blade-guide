@@ -73,18 +73,20 @@ documented exclusions (promo art, not captures).
    it can be deleted at any time to reclaim disk.
 2. `upload_r2.py` : uploads `r2-staging/` to the `stellar-blade-guide-images`
    bucket with correct Content-Type and Cache-Control headers, skipping keys
-   already in the bucket. Dry run first, typed confirmation. A separate
-   `--overwrite` flag exists for sanctioned replace-in-place refreshes only
-   (see "Replacing an image" for why this is never the default): it bypasses
-   the skip, states the replacement count in the dry run, and requires typing
-   `overwrite` instead of `yes`. After uploading, it purges exactly the
-   replaced URLs at the edge, so it needs `CLOUDFLARE_*` in server/.env; if
-   that purge fails, or the run stops before reporting it, run it again with
-   `--overwrite`.
+   already in the bucket. Dry run first, then a typed `yes`; with nothing new to
+   upload it doesn't ask, and declining exits 3, which stops `dev_workflow`.
+   A separate `--overwrite` flag exists for sanctioned replace-in-place
+   refreshes only (see "Replacing an image" for why this is never the
+   default): it bypasses the skip, states the replacement count in the dry
+   run, and requires typing `overwrite` instead of `yes`. After uploading, it
+   purges exactly the replaced URLs at the edge, so it needs `CLOUDFLARE_*` in
+   server/.env; if that purge fails, or the run stops before reporting it, run
+   it again with `--overwrite`.
 3. `update_r2_urls.py` : rewrites staged local `/assets/images/...` paths in
    seed JSON to R2 URLs by direct derivation, guarded on the staged file
-   existing in `r2-staging/`. Dry run before every write. R2 URLs are a pure
-   function of the local path, so no mapping is involved.
+   existing in `r2-staging/`. Dry run first, then a typed `yes`, as for the
+   upload: with nothing to swap it doesn't ask, and declining exits 3. R2 URLs
+   are a pure function of the local path, so no mapping is involved.
 4. Seeding is unchanged: `scripts/db/seed_collectibles.py` and
    `scripts/db/seed_walkthroughs.py` store whatever URLs the seed JSON holds
    and invalidate the Redis response cache.
@@ -106,12 +108,18 @@ documented exclusions (promo art, not captures).
 3. `uv run python scripts/images/generate_variants.py` (only new files encode;
    existing staging is skipped)
 4. `uv run python scripts/images/upload_r2.py` (dry run shows only the new
-   objects; confirm to upload)
-5. `uv run python scripts/images/update_r2_urls.py` (option 1): the staged-path
-   pass turns the local paths into R2 URLs, derived from the path itself. Any
-   path whose staged file is missing is reported and left untouched, which
-   catches typos and skipped pipeline steps.
-6. Run the seeder, then commit the seed-data repo.
+   objects; type `yes` to upload)
+5. `uv run python scripts/images/update_r2_urls.py collectibles` (or
+   `walkthroughs`; type `yes` to apply): the staged-path pass turns the local
+   paths into R2 URLs, derived from the path itself. Any path whose staged
+   file is missing is reported and left untouched, which catches typos and
+   skipped pipeline steps.
+6. Run the seeder.
+7. Commit the seed-data repo.
+
+`uv run python scripts/dev_workflow.py collectibles` (or `walkthroughs`) runs
+steps 3 to 6 in order; step 7 stays yours. Every confirmation takes `yes` (the prune gate below
+asks for `prune`), and declining one stops the workflow before the next step.
 
 Staged-path rewrites are one-way: the kebab-cased R2 URL cannot be turned back
 into the original local path mechanically (case and underscores are lost).
@@ -167,8 +175,9 @@ The second stage runs after prod is reseeded:
 It refuses to run (fatal, not a warning) if any ledgered key has become
 referenced again, lists the pending objects, requires the same typed
 `prune`, deletes in chunks with post-verification (bucket count re-derived,
-zero residual), then clears the ledger. `dev_workflow` prints this command
-whenever the ledger is non-empty, and `prod_seed.py` offers to invoke it
+zero residual), then clears the ledger. At the end of a run that completes,
+`dev_workflow` prints this command if the ledger is non-empty (a declined or
+failed step stops the run before that), and `prod_seed.py` offers to invoke it
 after a successful seed + purge.
 
 ## Seeding prod
