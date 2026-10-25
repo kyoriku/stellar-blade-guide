@@ -79,8 +79,8 @@ Configuration is read from `server/.env` (gitignored). Every non-secret default 
 | `R2_SECRET_ACCESS_KEY` | R2 API token secret (image pipeline scripts only) |
 | `R2_BUCKET` | R2 bucket holding content images |
 | `R2_PUBLIC_BASE_URL` | public base URL images are served from (`https://img.stellarbladeguide.com`) |
-| `PROD_DATABASE_URL` | production PostgreSQL DSN (`prod_seed.py` only; not needed locally) |
-| `PROD_REDIS_URL` | production Redis URL (`prod_seed.py` only; not needed locally) |
+| `PROD_DATABASE_URL` | production PostgreSQL through the SSH tunnel you open by hand, `postgresql://postgres:<password>@host.docker.internal:15432/railway` (`prod_seed.py` and the scripts that reach prod; see `scripts/images/PIPELINE.md`, Seeding prod) |
+| `PROD_REDIS_URL` | production Redis through its SSH tunnel, `redis://default:<password>@host.docker.internal:16379` (the same scripts) |
 | `CLOUDFLARE_ZONE_ID` | Cloudflare zone for the post-seed edge purge (`prod_seed.py` only) |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with cache-purge permission (`prod_seed.py` only) |
 | `GOOGLE_CLIENT_ID` | Google OAuth client id |
@@ -123,7 +123,8 @@ R2_SECRET_ACCESS_KEY=your_r2_secret_key
 R2_BUCKET=your_r2_bucket_name
 R2_PUBLIC_BASE_URL=https://img.stellarbladeguide.com
 
-# production seeding only (prod_seed.py); leave unset locally
+# production only (prod_seed.py and the scripts that reach prod); the two URLs point
+# at SSH tunnels you open by hand (scripts/images/PIPELINE.md, Seeding prod)
 PROD_DATABASE_URL=
 PROD_REDIS_URL=
 CLOUDFLARE_ZONE_ID=
