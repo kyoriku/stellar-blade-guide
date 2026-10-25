@@ -1,5 +1,5 @@
 """
-The walkthrough seeder's depth guard (scripts/db/seed_walkthroughs.py). The stored
+The walkthrough seeder's file checks (scripts/db/seed_walkthroughs.py). The stored
 search_vector reads at most MAX_DEPTH containers below a section key, so the seeder
 refuses a file holding text any deeper, before anything is written, and prod_seed.py
 runs that check before any seeder writes. The order of the scripts' steps is read from
@@ -39,14 +39,16 @@ def test_check_depth_refuses_text_too_deep_to_index_and_names_it(capsys):
 def test_the_walkthrough_seeder_checks_depth_before_it_opens_the_database():
     tree = ast.parse((SCRIPTS / "db" / "seed_walkthroughs.py").read_text(encoding="utf-8"))
     seed = _function(tree, "seed_walkthroughs")
-    checks, sessions = _call_lines(seed, "check_depth"), _call_lines(seed, "get_db")
-    assert checks and sessions
-    assert checks[0] < sessions[0]
-    # --check runs the same check and nothing else: no session, no seeding.
+    checks, engines = _call_lines(seed, "check_depth"), _call_lines(seed, "seed_engine")
+    assert checks and engines
+    assert checks[0] < engines[0]
+    # --check runs the same check and nothing else: no engine, no seeding.
+    check_main = _function(tree, "check_main")
+    assert _call_lines(check_main, "check_depth")
+    assert not _call_lines(check_main, "seed_engine") and not _call_lines(check_main, "seed_walkthroughs")
     main = next(node for node in tree.body if isinstance(node, ast.If) and "__main__" in ast.unparse(node.test))
     check_mode = next(node for node in ast.walk(main) if isinstance(node, ast.If) and "--check" in ast.unparse(node.test))
-    assert _call_lines(check_mode, "check_depth")
-    assert not _call_lines(check_mode, "get_db") and not _call_lines(check_mode, "seed_walkthroughs")
+    assert _call_lines(check_mode, "check_main") and not _call_lines(check_mode, "seed_walkthroughs")
 
 
 def test_check_markers_refuses_a_file_still_marked_verify_and_names_it(capsys):
@@ -66,9 +68,54 @@ def test_only_check_mode_refuses_verify_markers():
     tree = ast.parse((SCRIPTS / "db" / "seed_walkthroughs.py").read_text(encoding="utf-8"))
     # Dev seeding keeps marked drafts so they show on the dev page.
     assert not _call_lines(_function(tree, "seed_walkthroughs"), "check_markers")
-    main = next(node for node in tree.body if isinstance(node, ast.If) and "__main__" in ast.unparse(node.test))
-    check_mode = next(node for node in ast.walk(main) if isinstance(node, ast.If) and "--check" in ast.unparse(node.test))
-    assert _call_lines(check_mode, "check_markers") and _call_lines(check_mode, "check_depth")
+    check_main = _function(tree, "check_main")
+    assert _call_lines(check_main, "check_markers") and _call_lines(check_main, "check_depth")
+
+
+def test_check_mode_refuses_a_local_image_path_and_names_the_walkthrough(tmp_path, monkeypatch, capsys):
+    """Dev serves /assets/images/... and prod doesn't, so a path the URL swap never turned into
+    an R2 URL stops prod_seed.py's first step. A dev seed still takes it, for the preview."""
+    folder = tmp_path / "seed-data" / "walkthroughs" / "side-quests"
+    folder.mkdir(parents=True)
+    (folder / "1-a.json").write_text(
+        '{"title": "Lost Ark", "thumbnail_url": "/assets/images/Walkthroughs/Side_Quests/Lost_Ark/a.jpg",'
+        ' "content": [{"order": 1, "text": "Go."}]}', encoding="utf-8")
+    monkeypatch.setattr(seed_walkthroughs, "project_root", tmp_path)
+    assert seed_walkthroughs.check_main() == 1
+    out = capsys.readouterr().out
+    assert "✗ Lost Ark: 1 image path(s) still point at the local masters folder" in out
+    assert "/assets/images/Walkthroughs/Side_Quests/Lost_Ark/a.jpg" in out
+    tree = ast.parse((SCRIPTS / "db" / "seed_walkthroughs.py").read_text(encoding="utf-8"))
+    assert not _call_lines(_function(tree, "seed_walkthroughs"), "check_local_paths")
+
+
+def test_check_mode_fails_when_there_are_no_walkthrough_files(tmp_path, monkeypatch, capsys):
+    """A missing or empty seed-data folder used to pass --check and then seed nothing."""
+    monkeypatch.setattr(seed_walkthroughs, "project_root", tmp_path)
+    assert seed_walkthroughs.check_main() == 1
+    (tmp_path / "seed-data" / "walkthroughs").mkdir(parents=True)
+    assert seed_walkthroughs.check_main() == 1
+    assert "No walkthrough files found" in capsys.readouterr().out
+
+
+def test_check_mode_passes_a_clean_file(tmp_path, monkeypatch):
+    folder = tmp_path / "seed-data" / "walkthroughs" / "main-story"
+    folder.mkdir(parents=True)
+    (folder / "1-a.json").write_text('{"title": "A", "content": [{"order": 1, "text": "Go."}]}', encoding="utf-8")
+    monkeypatch.setattr(seed_walkthroughs, "project_root", tmp_path)
+    assert seed_walkthroughs.check_main() == 0
+
+
+def test_every_walkthrough_whose_slug_changes_lets_go_of_it_first():
+    """Slugs are unique and checked at once, so inside one transaction a swap or a chain of
+    moves only works if every row that changes slug gives up its current one first."""
+    current = {1: "a", 2: "b", 3: "c"}
+    # 1 and 2 swap, 3 keeps its slug, 4 is new.
+    assert seed_walkthroughs.slugs_to_move(current, {1: "b", 2: "a", 3: "c", 4: "d"}) == [1, 2]
+    assert seed_walkthroughs.slugs_to_move(current, {1: "a", 2: "b", 3: "c"}) == []
+    # A temporary slug can never be a real one, and never collides between rows.
+    assert seed_walkthroughs.temporary_slug(1) != seed_walkthroughs.temporary_slug(2)
+    assert seed_walkthroughs.temporary_slug(7).startswith("__")
 
 
 def _prod_seed_steps():

@@ -73,15 +73,20 @@ documented exclusions (promo art, not captures).
    it can be deleted at any time to reclaim disk.
 2. `upload_r2.py` : uploads `r2-staging/` to the `stellar-blade-guide-images`
    bucket with correct Content-Type and Cache-Control headers, skipping keys
-   already in the bucket. Dry run first, typed confirmation. A separate
-   `--overwrite` flag exists for sanctioned replace-in-place refreshes only
-   (see "Replacing an image" for why this is never the default): it bypasses
-   the skip, states the replacement count in the dry run, and requires typing
-   `overwrite` instead of `yes`.
+   already in the bucket. Dry run first, then a typed `yes`; with nothing new to
+   upload it doesn't ask, and declining exits 3, which stops `dev_workflow`.
+   A separate `--overwrite` flag exists for sanctioned replace-in-place
+   refreshes only (see "Replacing an image" for why this is never the
+   default): it bypasses the skip, states the replacement count in the dry
+   run, and requires typing `overwrite` instead of `yes`. After uploading, it
+   purges exactly the replaced URLs at the edge, so it needs `CLOUDFLARE_*` in
+   server/.env; if that purge fails, or the run stops before reporting it, run
+   it again with `--overwrite`.
 3. `update_r2_urls.py` : rewrites staged local `/assets/images/...` paths in
    seed JSON to R2 URLs by direct derivation, guarded on the staged file
-   existing in `r2-staging/`. Dry run before every write. R2 URLs are a pure
-   function of the local path, so no mapping is involved.
+   existing in `r2-staging/`. Dry run first, then a typed `yes`, as for the
+   upload: with nothing to swap it doesn't ask, and declining exits 3. R2 URLs
+   are a pure function of the local path, so no mapping is involved.
 4. Seeding is unchanged: `scripts/db/seed_collectibles.py` and
    `scripts/db/seed_walkthroughs.py` store whatever URLs the seed JSON holds
    and invalidate the Redis response cache.
@@ -103,12 +108,18 @@ documented exclusions (promo art, not captures).
 3. `uv run python scripts/images/generate_variants.py` (only new files encode;
    existing staging is skipped)
 4. `uv run python scripts/images/upload_r2.py` (dry run shows only the new
-   objects; confirm to upload)
-5. `uv run python scripts/images/update_r2_urls.py` (option 1): the staged-path
-   pass turns the local paths into R2 URLs, derived from the path itself. Any
-   path whose staged file is missing is reported and left untouched, which
-   catches typos and skipped pipeline steps.
-6. Run the seeder, then commit the seed-data repo.
+   objects; type `yes` to upload)
+5. `uv run python scripts/images/update_r2_urls.py collectibles` (or
+   `walkthroughs`; type `yes` to apply): the staged-path pass turns the local
+   paths into R2 URLs, derived from the path itself. Any path whose staged
+   file is missing is reported and left untouched, which catches typos and
+   skipped pipeline steps.
+6. Run the seeder.
+7. Commit the seed-data repo.
+
+`uv run python scripts/dev_workflow.py collectibles` (or `walkthroughs`) runs
+steps 3 to 6 in order; step 7 stays yours. Every confirmation takes `yes` (the prune gate below
+asks for `prune`), and declining one stops the workflow before the next step.
 
 Staged-path rewrites are one-way: the kebab-cased R2 URL cannot be turned back
 into the original local path mechanically (case and underscores are lost).
@@ -130,6 +141,17 @@ replacement-by-recapture auto-versions by construction. Instead:
 2. Point the seed JSON entry at the new capture (local path, any accepted
    form) and run the workflow. The old image is now unreferenced, so the
    prune gate below surfaces it in the same run.
+
+Never bring a pruned key back with different bytes: the edge may still hold
+the old ones for up to a year, and nothing would purge them. That can only
+happen to a fixed-name file (`Site/`, the two DLC promo images), so give the
+new image a new name instead.
+
+The one in-place exception is `upload_r2.py --overwrite`, for quality-only
+refreshes. Once the upload finishes it purges exactly the URLs it replaced,
+and that is the only time anything purges an image. Browsers that cached the
+old bytes keep them until their own cache expires, which is why a content
+change must still rename.
 
 ## Removing images: the prune gate (two stages, never silent)
 
@@ -153,8 +175,9 @@ The second stage runs after prod is reseeded:
 It refuses to run (fatal, not a warning) if any ledgered key has become
 referenced again, lists the pending objects, requires the same typed
 `prune`, deletes in chunks with post-verification (bucket count re-derived,
-zero residual), then clears the ledger. `dev_workflow` prints this command
-whenever the ledger is non-empty, and `prod_seed.py` offers to invoke it
+zero residual), then clears the ledger. At the end of a run that completes,
+`dev_workflow` prints this command if the ledger is non-empty (a declined or
+failed step stops the run before that), and `prod_seed.py` offers to invoke it
 after a successful seed + purge.
 
 ## Seeding prod
@@ -172,11 +195,14 @@ Keep the `postgresql://` scheme and the `default` user name, and never add
 check the password, so a stale one in server/.env goes unnoticed. Redis checks
 its password.
 
-Write any `@`, `/`, `?` or `#` in a password as `%40`, `%2F`, `%3F` or `%23`.
-SQLAlchemy ends the Postgres password at the first `@`, so a second one puts
-the rest of the password in the host, and redis-py ends the Redis host at the
-first `/`, `?` or `#`. The connection check stops on a URL either would
-misread, before anything connects.
+Write any `@`, `/`, `?`, `#` or `%` in a password as `%40`, `%2F`, `%3F`, `%23`
+or `%25`. SQLAlchemy ends the Postgres password at the first `@`, so a second
+one puts the rest of the password in the host, redis-py ends the Redis host at
+the first `/`, `?` or `#`, and both read `%` and two hex digits as one
+character. The connection check stops on a URL whose host either would
+misread, before anything connects. It can't see a `%` slip, which changes only
+the password: Redis then refuses the password, which stops the check too, and
+Postgres through the tunnel never checks it.
 
 While the Postgres tunnel is open, anything on the Mac, every container
 included, can log in to prod Postgres as `postgres` without a password. Open the
@@ -192,17 +218,24 @@ tunnels only for the run, and don't run a Claude Code task while they're open.
    last write would fail, and its ssh would be left holding the port.
 2. On the Mac, `lsof -nP -iTCP:15432 -iTCP:16379 -sTCP:LISTEN` should list two
    `ssh` listeners.
-3. If the seed changes collectibles, first run
+3. Before every prod seed, even one that only changes walkthroughs (it reseeds
+   collectibles from disk too), run
    `uv run python scripts/db/diff_collectibles.py --prod` in the devcontainer
    from server/ (a local, untracked script). Its Ids and Locations lines must
    both read `none · none`: the seed deletes every collectible only the database
-   has, and that cascades to users' progress.
-4. In the devcontainer, from server/: `uv run python scripts/prod_seed.py`, with
-   `--purge-all` or `--no-fallback` if needed. Before the typed confirmation it
+   has, and that cascades to users' progress. A new entry is the one exception:
+   the Ids line lists its id under `JSON only`, which is fine when that is
+   exactly your new ids and the Ids line's `DB only` reads `none`.
+4. In the devcontainer, from server/: `uv run python scripts/prod_seed.py`.
+   `--purge-all` purges every API URL instead of only the changed ones;
+   `--no-fallback` is no longer needed and does nothing. Its header names any
+   earlier run still owed a purge. Before the typed confirmation it
    sends each a real query (`SELECT 1`, an authenticated `PING`). A closed
    tunnel is retried for 30 s, while a refused password or a URL its driver
    would misread stops it at once; either way nothing runs, and it prints both
-   commands above.
+   commands above. After the confirmation, both seeders' `--check` stop the
+   run before anything is written if a walkthrough is still marked `[VERIFY]`
+   or an image path is still local.
 5. When it ends, it reminds you to close both tunnels: Ctrl+C in each tab. You
    can close them as soon as it prints `Prod seed complete`, because the
    bucket-prune offer after that doesn't use them. Never close a tab or window
@@ -214,20 +247,25 @@ tunnels only for the run, and don't run a Claude Code task while they're open.
 To check the tunnels without seeding, run it and answer anything but
 `seed prod`.
 
-After a run that stopped partway (a dropped tunnel, Ctrl+C, a failed step),
-prod may be partly written while Redis and the edge still serve the old pages.
-A dropped Redis tunnel doesn't even stop the run: the seeders log
-`Redis error on CLEAR …`, count 0 keys and carry on, so the run can still end in
-`Prod seed complete`. Treat any `Redis error` line in a run as a partial run.
+A run that stops partway leaves prod consistent. Each seeder writes in one
+transaction, so it committed all of its changes or none, and a reader never sees
+a half-written state. What a seeder commits is recorded in
+`scripts/cache/purge-manifest.json` (the purge ledger) before its COMMIT, each
+purge covers every run the ledger still owes, and only a purge `prod_seed.py`
+started clears it. Every failure stops the run and prints what failed, what is
+still owed, and what to run next:
 
-To recover, run it again, then `uv run python scripts/cache/purge_api_cache.py --all`
-in the devcontainer. The re-run's scoped purge only sees rows that still differ,
-so it would miss what the stopped run wrote. `--all` builds its URL list from the
-dev database, which holds the same content, and needs no tunnel. It only reaches
-URLs that some current row produces, though: if the stopped run renamed, moved
-or removed a walkthrough (check the seed-data git diff for the old slug or
-type), purge its old URL by hand, or run `prod_seed.py --purge-all` and accept
-the image-cache blast radius.
+- a seeder failed: fix the cause, then run it again. To purge what an earlier
+  step already committed before that, run it with `--purge-only`.
+- the last cache clear or the purge failed: `uv run python scripts/prod_seed.py
+  --purge-only`. It checks the tunnels, asks for the same confirmation, clears
+  Redis and purges what's owed, without seeding.
+
+A dropped tunnel ends the step within about 30 s, and prod rolls back an
+abandoned transaction by itself (`idle_in_transaction_session_timeout` 30 s,
+`transaction_timeout` 2 min). Ctrl+C stops the running step at once and logs
+where it landed. A second run while one is going stops at once and leaves the
+tunnels to it. Run prod seeds from the main checkout: the ledger lives in it.
 
 The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
 (`diff_collectibles.py --prod`, `cache_stats.py --prod`,
@@ -236,19 +274,22 @@ the `--prod` migrations) need the same tunnels open.
 
 ## What a prod seed purges
 
-`prod_seed.py` purges only the seeded API surface: every cached GET URL
-under the five API prefixes, derived live by
-`scripts/cache/purge_api_cache.py` (FastAPI route table x DB slugs x client
-navigation constants, batched per the purge API's limits,
-every response verified; `--dry-run` lists without purging). Images are
-never purged: their URLs are immutable and content changes always rename,
-so the ~10k-object image cache stays warm across seeds. Any enumeration or
-purge failure falls back loudly to a full zone purge — partial purge is
-never an outcome, because API responses carry s-maxage=30d and a missed URL
-would serve stale for up to a month. `prod_seed.py --purge-all` forces the
-old full-zone purge explicitly; use it if anything outside the API surface
-must be flushed (for example after replacing a Site/ asset in place, which
-should not happen, or if the scoped derivation is ever in doubt).
+`prod_seed.py` purges only the seeded API surface: the cached GET URLs under
+the five API prefixes that this run, or an earlier run still owed a purge,
+changed. They are derived live by `scripts/cache/purge_api_cache.py` (FastAPI
+route table x DB slugs x client navigation constants, batched per the purge
+API's limits, every response verified; `--dry-run` lists without purging).
+Images are never purged by a seed: their URLs are immutable and content
+changes always rename, so the ~14k-object image cache stays warm across seeds.
+
+There is no fallback. A purge that fails stops the run, keeps the ledger and
+names the next command. A partial purge is harmless: the ledger keeps every
+record, so the next purge repeats every URL still owed. Anything the ledger
+can't vouch for widens to the full API surface, plus every walkthrough URL it
+recorded (the surface comes from the current DB, so it can't name a renamed
+or deleted page's old URL), and never to the zone. `prod_seed.py --purge-all`
+purges every API URL that way by request; use it if the scoped derivation is
+ever in doubt.
 
 One documented exception: on 2026-07-12 every object (originals and variants)
 was deliberately re-encoded from the 4K masters and overwritten in place via
@@ -258,3 +299,5 @@ copy keeps showing the identical correct image until natural cache turnover.
 Any change to what an image DEPICTS must still rename. The same refresh
 retired the 1080p compression step (`compress_images.py` deleted; the
 `*_1080p` trees removed) so the pipeline sources directly from masters.
+Today `--overwrite` purges exactly the URLs it replaced, so a refresh like
+that no longer needs a zone-wide purge.

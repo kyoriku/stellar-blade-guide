@@ -13,7 +13,8 @@ load_dotenv()
 
 # Rewrites staged local /assets/images/... paths in seed JSON to derived R2
 # URLs (the permanent new-content path; guarded on the staged file existing).
-# Dry run + confirm before every write.
+# Dry run, then a typed 'yes' before every write; with nothing to swap it doesn't
+# ask, and any other answer exits 3, which stops dev_workflow.py.
 
 SEED_BASE = Path(__file__).resolve().parents[2] / 'seed-data'
 STAGING_DIR = Path(__file__).resolve().parents[3] / 'r2-staging'
@@ -59,13 +60,15 @@ def seed_files(content_type):
 
 
 def rewrite_seed(dry_run, content_type):
+    """Swap staged local paths for R2 URLs (only report them in a dry run). Returns how many
+    URLs it rewrote, or would rewrite."""
     stats = {'staged': 0, 'staged_missing': set()}
 
     files = seed_files(content_type)
     print(f"\n\033[36m=== APPLY ({content_type}): {len(files)} seed JSON files ===\033[0m")
     if not files:
         print(f"\033[31m✗ No JSON files found in {SEED_BASE}\033[0m")
-        return
+        return 0
 
     updated_files = 0
     updated_urls = 0
@@ -114,20 +117,32 @@ def rewrite_seed(dry_run, content_type):
         print(f"\033[31m⚠ {len(stats['staged_missing'])} staged paths have NO staged file (run generate_variants + upload_r2 first):\033[0m")
         for u in sorted(stats['staged_missing'])[:10]:
             print(f"\033[31m    {u}\033[0m")
+    return updated_urls
 
 
-def run_with_confirm(dry_fn, apply_fn):
-    dry_fn()
-    print("\n\033[33mApply these changes? (y/n):\033[0m ", end='')
+# Exit status when the swap is declined: dev_workflow.py stops on it rather than seeding dev
+# with local paths, which work on dev and break on prod.
+EXIT_DECLINED = 3
+
+
+def run_with_confirm(dry_fn, apply_fn, ask=input):
+    """Dry run, then apply on a typed 'yes', the word upload_r2.py asks for. With nothing to
+    swap there is nothing to ask. Returns the exit status: 0 when applied or when there was
+    nothing to do, EXIT_DECLINED on any other answer."""
+    if not dry_fn():
+        print("\n\033[90mNothing to swap\033[0m")
+        return 0
+    print("\n\033[33mType 'yes' to apply these changes:\033[0m ", end='')
     try:
-        confirm = input().strip().lower()
+        confirm = ask().strip().lower()
     except EOFError:
         confirm = ''
-    if confirm == 'y':
+    if confirm == 'yes':
         apply_fn()
         print("\n\033[32m✓ Complete\033[0m")
-    else:
-        print("\n\033[90mExited without changes\033[0m")
+        return 0
+    print("\n\033[90mExited without changes\033[0m")
+    return EXIT_DECLINED
 
 
 if __name__ == '__main__':
@@ -143,7 +158,7 @@ if __name__ == '__main__':
             print("Usage: python update_r2_urls.py [collectibles|walkthroughs|all]")
             sys.exit(1)
 
-    run_with_confirm(
+    sys.exit(run_with_confirm(
         lambda: rewrite_seed(True, content_type),
         lambda: rewrite_seed(False, content_type),
-    )
+    ))

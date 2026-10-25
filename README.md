@@ -111,6 +111,8 @@ package.json       root scripts that orchestrate client + server
 
 Each app documents its own structure, commands, and internals: [client/README.md](client/README.md) and [server/README.md](server/README.md).
 
+Publishing a content change, from editing the JSON to seeding prod, follows the [content seeding runbook](server/scripts/content-seeding-runbook.md).
+
 ## Screenshots
 <details>
 <summary><b>View More Screenshots</b></summary>

@@ -1,9 +1,12 @@
 # scripts/prod_seed.py
 """
 Usage:
-  uv run scripts/prod_seed.py                  # seed, then scoped API purge
-  uv run scripts/prod_seed.py --purge-all      # seed, then FULL ZONE purge
-  uv run scripts/prod_seed.py --no-fallback    # never escalate to a full purge
+  uv run scripts/prod_seed.py                 # seed, then purge the changed API URLs
+  uv run scripts/prod_seed.py --purge-all     # seed, then purge every API URL
+  uv run scripts/prod_seed.py --purge-only    # no seeding: purge what earlier runs left
+                                              # owed (with --purge-all, every API URL)
+  uv run scripts/prod_seed.py --no-fallback   # accepted and ignored: a failed purge never
+                                              # escalates, so it's no longer needed
 
 Requires PROD_DATABASE_URL, PROD_REDIS_URL, CLOUDFLARE_ZONE_ID and
 CLOUDFLARE_API_TOKEN to be set in server/.env (gitignored). Exits before
@@ -18,18 +21,31 @@ PROD_REDIS_URL point at SSH tunnels you open by hand first, one Mac tab each
 
 Before the typed confirmation, the run sends each a real query
 (scripts/db/check_connections.py) and stops, with nothing run, if either fails.
+After it, both seeders' --check read the seed files and stop the run before any
+write if a walkthrough is still marked [VERIFY] or an image path is still local.
 It ends by reminding you to close both tunnels with Ctrl+C in their tabs: while
 the Postgres one is open, anything on the Mac, every container included, can
 log in to prod Postgres without a password.
 
+Each seeder writes in one transaction and records what it changes in the purge
+ledger (scripts/cache/purge_manifest.py) before its COMMIT. So a run that stops
+partway leaves prod as it was, or owing a purge that the next run, or
+--purge-only, makes. Every failure stops the run and says what failed, what is
+still owed a purge, and what to run next. Nothing here purges the whole zone,
+so cached images always stay warm. Only one run at a time: a second one stops.
+
 Every run writes a timestamped log to server/logs/seed/ (gitignored). That file
-is the only record a purge happened at all, so it carries the run ID, which
-purge path ran, the Cloudflare response status, and each retry separately with
-its real error text. `grep -l ERROR logs/seed/*.log` finds the runs that
-escalated to a full-zone purge or failed outright.
+is the only record a purge happened at all, so it carries the run ID, the URLs
+purged, the Cloudflare response status, and each retry separately with its real
+error text. `grep -l ERROR logs/seed/*.log` finds the runs that failed or were
+interrupted.
 """
 
+import argparse
+import fcntl
+import importlib.util
 import logging
+import signal
 import subprocess
 import sys
 import os
@@ -37,10 +53,10 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import parse_qs, unquote, urlsplit
 from zoneinfo import ZoneInfo
 
-import requests
 from dotenv import load_dotenv
 
 # ANSI constants and the log timezone are inlined (values match
@@ -66,15 +82,17 @@ LOG_DIR = scripts_dir.parent / "logs" / "seed"
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
-# A scoped purge that keeps failing is a nuisance; a full-zone purge is a
-# multi-day image-cache outage. That asymmetry is why the retry exists.
+# A transient Cloudflare failure is retried; anything else would fail the same way again.
 PURGE_RETRIES = 3
 PURGE_BACKOFF_SECONDS = (2, 5)
 EXIT_TRANSIENT = 1   # purge_api_cache.py: retry is worth attempting
-EXIT_PERMANENT = 2   # purge_api_cache.py: the identical call fails identically
+EXIT_INTERRUPTED = 130
 
-BLAST_RADIUS = ("a full-zone purge also drops every img.stellarbladeguide.com object; "
-                "the image cache then refills from R2 over the following days")
+# The last cache clear waits until this long after the last COMMIT. A request that read the
+# old rows just before a COMMIT can still be writing them to Redis for up to 10 s (the
+# statement timeout) plus 2 s (the Redis timeout); clearing after that leaves nothing stale
+# for the purge to refill the edge from.
+REFILL_WAIT_SECONDS = 15
 
 # The devcontainer reaches the Mac's tunnels at this host. A URL pointing anywhere else
 # isn't going through one.
@@ -169,15 +187,22 @@ CLOUDFLARE_API_TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
 
 STEPS = [
     # First, before anything writes: a refusal from the walkthrough seeder itself would
-    # land after the collectibles are written and before the purge, and the next run
-    # would see no collectible change to purge. This one only reads the seed files.
+    # land after the collectibles are written. These only read the seed files.
     ("Checking walkthrough files", [
      "uv", "run", "python", "scripts/db/seed_walkthroughs.py", "--check"]),
+    ("Checking collectible files", [
+     "uv", "run", "python", "scripts/db/seed_collectibles.py", "--check"]),
     ("Seeding prod collectibles database", [
      "uv", "run", "python", "scripts/db/seed_collectibles.py"]),
     ("Seeding prod walkthroughs database", [
      "uv", "run", "python", "scripts/db/seed_walkthroughs.py"]),
 ]
+
+# Every content pattern, once more, right before the purge (see REFILL_WAIT_SECONDS).
+CLEAR_STEP = ("Clearing prod content cache", [
+    "uv", "run", "python", "scripts/cache/clear_content_cache.py"])
+PURGE_LABEL = "Purging seeded API URLs"
+CHECK_LABEL = "Checking prod connections"
 
 
 def _split_url(url):
@@ -327,6 +352,10 @@ def remind_to_close_tunnels():
 # user to close tunnels the STOPPED message just told them to open.
 _stopped_at_check = False
 
+# Set once this run holds the lock. Until then nothing has run, and when another run holds the
+# lock its tunnels must stay open, so the closing reminder isn't printed.
+_run_started = False
+
 # Longest first, so no fragment of a secret survives a replace.
 _SECRETS = sorted(
     {CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID,
@@ -344,7 +373,7 @@ def _redact(text):
     return out
 
 
-def run_logged(cmd, env=None, cwd=None):
+def run_logged(cmd, env=None, cwd=None, interactive=False):
     """Run a child process, streaming its output live to the terminal and into
     the log file line by line.
 
@@ -353,92 +382,48 @@ def run_logged(cmd, env=None, cwd=None):
     text on disk — the retry logic is only useful if a 503 is distinguishable
     from a 403 afterwards. Children get PYTHONUNBUFFERED because print() into a
     pipe is block-buffered, which would otherwise batch all output to the end.
+
+    The child runs in its own process group, so a Ctrl+C reaches only this script,
+    which then ends the whole step at once: uv and its Python child alike, before
+    any cleanup can wait on a dead tunnel.
+
+    An interactive child (prune_bucket.py, which asks for a typed 'prune') keeps the
+    terminal instead. Read line by line through a pipe, a prompt that doesn't end its
+    line would only show once it had been answered. Its output isn't logged, only its
+    exit status, and a Ctrl+C reaches it directly.
     """
     child_env = dict(env or os.environ)
     child_env["PYTHONUNBUFFERED"] = "1"
+    if interactive:
+        log.info("  (it runs in the terminal; its output isn't in this log)")
+        proc = subprocess.Popen(cmd, env=child_env, cwd=cwd)
+        try:
+            proc.wait()
+        except KeyboardInterrupt:
+            proc.kill()
+            proc.wait()
+            raise
+        log.info(f"  → exit {proc.returncode}")
+        return proc.returncode, []
     proc = subprocess.Popen(
         cmd, env=child_env, cwd=cwd, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, bufsize=1)
+        stderr=subprocess.STDOUT, text=True, bufsize=1, process_group=0)
     tail = []
-    for line in proc.stdout:
-        line = _redact(line.rstrip("\n"))
-        log.info(line)
-        if line.strip():
-            tail.append(line.strip())
-    proc.wait()
+    try:
+        for line in proc.stdout:
+            line = _redact(line.rstrip("\n"))
+            log.info(line)
+            if line.strip():
+                tail.append(line.strip())
+        proc.wait()
+    except KeyboardInterrupt:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.wait()
+        raise
     return proc.returncode, tail
-
-
-def purge_cloudflare_cache():
-    """Full-zone purge. Returns True on success. Logs the blast radius at ERROR
-    before firing so `grep -l ERROR logs/seed/*.log` surfaces every run that took
-    this path, and reports the Cloudflare status instead of swallowing it."""
-    label = "Purging Cloudflare cache (FULL ZONE)"
-    log.error(f"{RED}[BLAST RADIUS]{RESET} {BLAST_RADIUS}")
-    log.info(f"{CYAN}[RUNNING]{RESET} {label}")
-    try:
-        response = requests.post(
-            f"https://api.cloudflare.com/client/v4/zones/{CLOUDFLARE_ZONE_ID}/purge_cache",
-            headers={"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"},
-            json={"purge_everything": True},
-            timeout=10,
-        )
-    except requests.RequestException as e:
-        log.error(f"{RED}[FAILED]{RESET} {label}: {type(e).__name__}: {_redact(e)}")
-        log.error("  → Purge manually via Cloudflare dashboard\n")
-        return False
-
-    log.info(f"  Cloudflare responded HTTP {response.status_code}")
-    try:
-        result = response.json()
-    except ValueError:
-        result = {}
-
-    if response.ok and result.get("success"):
-        log.info(f"{GREEN}[SUCCESS]{RESET} {label}\n")
-        return True
-
-    detail = result.get("errors") or response.text[:200]
-    log.error(f"{RED}[FAILED]{RESET} {label}: HTTP {response.status_code} {_redact(detail)}")
-    log.error("  → Purge manually via Cloudflare dashboard\n")
-    return False
-
-
-def run_scoped_purge(env):
-    """Run the scoped purge, retrying only transient Cloudflare failures.
-
-    An enumeration bug, a tripped sanity floor, or a rejected token (exit 2)
-    fails identically every time, so retrying those only delays the fallback.
-    """
-    label = "Purging seeded API URLs (scoped)"
-    for attempt in range(1, PURGE_RETRIES + 1):
-        if attempt == 1:
-            log.info(f"{CYAN}[RUNNING]{RESET} {label}")
-        else:
-            log.warning(f"{YELLOW}[RETRY {attempt}/{PURGE_RETRIES}]{RESET} {label}")
-
-        code, tail = run_logged(
-            ["uv", "run", "python", "scripts/cache/purge_api_cache.py"],
-            env=env, cwd=scripts_dir.parent)
-
-        if code == 0:
-            log.info(f"{GREEN}[SUCCESS]{RESET} {label}\n")
-            return True
-
-        reason = tail[-1] if tail else f"exit {code}"
-        if code != EXIT_TRANSIENT:
-            log.error(f"{RED}[FAILED]{RESET} {label} — not retryable (exit {code}): {reason}")
-            return False
-
-        log.warning(f"{YELLOW}[FAILED]{RESET} {label} — transient, "
-                    f"attempt {attempt}/{PURGE_RETRIES}: {reason}")
-        if attempt < PURGE_RETRIES:
-            delay = PURGE_BACKOFF_SECONDS[min(attempt - 1, len(PURGE_BACKOFF_SECONDS) - 1)]
-            log.info(f"  → retrying in {delay}s")
-            time.sleep(delay)
-
-    log.error(f"{RED}[FAILED]{RESET} {label} — exhausted {PURGE_RETRIES} attempts")
-    return False
 
 
 def offer_bucket_prune():
@@ -464,113 +449,259 @@ def offer_bucket_prune():
         return
     code, _ = run_logged(
         ["uv", "run", "python", "scripts/images/prune_bucket.py"],
-        cwd=scripts_dir.parent)
-    if code != 0:
-        log.warning("  → prune_bucket did not complete; ledger kept."
+        cwd=scripts_dir.parent, interactive=True)
+    if code == 0:
+        log.info("  → prune_bucket.py finished: the prune ledger is empty\n")
+    else:
+        log.warning(f"  → prune_bucket.py exited {code}; ledger kept."
                     " Later: uv run python scripts/images/prune_bucket.py\n")
 
 
-def main():
-    args = sys.argv[1:]
-    purge_all = "--purge-all" in args
-    no_fallback = "--no-fallback" in args
+def parse_args(argv):
+    """The flags. An unknown one stops the run before anything happens, so a typo can't
+    quietly run something else. Abbreviations are off: argparse would otherwise read
+    --purge-al as --purge-all."""
+    parser = argparse.ArgumentParser(
+        prog="prod_seed.py", allow_abbrev=False,
+        description="Seed prod from server/seed-data, then purge the API URLs that changed.")
+    parser.add_argument("--purge-all", action="store_true",
+                        help="purge every API URL, not only the changed ones; images stay cached")
+    parser.add_argument("--purge-only", action="store_true",
+                        help="no seeding: purge what earlier runs left owed "
+                             "(with --purge-all, every API URL)")
+    parser.add_argument("--no-fallback", action="store_true",
+                        help="no longer needed: a failed purge never escalates; does nothing")
+    return parser.parse_args(argv)
 
-    if purge_all and no_fallback:
-        log.error(f"{RED}--purge-all and --no-fallback are contradictory{RESET}")
-        sys.exit(1)
 
-    if purge_all:
-        purge_plan = "FULL ZONE (--purge-all)"
-    elif no_fallback:
-        purge_plan = "scoped API URLs, no full-zone fallback (--no-fallback)"
+def _ledger():
+    """scripts/cache/purge_manifest.py, loaded by path: this script keeps server/ off
+    sys.path, and that module imports nothing from the app."""
+    spec = importlib.util.spec_from_file_location(
+        "purge_manifest", scripts_dir / "cache" / "purge_manifest.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def owed_lines(owed):
+    """What the ledger says is still owed a purge, as log lines."""
+    if not owed:
+        return ["  Owed a purge: nothing"]
+    lines = ["  Owed a purge (scripts/cache/purge-manifest.json):"]
+    for name, sections in owed:
+        lines.append(f"    {name}" + (f": {', '.join(sections)}" if sections else ""))
+    return lines
+
+
+def failed(label, code, tail, kind, opts, io):
+    """Log a failed step, what is owed, and what to run next. Returns the exit status."""
+    reason = tail[-1] if tail else f"exit {code}"
+    log.error(f"{RED}[FAILED]{RESET} {label} (exit {code}): {reason}")
+    owed = io.owed()
+    for line in owed_lines(owed):
+        log.error(line)
+    all_flag = " --purge-all" if opts.purge_all else ""
+    if kind == "seed":
+        log.error(f"  → Fix the cause, then run it again: uv run python scripts/prod_seed.py{all_flag}")
+        if owed:
+            log.error("  → To purge what's owed first: uv run python scripts/prod_seed.py --purge-only")
     else:
-        purge_plan = "scoped API URLs (falls back to full zone on failure)"
+        log.error(f"  → Next: uv run python scripts/prod_seed.py --purge-only{all_flag}")
+    if "Cloudflare" not in reason:
+        log.error("  → If a tunnel dropped, reopen it first:")
+        for command in io.tunnel_commands():
+            log.error(f"      {command}")
+    log.info(f"  Log: {LOG_PATH}")
+    return 1
 
+
+def run_seed(opts, env, io):
+    """Everything after the header: the check, the confirmation, the seeders, the last cache
+    clear and the purge. `io` supplies run(cmd), ask(prompt), owed(), sleep(seconds), clock()
+    and tunnel_commands(); io.step names the running step for an interrupt. Returns the exit
+    status."""
+    global _stopped_at_check
+    if opts.purge_only and not opts.purge_all and not io.owed():
+        log.info(f"\n{GREEN}Nothing is owed a purge.{RESET} To purge every API URL anyway: "
+                 f"uv run python scripts/prod_seed.py --purge-only --purge-all")
+        return 0
+
+    # Before the typed confirmation, through the same env, URLs and Redis client the
+    # seeders get: a closed tunnel or a refused password stops the run here.
+    io.step = CHECK_LABEL
+    log.info(f"\n{CYAN}[RUNNING]{RESET} {CHECK_LABEL}")
+    code, _ = io.run(["uv", "run", "python", "scripts/db/check_connections.py"])
+    if code != 0:
+        _stopped_at_check = True
+        log.error(f"{RED}[STOPPED]{RESET} {CHECK_LABEL} (exit {code}): nothing was run")
+        log.error("  → If the tunnels aren't open, run these in two Mac tabs, then run this again:")
+        for command in io.tunnel_commands():
+            log.error(f"      {command}")
+        log.error("  → More: scripts/images/PIPELINE.md, Seeding prod")
+        return 1
+    log.info(f"{GREEN}[SUCCESS]{RESET} {CHECK_LABEL}")
+
+    io.step = None    # an interrupt at the prompt aborts with nothing run
+    answer = io.ask(f"\nType {CYAN}seed prod{RESET} to continue: ").strip()
+    if answer != "seed prod":
+        # A warning, not an error: answering 'no' is also how a run checks the tunnels
+        # without seeding, and `grep -l ERROR logs/seed/*.log` is for runs that failed.
+        log.warning(f"{RED}Aborted: nothing was run{RESET}")
+        return 1
+    log.info("  Confirmed, starting\n")
+
+    if not opts.purge_only:
+        last_commit = io.clock()
+        for label, cmd in STEPS:
+            io.step = label
+            log.info(f"{CYAN}[RUNNING]{RESET} {label}")
+            code, tail = io.run(cmd)
+            if code != 0:
+                return failed(label, code, tail, "seed", opts, io)
+            log.info(f"{GREEN}[SUCCESS]{RESET} {label}\n")
+            if "--check" not in cmd:
+                last_commit = io.clock()
+        wait = REFILL_WAIT_SECONDS - (io.clock() - last_commit)
+        if wait > 0:
+            io.step = "the wait before the last cache clear"
+            log.info(f"  Waiting {wait:.0f} s, so no request still reading the old rows can "
+                     f"refill Redis after the clear")
+            io.sleep(wait)
+
+    label, cmd = CLEAR_STEP
+    io.step = label
+    log.info(f"{CYAN}[RUNNING]{RESET} {label}")
+    code, tail = io.run(cmd)
+    if code != 0:
+        return failed(label, code, tail, "purge", opts, io)
+    log.info(f"{GREEN}[SUCCESS]{RESET} {label}\n")
+
+    io.step = PURGE_LABEL
+    purge_cmd = ["uv", "run", "python", "scripts/cache/purge_api_cache.py", "--clear-ledger"]
+    if opts.purge_all:
+        purge_cmd.append("--all")
+    for attempt in range(1, PURGE_RETRIES + 1):
+        if attempt == 1:
+            log.info(f"{CYAN}[RUNNING]{RESET} {PURGE_LABEL}")
+        else:
+            log.warning(f"{YELLOW}[RETRY {attempt}/{PURGE_RETRIES}]{RESET} {PURGE_LABEL}")
+        code, tail = io.run(purge_cmd)
+        if code == 0:
+            break
+        if code != EXIT_TRANSIENT or attempt == PURGE_RETRIES:
+            return failed(PURGE_LABEL, code, tail, "purge", opts, io)
+        reason = tail[-1] if tail else f"exit {code}"
+        log.warning(f"{YELLOW}[FAILED]{RESET} {PURGE_LABEL} — transient, "
+                    f"attempt {attempt}/{PURGE_RETRIES}: {reason}")
+        delay = PURGE_BACKOFF_SECONDS[min(attempt - 1, len(PURGE_BACKOFF_SECONDS) - 1)]
+        log.info(f"  → retrying in {delay}s")
+        io.sleep(delay)
+    log.info(f"{GREEN}[SUCCESS]{RESET} {PURGE_LABEL}\n")
+
+    log.info(f"{GREEN}--- {'Purge' if opts.purge_only else 'Prod seed'} complete ---{RESET}")
+    log.info(f"  Log: {LOG_PATH}\n")
+    return 0
+
+
+def interrupted(io):
+    """Log a Ctrl+C: where it landed, what is owed, and what to run next. Returns the exit
+    status."""
+    step = io.step
+    if step is None:
+        log.warning(f"{RED}Aborted: nothing was run{RESET}")
+        return 1
+    if step == CHECK_LABEL:
+        log.warning(f"{RED}Interrupted during {CHECK_LABEL}: nothing was run{RESET}")
+        return EXIT_INTERRUPTED
+    log.error(f"{RED}[INTERRUPTED]{RESET} during {step}: that step was stopped at once")
+    for line in owed_lines(io.owed()):
+        log.error(line)
+    if step in (CLEAR_STEP[0], PURGE_LABEL, "the wait before the last cache clear"):
+        log.error("  → The seeding finished. Next: uv run python scripts/prod_seed.py --purge-only")
+    else:
+        log.error("  → A seeder's changes are all in prod or not at all. "
+                  "Run it again: uv run python scripts/prod_seed.py")
+    log.info(f"  Log: {LOG_PATH}")
+    return EXIT_INTERRUPTED
+
+
+def main():
+    opts = parse_args(sys.argv[1:])
+
+    global _run_lock, _run_started
+    _run_lock = open(LOG_DIR / "prod_seed.lock", "w")  # noqa: SIM115 -- held for the whole run
+    try:
+        fcntl.flock(_run_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # A warning, like an aborted prompt: nothing ran, and `grep -l ERROR` finds failed runs.
+        log.warning(f"{RED}Another prod seed is running.{RESET} Wait for it to finish, and leave "
+                    f"the tunnels open: that run is using them.")
+        return 1
+    _run_started = True
+
+    if opts.purge_only:
+        purge_plan = ("every API URL (--purge-only --purge-all), no seeding" if opts.purge_all
+                      else "what earlier runs left owed (--purge-only), no seeding")
+    elif opts.purge_all:
+        purge_plan = "every API URL (--purge-all); images stay cached"
+    else:
+        purge_plan = "the changed API URLs; a failed purge stops the run"
+
+    owed = _ledger().owed()
     log.info(f"\n{CYAN}--- Prod seed ---{RESET}")
     log.info(f"  Run ID:   {RUN_ID}")
     log.info(f"  Log:      {LOG_PATH}")
     log.info(f"  Database: {_mask('Postgres', PROD_DATABASE_URL)}")
     log.info(f"  Redis:    {_mask('Redis', PROD_REDIS_URL)}")
     log.info(f"  Purge:    {purge_plan}")
+    log.info("  Owed:     " + ("nothing from earlier runs" if not owed else "; ".join(
+        f"{name} ({', '.join(sections)})" if sections else name for name, sections in owed)))
+    if opts.no_fallback:
+        log.info("  --no-fallback: no longer needed; a failed purge never escalates, so it does nothing")
 
     env = os.environ.copy()
     env["DATABASE_URL"] = PROD_DATABASE_URL
     env["REDIS_URL"] = PROD_REDIS_URL
-    # Ties the two seeders and the purge into one run. The seeders stamp their
-    # changed-entity manifest with this; the purge inherits the same value from
-    # the environment and refuses to narrow unless the manifest it finds carries
-    # it, which is what stops a previous run's changed set being purged in place
-    # of this one's. It is also the log filename, so a log line and a manifest
-    # can be matched up afterwards.
-    env["SEED_RUN_ID"] = RUN_ID
-
-    # Before the typed confirmation, through the same env, engine and Redis client
-    # the seeders get: a closed tunnel or a refused password stops the run here.
-    label = "Checking prod connections"
-    log.info(f"\n{CYAN}[RUNNING]{RESET} {label}")
-    code, _ = run_logged(["uv", "run", "python", "scripts/db/check_connections.py"],
-                         env=env, cwd=scripts_dir.parent)
-    if code != 0:
-        global _stopped_at_check
-        _stopped_at_check = True
-        log.error(f"{RED}[STOPPED]{RESET} {label} (exit {code}): nothing was run")
-        log.error("  → If the tunnels aren't open, run these in two Mac tabs, then run this again:")
-        for command in _tunnel_commands():
-            log.error(f"      {command}")
-        log.error("  → More: scripts/images/PIPELINE.md, Seeding prod")
-        sys.exit(1)
-    log.info(f"{GREEN}[SUCCESS]{RESET} {label}")
-
-    answer = input(f"\nType {CYAN}seed prod{RESET} to continue: ").strip()
-    if answer != "seed prod":
-        # A warning, not an error: answering 'no' is also how a run checks the tunnels
-        # without seeding, and `grep -l ERROR logs/seed/*.log` is for runs that failed.
-        log.warning(f"{RED}Aborted: nothing was run{RESET}")
-        sys.exit(1)
-    log.info("  Confirmed, starting\n")
-
-    for label, cmd in STEPS:
-        log.info(f"{CYAN}[RUNNING]{RESET} {label}")
-        code, _ = run_logged(cmd, env=env, cwd=scripts_dir.parent)
-        if code != 0:
-            log.error(f"{RED}[FAILED]{RESET} {label} (exit {code}) — nothing purged")
-            sys.exit(1)
-        log.info(f"{GREEN}[SUCCESS]{RESET} {label}\n")
-
-    if purge_all:
-        purged = purge_cloudflare_cache()
-    elif run_scoped_purge(env):
-        purged = True
-    elif no_fallback:
-        # The seed already landed, so the DB is ahead of a cache carrying
-        # s-maxage=30d. Refusing to escalate is the point of the flag, but it
-        # leaves stale edge content until a purge succeeds — say so loudly.
-        log.error(f"{RED}[STOPPED]{RESET} Scoped purge failed and --no-fallback is set — "
-                  f"nothing was purged")
-        log.error("  → Prod data is seeded but the edge still serves the previous content "
-                  "(s-maxage=30d).")
-        log.error("  → Re-run: uv run python scripts/cache/purge_api_cache.py")
-        log.error(f"  → Or accept the blast radius: --purge-all ({BLAST_RADIUS})")
-        log.info(f"  Log: {LOG_PATH}")
-        sys.exit(1)
+    # Ties the two seeders and the purge into one run. The seeders record their changes in
+    # the ledger under this id, and the purge requires that run's records. A --purge-only run
+    # has no records of its own, so it purges whatever earlier runs left. It is also the log
+    # filename, so a log line and a ledger entry can be matched up afterwards.
+    if opts.purge_only:
+        env.pop("SEED_RUN_ID", None)
     else:
-        log.error(f"{RED}[FALLBACK]{RESET} Scoped purge failed — escalating to a full-zone purge")
-        purged = purge_cloudflare_cache()
+        env["SEED_RUN_ID"] = RUN_ID
 
-    if not purged:
-        log.error(f"{RED}--- Prod seed finished, cache NOT purged ---{RESET}")
-        log.info(f"  Log: {LOG_PATH}\n")
-        sys.exit(1)
+    io = SimpleNamespace(
+        step=None,
+        run=lambda cmd: run_logged(cmd, env=env, cwd=scripts_dir.parent),
+        ask=input,
+        owed=lambda: _ledger().owed(),
+        sleep=time.sleep,
+        clock=time.monotonic,
+        tunnel_commands=_tunnel_commands,
+    )
+    try:
+        code = run_seed(opts, env, io)
+    except KeyboardInterrupt:
+        return interrupted(io)
+    if code == 0 and not opts.purge_only:
+        try:
+            offer_bucket_prune()
+        except KeyboardInterrupt:
+            log.warning(f"{YELLOW}Prune offer interrupted:{RESET} the ledger is kept. "
+                        f"Later: uv run python scripts/images/prune_bucket.py")
+    return code
 
-    log.info(f"{GREEN}--- Prod seed complete ---{RESET}")
-    log.info(f"  Log: {LOG_PATH}\n")
 
-    offer_bucket_prune()
+# Held for the whole run: the OS releases the lock when the process exits, however it does.
+_run_lock = None
 
 
 if __name__ == "__main__":
     try:
-        main()
+        sys.exit(main())
     finally:
-        # Every way out once the run has started: done, aborted, a failed step, Ctrl+C.
-        remind_to_close_tunnels()
+        # Every way out once this run holds the lock: done, aborted, a failed step, Ctrl+C.
+        if _run_started:
+            remind_to_close_tunnels()

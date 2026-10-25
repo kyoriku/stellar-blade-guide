@@ -3,24 +3,35 @@ Automated workflow script for adding content
 Usage:
   uv run scripts/dev_workflow.py collectibles
   uv run scripts/dev_workflow.py walkthroughs
+
+Every typed confirmation in it takes 'yes' (the upload and the URL swap; the prune gate asks
+for 'prune'), and a step with nothing to do doesn't ask. Declining one stops the workflow
+there, so the dev seed never runs on R2 URLs for files that were never uploaded, or on local
+paths that work on dev and break on prod.
 """
 
 import subprocess
 import sys
 from pathlib import Path
 
+# A step's exit status when its typed confirmation was declined (upload_r2.py and
+# update_r2_urls.py).
+EXIT_DECLINED = 3
+
+
 def run_command(cmd, description):
-    """Run a command and handle errors"""
+    """Run one step. Returns its exit status."""
     print(f"\n\033[36m[RUNNING]\033[0m {description}")
     print(f"Command: {' '.join(cmd)}")
-    
-    try:
-        result = subprocess.run(cmd, check=True, cwd=Path.cwd())
+
+    code = subprocess.run(cmd, cwd=Path.cwd()).returncode
+    if code == 0:
         print(f"\033[32m[SUCCESS]\033[0m {description} - Complete")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"\033[31m[ERROR]\033[0m {description} - Failed with exit code {e.returncode}")
-        return False
+    elif code == EXIT_DECLINED:
+        print(f"\033[33m[STOPPED]\033[0m {description} - Declined")
+    else:
+        print(f"\033[31m[ERROR]\033[0m {description} - Failed with exit code {code}")
+    return code
 
 def main():
     # Parse content type argument
@@ -65,7 +76,12 @@ def main():
     for i, step in enumerate(steps, 1):
         print(f"\nStep {i}/{len(steps)}: {step['desc']}")
 
-        if not run_command(step["cmd"], step["desc"]):
+        code = run_command(step["cmd"], step["desc"])
+        if code == EXIT_DECLINED:
+            print(f"\n\033[33m[STOPPED]\033[0m You declined step {i}, so nothing after it ran. "
+                  f"Run the workflow again when you're ready.")
+            sys.exit(EXIT_DECLINED)
+        if code != 0:
             print(f"\n\033[31m[FAILED]\033[0m Workflow stopped at step {i}")
             sys.exit(1)
 

@@ -2,16 +2,23 @@
 (scripts/cache/purge_api_cache.py). The derivation walks the route table, so
 a new route under a cached prefix must appear automatically (or raise), and
 routes outside the prefixes must be ignored."""
+import contextlib
 import os
+import socket
+import subprocess
 import sys
+import threading
+import time
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 import requests
 
-from scripts.cache import purge_api_cache
+from scripts.cache import purge_api_cache, purge_manifest
 from scripts.cache.purge_api_cache import (
-    PUBLIC_BASE, TransientPurgeError, derive_urls, purge, singular_walkthrough_urls,
+    PUBLIC_BASE, TransientPurgeError, UrlListError, derive_urls, purge,
+    singular_walkthrough_urls,
 )
 
 DB = {
@@ -192,3 +199,179 @@ def test_purge_url_never_carries_the_zone_id_into_an_error(cf_env, monkeypatch):
     with pytest.raises(RuntimeError) as excinfo:
         purge(['https://example.test/api/levels/nest'])
     assert 'zone-test' not in str(excinfo.value)
+
+
+# ── The ledger: what every purge owes, and who may clear it ──────────────────
+# A record is only ever cleared by a purge prod_seed.py started (--clear-ledger), and a
+# full-surface purge, which derives its list from the current DB, still reaches every
+# walkthrough URL the ledger recorded: a renamed or deleted page's old URL is in no row.
+
+
+RENAMED_AWAY = ('main-story', 'old-name')        # recorded by an earlier run, gone from DB
+RENAMED_AWAY_URL = f'{PUBLIC_BASE}/api/walkthroughs/main-story/old-name'
+
+
+@pytest.fixture
+def ledger(tmp_path, monkeypatch):
+    monkeypatch.setattr(purge_manifest, 'MANIFEST_PATH', tmp_path / 'purge-manifest.json')
+    monkeypatch.delenv(purge_manifest.RUN_ID_ENV, raising=False)
+    return purge_manifest
+
+
+def _record_run(run, **facts):
+    purge_manifest.record('collectibles', run, level_names=facts.get('level_names', ()))
+    purge_manifest.record('walkthroughs', run, pairs=facts.get('pairs', ()),
+                          pairs_removed=facts.get('pairs_removed', ()))
+
+
+def _run_main(monkeypatch, argv):
+    monkeypatch.setitem(sys.modules, 'app.main', SimpleNamespace(app=SimpleNamespace(routes=BASE_ROUTES)))
+    monkeypatch.setattr(purge_api_cache, 'parse_navigation', lambda: NAV)
+    monkeypatch.setattr(purge_api_cache, 'load_db_sources', lambda: DB)
+    monkeypatch.setattr(purge_api_cache, 'SANITY_FLOOR', 0)
+    purged = []
+    monkeypatch.setattr(purge_api_cache, 'purge', lambda urls: purged.extend(urls) or len(urls))
+    monkeypatch.setattr(sys, 'argv', ['purge_api_cache.py', *argv])
+    purge_api_cache.main()
+    return purged
+
+
+def test_a_recorded_walkthrough_gone_from_the_db_is_purged_as_a_removal(ledger, monkeypatch):
+    """An earlier run recorded a walkthrough a later run renamed: purge its URL, don't widen."""
+    _record_run('older', pairs=[RENAMED_AWAY])
+    _record_run('this', level_names=['Eidos 7'])
+    purged = _run_main(monkeypatch, ['--run-id', 'this'])
+    assert RENAMED_AWAY_URL in purged
+    assert f'{PUBLIC_BASE}/api/levels/eidos-7' in purged
+    assert f'{PUBLIC_BASE}/api/levels/nest' not in purged    # narrowed, not widened
+
+
+def test_the_full_surface_by_request_carries_every_recorded_walkthrough(ledger, monkeypatch):
+    _record_run('older', pairs_removed=[RENAMED_AWAY])
+    purged = _run_main(monkeypatch, ['--all'])
+    assert RENAMED_AWAY_URL in purged
+    assert set(derive_urls(BASE_ROUTES, DB, NAV)) <= set(purged)
+
+
+def test_a_widened_purge_carries_every_recorded_walkthrough(ledger, monkeypatch, capsys):
+    """This run recorded only one section, so the purge widens, and the earlier run's removal
+    must still be in it: the surface derived from the DB can't name it."""
+    _record_run('older', pairs_removed=[RENAMED_AWAY])
+    purge_manifest.record('collectibles', 'this', level_names=['Eidos 7'])
+    purged = _run_main(monkeypatch, ['--run-id', 'this'])
+    assert 'widening to the full surface' in capsys.readouterr().out
+    assert RENAMED_AWAY_URL in purged
+
+
+def test_a_recorded_walkthrough_with_no_url_fails_the_purge_and_keeps_the_ledger(ledger, monkeypatch):
+    _record_run('older', pairs_removed=[('made-up-type', 'x')])
+    before = purge_manifest.MANIFEST_PATH.read_bytes()
+    with pytest.raises(UrlListError, match='maps to no URL'):
+        _run_main(monkeypatch, ['--all', '--clear-ledger'])
+    assert purge_manifest.MANIFEST_PATH.read_bytes() == before
+
+
+def test_a_purge_run_by_hand_never_clears_the_ledger(ledger, monkeypatch, capsys):
+    _record_run('older', level_names=['Eidos 7'])
+    _run_main(monkeypatch, [])
+    assert purge_manifest.MANIFEST_PATH.exists()
+    assert 'only a purge prod_seed.py starts clears it' in capsys.readouterr().out
+
+
+def test_a_purge_prod_seed_started_clears_the_ledger(ledger, monkeypatch):
+    _record_run('this', level_names=['Eidos 7'])
+    _run_main(monkeypatch, ['--run-id', 'this', '--clear-ledger'])
+    assert not purge_manifest.MANIFEST_PATH.exists()
+
+
+def test_a_dry_run_never_clears(ledger, monkeypatch):
+    _record_run('this', level_names=['Eidos 7'])
+    _run_main(monkeypatch, ['--run-id', 'this', '--clear-ledger', '--dry-run'])
+    assert purge_manifest.MANIFEST_PATH.exists()
+
+
+def test_earlier_runs_are_named(ledger, monkeypatch, capsys):
+    _record_run('older', level_names=['Nest'])
+    _record_run('this', level_names=['Eidos 7'])
+    _run_main(monkeypatch, ['--run-id', 'this'])
+    assert 'includes earlier run(s) not yet purged: older' in capsys.readouterr().out
+
+
+# ── The script's own exits, in a real process ────────────────────────────────
+
+
+SERVER = Path(purge_api_cache.__file__).resolve().parents[2]
+
+
+def _run_script(database_url, no_answer_seconds=None, answer_seconds=None):
+    """Run purge_api_cache.py as __main__ against database_url. A shorter watchdog limit, or
+    a shorter asyncpg timeout, can be set first; the script is run by path, exactly as
+    prod_seed.py runs it."""
+    setup = 'import scripts.db.seed_guard as g\n'
+    if no_answer_seconds is not None:
+        setup += f'g.NO_ANSWER_SECONDS = {no_answer_seconds}\n'
+    if answer_seconds is not None:
+        setup += f'g.ANSWER_SECONDS = {answer_seconds}\n'
+    script = setup + "import runpy\nrunpy.run_path('scripts/cache/purge_api_cache.py', run_name='__main__')\n"
+    env = {**os.environ, 'DATABASE_URL': database_url}
+    env.pop('SEED_RUN_ID', None)
+    return subprocess.run([sys.executable, '-c', script], capture_output=True, text=True,
+                          timeout=60, cwd=SERVER, env=env, check=False)
+
+
+def test_a_database_that_refuses_ends_the_purge_before_anything_is_purged():
+    with socket.socket() as probe:              # a port nothing listens on
+        probe.bind(('127.0.0.1', 0))
+        port = probe.getsockname()[1]
+    done = _run_script(f'postgresql+asyncpg://u:p@127.0.0.1:{port}/db')
+    assert done.returncode == 2
+    assert "Couldn't build the URL list" in done.stdout and 'Nothing was purged' in done.stdout
+
+
+@contextlib.contextmanager
+def _silent_database():
+    """The dead-tunnel shape: a port that accepts every connection and never answers."""
+    listener = socket.socket()
+    listener.bind(('127.0.0.1', 0))
+    listener.listen()
+    held = []
+    stop = threading.Event()
+
+    def hold_connections():
+        listener.settimeout(0.2)
+        while not stop.is_set():
+            try:
+                held.append(listener.accept()[0])
+            except OSError:
+                continue
+
+    thread = threading.Thread(target=hold_connections, daemon=True)
+    thread.start()
+    try:
+        yield f'postgresql+asyncpg://u:p@127.0.0.1:{listener.getsockname()[1]}/db'
+    finally:
+        stop.set()
+        thread.join()
+        for conn in held:
+            conn.close()
+        listener.close()
+
+
+def test_a_database_that_never_answers_is_ended_by_the_watchdog():
+    with _silent_database() as url:
+        started = time.monotonic()
+        done = _run_script(url, no_answer_seconds=1)
+        elapsed = time.monotonic() - started
+    assert done.returncode == 2
+    assert 'No answer from the database' in done.stdout and 'nothing was purged' in done.stdout
+    assert elapsed < 20
+
+
+def test_a_connection_that_never_opens_names_the_timeout():
+    """asyncpg gives up on the connection before the watchdog fires; the line says what timed
+    out rather than a bare TimeoutError."""
+    with _silent_database() as url:
+        done = _run_script(url, answer_seconds=1)
+    assert done.returncode == 2
+    assert ("Couldn't build the URL list: no answer from the database within 1 s. "
+            "Nothing was purged.") in done.stdout
