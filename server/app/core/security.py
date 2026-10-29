@@ -26,14 +26,15 @@ def get_client_ip(request: Request) -> str:
     """The client address for the rate limiter and the access log.
 
     CF-Connecting-IP when it holds an IP address: Cloudflare sets it on every proxied
-    request and refuses one a client sends (403, Error 1000), and Railway's Edge Rule
-    turns away anything that skipped Cloudflare. Otherwise the connection's client
-    address: in production the socket peer, Railway's proxy, since the Dockerfile runs
-    uvicorn with --no-proxy-headers; in dev, where uvicorn's default trusts the
-    127.0.0.1 Vite proxy, the X-Forwarded-For entry the request carries (the e2e
-    suite's per-test buckets). No other header is read: each can carry text the client
-    wrote (Cloudflare appends to X-Forwarded-For and passes the others through). Never
-    empty: slowapi skips the limit for an empty key.
+    request and refuses one a client sends (403, Error 1000), and the origin check
+    refuses every request without the secret Cloudflare adds (Railway's health check
+    aside) before any route runs, so a header a client wrote never keys the limiter.
+    Otherwise the connection's client address: in production the socket peer, Railway's
+    proxy, since the Dockerfile runs uvicorn with --no-proxy-headers; in dev, where
+    uvicorn's default trusts the 127.0.0.1 Vite proxy, the X-Forwarded-For entry the
+    request carries (the e2e suite's per-test buckets). No other header is read: each
+    can carry text the client wrote (Cloudflare appends to X-Forwarded-For and passes
+    the others through). Never empty: slowapi skips the limit for an empty key.
     """
     cf_ip = cf_connecting_ip(request)
     if cf_ip:
