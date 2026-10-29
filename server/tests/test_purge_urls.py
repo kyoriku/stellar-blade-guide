@@ -184,7 +184,8 @@ def test_retryable_failures_raise_transient(failure, cf_env, monkeypatch):
 ])
 def test_permanent_failures_do_not_raise_transient(failure, cf_env, monkeypatch):
     """A bad token or a malformed batch fails identically on every attempt;
-    raising Transient here would burn the retry budget before the fallback."""
+    raising Transient here would spend prod_seed.py's retries on a purge that
+    can't succeed."""
     monkeypatch.setattr(purge_api_cache.requests, 'post', failure)
     with pytest.raises(RuntimeError) as excinfo:
         purge(['https://example.test/api/levels/nest'])
