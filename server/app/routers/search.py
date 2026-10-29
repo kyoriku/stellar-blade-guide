@@ -12,8 +12,9 @@ from app.services.search import _execute_search, normalize_search_query
 
 SEARCH_RATE_LIMIT = "30/minute"
 # Shared with security_headers.py, which advertises the same value as s-maxage.
-# Search has no purge path (arbitrary ?q= cannot be enumerated), so the TTL is
-# the only thing bounding staleness — see settings.SEARCH_CACHE_TTL.
+# Every content deploy clears search:* from Redis, but no purge reaches the edge
+# copies (arbitrary ?q= cannot be enumerated), so there the TTL is the only bound
+# on staleness; see settings.SEARCH_CACHE_TTL.
 SEARCH_CACHE_TTL = settings.SEARCH_CACHE_TTL
 
 router = APIRouter(prefix="/search", tags=["search"])

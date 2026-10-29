@@ -64,7 +64,7 @@ async def _cc(client, path, method="get"):
     return _parse_cache_control(r.headers["cache-control"])
 
 
-# ── /api/search: TTL is the only bound, so it must match Redis ───────────────
+# ── /api/search: the TTL is the edge's only bound, and Redis uses it too ─────
 
 async def test_search_s_maxage_matches_its_redis_ttl(headers_client):
     cc = await _cc(headers_client, "/api/search/?q=nano")
@@ -116,8 +116,8 @@ async def test_search_is_still_publicly_cacheable(headers_client):
     "/api/upgrades/gear", "/api/cosmetics/glasses", "/api/collectibles/supply-boxes",
 ])
 async def test_purgeable_content_routes_keep_the_long_ttl(headers_client, path):
-    """These are enumerable and purged by URL after every seed, so a 30-day
-    s-maxage remains correct for them."""
+    """These are enumerable and purged by URL whenever a content deploy changes
+    them, so a 30-day s-maxage remains correct for them."""
     cc = await _cc(headers_client, path)
     assert cc["s-maxage"] == settings.CACHE_TTL
     assert cc["stale-while-revalidate"] == settings.SWR_TTL
