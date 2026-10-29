@@ -36,8 +36,8 @@ async def error_handler_middleware(request: Request, call_next):
     try:
         return await call_next(request)
     except RedisError as e:
-        # Redis-backed paths that can't fail open (refresh tokens, password
-        # reset) surface as a dependency outage, not an application error.
+        # Redis-backed paths that can't fail open (refresh tokens, OAuth state,
+        # password reset) surface as a dependency outage, not an application error.
         logger.warning(f"Redis unavailable for {request.url.path}: {e}")
         return JSONResponse(
             status_code=503,

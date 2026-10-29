@@ -1,8 +1,8 @@
 """
 Tests for Redis-outage resilience.
 
-Two layers keep a Redis outage from taking the site down (cause of the
-2026-07-02 incident, where a hung Redis socket 500'd every rate-limited route):
+Two layers guard against a stalled or unreachable Redis, so rate-limited routes
+keep answering and the paths that need Redis fail with a clean 503:
 
 1. The slowapi Limiter (app/core/security.py) bounds socket waits to 2s and falls
    back to per-process in-memory limits (swallow_errors=True,
@@ -11,8 +11,9 @@ Two layers keep a Redis outage from taking the site down (cause of the
 
 2. error_handler_middleware maps redis.exceptions.RedisError to 503 +
    Retry-After for the paths that legitimately fail closed (refresh tokens,
-   password reset) — a deliberate dependency-outage signal instead of an
-   unhandled 500 with a traceback per request.
+   OAuth state, password reset): a deliberate dependency-outage signal instead
+   of an unhandled 500 with a traceback per request. A stall reaches it as a
+   TimeoutError, because app/core/cache.py's client gives up after 2 s.
 
 Same strategy as test_auth.py: own fixture chain with the User tables in
 SQLite, and app.core.auth's redis_client binding patched to the shared FakeRedis.
@@ -222,7 +223,6 @@ async def test_non_redis_error_still_returns_500(resilience_client):
 # ── Limiter outage config ─────────────────────────────────────────────────────
 
 def test_limiter_degrades_instead_of_raising():
-    # Regression guard for the outage fix: storage errors must fall back to
-    # in-memory limits, never propagate into routes.
+    # A storage error must fall back to in-memory limits, never reach a route.
     assert limiter._swallow_errors is True
     assert limiter._in_memory_fallback_enabled is True
