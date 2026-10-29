@@ -39,11 +39,13 @@ exits 1 when:
     another card's anchor;
   - the statement's server time misses the budget (p90 over TIMING_BUDGET_MS).
 
---timing runs EXPLAIN (ANALYZE) over TIMING_QUERIES, for the search statement and the
-statements search ran before the rework (copied below, verbatim). With --prod it
-reads PROD_DATABASE_URL from server/.env, derives the app's round trip from today's
-observed 65 ms median cache miss, and passes only if the predicted p90 miss is within
-100 ms. That needs the prod migration first: the statement reads the stored columns.
+--timing runs EXPLAIN (ANALYZE) over TIMING_QUERIES for the search statement (and, where
+the typo fallback runs, its vocabulary query and re-run); on dev it exits 1 when the p90
+misses TIMING_BUDGET_MS. --prod also times the statements search ran before the rework
+(copied below, verbatim), reads PROD_DATABASE_URL from server/.env, derives the app's
+round trip from the 65 ms median DB time of a prod search cache miss before the rework
+(OBSERVED_MISS_MEDIAN_MS), and passes only if the predicted p90 miss is within 100 ms.
+The statement reads the stored search columns, so the database it times must have them.
 
 --prod first checks that prod answers (scripts/db/check_connections.py, through the
 Postgres tunnel), then reads through the scripts' own engine under a watchdog. Exits 2,
@@ -246,8 +248,8 @@ TIMING_QUERIES = BRIEF + [
 # inside a full check, where this gate runs. Most of it is reading the content of every
 # walkthrough a broad word like "supply" matches, for its section titles (about 2.7 ms
 # on "supply", 0.5 on a specific query). So the budget is 17 (2026-10-22), 1.5 above a
-# full check's p90. The real latency gates are the prod timing gate below and the
-# post-deploy rollback trigger, both unchanged.
+# full check's p90. The real latency gates are the prod timing gate below and a
+# post-deploy check of live search-miss times, both unchanged.
 TIMING_BUDGET_MS = 17.0
 VISIBLE = 44          # snippet characters the narrowest results row shows
 PAGE_KINDS = {"type", "walkthrough_type", "level"}

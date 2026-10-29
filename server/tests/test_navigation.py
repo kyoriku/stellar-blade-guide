@@ -40,7 +40,7 @@ def test_level_slugs_are_the_levels_with_a_page():
 
 # Search finds the type and level pages by their titles too ("Camp Locations",
 # "Eidos 7 Collectibles"), so every page needs one, without the "All 91" count that
-# changes with every seed.
+# changes with the content.
 
 def test_every_type_page_has_a_title_for_search():
     titles = {slug: entry["title"] for group in SEO["types"].values() for slug, entry in group.items()}

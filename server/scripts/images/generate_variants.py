@@ -12,10 +12,11 @@ from PIL import Image
 
 # Pre-generates every WebP file R2 serves, sourced from the masters tree at
 # native resolution (the masters tree is the publication manifest: curated
-# captures only; a file present there WILL publish). Layout in r2-staging/
-# mirrors R2 keys exactly: {key}.webp (full size, lightbox/stored URL) +
-# {key}-w{N}.webp variants. Keys are a pure function of the masters-relative
-# path (kebab-cased; see derive_key).
+# captures only. A master nothing references fails the manifest check, but
+# it is still staged). Layout in r2-staging/ mirrors R2 keys exactly:
+# {key}.webp (full size, lightbox/stored URL) + {key}-w{N}.webp variants.
+# Keys are a pure function of the masters-relative path (kebab-cased; see
+# derive_key).
 
 STANDARD_WIDTHS = [640, 960, 1200, 1600]
 HERO_WIDTHS = [640, 960, 1200, 1600, 1920, 2560]

@@ -33,11 +33,11 @@ and verifies every API response. There is no fallback: a failure stops with a la
 that names the cause, and nothing else is purged. A partial purge is harmless, since the
 ledger keeps every record until a purge succeeds and the next one repeats them.
 
-The surface is derived live and grows with the content: 125 URLs as of
-2026-09-14 (12 levels, 85 walkthroughs), up from 81 at the 2026-07-16
-re-baseline. Nothing here hardcodes that number — `--dry-run` prints the
-current set — but SANITY_FLOOR below is calibrated against it, so check the
-two together.
+The surface is derived live and grows with the content: 136 URLs as of
+2026-10-25 (12 levels, the two pseudo-levels included, and 95 walkthroughs),
+up from 81 at the 2026-07-16 re-baseline. Nothing here hardcodes that number
+(`--dry-run` prints the current set), but SANITY_FLOOR below was set against
+the 81, so check the two together.
 
 Exit codes tell prod_seed.py whether retrying is worth anything:
   0  purged (or listed, under --dry-run)
@@ -48,9 +48,11 @@ Exit codes tell prod_seed.py whether retrying is worth anything:
                   same call fails identically, so retrying is pointless.
 
 Invoked by prod_seed.py with the PROD DATABASE_URL in the environment, so
-slugs are derived from exactly what was just seeded. Images are never purged:
-they are immutable and content changes always rename (see
-scripts/images/PIPELINE.md).
+slugs are derived from exactly what the content deploy just wrote. A run of
+this script never purges an image: images are cached as immutable, and a
+content change gets a new key. The only image purge is upload_r2.py --overwrite,
+for quality-only refreshes, which hands exactly the URLs it replaced to purge()
+below (see scripts/images/PIPELINE.md).
 """
 
 import sys
@@ -75,19 +77,14 @@ PUBLIC_BASE = 'https://stellarbladeguide.com'
 CACHED_PREFIXES = ('/api/walkthroughs', '/api/levels', '/api/collectibles',
                    '/api/upgrades', '/api/cosmetics')
 BATCH_SIZE = 30      # Pro plan: purge-by-URL takes at most 30 per call
-SANITY_FLOOR = 50    # a smaller result means the derivation broke somewhere and
-                     # the caller must full-purge. Note the drift: 50 was set
-                     # when the surface was 81 URLs (62% of it) and the surface
-                     # is now 125, so it is 40% — a derivation that silently lost
-                     # half the walkthroughs would clear it and do a partial
-                     # purge, the one outcome the module docstring rules out.
-                     # Deliberately NOT raised, because a single threshold cannot
-                     # do the job once purges are scoped to changed entities: a
-                     # full enumeration should expect roughly the whole current
-                     # surface, while a purge covering one edited collectible is
-                     # legitimately three or four URLs. That needs two separate
-                     # checks, so pick the numbers when the split is built rather
-                     # than tuning this one twice.
+SANITY_FLOOR = 50    # a smaller full surface means the derivation broke somewhere,
+                     # so the run stops with exit 2 and purges nothing. It checks
+                     # only the full enumeration: check_narrowed() guards the
+                     # narrowed set, which can legitimately be three or four URLs.
+                     # Note the drift: 50 was set when the surface was 81 URLs
+                     # (62% of it), and the surface is 136 as of 2026-10-25, so it
+                     # is 37%: a derivation that silently lost half the
+                     # walkthroughs would still clear it.
 NAVIGATION_TS = Path(__file__).resolve().parents[3] / 'client' / 'src' / 'constants' / 'navigation.ts'
 
 EXIT_TRANSIENT = 1
@@ -355,9 +352,10 @@ def singular_walkthrough_urls(routes, db):
 
 def derive_urls(routes, db, nav, index_prefixes=None):
     """Expand every cached GET route into concrete URLs. A route under a
-    cached prefix whose shape is not recognized raises (the caller falls back
-    to a full purge) — new routes can appear automatically or fail loudly,
-    never be silently skipped.
+    cached prefix whose shape is not recognized raises, and since main()
+    derives the full surface first, the purge then stops with nothing purged:
+    new routes can appear automatically or fail loudly, never be silently
+    skipped.
 
     index_prefixes gates the parameterless list routes (/api/collectibles/,
     /api/walkthroughs/). None — the full path — emits every one. The narrowed

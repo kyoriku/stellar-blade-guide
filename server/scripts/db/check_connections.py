@@ -7,8 +7,11 @@ Usage:
 
 prod_seed.py runs it first, before its typed confirmation, with the same
 DATABASE_URL and REDIS_URL it gives the seeders, so the check reaches exactly
-what they will, through the same engine (app.db.database) and Redis client
-(app.core.cache). Postgres must answer SELECT 1, Redis an authenticated PING.
+what they will. Postgres is probed through the app's engine (app.db.database);
+the seeders build their own (scripts/db/seed_guard.py: no pool, a 10 s connect
+timeout and their own session timeouts), but both read the URL with SQLAlchemy
+and connect through asyncpg. Redis is probed through the client the seeders
+use (app.core.cache). Postgres must answer SELECT 1, Redis an authenticated PING.
 
 Each URL is first read the way its driver will read it, and the two differ.
 SQLAlchemy ends a password at the first '@', so with a second '@' the rest of
@@ -26,10 +29,10 @@ answered, 1 when one didn't answer in time, 3 when one stopped at once.
 However a connection's cleanup behaves, the process is gone within --wait plus
 20 seconds.
 
-The other scripts that read prod (search_eval.py, cache_stats.py,
-purge_api_cache.py --singular-walkthroughs, and the local diff and migrations)
-call require() once they have pointed DATABASE_URL or REDIS_URL at prod, before
-anything imports the app's engine or Redis client. It runs this file as a child,
+Other scripts that read prod (search_eval.py, cache_stats.py,
+purge_api_cache.py --singular-walkthroughs, and the local diff) call require()
+once they have pointed DATABASE_URL or REDIS_URL at prod, before anything
+imports the app's engine or Redis client. It runs this file as a child,
 waits 10 s rather than 30, and stops the script with exit 2 and the railway
 connect line to run when prod doesn't answer. They show URLs with mask(), the
 same display as prod_seed.py's header.

@@ -80,6 +80,8 @@ class CollectibleImage(Base):
     
     id = Column(Integer, primary_key=True)
     collectible_id = Column(Integer, ForeignKey('collectibles.id', ondelete='CASCADE'), nullable=False)
+    # The image's R2 URL (on dev, a local /assets/images path until the pipeline's
+    # URL swap). The name is left over from Cloudinary, which now hosts avatars only.
     cloudinary_url = Column(String(500), nullable=False)
     alt_text = Column(String(255), nullable=False)
     display_order = Column(Integer, nullable=False)

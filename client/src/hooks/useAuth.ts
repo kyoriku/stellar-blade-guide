@@ -13,7 +13,7 @@ export function useAuth() {
 
   /**
    * A fetch wrapper that automatically attaches the Authorization header.
-   * If the access token is expired, it attempts a silent refresh first.
+   * If no access token is held, it refreshes first; after a 401 it refreshes once and retries.
    * Use this for any API call that requires authentication.
    *
    * Usage:

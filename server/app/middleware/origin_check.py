@@ -12,13 +12,10 @@ async def origin_check_middleware(request: Request, call_next):
     if settings.DEBUG:
         return await call_next(request)
 
-    # Allow Railway's internal health checks. They arrive over Railway's private mesh
-    # with this Host and never pass through the public edge. An outside caller cannot
-    # spoof it: Railway's edge routes on the Host header, and this hostname is not
-    # registered, so the request dies at the edge (verified 2026-09-12, see
-    # docs/prod-origin-topology.md). The path pin keeps the exemption no wider than
-    # the health endpoint even if that routing behaviour ever changes. It must match
-    # the health-check path configured in Railway and edge rule 2.
+    # Allow Railway's internal health checks, which arrive over its private network
+    # with this Host. The path pin keeps the exemption to the health endpoint, so a
+    # request that forges the Host reaches nothing else. It must match the
+    # health-check path configured in Railway.
     if (
         request.headers.get("host", "").startswith("healthcheck.railway.app")
         and request.url.path == "/api/health"

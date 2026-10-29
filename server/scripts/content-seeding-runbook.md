@@ -1,6 +1,6 @@
 # Content seeding runbook
 
-Last updated: Oct 25, 2026
+Last updated: Oct 27, 2026
 
 ## Quick reference
 
@@ -29,7 +29,7 @@ flowchart TD
     dev["Devcontainer (VS Code)<br/>prod_seed.py, the seeders and the diff<br/>Claude Code runs here too: keep it idle"]
     mac["Your Mac: two tunnel tabs<br/>127.0.0.1:15432 Postgres, :16379 Redis"]
     rw["Railway, private network<br/>prod Postgres and prod Redis<br/>no public address since Oct 21, 2026"]
-    cf["Cloudflare edge cache<br/>only changed API responses are purged<br/>a seed never purges images"]
+    cf["Cloudflare edge cache<br/>changed API responses are purged,<br/>every API URL if in doubt<br/>a seed never purges images"]
     dev -->|"host.docker.internal:15432 and :16379"| mac
     mac -->|"SSH tunnels"| rw
     dev -->|"purge"| cf
@@ -44,7 +44,7 @@ The devcontainer reaches prod only through your Mac's tunnels, while the purge g
 
 - **Two repos:** the main repo holds the code, and `server/seed-data` is its own git repo holding the content.
 - **Prod is private:** Postgres and Redis have had no public address since Oct 21, 2026. Only the tunnels reach them.
-- **A prod seed** checks both databases answer, asks you to type `seed prod`, seeds collectibles and walkthroughs, clears Redis, and purges only the changed API responses from Cloudflare's cache.
+- **A prod seed** checks both databases answer, asks you to type `seed prod`, seeds collectibles and walkthroughs, clears Redis, and purges the changed API responses from Cloudflare's cache, or every API URL if anything is in doubt.
 
 ## One-time setup
 
@@ -73,7 +73,7 @@ On a new machine, also copy what git doesn't hold from the old one:
 
 - the image masters in `client/public/assets/images/`
 - `CLAUDE.md` and `.claude/`, which hold Claude Code's conventions and deny list
-- `server/scripts/db/diff_collectibles.py` and the `lint_collectibles.py` it imports
+- `server/scripts/db/diff_collectibles.py` and the `lint_collectibles.py` it imports, plus the lines in `.git/info/exclude` that keep both out of commits
 - `server/scripts/cache/purge-manifest.json` and `server/scripts/images/prune-pending.json`, if they exist: the purges still owed and the R2 objects still to delete
 
 The new devcontainer's database starts empty. Run `uv run scripts/db/seed_db.py`, then both seeders, before your first edit.
@@ -110,7 +110,7 @@ A change goes edit, dev, git, then prod, and only the prod steps (the diff and t
 
 Walkthroughs follow the same ten steps, with these differences:
 
-- **Files:** `server/seed-data/walkthroughs/<category>/<n>-<name>.json`. Screenshots go in `client/public/assets/images/Walkthroughs/<Mission_Type>/<Mission_Name>/`.
+- **Files:** `server/seed-data/walkthroughs/<category>/<n>-<name>.json`, where the DLC categories are `dlc/nier` and `dlc/nikke`. Screenshots go in `client/public/assets/images/Walkthroughs/<Mission_Type>/<Mission_Name>/`, except that each DLC keeps all its screenshots in one folder, `Walkthroughs/DLC/Nier_Automata/` or `Walkthroughs/DLC/Goddess_Of_Victory_Nikke/`.
 - **Dev seed:** `uv run scripts/db/seed_walkthroughs.py`. Add `--check` to validate the files without writing anything.
 - **Image pipeline:** `uv run scripts/dev_workflow.py walkthroughs`.
 - **Still run the diff** (step 7): the prod seed reseeds collectibles from disk too, so it should list no changes. The prod seed's `↻ Updated` lines show which walkthroughs changed.
@@ -123,10 +123,10 @@ Two things carry the risk. While the tunnels are open, prod Postgres accepts sup
 - **Open the tunnels only to seed,** and close them right after. Never leave them open through an editing session.
 - **Keep Claude Code idle while they're open.** It runs in the devcontainer, so it could reach prod through them.
 - **Close them with Ctrl+C only.** Closing the window leaves the tunnel's ssh running, still holding the door open.
-- **Anything with `--prod` needs the tunnels:** the diff, `search_eval.py --prod`, `cache_stats.py --prod` and the migrations.
+- **Anything that reads prod needs the tunnels:** the diff, `search_eval.py --prod --timing`, `cache_stats.py --prod`, `purge_api_cache.py --singular-walkthroughs` and the migrations.
 - **Seed from a clean seed-data `main`.** The prod seed sends everything on disk, not just your change.
 - **Run prod seeds from the main checkout.** What's owed a purge (`server/scripts/cache/purge-manifest.json`) and the run lock live in the checkout, so a run from another copy misses both.
-- **Never renumber ids.** Collectible ids carry users' progress and walkthrough ids carry comments. The seed-data README gives each category's id range.
+- **Never renumber ids.** Collectible ids carry users' progress and walkthrough ids carry comments. The seed-data README gives the id rules: a new collectible takes the next id after the highest, and each walkthrough category has its own range.
 - **You run every seed, dev included.** Claude Code doesn't, by its own rule rather than a setting. Its deny list blocks edits to `prod_seed.py`: lift that rule for an approved change to the script, then put it back.
 - **Seeding never purges images.** A changed image gets a new file name, since browsers keep an image for up to a year. `upload_r2.py --overwrite` is only for quality refreshes of the whole library: it re-uploads everything in `r2-staging/` and purges every URL it replaced. Never re-add a pruned image name with different bytes.
 
@@ -136,14 +136,14 @@ Most failures stop the run before anything is written or purged, and the run pri
 
 | What you see | Why | What to do |
 | --- | --- | --- |
-| `[STOPPED] Checking prod connections`, after 30 s of retries | A tunnel isn't open | Open both tabs. On the Mac, `lsof` should show two `ssh` listeners. |
+| `[STOPPED] Checking prod connections (exit 1)`, after 30 s of retries | A tunnel isn't open, or, if the lines above say `Name or service not known`, a host in `server/.env` is wrong | Open both tabs; on the Mac, `lsof` should show two `ssh` listeners. For `Name or service not known`, see that row below. |
 | A tab is running, but nothing listens on its port | The tunnel failed quietly | Ctrl+C it and rerun without `2>/dev/null` to see the error. That prints the password, so don't share the output. |
-| `✗ Prod Postgres didn't answer` (or Redis) from the diff or another `--prod` script, after about 10 s | That tunnel isn't open | Run the `railway connect` line it prints in a Mac tab, then rerun. A `--prod` migration says `ConnectionRefusedError` instead. |
-| `✗ Prod Redis can't be used as set up` (or Postgres) | The line above it says why: usually an old Redis password, or a second `@` in a URL | See the next two rows. |
-| `Name or service not known` for Postgres | `PROD_DATABASE_URL` has a second `@` or a stray character before the host | Keep exactly one `@`, right before the host. Write an `@` in a password as `%40`. |
+| `✗ Prod Postgres didn't answer` (or Redis) from the diff or another `--prod` script, after about 10 s | That tunnel isn't open, or, with `Name or service not known` above it, its host is wrong | Run the `railway connect` line it prints in a Mac tab, then rerun; for `Name or service not known`, see that row below. A `--prod` migration says `ConnectionRefusedError` instead. |
+| `✗ Prod Redis can't be used as set up` (or Postgres), or `[STOPPED] Checking prod connections (exit 3)`, usually with no wait | The lines above it say why: usually an old Redis password, or a second `@` in a URL | See the next two rows. The tunnel commands `prod_seed.py` prints after it won't help, unless a line above also says `no answer in 30 s`: then that tunnel isn't open either. |
+| `the URL has more than one @`, or `Name or service not known` for Postgres | A URL in `server/.env` has a second `@`, or `PROD_DATABASE_URL` has a stray character before the host | Keep exactly one `@`, right before the host. Write an `@` in a password as `%40`. |
 | Redis refuses the password | `server/.env` has an old Redis password | Copy it from the Redis service's Variables tab in Railway. |
 | The diff lists more than your change | Something else on disk differs from prod | Check that seed-data is on a clean, pulled `main`. |
-| A seed stops with entries it can't seed | A data error, such as an unknown level or type | Fix the listed entries and rerun. Nothing was written. |
+| A seed stops with entries it can't seed | A data error, such as an unknown level or type, or a missing field | Fix the listed entries and rerun. That seeder wrote nothing, but if it was the walkthrough step, the collectibles are already in prod and owed a purge: the rerun makes it, or `uv run scripts/prod_seed.py --purge-only` makes it first. |
 | `[FAILED] <step>` with a next command | A seeder, the cache clear or the purge failed | Run what it says: usually a rerun, or `uv run scripts/prod_seed.py --purge-only`. |
 | `[FAILED] Checking walkthrough files` with `still marked [VERIFY]` | A walkthrough still has a `[VERIFY]` marker. Dev seeds accept it; prod doesn't | Confirm or remove the marker, commit, then rerun. `uv run scripts/db/seed_walkthroughs.py --check` catches it before you commit. |
 | `[INTERRUPTED] during <step>` | You pressed Ctrl+C mid-run, or the terminal closed | Run the command it prints: the seed again, or `--purge-only` if the seeding had finished. |
@@ -157,10 +157,10 @@ Through the tunnel, Postgres doesn't check its password, so a stale one in `serv
 
 ## Where to look for more
 
-- `server/seed-data/README.md`: the content format, including paragraphs, lists and id ranges.
-- `server/scripts/images/PIPELINE.md`: the image pipeline and its Seeding prod section. If it disagrees with this doc, trust it, since it's versioned with the code.
+- `server/seed-data/README.md`: the content format, including paragraphs, lists and the id rules.
+- `server/scripts/images/PIPELINE.md`: the image pipeline and its Seeding prod section, in more detail. If the two docs disagree, the scripts decide.
 - `server/logs/seed/`: one log per prod run, named by its run id.
-- `server/logs/prune/`: one log per `prune_bucket.py` run, with every key it deleted. A prune that `prod_seed.py` started has the seed's run id in its name.
+- `server/logs/prune/`: one log per `prune_bucket.py` run that has something to prune, with every key it deleted. A prune that `prod_seed.py` started has the seed's run id in its name.
 - `CLAUDE.md` in the repo root (local, not committed): the conventions Claude Code follows.
 
 This reflects the pipeline as of late Oct 2026, including the seed reliability update.

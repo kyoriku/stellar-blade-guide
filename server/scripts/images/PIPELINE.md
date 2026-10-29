@@ -52,12 +52,15 @@ All run from `server/` with `uv run python scripts/images/<script>.py`.
 The masters tree (`client/public/assets/images/<Level>/<Location>/`) is the
 publication manifest: captures are curated BEFORE they enter it, and every
 image present there is published by the pipeline. A stray file dropped into
-the masters tree WILL publish. There is no intermediate compression step;
-variants are encoded directly from the masters at native resolution
-(uniformly 3840x2160 as of the 2026-07-12 refresh). As of the 2026-07-15
-timestamp rename, the library is uniformly PS5-timestamp-named
-(`Stellar Blade_<YYYYMMDDHHMMSS>.jpg`); the two DLC promo images are the
-documented exclusions (promo art, not captures).
+the masters tree fails the manifest check (step 1 below), which stops the
+workflow until something references it or the prune gate deletes it. Step 1
+still stages it, so running `upload_r2.py` by hand after that failure would
+publish it. There is no intermediate compression step; variants are encoded
+directly from the masters at native resolution (3840x2160 for every
+capture). As of the 2026-07-15 timestamp rename, the library is uniformly
+PS5-timestamp-named (`Stellar Blade_<YYYYMMDDHHMMSS>.jpg`); the two DLC
+promo images are the documented exclusions (promo art at 1000x563, not
+captures).
 
 1. `generate_variants.py` : reads every image in the masters tree plus
    `Site/`, writes all WebP files into `r2-staging/` at the repo root, laid
@@ -87,8 +90,8 @@ documented exclusions (promo art, not captures).
    existing in `r2-staging/`. Dry run first, then a typed `yes`, as for the
    upload: with nothing to swap it doesn't ask, and declining exits 3. R2 URLs
    are a pure function of the local path, so no mapping is involved.
-4. Seeding is unchanged: `scripts/db/seed_collectibles.py` and
-   `scripts/db/seed_walkthroughs.py` store whatever URLs the seed JSON holds
+4. The seeders, `scripts/db/seed_collectibles.py` and
+   `scripts/db/seed_walkthroughs.py`, store whatever URLs the seed JSON holds
    and invalidate the Redis response cache.
 
 ## Adding new content
@@ -173,12 +176,12 @@ The second stage runs after prod is reseeded:
     uv run python scripts/images/prune_bucket.py
 
 It refuses to run (fatal, not a warning) if any ledgered key has become
-referenced again, lists the pending objects, requires the same typed
-`prune`, deletes in chunks with post-verification (bucket count re-derived,
-zero residual), then clears the ledger. At the end of a run that completes,
-`dev_workflow` prints this command if the ledger is non-empty (a declined or
-failed step stops the run before that), and `prod_seed.py` offers to invoke it
-after a successful seed + purge.
+referenced again, lists the first ten pending objects and counts the rest,
+requires the same typed `prune`, deletes in chunks with post-verification
+(bucket count re-derived, zero residual), then clears the ledger. At the end
+of a run that completes, `dev_workflow` prints this command if the ledger is
+non-empty (a declined or failed step stops the run before that), and
+`prod_seed.py` offers to invoke it after a successful seed + purge.
 
 Each run with something to prune writes `server/logs/prune/prune-<id>.log`
 (gitignored): every line it prints, and every key it deletes as it deletes it,
@@ -241,25 +244,28 @@ tunnels only for the run, and don't run a Claude Code task while they're open.
    would misread stops it at once; either way nothing runs, and it prints both
    commands above. After the confirmation, both seeders' `--check` stop the
    run before anything is written if a walkthrough is still marked `[VERIFY]`
-   or an image path is still local.
+   or holds text deeper than search indexes, or an image path is still local.
 5. When it ends, it reminds you to close both tunnels: Ctrl+C in each tab. You
    can close them as soon as it prints `Prod seed complete`, because the
-   bucket-prune offer after that doesn't use them. Never close a tab or window
-   with a tunnel running: the CLI dies without stopping its ssh, which keeps
-   the port and the open door.
+   bucket-prune offer after that doesn't use them, unless you'll run the diff
+   again to confirm the seed (the runbook's step 9). Never close a tab or
+   window with a tunnel running: the CLI dies without stopping its ssh, which
+   keeps the port and the open door.
 6. Run the `lsof` line again. No output means both are closed. If an `ssh` is
    still listed, `kill <pid>`.
 
 To check the tunnels without seeding, run it and answer anything but
 `seed prod`.
 
-A run that stops partway leaves prod consistent. Each seeder writes in one
-transaction, so it committed all of its changes or none, and a reader never sees
-a half-written state. What a seeder commits is recorded in
-`scripts/cache/purge-manifest.json` (the purge ledger) before its COMMIT, each
-purge covers every run the ledger still owes, and only a purge `prod_seed.py`
-started clears it. Every failure stops the run and prints what failed, what is
-still owed, and what to run next:
+A run that stops partway never half-applies a content type. Each seeder writes
+in one transaction, so it committed all of its changes or none, and a reader
+never sees a half-written state. Collectibles commit before walkthroughs, so a
+run that stops before the walkthroughs commit leaves the new collectibles
+beside the old walkthroughs until the next run. What a seeder commits is
+recorded in `scripts/cache/purge-manifest.json` (the purge ledger) before its
+COMMIT, each purge covers every run the ledger still owes, and only a purge
+`prod_seed.py` started clears it. Every failure stops the run and prints what
+failed, what is still owed, and what to run next:
 
 - a seeder failed: fix the cause, then run it again. To purge what an earlier
   step already committed before that, run it with `--purge-only`.
@@ -272,10 +278,12 @@ abandoned transaction by itself (`idle_in_transaction_session_timeout` 30 s,
 `transaction_timeout` 2 min). Ctrl+C stops the running step at once and logs
 where it landed, and so does closing the terminal or a kill. Ctrl+D at a prompt
 counts as no. An error of `prod_seed.py`'s own is logged at ERROR as
-`[CRASHED]`, with its traceback, and a flag typo as `Not run`. Every log ends
-with `Exit N`, so `grep -L "Exit " logs/seed/*.log` lists the runs that were
-killed outright. A second run while one is going stops at once and leaves the
-tunnels to it. Run prod seeds from the main checkout: the ledger lives in it.
+`[CRASHED]`, with its traceback, and a flag typo as a `Not run` warning. Every
+log ends with `Exit N` unless the run was killed outright or stopped on a
+missing `PROD_*` or `CLOUDFLARE_*` variable (it names them at ERROR), so
+`grep -L "Exit " logs/seed/*.log` lists those runs. A second run while one is
+going stops at once and leaves the tunnels to it. Run prod seeds from the main
+checkout: the ledger lives in it.
 
 The other scripts that read `PROD_DATABASE_URL` or `PROD_REDIS_URL`
 (`diff_collectibles.py --prod`, `cache_stats.py --prod`,
@@ -292,11 +300,11 @@ database, never the user name, password or query.
 
 `prod_seed.py` purges only the seeded API surface: the cached GET URLs under
 the five API prefixes that this run, or an earlier run still owed a purge,
-changed. They are derived live by `scripts/cache/purge_api_cache.py` (FastAPI
-route table x DB slugs x client navigation constants, batched per the purge
-API's limits, every response verified; `--dry-run` lists without purging, and
-an unknown flag stops it with nothing purged, so a mistyped `--dry-run` can't
-purge for real).
+changed, unless it widens (below). They are derived live by
+`scripts/cache/purge_api_cache.py` (FastAPI route table x DB slugs x client
+navigation constants, batched per the purge API's limits, every response
+verified; `--dry-run` lists without purging, and an unknown flag stops it with
+nothing purged, so a mistyped `--dry-run` can't purge for real).
 Images are never purged by a seed: their URLs are immutable and content
 changes always rename, so the ~14k-object image cache stays warm across seeds.
 
