@@ -52,7 +52,7 @@ NAV_LEVEL_SLUGS = frozenset(_seo['levels'])
 
 
 def _page_title(title: str) -> str:
-    """A seo.json page title without its leading "All N" count, which changes with every seed."""
+    """A seo.json page title without its leading "All N" count, which changes with the content."""
     return re.sub(r'^All \d+ ', '', title)
 
 
