@@ -1,8 +1,18 @@
-# Gitignored screenshot sources — never served; deploys build from git
-# where these don't exist, this keeps local docker builds from ingesting them.
+# Gitignored screenshot sources; deploys build from git, so local builds skip them too
 client/public/assets/images
-# Keep Finder junk out of the build context (and therefore out of dist/).
+
+# Finder junk stays out of the build context and dist/
 **/.DS_Store
-# Never bake a local server/.env into an image: settings.py's load_dotenv() would fill
-# every variable the host leaves unset from it, DEBUG and the prod credentials included.
+
+# load_dotenv() would fill unset vars from a baked-in .env, DEBUG and prod credentials included
 **/.env
+
+# Local installs, caches, and build output; the image builds its own
+**/node_modules
+**/.venv
+client/dist
+**/__pycache__
+
+# Never copied into the image; ignoring them keeps the build context small
+.git
+.devcontainer

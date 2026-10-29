@@ -16,11 +16,13 @@ DOCKERFILE = Path(__file__).resolve().parents[2] / "Dockerfile"
 
 
 def _start_command_args():
-    """The arguments the Dockerfile's CMD passes to uvicorn, once sh fills in $PORT."""
+    """The arguments the Dockerfile's CMD passes to uvicorn, once sh fills in the port."""
     (cmd,) = [line for line in DOCKERFILE.read_text().splitlines() if line.startswith("CMD ")]
     shell, flag, script = json.loads(cmd.removeprefix("CMD "))
     assert (shell, flag) == ("/bin/sh", "-c")
-    program, *args = shlex.split(script.replace("$PORT", "8000"))
+    words = shlex.split(script.replace("${PORT:-8000}", "8000").replace("$PORT", "8000"))
+    assert words[0] == "exec"  # uvicorn replaces the shell as PID 1, so it gets SIGTERM
+    program, *args = words[1:]
     assert program.endswith("/uvicorn")
     return args
 
