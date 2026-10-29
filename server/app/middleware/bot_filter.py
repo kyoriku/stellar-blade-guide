@@ -32,9 +32,9 @@ ALLOWED_PREFIXES = (
 ALLOWED_EXACT = {
     '/robots.txt',
     '/sitemap.xml',
-    # Google 404s here mean our ad inventory reads as unauthorized. Like the two
-    # above, it contains a '.' so SPA_SAFE_PATH rejects it — this set is its only
-    # way through.
+    # ads.txt names the sellers authorized to sell ads on the site. Like the two
+    # above, it contains a '.' so SPA_SAFE_PATH rejects it, and this set is its
+    # only way through.
     '/ads.txt',
 }
 
@@ -164,8 +164,9 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Length-guard backstop before the regex (the linear pattern above already prevents
     # ReDoS). The deepest SPA route is `walkthroughs/:type/:slug`; the longest real path
-    # in the sitemap is 60 chars and the structural worst case is ~150, so 512 only ever
-    # rejects absurd probe paths — it never clips a legitimate route.
+    # in the sitemap is 66 chars, and the type and slug columns (50 and 150 characters)
+    # keep such a path to about 215, so 512 only ever rejects absurd probe paths and
+    # never clips a legitimate route.
     if len(normalized) > 512:
         return _reject(request, "path-length")
 
