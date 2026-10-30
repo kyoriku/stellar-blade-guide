@@ -42,7 +42,7 @@ export default function TermsOfService() {
               <li>Share personal information about others without their consent</li>
               <li>Attempt to manipulate or abuse the moderation system</li>
             </ul>
-            <p className="mt-2">All comments are subject to automated moderation via OpenAI. Comments that violate these rules may be removed without notice. Repeated violations may result in account suspension.</p>
+            <p className="mt-2">Comments are screened by OpenAI's automated moderation when you post or edit them; if that check can't be done, the comment is saved without it. Comments that violate these rules may be removed without notice. Repeated violations may result in account suspension.</p>
             <p className="mt-2">By posting a comment, you grant us a non-exclusive, royalty-free licence to display it on the site. You retain ownership of your content.</p>
           </section>
 
@@ -106,7 +106,7 @@ export default function TermsOfService() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: May 27, 2026
+            Last Updated: October 30, 2026
           </div>
         </div>
       </div>
