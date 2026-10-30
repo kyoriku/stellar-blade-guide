@@ -77,85 +77,42 @@ Configuration is read from the environment. Locally, `server/.env` (gitignored) 
 |---|---|
 | `ENVIRONMENT` | `production` (the default) or `development`, nothing else. Production gives the auth cookies `Secure` and `Domain=.stellarbladeguide.com`, refuses `DEBUG=True`, and refuses to start without the variables listed below the table |
 | `DEBUG` | `True` enables `/docs`, turns off the origin check, the bot filter, and the CSP header, shows SQL parameters in database errors, and re-reads the built `index.html` on every request, for local development; needs `ENVIRONMENT=development` |
-| `DATABASE_URL` | PostgreSQL DSN; `postgresql://` or `postgresql+asyncpg://` (normalized automatically) |
-| `REDIS_URL` | Redis instance used for the cache, rate limiter, and sessions |
-| `CACHE_TTL` | TTL in seconds for cached API responses, in Redis and as the Cloudflare edge's `s-maxage` (defaults to 30 days; dev setups often use a shorter value); search uses its own one-hour TTL |
-| `ALLOWED_HOSTS` | comma-separated Host-header allowlist for TrustedHost validation. Replaces the default: the site's two hosts and `healthcheck.railway.app`, plus `localhost` and `127.0.0.1` in development |
+| `CACHE_TTL` | TTL in seconds for cached API responses, in Redis and as the Cloudflare edge's `s-maxage` (defaults to 30 days; dev sets `300`, five minutes); search uses its own one-hour TTL |
+| `DATABASE_URL` | PostgreSQL DSN; `postgresql://` or `postgresql+asyncpg://` (normalized automatically). In dev, for example `postgresql+asyncpg://postgres:postgres@localhost:5432/stellarblade` |
+| `REDIS_URL` | Redis instance used for the cache, rate limiter, and sessions. In dev, for example `redis://localhost:6379` |
 | `JWT_SECRET_KEY` | signing key for access tokens; required at startup |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | access-token lifetime in minutes (default 15) |
-| `REFRESH_TOKEN_EXPIRE_DAYS` | refresh-token idle lifetime: a session with no refresh for this many days ends (default 7) |
-| `REFRESH_GRACE_SECONDS` | how long a just-rotated refresh token is still accepted, so a refresh whose response was lost recovers (default 60) |
-| `SESSION_MAX_AGE_DAYS` | absolute session lifetime, counted from sign-in however often the token rotates (default 90; must be at least 1) |
-| `FRONTEND_URL` | the origin the browser uses (default `https://stellarbladeguide.com`). Builds the OAuth callbacks, `{FRONTEND_URL}/api/auth/{google,discord}/callback`, the redirects after sign-in, and password-reset links |
+| `FRONTEND_URL` | the origin the browser uses (default `https://stellarbladeguide.com`; `http://localhost:3000` in dev). Builds the OAuth callbacks, `{FRONTEND_URL}/api/auth/{google,discord}/callback`, the redirects after sign-in, and password-reset links |
 | `OPENAI_API_KEY` | comment and avatar moderation (comment moderation fails open if OpenAI is unreachable; avatar moderation fails closed with a 503) |
 | `RESEND_API_KEY` | transactional email (password reset) |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary account (user avatars only) |
 | `CLOUDINARY_API_KEY` | Cloudinary API key (avatars only) |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret (avatars only) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client id. In dev, register `http://localhost:3000/api/auth/google/callback` on the client: the callback is built from `FRONTEND_URL` and reaches uvicorn through Vite's `/api` proxy |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `DISCORD_CLIENT_ID` | Discord OAuth client id. In dev, register `http://localhost:3000/api/auth/discord/callback` on the client: the callback is built from `FRONTEND_URL` and reaches uvicorn through Vite's `/api` proxy |
+| `DISCORD_CLIENT_SECRET` | Discord OAuth client secret |
 | `R2_ACCOUNT_ID` | Cloudflare account id for the R2 S3 endpoint (image pipeline scripts only) |
 | `R2_ACCESS_KEY_ID` | R2 API token access key (image pipeline scripts only) |
 | `R2_SECRET_ACCESS_KEY` | R2 API token secret (image pipeline scripts only) |
-| `R2_BUCKET` | R2 bucket holding content images |
-| `R2_PUBLIC_BASE_URL` | public base URL images are served from (`https://img.stellarbladeguide.com`) |
-| `PROD_DATABASE_URL` | production PostgreSQL through the SSH tunnel you open by hand, `postgresql://postgres:<password>@host.docker.internal:15432/railway` (`prod_seed.py` and the scripts that reach prod; see `scripts/images/PIPELINE.md`, Seeding prod) |
-| `PROD_REDIS_URL` | production Redis through its SSH tunnel, `redis://default:<password>@host.docker.internal:16379` (the same scripts) |
-| `CLOUDFLARE_ZONE_ID` | Cloudflare zone for the edge purges after a content deploy (`prod_seed.py`, `scripts/cache/purge_api_cache.py`) and after `upload_r2.py --overwrite` replaces images |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with cache-purge permission (the same scripts) |
-| `GOOGLE_CLIENT_ID` | Google OAuth client id |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `DISCORD_CLIENT_ID` | Discord OAuth client id |
-| `DISCORD_CLIENT_SECRET` | Discord OAuth client secret |
-| `ORIGIN_SECRET` | shared secret every request but Railway's health check must carry in production, added by Cloudflare (origin check middleware); `DEBUG` skips the check, so dev never uses it |
-| `LOG_LEVEL` | logging level (default `INFO`) |
+| `R2_BUCKET` | R2 bucket holding content images (image pipeline scripts only) |
+| `R2_PUBLIC_BASE_URL` | public base URL images are served from, `https://img.stellarbladeguide.com` (image pipeline scripts only) |
+| `PROD_DATABASE_URL` | production PostgreSQL through the SSH tunnel you open by hand, `postgresql://postgres:<password>@host.docker.internal:15432/railway` (only the scripts that reach production; see `scripts/images/PIPELINE.md`, Seeding prod) |
+| `PROD_REDIS_URL` | production Redis through its SSH tunnel, `redis://default:<password>@host.docker.internal:16379` (only the scripts that reach production) |
+| `CLOUDFLARE_ZONE_ID` | Cloudflare zone for the edge purges after a content deploy (`prod_seed.py`, `scripts/cache/purge_api_cache.py`) and after `upload_r2.py --overwrite` replaces images (only the scripts that reach production) |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with cache-purge permission (only the scripts that reach production) |
+| `ORIGIN_SECRET` | production only: the shared secret every request but Railway's health check must carry, added by Cloudflare (origin check middleware); `DEBUG` skips the check, so dev never uses it |
+| `ALLOWED_HOSTS` | optional (default: the site's two hosts and `healthcheck.railway.app`, plus `localhost` and `127.0.0.1` in development): comma-separated Host-header allowlist for TrustedHost validation. Setting it replaces the whole list, so keep `healthcheck.railway.app` in it: without it, Railway's health checks fail, and so does every deploy |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | optional (default 15): access-token lifetime in minutes |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | optional (default 7): refresh-token idle lifetime; a session with no refresh for this many days ends |
+| `REFRESH_GRACE_SECONDS` | optional (default 60): how long a just-rotated refresh token is still accepted, so a refresh whose response was lost recovers |
+| `SESSION_MAX_AGE_DAYS` | optional (default 90, and at least 1): absolute session lifetime, counted from sign-in however often the token rotates |
+| `LOG_LEVEL` | optional (default `INFO`): logging level |
 
 Production refuses to start unless each of these is set and non-empty: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET_KEY`, `ORIGIN_SECRET`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` (`REQUIRED_IN_PRODUCTION` in `app/config/settings.py`). The error names the missing variables and never prints a value. Production sets nothing else: every other variable the app reads defaults to production's value, and Railway supplies the `PORT` the start command listens on.
 
 `ORIGIN_SECRET` and `JWT_SECRET_KEY` are read directly from the environment (in `app/middleware/origin_check.py` and `app/core/auth.py`) rather than through `settings.py`. In production, uvicorn trusts no proxy headers: the Dockerfile's start command passes `--no-proxy-headers`, so the client's address comes only from `CF-Connecting-IP`.
 
-Starter template for `server/.env` (the table above explains each value):
-
-```bash
-ENVIRONMENT=development
-DEBUG=True
-LOG_LEVEL=INFO
-
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/stellarblade
-REDIS_URL=redis://localhost:6379
-CACHE_TTL=2592000                # 30-day default; dev setups often use a shorter value
-
-JWT_SECRET_KEY=                  # openssl rand -hex 32
-ACCESS_TOKEN_EXPIRE_MINUTES=15
-REFRESH_TOKEN_EXPIRE_DAYS=7
-FRONTEND_URL=http://localhost:3000
-
-OPENAI_API_KEY=your_openai_api_key
-RESEND_API_KEY=your_resend_api_key
-
-CLOUDINARY_CLOUD_NAME=your_cloud_name    # avatars only
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-
-R2_ACCOUNT_ID=your_cloudflare_account_id
-R2_ACCESS_KEY_ID=your_r2_access_key
-R2_SECRET_ACCESS_KEY=your_r2_secret_key
-R2_BUCKET=your_r2_bucket_name
-R2_PUBLIC_BASE_URL=https://img.stellarbladeguide.com
-
-# production only (prod_seed.py and the scripts that reach prod); the two URLs point
-# at SSH tunnels you open by hand (scripts/images/PIPELINE.md, Seeding prod)
-PROD_DATABASE_URL=
-PROD_REDIS_URL=
-CLOUDFLARE_ZONE_ID=
-CLOUDFLARE_API_TOKEN=
-
-# Register http://localhost:3000/api/auth/google/callback and .../discord/callback on
-# the OAuth clients: the callbacks are built from FRONTEND_URL and reach uvicorn
-# through Vite's /api proxy.
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-DISCORD_CLIENT_ID=your_discord_client_id
-DISCORD_CLIENT_SECRET=your_discord_client_secret
-```
+A local `server/.env` sets every variable in the table except `ORIGIN_SECRET` and the optional ones, starting with `ENVIRONMENT=development`.
 
 ## API
 
