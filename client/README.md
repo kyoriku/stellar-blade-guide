@@ -40,7 +40,7 @@ src/
   main.tsx           entry: provider stack (ErrorBoundary > QueryClientProvider > Toast > Auth)
   App.tsx            all routes (BrowserRouter), nested under RootLayout
   index.css          Tailwind import, the navbar height and jump offset (scroll-anchor),
-                     brand colors, scrollbars, 16px form text on touch screens, print styles
+                     brand colours, scrollbars, 16px form text on touch screens, print styles
   pages/             route components: the home page, five thin index pages over the shared
                      CategoryIndexPage, the walkthrough category lists, three scroll-spy
                      detail pages (walkthrough, level, collectible type), a Blood Rain news
@@ -99,4 +99,4 @@ Tailwind v4 generates CSS from the current file inventory, so an in-place build 
 
 ## Verification
 
-`npm test` runs 222 Vitest unit tests in 21 files, colocated with the modules they cover (`src/**/*.test.ts`); they test pure logic only, with no jsdom or component tests. CI runs `npm run lint` (a type-checked ESLint config), `npm test`, and `npm run build` (`tsc -b` in strict mode, then the production build) on every pull request and every push to main. Behavior that depends on timing, the network, or the real servers is left to the Playwright suite in `../e2e/` (192 tests in 27 specs, `npm run e2e` from the repo root), which drives the real FastAPI and Vite dev servers in the dev container before merging and is not part of CI.
+`npm test` runs 222 Vitest unit tests in 21 files, colocated with the modules they cover (`src/**/*.test.ts`); they test pure logic only, with no jsdom or component tests. CI runs `npm run lint` (a type-checked ESLint config), `npm test`, and `npm run build` (`tsc -b` in strict mode, then the production build) on every pull request and every push to main. Behaviour that depends on timing, the network, or the real servers is left to the Playwright suite in `../e2e/` (192 tests in 27 specs, `npm run e2e` from the repo root), which drives the real FastAPI and Vite dev servers in the dev container before merging and is not part of CI.
