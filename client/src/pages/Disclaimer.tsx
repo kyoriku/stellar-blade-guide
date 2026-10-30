@@ -18,7 +18,7 @@ export default function Disclaimer() {
 
           <section>
             <SectionHeader icon={Copyright}>Intellectual Property</SectionHeader>
-            <p>All game content, including artwork, screenshots, character names, locations, and mechanics, belongs to Shift Up Corporation and Sony Interactive Entertainment. We believe our use constitutes fair dealing under applicable Canadian copyright law for commentary and educational purposes. Our original text, layout, and commentary are &copy; 2025&ndash;{new Date().getFullYear()} Stellar Blade Guide.</p>
+            <p>All game content, including artwork, screenshots, character names, locations, and mechanics, belongs to Shift Up Corporation and Sony Interactive Entertainment. We believe our use constitutes fair dealing under applicable Canadian copyright law for educational purposes. Our original text, layout, and commentary are &copy; 2025&ndash;{new Date().getFullYear()} Stellar Blade Guide.</p>
           </section>
 
           <section>
@@ -45,7 +45,7 @@ export default function Disclaimer() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: May 27, 2026
+            Last Updated: October 30, 2026
           </div>
         </div>
       </div>
