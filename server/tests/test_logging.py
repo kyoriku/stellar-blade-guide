@@ -604,15 +604,19 @@ print("root", all(named(handler.filters) for handler in logging.getLogger().hand
 def test_setup_logging_holds_the_loggers_that_print_urls_at_warning():
     """uvicorn's access line prints every query string (OAuth codes, the sign-in token,
     search text), and httpx at INFO prints every URL it fetches (an avatar link, each
-    redirect), so these floors keep them out of the log. setup_logging
-    also fits uvicorn's traceback filter, on its error logger and on the root's handler.
-    A fresh interpreter, since setup_logging changes the process's logging."""
+    redirect), so these floors keep them out of the log. The log guard
+    copies them, so the two must agree. setup_logging also fits uvicorn's traceback
+    filter, on its error logger and on the root's handler. A fresh interpreter, since
+    setup_logging changes the process's logging."""
+    from tests.conftest import PRODUCTION_FLOORS
+
     out = subprocess.run([sys.executable, "-c", _SETUP_CHILD], cwd=Path(__file__).resolve().parents[1],
                          capture_output=True, text=True, timeout=60)
     assert out.returncode == 0, out.stderr[-2000:]
     levels = dict(line.split(" ", 1) for line in out.stdout.splitlines() if line)
     floors = {name: int(levels[name]) for name in ("httpx", "openai", "uvicorn.access")}
     assert floors == {name: logging.WARNING for name in floors}
+    assert {name: PRODUCTION_FLOORS[name] for name in floors} == floors
     assert (levels["uvicorn"], levels["root"]) == ("True", "True")
 
 
