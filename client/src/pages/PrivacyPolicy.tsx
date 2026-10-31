@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
       <div className="container mx-auto px-3 py-8 max-w-2xl">
         <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100/90">Privacy Policy</h1>
 
-        <nav className="bg-secondary/60 border border-gray-800 rounded-lg p-4 mb-6">
+        <nav className="border border-gray-800 rounded-lg p-4 mb-6">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">On this page</h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
             {sections.map((s) => (

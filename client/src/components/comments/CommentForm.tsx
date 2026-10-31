@@ -27,7 +27,7 @@ export default function CommentForm({
 
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center gap-2 py-5 px-4 rounded-xl border border-gray-800 bg-secondary/50 text-gray-300 text-sm">
+      <div className="flex items-center justify-center gap-2 py-5 px-4 rounded-xl border border-gray-800 text-gray-300 text-sm">
         <Link
           to="/login"
           state={{ from: location.pathname }}
