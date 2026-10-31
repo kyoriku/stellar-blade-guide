@@ -1074,12 +1074,12 @@ async def test_protected_expired_token_returns_401(auth_client, test_user):
 PROVIDERS = ["google", "discord"]
 
 AUTHORIZE_PREFIX = {
-    # Everything before &state= must stay byte-identical to what the providers
-    # were sent before this change.
+    # Everything before &state=, exactly as each provider is sent it. Google's has no
+    # access_type, so Google issues no refresh token.
     "google": (
         "https://accounts.google.com/o/oauth2/v2/auth"
         "?client_id=test-google-id&redirect_uri=http://test/api/auth/google/callback"
-        "&response_type=code&scope=openid%20email%20profile&access_type=offline&state="
+        "&response_type=code&scope=openid%20email%20profile&state="
     ),
     "discord": (
         "https://discord.com/api/oauth2/authorize"
@@ -1235,6 +1235,18 @@ async def test_oauth_login_sends_state_and_pins_it_to_the_browser(oauth, provide
 
     assert await oauth.redis.get(_key(provider, state)) == "pending"
     assert 0 < await oauth.redis.ttl(_key(provider, state)) <= OAUTH_STATE_TTL
+
+
+@pytest.mark.parametrize("provider, scope", [("google", "openid email profile"), ("discord", "identify email")])
+async def test_oauth_login_asks_each_provider_only_for_what_sign_in_uses(oauth, provider, scope):
+    # The callback reads the profile once with the access token, so each provider is
+    # asked for that and nothing else: no access_type (Google's offline issues a
+    # refresh token, which was never stored) and no prompt.
+    r = await oauth.client.get(f"/api/auth/{provider}")
+    assert r.status_code == 307
+    query = parse_qs(urlsplit(r.headers["location"]).query)
+    assert sorted(query) == ["client_id", "redirect_uri", "response_type", "scope", "state"]
+    assert query["scope"] == [scope]
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)

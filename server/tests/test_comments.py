@@ -19,6 +19,7 @@ endpoint via HTTP.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import openai
@@ -28,6 +29,7 @@ import app.routers.comments as comments_module
 
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.core.auth import create_access_token
@@ -267,6 +269,28 @@ async def test_post_comment_keeps_line_breaks_and_tabs(user_client):
     assert r.json()["body"] == body
 
 
+async def test_reply_to_a_deleted_comment_is_the_parent_404(user_client, comments_db_session, test_user, monkeypatch):
+    # The page offers no Reply on a deleted comment, and a reply sent anyway would bring
+    # it back as "[deleted]", so it gets the missing parent's answer, before moderation.
+    moderate = AsyncMock(return_value=True)
+    monkeypatch.setattr(comments_module, "_moderate_content", moderate)
+    parent = Comment(user_id=test_user.id, content_type="walkthrough", content_id=1,
+                     body="[deleted]", is_deleted=True)
+    comments_db_session.add(parent)
+    await comments_db_session.commit()
+
+    r = await user_client.post("/api/comments/", json={
+        "content_type": "walkthrough",
+        "content_id": 1,
+        "body": "Reply",
+        "parent_id": parent.id,
+    })
+    assert r.status_code == 404
+    assert r.json() == {"detail": "Parent comment not found"}
+    moderate.assert_not_called()
+    assert (await comments_db_session.execute(select(func.count()).select_from(Comment))).scalar_one() == 1
+
+
 # ── PATCH ─────────────────────────────────────────────────────────────────────
 
 async def test_edit_own_comment_returns_200(user_client, comments_db_session, test_user):
@@ -275,6 +299,52 @@ async def test_edit_own_comment_returns_200(user_client, comments_db_session, te
     r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": "Updated body"})
     assert r.status_code == 200
     assert r.json()["body"] == "Updated body"
+
+
+async def _updated_at(session: AsyncSession, comment_id: int):
+    return (await session.execute(select(Comment.updated_at).where(Comment.id == comment_id))).scalar_one()
+
+
+POSTED = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+
+
+async def test_edit_moves_the_comments_updated_at(user_client, comments_db_session, test_user):
+    # A delete keeps the time (see DELETE below) and an edit still moves it, so it stays
+    # the time a comment was last edited.
+    comment = Comment(user_id=test_user.id, content_type="walkthrough", content_id=1,
+                      body="Original body", created_at=POSTED, updated_at=POSTED)
+    comments_db_session.add(comment)
+    await comments_db_session.commit()
+    before = await _updated_at(comments_db_session, comment.id)
+
+    r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": "Updated body"})
+    assert r.status_code == 200
+    assert await _updated_at(comments_db_session, comment.id) != before
+
+
+async def test_an_edit_never_lands_in_a_comment_deleted_during_its_moderation(user_client, comments_db_session, test_user, monkeypatch):
+    # Moderation can take seconds, and the comment may be deleted meanwhile, by its
+    # account's deletion, a moderator or another tab. The edit gets the 404, and the
+    # erased row keeps no text.
+    # The id is read once: the route's rollback expires every object in the session the
+    # test shares with it.
+    cid = (await _seed_comment(comments_db_session, test_user.id, body="Original body")).id
+
+    async def deleted_while_moderating(text):
+        await comments_db_session.execute(
+            update(Comment).where(Comment.id == cid).values(is_deleted=True, body="[deleted]")
+        )
+        await comments_db_session.commit()
+        return True
+
+    monkeypatch.setattr(comments_module, "_moderate_content", deleted_while_moderating)
+    r = await user_client.patch(f"/api/comments/{cid}", json={"body": "Edited text"})
+    assert r.status_code == 404
+    assert r.json() == {"detail": "Comment not found"}
+    row = (await comments_db_session.execute(
+        select(Comment.is_deleted, Comment.body).where(Comment.id == cid)
+    )).one()
+    assert tuple(row) == (True, "[deleted]")
 
 
 async def test_edit_other_users_comment_returns_403(second_user_client, comments_db_session, test_user):
@@ -405,6 +475,43 @@ async def test_delete_own_comment_returns_204(user_client, comments_client, comm
     assert get_r.status_code == 200
     ids = [c["id"] for c in get_r.json()]
     assert comment.id not in ids
+
+
+async def test_delete_keeps_the_comments_updated_at(user_client, comments_db_session, test_user):
+    # A deletion time would set the comment apart from one erased with its account,
+    # which keeps its own (DELETE /api/users/me), and show when it was deleted.
+    comment = Comment(user_id=test_user.id, content_type="walkthrough", content_id=1,
+                      body="Edited once", created_at=POSTED, updated_at=POSTED + timedelta(hours=1))
+    comments_db_session.add(comment)
+    await comments_db_session.commit()
+    before = await _updated_at(comments_db_session, comment.id)
+
+    r = await user_client.delete(f"/api/comments/{comment.id}")
+    assert r.status_code == 204
+
+    row = (await comments_db_session.execute(
+        select(Comment.is_deleted, Comment.body, Comment.updated_at).where(Comment.id == comment.id)
+    )).one()
+    assert tuple(row) == (True, "[deleted]", before)
+
+
+async def test_a_deleted_comment_kept_up_by_a_reply_shows_no_author(
+    user_client, comments_client, comments_db_session, test_user, second_user
+):
+    # The list keeps a deleted comment while a reply to it is up, as "[deleted]" with no
+    # username or avatar, which is what the privacy policy promises.
+    parent = await _seed_comment(comments_db_session, test_user.id, body="Parent")
+    reply = Comment(user_id=second_user.id, content_type="walkthrough", content_id=1,
+                    parent_id=parent.id, body="Reply")
+    comments_db_session.add(reply)
+    await comments_db_session.commit()
+
+    r = await user_client.delete(f"/api/comments/{parent.id}")
+    assert r.status_code == 204
+
+    (listed,) = (await comments_client.get("/api/comments/walkthrough/1")).json()
+    assert (listed["id"], listed["body"], listed["user"]) == (parent.id, "[deleted]", None)
+    assert [(x["id"], x["user"]["username"]) for x in listed["replies"]] == [(reply.id, "seconduser")]
 
 
 async def test_delete_other_users_comment_returns_403(second_user_client, comments_db_session, test_user):

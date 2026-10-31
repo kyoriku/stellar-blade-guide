@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { User, KeyRound, Trash2, Save, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
@@ -17,6 +18,7 @@ import seo from '../constants/seo.json'
 export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   // ── Profile ────────────────────────────────────────────────────────────────
   // Note: this runs before the `if (!user)` guard below, so it must be null-safe.
@@ -187,8 +189,14 @@ export default function SettingsPage() {
     try {
       const res = await authFetch(`${API_BASE_URL}/users/me`, { method: 'DELETE' })
       if (!res.ok) throw new Error(await readError(res, 'Failed to delete account'))
+      // The account's comments are erased now, but this tab may still hold them as they
+      // were, text and all, for minutes. Drop them so the next page asks again.
+      queryClient.removeQueries({ queryKey: ['comments'] })
+      // Leave Settings before signing out: once the user is gone, its protected route
+      // redirects to /login, which raced a navigation made after the sign-out. Replacing
+      // the entry also keeps Back from returning to it.
+      void navigate('/', { replace: true })
       await logout()
-      void navigate('/')
     } catch (err) {
       setDeleteError(errorMessage(err, 'Failed to delete account'))
     } finally {
@@ -410,7 +418,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-100">Danger Zone</h2>
           </div>
           <p className="text-gray-400 text-sm mb-6">
-            Permanently delete your account, your progress, and your notifications. Your comments stay on the site with the author shown as "[deleted]", so delete any you want removed first. This cannot be undone.
+            Permanently delete your account, your progress, and your notifications, and erase the text of your comments. This cannot be undone.
           </p>
 
           {deleteError && (

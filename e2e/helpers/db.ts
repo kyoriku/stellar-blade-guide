@@ -184,8 +184,49 @@ export async function createCommentThread(fx: Fixtures, username: string): Promi
   }
 }
 
-// A deleted account leaves its comments behind (user_id SET NULL), so they go by
-// what they are on.
+// One comment by `username` on the fixture walkthrough, with its own posted and
+// last-changed times (ISO strings); `parentId` makes it a reply.
+export async function insertComment(
+  fx: Fixtures,
+  c: { username: string; body: string; parentId?: number; postedAt: string; changedAt: string },
+): Promise<number> {
+  const pool = pgPool();
+  try {
+    const row = await pool.query(
+      `INSERT INTO comments (user_id, content_type, content_id, parent_id, body, is_approved, is_deleted, created_at, updated_at)
+       VALUES ((SELECT id FROM users WHERE username = $1), 'walkthrough', $2, $3, $4, true, false, $5, $6) RETURNING id`,
+      [c.username, fx.walkthroughId, c.parentId ?? null, c.body, c.postedAt, c.changedAt],
+    );
+    return row.rows[0].id;
+  } finally {
+    await pool.end();
+  }
+}
+
+export interface CommentRow {
+  userId: number | null;
+  isDeleted: boolean;
+  body: string;
+  updatedAt: string; // as Postgres prints it, to the microsecond
+}
+
+// The stored state of each comment, by id.
+export async function commentRows(ids: number[]): Promise<Map<number, CommentRow>> {
+  const pool = pgPool();
+  try {
+    const rows = await pool.query(
+      `SELECT id, user_id, is_deleted, body, updated_at::text AS updated_at FROM comments WHERE id = ANY($1)`,
+      [ids],
+    );
+    type Row = { id: number; user_id: number | null; is_deleted: boolean; body: string; updated_at: string };
+    return new Map(rows.rows.map((r: Row) => [r.id, { userId: r.user_id, isDeleted: r.is_deleted, body: r.body, updatedAt: r.updated_at }]));
+  } finally {
+    await pool.end();
+  }
+}
+
+// A deleted account leaves its erased comments behind, linked to no account, so they
+// go by what they are on.
 export async function deleteFixtureComments(fx: Fixtures): Promise<void> {
   const pool = pgPool();
   try {

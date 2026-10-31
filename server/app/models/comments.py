@@ -9,6 +9,13 @@ class Comment(Base):
     __tablename__ = "comments"
 
     id = Column(Integer, primary_key=True)
+    # SET NULL only clears the link, and the text stays. DELETE /api/users/me erases the
+    # account's comments first (routers/users.py), so an account deleted by hand needs
+    # the same order:
+    #   UPDATE comments SET user_id = NULL, is_deleted = true, body = '[deleted]' WHERE user_id = :id;
+    #   DELETE FROM users WHERE id = :id;
+    # Raw SQL fires no onupdate, so each comment keeps its own updated_at. The route's
+    # other steps (ending sessions, removing the avatar) apply by hand too.
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     content_type = Column(String(50), nullable=False)   # walkthrough, collectible, level
     content_id = Column(Integer, nullable=False)

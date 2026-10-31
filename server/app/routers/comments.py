@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, update
 from sqlalchemy import exists as sa_exists
 from sqlalchemy.orm import selectinload, aliased
 
@@ -92,13 +92,15 @@ async def create_comment(
 ):
     """Create a new comment. Requires authentication."""
 
-    # If replying, verify parent exists and belongs to the same content
+    # If replying, verify the parent exists and belongs to the same content. A deleted
+    # parent counts as missing: the page offers no Reply on one, and a reply would bring
+    # it back as "[deleted]".
     if body.parent_id is not None:
         if not is_row_id(body.parent_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found")
         result = await db.execute(select(Comment).where(Comment.id == body.parent_id))
         parent = result.scalar_one_or_none()
-        if not parent:
+        if not parent or parent.is_deleted:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found")
         if parent.content_type != body.content_type or parent.content_id != body.content_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reply must belong to the same content")
@@ -193,7 +195,18 @@ async def update_comment(
             detail="Comment was flagged as inappropriate"
         )
 
-    comment.body = body.body.strip()
+    # Saved only if the comment is still live and still theirs: moderation can take
+    # seconds, and the comment may be deleted meanwhile, by its account's deletion, a
+    # moderator or another tab. A write by id alone would put the new text into the
+    # erased row.
+    result = await db.execute(
+        update(Comment)
+        .where(Comment.id == comment_id, Comment.user_id == current_user.id, Comment.is_deleted == False)
+        .values(body=body.body.strip())
+    )
+    if result.rowcount != 1:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     await db.commit()
     await db.refresh(comment)
 
@@ -230,6 +243,10 @@ async def delete_comment(
 
     comment.is_deleted = True
     comment.body = "[deleted]"
+    # Set to itself, so the column's onupdate doesn't stamp the deletion time: a deleted
+    # comment keeps the time it was last edited, as one erased with its account does
+    # (DELETE /users/me), and never shows how or when it was deleted.
+    comment.updated_at = Comment.updated_at
     await db.commit()
     logger.info(
         f"{CYAN}User {current_user.id} deleted comment {comment_id} "
