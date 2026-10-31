@@ -2179,3 +2179,13 @@ async def test_a_failed_reset_email_logs_the_error_type_never_its_text(oauth, te
     assert (r.status_code, r.content) == (204, b"")
     lines = [rec.getMessage() for rec in caplog.records if rec.name == auth_routes.logger.name]
     assert lines == [f"{RED}Failed to send reset email to user {test_user.id}: ValidationError 422 validation_error{RESET}"]
+
+
+@pytest.mark.parametrize("claimed", ["0", "-5", str(2**31), "9" * 4000], ids=["zero", "negative", "past-int4", "4000-digits"])
+async def test_a_refresh_cookie_naming_no_possible_account_is_malformed(oauth, claimed):
+    """The reasons after the parse put the cookie's account number in the access line, and
+    int() takes up to 4,300 digits and a sign. A number no account can have is a
+    malformed cookie, like any other one that can't be read."""
+    r = await oauth.client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={claimed}:{uuid.uuid4()}"})
+    assert r.status_code == 401
+    assert oauth.seen["auth_fail_reason"] == "malformed-cookie"

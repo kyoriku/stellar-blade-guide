@@ -32,6 +32,7 @@ from app.core.auth import (
 from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET, YELLOW
+from app.core.ids import is_row_id
 from app.core.logging import exc_text, sanitize_log_field
 from app.core.usernames import username_from_provider
 from app.services.auth import (
@@ -138,6 +139,8 @@ async def refresh(
     try:
         user_id_str, refresh_token = token.split(":", 1)
         user_id = int(user_id_str)
+        if not is_row_id(user_id):
+            raise ValueError  # no account has that number, and the reasons below would log it whole
     except (ValueError, AttributeError):
         request.state.auth_fail_reason = "malformed-cookie"
         # Definitive rejections clear the dead cookie, or the browser re-presents
