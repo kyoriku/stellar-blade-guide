@@ -92,13 +92,15 @@ async def create_comment(
 ):
     """Create a new comment. Requires authentication."""
 
-    # If replying, verify parent exists and belongs to the same content
+    # If replying, verify the parent exists and belongs to the same content. A deleted
+    # parent counts as missing: the page offers no Reply on one, and a reply would bring
+    # it back as "[deleted]".
     if body.parent_id is not None:
         if not is_row_id(body.parent_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found")
         result = await db.execute(select(Comment).where(Comment.id == body.parent_id))
         parent = result.scalar_one_or_none()
-        if not parent:
+        if not parent or parent.is_deleted:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent comment not found")
         if parent.content_type != body.content_type or parent.content_id != body.content_id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reply must belong to the same content")

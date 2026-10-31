@@ -29,7 +29,7 @@ import app.routers.comments as comments_module
 
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.core.auth import create_access_token
@@ -267,6 +267,28 @@ async def test_post_comment_keeps_line_breaks_and_tabs(user_client):
     })
     assert r.status_code == 201
     assert r.json()["body"] == body
+
+
+async def test_reply_to_a_deleted_comment_is_the_parent_404(user_client, comments_db_session, test_user, monkeypatch):
+    # The page offers no Reply on a deleted comment, and a reply sent anyway would bring
+    # it back as "[deleted]", so it gets the missing parent's answer, before moderation.
+    moderate = AsyncMock(return_value=True)
+    monkeypatch.setattr(comments_module, "_moderate_content", moderate)
+    parent = Comment(user_id=test_user.id, content_type="walkthrough", content_id=1,
+                     body="[deleted]", is_deleted=True)
+    comments_db_session.add(parent)
+    await comments_db_session.commit()
+
+    r = await user_client.post("/api/comments/", json={
+        "content_type": "walkthrough",
+        "content_id": 1,
+        "body": "Reply",
+        "parent_id": parent.id,
+    })
+    assert r.status_code == 404
+    assert r.json() == {"detail": "Parent comment not found"}
+    moderate.assert_not_called()
+    assert (await comments_db_session.execute(select(func.count()).select_from(Comment))).scalar_one() == 1
 
 
 # ── PATCH ─────────────────────────────────────────────────────────────────────
