@@ -1,7 +1,7 @@
 """
 Tests for the users endpoints: the avatar pipeline of PATCH /api/users/me,
-the avatar cleanup on DELETE /api/users/me, and the admin routes' answer for
-an id past int4.
+the avatar cleanup on DELETE /api/users/me and what it does to the account's
+comments, and the admin routes' answer for an id past int4.
 
 Avatar moderation deliberately fails CLOSED (503 + Retry-After), unlike
 comment moderation which fails open: blocking comments during an OpenAI
@@ -28,9 +28,9 @@ end-to-end through the endpoint:
     thread they ran on, and (for destroy) raise on demand
 
 DDL strategy: users + oauth_accounts + comments via Base.metadata.create_all
-(no JSONB columns). No test touches comments directly, but the table must
-exist: User.comments is a relationship with no cascade, so db.delete(user)
-emits a SELECT against it to nullify children.
+(no JSONB columns). Every DELETE needs the comments table: the route erases the
+account's comments before it deletes the user, and the ORM still SELECTs them
+to nullify children.
 
 conftest's autouse patch_redis / disable_rate_limits cover slowapi and
 app.core.cache's Redis client. app.core.auth imports redis_client by value, so
@@ -44,6 +44,7 @@ import asyncio
 import base64
 import logging
 import threading
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import httpx
@@ -52,6 +53,8 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import event, select
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
@@ -65,6 +68,7 @@ from app.models.users import User, OAuthAccount  # noqa: F401 — registers tabl
 from app.models.comments import Comment
 from app.services.auth import hash_password
 from app.services.users import MAX_AVATAR_BYTES
+from app.routers.comments import router as comments_router
 from app.routers.users import router as users_router
 
 DEFAULT_IMAGE_BYTES = b"\x89PNG-not-really-a-png-but-bytes-are-bytes"
@@ -90,9 +94,9 @@ async def users_db_engine():
     async with engine.begin() as conn:
         await conn.run_sync(
             Base.metadata.create_all,
-            # comments is required even though no test touches it: User.comments
-            # is a relationship with no cascade, so db.delete(user) emits a
-            # SELECT against comments to nullify children.
+            # comments is required by every DELETE: the route erases the
+            # account's comments, and db.delete(user) still SELECTs them to
+            # nullify children (User.comments has no cascade).
             tables=[User.__table__, OAuthAccount.__table__, Comment.__table__],
         )
     yield engine
@@ -831,6 +835,172 @@ async def test_avatar_destroy_runs_off_the_event_loop(
     assert r.status_code == 204
     assert rec.destroy_threads[0] is not threading.main_thread()
     assert rec.destroy_kwargs[0]["timeout"] > 0
+
+
+# ── DELETE /api/users/me: the account's comments ──────────────────────────────
+#
+# Deleting an account erases each of its comments the way DELETE /comments/{id}
+# erases one, and each keeps its own updated_at. Before, deleting the user had
+# SQLAlchemy clear user_id with an UPDATE that the column's onupdate stamped with
+# the moment of deletion: the text stayed up, and every comment of the account
+# carried the same time in the comment data anyone can load.
+
+# One page's comments, by the account the tests delete (a) and by another (b):
+# name -> (author, the comment it replies to, already deleted, day posted).
+PAGE = {
+    "a_thread": ("a", None, False, 1),        # b replies to it
+    "a_lone": ("a", None, False, 2),          # nothing replies to it
+    "a_gone": ("a", None, True, 3),           # a deleted it earlier
+    "b_top": ("b", None, False, 4),           # a replies to it
+    "b_gone": ("b", None, True, 5),           # deleted; only a's reply keeps it up
+    "b_reply": ("b", "a_thread", False, 6),
+    "a_reply": ("a", "b_top", False, 7),
+    "a_keeps_up": ("a", "b_gone", False, 8),
+}
+A_COMMENTS = [name for name, (author, *_) in PAGE.items() if author == "a"]
+B_COMMENTS = [name for name, (author, *_) in PAGE.items() if author == "b"]
+TEXT = {name: f"The text of {name}" for name in PAGE}
+
+
+@pytest_asyncio.fixture
+async def account_db(users_db_engine):
+    """A fresh session per use, as the app opens one per request."""
+    return async_sessionmaker(users_db_engine, expire_on_commit=False)
+
+
+@pytest_asyncio.fixture
+async def page_comments(account_db):
+    """Seeds PAGE. Each comment gets its own times, last edited some hours after it
+    was posted. Returns account a's id and the comment ids by name."""
+    async with account_db() as s:
+        users = {"a": User(email="a@example.com", username="accounta"),
+                 "b": User(email="b@example.com", username="accountb")}
+        s.add_all(users.values())
+        await s.flush()
+        ids = {}
+        for name, (author, parent, deleted, day) in PAGE.items():
+            posted = datetime(2026, 1, day, 12, 0, tzinfo=timezone.utc)
+            comment = Comment(
+                user_id=users[author].id, content_type="walkthrough", content_id=1,
+                parent_id=ids[parent] if parent else None,
+                body="[deleted]" if deleted else TEXT[name], is_deleted=deleted,
+                created_at=posted, updated_at=posted + timedelta(hours=day),
+            )
+            s.add(comment)
+            await s.flush()
+            ids[name] = comment.id
+        await s.commit()
+        return SimpleNamespace(a_id=users["a"].id, ids=ids)
+
+
+@pytest_asyncio.fixture
+async def account_client(account_db, page_comments, monkeypatch, fake_redis):
+    """Account a's client, on an app with the users and comments routes and a session
+    per request, so the delete runs with none of the comments loaded, as in production."""
+    monkeypatch.setattr(core_auth, "redis_client", fake_redis)
+    _patch_cloudinary_destroy(monkeypatch)
+
+    async def per_request_db():
+        async with account_db() as session:
+            yield session
+
+    app = FastAPI()
+    setup_rate_limiter(app)
+    app.dependency_overrides[get_db] = per_request_db
+    app.include_router(users_router, prefix="/api")
+    app.include_router(comments_router, prefix="/api")
+    token = create_access_token(page_comments.a_id, "user")
+    async with AsyncClient(
+        transport=ASGITransport(app),
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {token}"},
+    ) as c:
+        yield c
+
+
+async def _comment_rows(account_db, ids) -> dict:
+    """name -> (user_id, is_deleted, body, updated_at), as stored."""
+    async with account_db() as s:
+        rows = await s.execute(
+            select(Comment.id, Comment.user_id, Comment.is_deleted, Comment.body, Comment.updated_at)
+        )
+        by_id = {row.id: tuple(row)[1:] for row in rows}
+    return {name: by_id[cid] for name, cid in ids.items()}
+
+
+async def test_deleting_an_account_erases_its_comments(account_client, account_db, page_comments):
+    before = await _comment_rows(account_db, page_comments.ids)
+    assert before["a_lone"][2] == TEXT["a_lone"]
+
+    r = await account_client.delete("/api/users/me")
+    assert r.status_code == 204
+
+    after = await _comment_rows(account_db, page_comments.ids)
+    for name in A_COMMENTS:
+        assert after[name][:3] == (None, True, "[deleted]"), name
+    for name in B_COMMENTS:
+        assert after[name] == before[name], name
+
+
+async def test_a_deleted_accounts_comments_leave_the_list_as_deleted_ones_do(account_client, page_comments):
+    r = await account_client.delete("/api/users/me")
+    assert r.status_code == 204
+
+    listed = await account_client.get("/api/comments/walkthrough/1")
+    assert listed.status_code == 200
+    ids = page_comments.ids
+    shape = [
+        (c["id"], c["body"], c["user"] and c["user"]["username"],
+         [(reply["id"], reply["body"]) for reply in c.get("replies", [])])
+        for c in listed.json()
+    ]
+    # a's comment that b replied to shows "[deleted]" with no author, and the reply
+    # stays. a's lone comment and a's replies are gone, and so is b's deleted comment,
+    # which only a's reply kept up.
+    assert shape == [
+        (ids["a_thread"], "[deleted]", None, [(ids["b_reply"], TEXT["b_reply"])]),
+        (ids["b_top"], TEXT["b_top"], "accountb", []),
+    ]
+    for name in A_COMMENTS:
+        assert TEXT[name] not in listed.text, name
+
+
+async def test_deleting_an_account_keeps_each_comments_updated_at(account_client, account_db, page_comments):
+    before = await _comment_rows(account_db, page_comments.ids)
+
+    r = await account_client.delete("/api/users/me")
+    assert r.status_code == 204
+
+    after = await _comment_rows(account_db, page_comments.ids)
+    assert {name: row[3] for name, row in after.items()} == {name: row[3] for name, row in before.items()}
+    # No two share a time, so none ties one comment to another.
+    assert len({row[3] for row in after.values()}) == len(PAGE)
+
+
+async def test_the_account_row_is_locked_before_its_comments_are_erased(account_client, users_db_engine):
+    # A comment the account posts from another tab while the delete runs must commit
+    # before the erase or fail its foreign key once the account is gone: one that slipped
+    # in between kept its text. On Postgres the route's FOR UPDATE on the account row
+    # does that, since a comment INSERT's foreign key check waits behind it. SQLite
+    # ignores FOR UPDATE, so this pins the statements the route sends, in order.
+    sent = []
+
+    def record(conn, clauseelement, multiparams, params, execution_options):
+        sent.append(clauseelement)
+
+    event.listen(users_db_engine.sync_engine, "before_execute", record)
+    try:
+        r = await account_client.delete("/api/users/me")
+    finally:
+        event.remove(users_db_engine.sync_engine, "before_execute", record)
+    assert r.status_code == 204
+
+    shown = [str(statement.compile(dialect=postgresql.dialect())) for statement in sent]
+    lock = [i for i, sql in enumerate(shown) if "FROM users" in sql and sql.endswith("FOR UPDATE")]
+    erase = [i for i, sql in enumerate(shown) if sql.startswith("UPDATE comments")]
+    delete = [i for i, sql in enumerate(shown) if sql.startswith("DELETE FROM users")]
+    assert len(lock) == len(erase) == len(delete) == 1, shown
+    assert lock[0] < erase[0] < delete[0]
 
 
 async def test_a_compressed_responses_encoding_is_logged_cleaned(user_client, monkeypatch, caplog):

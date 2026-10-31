@@ -3,7 +3,7 @@ import logging
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import and_, case, func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.config.settings import settings
@@ -106,6 +106,20 @@ async def delete_me(
     user_id = current_user.id
 
     await revoke_all_refresh_tokens(user_id)
+    # Lock the account row first. A comment the account posts from another tab meanwhile
+    # then either commits before the erase below, which sees it, or waits on this lock
+    # (its foreign key check needs the row) and fails once the account is gone, rather
+    # than slipping in after the erase with its text. SQLite ignores FOR UPDATE.
+    await db.execute(select(User.id).where(User.id == user_id).with_for_update())
+    # Each comment is erased as DELETE /comments/{id} erases one, so the list leaves it
+    # out, or shows "[deleted]" while a reply to it is up. user_id is cleared here, not
+    # by deleting the user, whose UPDATE would stamp every comment with one updated_at
+    # (the column's onupdate) and tie them to one account.
+    await db.execute(
+        update(Comment)
+        .where(Comment.user_id == user_id)
+        .values(user_id=None, is_deleted=True, body="[deleted]", updated_at=Comment.updated_at)
+    )
     await db.delete(current_user)
     await db.commit()
     logger.info(f"{CYAN}User {user_id} deleted their account{RESET}")
