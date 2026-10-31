@@ -40,6 +40,7 @@ import app.core.auth as core_auth
 import app.core.cache as core_cache
 import app.routers.auth as auth_routes
 from app.config.settings import settings
+from app.core.colours import CYAN, RESET
 from app.db.database import Base, get_db
 from app.core.usernames import username_problem
 from app.middleware.logging import add_logging_middleware
@@ -177,6 +178,22 @@ async def test_register_invalid_email_returns_friendly_message(auth_client):
     # Custom message instead of the email-validator library default. The app's
     # RequestValidationError handler flattens 422s to a single string detail.
     assert "Please enter a valid email address" in r.json()["detail"]
+
+
+async def test_register_logs_the_account_number_never_the_email(auth_client, caplog):
+    """Railway keeps each log line for 90 days and can't delete one early, so a sign-up
+    names the new account by its number, never by its email address or username."""
+    caplog.set_level(logging.INFO, logger=auth_routes.logger.name)
+
+    r = await auth_client.post("/api/auth/register", json={
+        "email": "signup-MARKER@example.com",
+        "username": "signup_name",
+        "password": "password123",
+    })
+
+    assert r.status_code == 201
+    lines = [rec.getMessage() for rec in caplog.records if rec.name == auth_routes.logger.name]
+    assert lines == [f"{CYAN}New user registered: user {r.json()['user']['id']}{RESET}"]
 
 
 async def test_register_normalizes_email_domain(auth_client):

@@ -66,7 +66,7 @@ async def update_me(
     await db.commit()
     await db.refresh(current_user)
 
-    logger.info(f"{CYAN}User {current_user.username} updated their profile{RESET}")
+    logger.info(f"{CYAN}User {current_user.id} updated their profile{RESET}")
     return user_to_response(current_user)
 
 
@@ -79,12 +79,12 @@ async def delete_me(
 ):
     """Permanently delete the authenticated user's account and all their data."""
     from app.core.auth import revoke_all_refresh_tokens
-    user_id, username = current_user.id, current_user.username
+    user_id = current_user.id
 
     await revoke_all_refresh_tokens(user_id)
     await db.delete(current_user)
     await db.commit()
-    logger.info(f"{CYAN}User {username} deleted their account{RESET}")
+    logger.info(f"{CYAN}User {user_id} deleted their account{RESET}")
 
     # After the commit: deleting the account is what the user actually asked
     # for, so a slow or failing Cloudinary call must not block or roll it back.

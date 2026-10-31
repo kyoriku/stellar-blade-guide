@@ -97,7 +97,7 @@ async def register(
     await db.commit()
     await db.refresh(user)
 
-    logger.info(f"{CYAN}New user registered: {user.username} ({user.email}){RESET}")
+    logger.info(f"{CYAN}New user registered: user {user.id}{RESET}")
     return await _issue_tokens(user, response)
 
 
@@ -259,7 +259,7 @@ async def logout_all(
     """Revoke all active sessions across all devices."""
     await revoke_all_refresh_tokens(current_user.id)
     clear_refresh_cookie(response)
-    logger.info(f"{CYAN}User {current_user.username} logged out of all devices{RESET}")
+    logger.info(f"{CYAN}User {current_user.id} logged out of all devices{RESET}")
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
@@ -297,7 +297,7 @@ async def change_password(
     await revoke_all_refresh_tokens(current_user.id)
     clear_refresh_cookie(response)
 
-    logger.info(f"{CYAN}User {current_user.username} changed their password{RESET}")
+    logger.info(f"{CYAN}User {current_user.id} changed their password{RESET}")
 
 
 # Password reset
@@ -353,7 +353,7 @@ async def forgot_password(
             raise  # still a 503: password reset fails closed, as before
         try:
             await _send_reset_email(user.email, token)
-            logger.info(f"{CYAN}Password reset email sent to {user.username}{RESET}")
+            logger.info(f"{CYAN}Password reset email sent to user {user.id}{RESET}")
         except Exception as e:
             logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
             # Don't expose email errors to the client
@@ -404,7 +404,7 @@ async def reset_password(
     await revoke_all_refresh_tokens(user.id)
     clear_refresh_cookie(response)
 
-    logger.info(f"{CYAN}User {user.username} successfully reset their password{RESET}")
+    logger.info(f"{CYAN}User {user.id} successfully reset their password{RESET}")
 
 
 # OAuth
@@ -533,7 +533,7 @@ async def _get_or_create_oauth_user(
     db.add(OAuthAccount(user_id=user.id, provider=provider, provider_user_id=provider_user_id))
     await db.commit()
     await db.refresh(user)
-    logger.info(f"{CYAN}New OAuth user created: {user.username} via {provider}{RESET}")
+    logger.info(f"{CYAN}New OAuth user created: user {user.id} via {provider}{RESET}")
     return user
 
 
