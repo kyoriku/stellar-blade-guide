@@ -28,8 +28,8 @@ export default function PrivacyPolicy() {
   return (
     <div className="flex-1 bg-primary">
       <SEO title={seo.pages['/privacy'].title} description={seo.pages['/privacy'].description} />
-      <div className="container mx-auto px-3 py-8 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Privacy Policy</h1>
+      <div className="container mx-auto px-3 py-8 max-w-2xl">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100/90">Privacy Policy</h1>
 
         <nav className="bg-secondary/60 border border-gray-800 rounded-lg p-4 mb-6">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">On this page</h2>
@@ -42,7 +42,7 @@ export default function PrivacyPolicy() {
           </ul>
         </nav>
 
-        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
+        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300/90 [&_h2]:text-gray-200/90 leading-relaxed border border-gray-800">
 
           <section>
             <SectionHeader icon={Database} id="info-collected">What We Collect</SectionHeader>

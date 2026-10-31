@@ -7,9 +7,9 @@ export default function TermsOfService() {
   return (
     <div className="flex-1 bg-primary">
       <SEO title={seo.pages['/terms'].title} description={seo.pages['/terms'].description} />
-      <div className="container mx-auto px-3 py-8 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Terms of Service</h1>
-        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
+      <div className="container mx-auto px-3 py-8 max-w-2xl">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100/90">Terms of Service</h1>
+        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300/90 [&_h2]:text-gray-200/90 leading-relaxed border border-gray-800">
 
           <section>
             <p>By using this website, you agree to these Terms of Service and our Privacy Policy. If you disagree, please do not use the site.</p>
