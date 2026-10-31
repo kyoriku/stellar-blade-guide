@@ -124,7 +124,7 @@ export default function PrivacyPolicy() {
               <li><strong>Server logs</strong>: Railway, our host, keeps our server logs, and its own log of the requests that reach our server (page loads included), for 90 days. They can't be deleted or changed before then, even if you delete your account.</li>
               <li><strong>Your account and its data</strong>: until the account is deleted. Nothing deletes an account automatically, however long it goes unused. If we remove an item from the guide, it also disappears from your progress.</li>
               <li><strong>Deactivated accounts</strong>: if we deactivate an account, it can no longer sign in, but its data is kept and its comments stay visible. Its owner can ask us to delete it.</li>
-              <li><strong>Comments</strong>: until you or a moderator delete them. Deleting a comment erases its text, but we keep a record that you posted a comment on that page and when. A deleted comment disappears from the page, or, while a reply to it is still up, shows as "[deleted]" without your username or avatar.</li>
+              <li><strong>Comments</strong>: until you or a moderator delete them, or you delete your account. Deleting a comment erases its text, but we keep a record that you posted a comment on that page and when. A deleted comment disappears from the page, or, while a reply to it is still up, shows as "[deleted]" without your username or avatar.</li>
               <li><strong>Notifications</strong>: until you delete your account. Deleting a reply doesn't remove the notification it sent, which still shows your username to the person you replied to.</li>
             </ul>
           </section>
@@ -134,11 +134,10 @@ export default function PrivacyPolicy() {
             <p>You can delete your account at any time in Settings, or ask us to. Deleting it signs you out everywhere and removes your account, any link to a Google or Discord account, your progress, and the notifications you received. We keep no backups, so these are gone for good. Removing an avatar you set in Settings, or deleting your account, also asks Cloudinary to delete the image; if that doesn't work, it stays there. Copies Cloudinary has already cached, including copies of an avatar you've replaced, can stay reachable for a while, depending on Cloudinary.</p>
             <p className="mt-2">Some things stay after you delete your account:</p>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
-              <li><strong>Your comments</strong>: they stay on their pages with the author shown as "[deleted]", without your username or avatar, and are no longer linked to any account. In the comment data anyone can load, though, they all show the same last-changed time (when you deleted your account), so someone could tell they came from one account.</li>
+              <li><strong>Your comments</strong>: deleting your account erases their text, but we keep a record that a comment was posted on that page and when, no longer linked to any account. Each one disappears from its page, or, while a reply to it is still up, shows as "[deleted]" without your username or avatar.</li>
               <li><strong>Notifications you sent</strong>: the ones your replies sent to other people stay, showing "Someone" in place of your username.</li>
               <li><strong>Server logs</strong>: entries already written stay until their 90 days are up.</li>
             </ul>
-            <p className="mt-2">To remove a comment's text, delete the comment before you delete your account, or email us afterwards.</p>
           </section>
 
           <section>

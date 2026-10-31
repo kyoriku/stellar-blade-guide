@@ -410,7 +410,7 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-100">Danger Zone</h2>
           </div>
           <p className="text-gray-400 text-sm mb-6">
-            Permanently delete your account, your progress, and your notifications. Your comments stay on the site with the author shown as "[deleted]", so delete any you want removed first. This cannot be undone.
+            Permanently delete your account, your progress, and your notifications, and erase the text of your comments. This cannot be undone.
           </p>
 
           {deleteError && (
