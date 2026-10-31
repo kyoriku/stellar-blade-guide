@@ -134,7 +134,7 @@ export default function PrivacyPolicy() {
             <p>You can delete your account at any time in Settings, or ask us to. Deleting it signs you out everywhere and removes your account, any link to a Google or Discord account, your progress, and the notifications you received. We keep no backups, so these are gone for good. Removing an avatar you set in Settings, or deleting your account, also asks Cloudinary to delete the image; if that doesn't work, it stays there. Copies Cloudinary has already cached, including copies of an avatar you've replaced, can stay reachable for a while, depending on Cloudinary.</p>
             <p className="mt-2">Some things stay after you delete your account:</p>
             <ul className="list-disc list-inside mt-2 ml-4 space-y-1">
-              <li><strong>Your comments</strong>: deleting your account erases their text, but we keep a record that a comment was posted on that page and when, no longer linked to any account. Each one disappears from its page, or, while a reply to it is still up, shows as "[deleted]" without your username or avatar.</li>
+              <li><strong>Your comments</strong>: deleting your account erases their text, but we keep a record of where and when each was posted, no longer linked to any account. Each one disappears from its page, or, while a reply to it is still up, shows as "[deleted]" without your username or avatar.</li>
               <li><strong>Notifications you sent</strong>: the ones your replies sent to other people stay, showing "Someone" in place of your username.</li>
               <li><strong>Server logs</strong>: entries already written stay until their 90 days are up.</li>
             </ul>
