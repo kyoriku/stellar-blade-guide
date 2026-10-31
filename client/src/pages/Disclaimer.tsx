@@ -7,10 +7,10 @@ export default function Disclaimer() {
   return (
     <div className="flex-1 bg-primary">
       <SEO title={seo.pages['/disclaimer'].title} description={seo.pages['/disclaimer'].description} />
-      <div className="container mx-auto px-3 py-8 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Disclaimer</h1>
+      <div className="container mx-auto px-3 py-8 max-w-2xl">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100/90">Disclaimer</h1>
 
-        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
+        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300/90 [&_h2]:text-gray-200/90 leading-relaxed border border-gray-800">
           <section>
             <SectionHeader icon={Info}>Unofficial Fan-Made Guide</SectionHeader>
             <p>This website is an <strong>unofficial, non-commercial fan guide</strong> for Stellar Blade. It is <strong>not affiliated with, endorsed by, or connected to</strong> Shift Up Corporation or Sony Interactive Entertainment.</p>
@@ -18,7 +18,7 @@ export default function Disclaimer() {
 
           <section>
             <SectionHeader icon={Copyright}>Intellectual Property</SectionHeader>
-            <p>All game content, including artwork, screenshots, character names, locations, and mechanics, belongs to Shift Up Corporation and Sony Interactive Entertainment. We believe our use constitutes fair dealing under applicable Canadian copyright law for commentary and educational purposes. Our original text, layout, and commentary are &copy; 2025&ndash;{new Date().getFullYear()} Stellar Blade Guide.</p>
+            <p>All game content, including artwork, screenshots, character names, locations, and mechanics, belongs to Shift Up Corporation and Sony Interactive Entertainment. We believe our use constitutes fair dealing under applicable Canadian copyright law for educational purposes. Our original text, layout, and commentary are &copy; 2025&ndash;{new Date().getFullYear()} Stellar Blade Guide.</p>
           </section>
 
           <section>
@@ -39,13 +39,13 @@ export default function Disclaimer() {
           <section>
             <SectionHeader icon={Mail}>Copyright Concerns</SectionHeader>
             <p>If you are a rights holder with concerns about content on this site, please contact us. We will promptly address all legitimate requests.</p>
-            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 transition-colors">
+            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/50 underline-offset-2 hover:decoration-cyan-400 transition-colors">
               contact@stellarbladeguide.com
             </a>
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: May 27, 2026
+            Last Updated: October 30, 2026
           </div>
         </div>
       </div>

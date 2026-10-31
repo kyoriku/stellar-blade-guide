@@ -7,9 +7,9 @@ export default function TermsOfService() {
   return (
     <div className="flex-1 bg-primary">
       <SEO title={seo.pages['/terms'].title} description={seo.pages['/terms'].description} />
-      <div className="container mx-auto px-3 py-8 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100">Terms of Service</h1>
-        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300 leading-relaxed border border-gray-800">
+      <div className="container mx-auto px-3 py-8 max-w-2xl">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-100/90">Terms of Service</h1>
+        <div className="bg-secondary shadow-lg rounded-lg p-4 md:p-6 space-y-6 text-gray-300/90 [&_h2]:text-gray-200/90 leading-relaxed border border-gray-800">
 
           <section>
             <p>By using this website, you agree to these Terms of Service and our Privacy Policy. If you disagree, please do not use the site.</p>
@@ -42,7 +42,7 @@ export default function TermsOfService() {
               <li>Share personal information about others without their consent</li>
               <li>Attempt to manipulate or abuse the moderation system</li>
             </ul>
-            <p className="mt-2">All comments are subject to automated moderation via OpenAI. Comments that violate these rules may be removed without notice. Repeated violations may result in account suspension.</p>
+            <p className="mt-2">Comments are screened by OpenAI's automated moderation when you post or edit them; if that check can't be done, the comment is saved without it. Comments that violate these rules may be removed without notice. Repeated violations may result in account suspension.</p>
             <p className="mt-2">By posting a comment, you grant us a non-exclusive, royalty-free licence to display it on the site. You retain ownership of your content.</p>
           </section>
 
@@ -100,13 +100,13 @@ export default function TermsOfService() {
           <section>
             <SectionHeader icon={Mail}>Contact</SectionHeader>
             <p>Questions about these terms:</p>
-            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 transition-colors">
+            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/50 underline-offset-2 hover:decoration-cyan-400 transition-colors">
               contact@stellarbladeguide.com
             </a>
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: May 27, 2026
+            Last Updated: October 30, 2026
           </div>
         </div>
       </div>

@@ -115,7 +115,7 @@ function HomePage() {
       </div>
 
       {/* Level Strip */}
-      <div className="border-b border-zinc-800 bg-secondary/50">
+      <div className="border-b border-zinc-800">
         <div className="container mx-auto px-3 py-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
@@ -188,7 +188,7 @@ function HomePage() {
                   to={`/walkthroughs/${category.slug}`}
                   onMouseEnter={() => prefetchWalkthroughsByType(category.slug)}
                   className="group flex items-center justify-between p-3.5 bg-secondary rounded-lg border border-zinc-800
-                           hover:border-zinc-700 hover:bg-secondary/80 transition-all duration-200"
+                           hover:border-zinc-700 transition-all duration-200"
                 >
                   <span className="text-sm font-medium text-gray-300 group-hover:text-gray-100 transition-colors">
                     {category.name}
@@ -266,7 +266,7 @@ function CategoryCard({ title, icon, to, types, imageUrl }: CategoryCardProps) {
   return (
     <Link to={to} className="group block">
       <div className="bg-secondary border border-zinc-800 rounded-lg overflow-hidden flex
-                    hover:border-zinc-700 hover:bg-secondary/80 transition-all duration-200
+                    hover:border-zinc-700 transition-all duration-200
                     hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
 
         {/* The image share and ratio are the walkthrough list's phone card

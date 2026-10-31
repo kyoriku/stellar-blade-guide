@@ -25,7 +25,7 @@ function MobileAccordionSection({ section, isOpen, onToggle, onNavigate, prefetc
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={contentId}
-        className="w-full flex items-center justify-between px-4 py-4 text-left hover:bg-secondary/30 transition-colors group active:bg-secondary/50"
+        className="w-full flex items-center justify-between px-4 py-4 text-left transition-colors group"
       >
         <div className="flex items-center gap-3">
           <div className="p-2 bg-cyan-400/10 rounded-lg">

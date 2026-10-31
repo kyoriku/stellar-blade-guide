@@ -470,7 +470,7 @@ function Navbar() {
                 placeholder="Search collectibles, walkthroughs, levels..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-secondary/50 border border-gray-600 rounded-xl text-gray-200 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all text-base"
+                className="w-full pl-11 pr-10 py-3 border border-gray-600 rounded-xl text-gray-200 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all text-base"
               />
               {searchQuery && (
                 <button
