@@ -6,36 +6,15 @@ from fastapi import Request
 from app.config.settings import settings
 from app.core.security import cf_connecting_ip, get_client_ip
 from app.core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
+# The caps and the cleaner live in core/logging.py, so core, services and routers can
+# use them without importing middleware; imported here for this layer and its tests.
+from app.core.logging import (  # noqa: F401
+    LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX, sanitize_log_field,
+)
 
 logger = logging.getLogger("api")
 
 LOG_TZ = ZoneInfo("America/New_York")
-
-# Caps for request-controlled fields. Each is copied from the request into the
-# access line, so it is neutralised first. Starlette's request.url.path already
-# drops \t \r \n (urlsplit), but every other control / line-break character —
-# ESC for ANSI injection, NUL, VT/FF, NEL, U+2028/9 — survives percent-decoding
-# and would otherwise land on the terminal / Railway stream verbatim. The search
-# text is handed over by its route (request.state) rather than read here, but it
-# is the user's input all the same.
-LOG_PATH_MAX = 256   # wide enough to keep a full sqlmap-style payload readable
-LOG_UA_MAX = 48      # parse_ua's browser branches have no cap of their own
-LOG_IP_MAX = 45      # longest textual IPv6 (incl. IPv4-mapped); in dev the fallback can be X-Forwarded-For text, so untrusted
-LOG_COLO_MAX = 3     # IATA airport code; hard-sliced so the column never widens
-LOG_QUERY_MAX = 40   # search text; the API allows 100 and the line is already wide
-
-
-def sanitize_log_field(value: str, limit: int) -> str:
-    """Render `value` safe for a single log line.
-
-    Every non-printable character (C0/C1 controls, ESC, U+2028/2029, NEL, ...)
-    becomes its Python escape (`\\n`, `\\x1b`, ...) so it reads as text instead of
-    acting on the stream; anything past `limit` is dropped behind a marker.
-    """
-    cleaned = ''.join(ch if ch.isprintable() else repr(ch)[1:-1] for ch in value)
-    if len(cleaned) > limit:
-        return cleaned[:limit] + '…'
-    return cleaned
 
 
 def parse_ua(ua: str) -> str:

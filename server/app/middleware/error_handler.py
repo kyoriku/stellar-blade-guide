@@ -4,8 +4,8 @@ from fastapi.responses import JSONResponse
 from redis.exceptions import RedisError
 from sqlalchemy.exc import DBAPIError
 
+from app.core.logging import LOG_PATH_MAX, sanitize_log_field
 from app.middleware.exception_handlers import INVALID_INPUT_DETAIL
-from app.middleware.logging import LOG_PATH_MAX, sanitize_log_field
 
 logger = logging.getLogger(__name__)
 

@@ -23,7 +23,7 @@ app/
     auth.py          JWT create/decode, refresh-token helpers, get_current_user / require_role deps
     cache.py         Redis client + response-cache helpers (get / set / invalidate by pattern)
     security.py      client-IP resolution + slowapi rate limiter (Redis storage, in-memory fallback)
-    logging.py       logging setup
+    logging.py       logging setup, and the cleaners every copied log field goes through (escaped, capped, no email addresses)
     colours.py       ANSI colour constants for terminal output
     passwords.py     the password rule: 8 to 128 characters for a new password
     usernames.py     the username rule, and the cleaner a provider's display name goes through

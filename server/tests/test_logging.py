@@ -17,6 +17,8 @@ outermost as in main.py.
 """
 import logging
 import re
+import subprocess
+import sys
 
 import pytest
 from fastapi import FastAPI, Request
@@ -25,6 +27,7 @@ from httpx import ASGITransport, AsyncClient
 
 import app.middleware.origin_check as origin_check_module
 from app.config.settings import settings
+from app.core.logging import EMAIL_SHAPE
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.logging import (
     LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX,
@@ -522,3 +525,89 @@ async def test_the_alarm_line_is_neutralised(api_log, prod_mode):
     (warning,) = _cf_warnings(api_log)
     assert ANSI_PROBE not in warning
     assert "\\x1b[2J" in warning
+
+
+# ── email addresses: never in a field, whoever typed them ────────────────────
+#
+# Railway keeps every line for 90 days and can't delete or redact one early, so the
+# cleaner replaces anything shaped like an email address, wherever it came from: an
+# address typed into search, a path, a bot's User-Agent, a cache key.
+
+@pytest.mark.parametrize("value, expected", [
+    ("jane.doe+tag@example.com", "[email]"),
+    ("q jane@mail.example.com x", "q [email] x"),
+    ("JOS" + chr(0xC9) + "@EX" + chr(0xC4) + "MPLE.COM", "[email]"),  # not ASCII-only
+    ("jane%40example.com", "[email]"),  # percent-encoded, as a raw header carries it
+    ("jane@exa", "[email]"),  # cut short: no dot needed after the @
+    ("jane.doe@", "[email]"),  # typed as far as the @, as search logs every keystroke
+    ("100%jane@example.com", "[email]"),
+    ("/api/levels/jane@example.com/x", "/api/levels/[email]/x"),
+    ("o'brien@example.com", "[email]"),  # a surname's apostrophe is part of the address
+    ("jane{1}&co@example.com", "[email]"),  # so are the other symbols an address may hold
+    ("jane" + chr(0x200B) + "doe@example.com", "[email]"),  # an invisible character doesn't split it
+    ("https://user:pw@host.example/x", "https://user:[email]/x"),  # a URL's userinfo, password and all
+    ("search:jane@example.com:20:v3", "search:[email]:20:v3"),  # a cache key keeps its shape
+    ("jane" + chr(0xFF20) + "example.com", "[email]"),  # the full-width at sign
+    ("jane" + chr(0xFE6B) + "example.com", "[email]"),  # the small one
+    ("".join(map(chr, (0x938, 0x940, 0x924, 0x93E))) + "@example.com", "[email]"),  # ends in a vowel sign
+])
+def test_an_email_address_never_survives_the_cleaner(value, expected):
+    assert sanitize_log_field(value, 256) == expected
+
+
+@pytest.mark.parametrize("value", [
+    "users/@me", "@user_script:1", "a @@ b", "tags @> '{x}'", "user @ example", "100% done",
+])
+def test_text_with_only_an_at_sign_is_left_alone(value):
+    assert sanitize_log_field(value, 256) == value
+
+
+def test_an_address_is_replaced_before_the_cap_can_cut_it():
+    out = sanitize_log_field("x" * 35 + " jane.doe@example.com", 40)
+    assert out == "x" * 35 + " [ema…"
+
+
+# The pattern runs on every request's path and User-Agent, uncapped, and a header can
+# be about 32 KB. A pattern that backtracks is quadratic or worse and holds the GIL
+# meanwhile (the bot filter's SPA_SAFE_PATH lesson): one took 4 seconds on 32 KB, just
+# inside a 5 s limit. So each input here is 1 MB, one long run of address characters
+# that can't end in an address. The real pattern clears each in about 30 ms; without
+# the lookbehind that keeps it linear, each takes minutes, so the child is killed
+# after 5 s. The input goes in on stdin, since one argument is capped at 128 KB.
+_SUB_CHILD = "import re,sys; s = sys.stdin.read(); re.compile(sys.argv[1]).sub('[email]', s); print('DONE')"
+
+
+@pytest.mark.parametrize("hostile", [
+    "a" * 2**20 + " @",
+    chr(0xE9) * 2**20 + ":@",  # another script
+    "%41" * (2**20 // 3) + " @",  # percent escapes
+    "a." * 2**19 + "/@",  # dots
+], ids=["run", "non-ascii-run", "percent-run", "dotted-run"])
+def test_the_email_pattern_stays_linear_on_hostile_input(hostile):
+    try:
+        out = subprocess.run([sys.executable, "-c", _SUB_CHILD, EMAIL_SHAPE.pattern], input=hostile,
+                             capture_output=True, text=True, timeout=5)
+    except subprocess.TimeoutExpired:
+        pytest.fail("the email pattern backtracks: 5 s were not enough for 1 MB")
+    assert out.stdout.strip() == "DONE"
+
+
+async def test_an_email_address_typed_into_search_is_never_logged(api_log):
+    """Search runs as you type, so each keystroke's text is logged."""
+    for typed in ("jane", "jane.doe@", "jane.doe@mail.exa", "jane.doe@mail.example.com"):
+        async with _client(_search_app(typed, total=0)) as c:
+            await c.get("/api/search/")
+    assert [line.rsplit(" q=", 1)[1] for line in _access_lines(api_log)] == [
+        "jane", "[email]", "[email]", "[email]",
+    ]
+
+
+async def test_an_email_address_in_a_path_or_a_user_agent_is_never_logged(api_log):
+    async with _client(_app_with()) as c:
+        # /api/auth prefix => the UA is appended even on a 200; a token holding "bot"
+        # is what parse_ua keeps whole.
+        await c.get("/api/auth/x/jane.doe@example.com", headers={"user-agent": "probe ops@robot.example"})
+    (line,) = _access_lines(api_log)
+    assert "| /api/auth/x/[email] |" in line
+    assert "UA: [email]" in line
+    assert "@" not in line
