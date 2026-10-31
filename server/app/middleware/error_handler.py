@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from redis.exceptions import RedisError
 from sqlalchemy.exc import DBAPIError
 
-from app.core.logging import LOG_PATH_MAX, sanitize_log_field
+from app.core.logging import LOG_PATH_MAX, exc_frames, exc_text, sanitize_log_field
 from app.middleware.exception_handlers import INVALID_INPUT_DETAIL
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ async def error_handler_middleware(request: Request, call_next):
     except RedisError as e:
         # Redis-backed paths that can't fail open (refresh tokens, OAuth state,
         # password reset) surface as a dependency outage, not an application error.
-        logger.warning(f"Redis unavailable for {request.url.path}: {e}")
+        logger.warning(f"Redis unavailable for {request.url.path}: {exc_text(e)}")
         return JSONResponse(
             status_code=503,
             content={
@@ -60,9 +60,15 @@ async def error_handler_middleware(request: Request, call_next):
                 f"{request.method} {sanitize_log_field(request.url.path, LOG_PATH_MAX)}"
             )
             return JSONResponse(status_code=400, content={"detail": INVALID_INPUT_DETAIL})
-        logger.error(f"Unhandled error: {e}", exc_info=True)
-        # Never surface raw exception text to the client (even in DEBUG) — it's
-        # logged above with a full traceback. Return a fixed friendly message.
+        # The frames say where it failed. No exception's own text: a database error's
+        # quotes values (a unique violation's DETAIL names the duplicate email address),
+        # and any other can echo the request, so exc_text names each one.
+        logger.error(
+            f"Unhandled error: {exc_text(e)} on {request.method} "
+            f"{sanitize_log_field(request.url.path, LOG_PATH_MAX)}\n{exc_frames(e)}"
+        )
+        # Never surface raw exception text to the client (even in DEBUG): it's
+        # logged above with its frames. Return a fixed friendly message.
         return JSONResponse(
             status_code=500,
             content={

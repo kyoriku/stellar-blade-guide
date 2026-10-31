@@ -29,6 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config.settings import settings
 from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
 from app.core.http_cache import etag_matches
+from app.core.logging import LOG_PATH_MAX, exc_frames, exc_text, sanitize_log_field
 from app.core.navigation import canonical_url_type
 from app.core.segments import is_text_segment
 from app.db.database import AsyncSessionLocal
@@ -162,9 +163,14 @@ async def fetch_walkthrough_head(type_slug: str, slug: str) -> dict:
                 return _not_found_head()
             data = _serialize_full(row)
             await set_cache(cache_key, data, ttl=settings.CACHE_TTL)
-    except Exception:
-        logger.warning('seo head lookup failed for %s/%s; serving the loading-variant head',
-                       type_slug, slug, exc_info=True)
+    except Exception as e:
+        # The cache's or the database's own error, named by exc_text with its frames,
+        # never its raw text; the segments are cleaned like any value from a request.
+        logger.warning(
+            'seo head lookup failed for %s/%s; serving the loading-variant head: %s\n%s',
+            sanitize_log_field(type_slug, LOG_PATH_MAX), sanitize_log_field(slug, LOG_PATH_MAX),
+            exc_text(e), exc_frames(e),
+        )
         return _loading_variant_head(type_slug, slug)
 
     content = data.get('content') or []

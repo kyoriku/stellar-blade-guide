@@ -1,10 +1,15 @@
-"""No log line names an email address or a username (app/**/*.py).
+"""What no log line may hold, read from the source (app/**/*.py).
 
 Railway keeps every line the server writes for 90 days and can't delete or redact one
 early. Every logging call, every print, and every request.state field the access line
-prints is read here from the source, and none may mention anything called `email` or
-`username`: a line that needs to name an account uses its number. The conftest log
-guard checks the lines the suite runs; this one also covers a line no test reaches.
+prints is read here, so a line no test reaches is covered too; the conftest log guard
+checks the lines the suite runs.
+- None may mention anything called `email` or `username`: a line that needs to name an
+  account uses its number.
+- None may print an exception's own text. An exception reaches a line only through
+  exc_text or exc_frames (or as type(e)), which clean it, cap it and never quote a
+  database or validation error's values; exc_info and logger.exception print the raw
+  text, so neither is used.
 """
 
 import ast
@@ -41,6 +46,47 @@ def _log_sites(tree: ast.AST):
             isinstance(target, ast.Attribute) and target.attr in ACCESS_LINE_FIELDS for target in node.targets
         ):
             yield node
+
+
+def _parents(tree: ast.AST) -> dict:
+    return {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+
+
+ALLOWED_WRAPPERS = {"exc_text", "exc_frames", "type"}
+
+
+def _raw_exceptions(tree: ast.AST) -> list:
+    """Log sites that print an exception other than through an allowed wrapper."""
+    caught = {node.name for node in ast.walk(tree) if isinstance(node, ast.ExceptHandler) and node.name}
+    parents = _parents(tree)
+    found = []
+    for site in _log_sites(tree):
+        if isinstance(site, ast.Call) and (
+            any(keyword.arg == "exc_info" for keyword in site.keywords)
+            or (isinstance(site.func, ast.Attribute) and site.func.attr == "exception")
+        ):
+            found.append(site)
+            continue
+        for node in ast.walk(site):
+            if isinstance(node, ast.Name) and node.id in caught:
+                parent = parents.get(node)
+                wrapped = (
+                    isinstance(parent, ast.Call) and isinstance(parent.func, ast.Name)
+                    and parent.func.id in ALLOWED_WRAPPERS and node in parent.args
+                )
+                if not wrapped:
+                    found.append(site)
+                    break
+    return found
+
+
+def test_no_log_line_prints_an_exceptions_raw_text():
+    found = [
+        f"{path.relative_to(APP.parent)}:{site.lineno}"
+        for path in sorted(APP.rglob("*.py"))
+        for site in _raw_exceptions(ast.parse(path.read_text(encoding="utf-8"), filename=str(path)))
+    ]
+    assert found == []
 
 
 def test_no_log_line_names_an_email_or_a_username():

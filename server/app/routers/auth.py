@@ -32,6 +32,7 @@ from app.core.auth import (
 from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET, YELLOW
+from app.core.logging import exc_text, sanitize_log_field
 from app.core.usernames import username_from_provider
 from app.services.auth import (
     hash_password,
@@ -313,7 +314,7 @@ async def _release_reset_cooldown(key: str) -> None:
     try:
         await redis_client.delete(key)
     except RedisError as e:
-        logger.warning(f"{YELLOW}Could not release a password reset cooldown: {e}{RESET}")
+        logger.warning(f"{YELLOW}Could not release a password reset cooldown: {exc_text(e)}{RESET}")
 
 
 # Minute limit first: slowapi stops at the first limit that fails, so a burst the
@@ -355,7 +356,10 @@ async def forgot_password(
             await _send_reset_email(user.email, token)
             logger.info(f"{CYAN}Password reset email sent to user {user.id}{RESET}")
         except Exception as e:
-            logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
+            # Not the error's text: Resend's message describes what it was sent and can
+            # quote the address. Its status and type say enough to act on.
+            kind = sanitize_log_field(f"{getattr(e, 'code', '-')} {getattr(e, 'error_type', '-')}", 40)
+            logger.error(f"{RED}Failed to send reset email to user {user.id}: {type(e).__name__} {kind}{RESET}")
             # Don't expose email errors to the client
             await _release_reset_cooldown(cooldown_key)  # nothing went out; let a retry send
     elif user:

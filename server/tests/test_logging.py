@@ -19,6 +19,7 @@ import logging
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI, Request
@@ -27,7 +28,7 @@ from httpx import ASGITransport, AsyncClient
 
 import app.middleware.origin_check as origin_check_module
 from app.config.settings import settings
-from app.core.logging import EMAIL_SHAPE
+from app.core.logging import EMAIL_SHAPE, _NamedTracebacks
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.logging import (
     LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX,
@@ -227,7 +228,7 @@ async def test_unhandled_exception_line_is_sanitised(api_log):
         with pytest.raises(RuntimeError):
             await c.get("/api/boom%1B[2J")
     (line,) = [rec.getMessage() for rec in api_log.records if rec.levelno == logging.ERROR]
-    assert "/api/boom\\x1b[2J | unhandled exception: bad segment: \\x1b[2J" in line
+    assert "/api/boom\\x1b[2J | unhandled exception: RuntimeError: bad segment: \\x1b[2J" in line
     assert ANSI_PROBE not in line
 
 
@@ -560,6 +561,57 @@ def test_an_email_address_never_survives_the_cleaner(value, expected):
 ])
 def test_text_with_only_an_at_sign_is_left_alone(value):
     assert sanitize_log_field(value, 256) == value
+
+
+def test_uvicorns_traceback_for_an_escaped_exception_is_named_never_quoted():
+    """An exception raised after the response has started escapes every middleware, and
+    uvicorn logs it with exc_info, which prints the exception's own text. setup_logging's
+    filter writes it the way error_handler does: named by exc_text, with its frames."""
+    address = "jane.doe" + "@example.com"  # in pieces: the frames show this file's source lines
+    try:
+        raise RuntimeError(f"Key (email)=({address}) already exists.")
+    except RuntimeError:
+        record = logging.LogRecord(
+            "uvicorn.error", logging.ERROR, __file__, 1, "Exception in ASGI application\n", None, sys.exc_info(),
+        )
+
+    assert _NamedTracebacks().filter(record) is True
+
+    written = logging.Formatter("%(levelname)s: %(name)s: %(message)s").format(record)
+    first, frames = written.split("\n", 1)
+    assert first == "ERROR: uvicorn.error: Exception in ASGI application: RuntimeError: Key (email)=([email]) already exists."
+    assert frames.startswith("Traceback (most recent call last):\n")
+    assert "jane" not in written
+
+
+_SETUP_CHILD = """
+import logging
+from uvicorn.config import LOGGING_CONFIG, Config
+# A worker's order: uvicorn configures its logging, then importing the app runs setup_logging.
+Config("app.main:app", log_config=LOGGING_CONFIG).configure_logging()
+from app.core.logging import _NamedTracebacks, setup_logging
+setup_logging("INFO")
+for name in ("httpx", "openai", "uvicorn.access"):
+    print(name, logging.getLogger(name).getEffectiveLevel())
+named = lambda filters: any(isinstance(f, _NamedTracebacks) for f in filters)
+print("uvicorn", named(logging.getLogger("uvicorn.error").filters))
+print("root", all(named(handler.filters) for handler in logging.getLogger().handlers))
+"""
+
+
+def test_setup_logging_holds_the_loggers_that_print_urls_at_warning():
+    """uvicorn's access line prints every query string (OAuth codes, the sign-in token,
+    search text), and httpx at INFO prints every URL it fetches (an avatar link, each
+    redirect), so these floors keep them out of the log. setup_logging
+    also fits uvicorn's traceback filter, on its error logger and on the root's handler.
+    A fresh interpreter, since setup_logging changes the process's logging."""
+    out = subprocess.run([sys.executable, "-c", _SETUP_CHILD], cwd=Path(__file__).resolve().parents[1],
+                         capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr[-2000:]
+    levels = dict(line.split(" ", 1) for line in out.stdout.splitlines() if line)
+    floors = {name: int(levels[name]) for name in ("httpx", "openai", "uvicorn.access")}
+    assert floors == {name: logging.WARNING for name in floors}
+    assert (levels["uvicorn"], levels["root"]) == ("True", "True")
 
 
 def test_an_address_is_replaced_before_the_cap_can_cut_it():

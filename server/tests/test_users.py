@@ -56,6 +56,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 import app.core.auth as core_auth
 from app.core.auth import create_access_token
+from app.core.colours import RED, RESET
 from app.db.database import Base, get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
@@ -777,3 +778,20 @@ async def test_avatar_destroy_runs_off_the_event_loop(
     assert r.status_code == 204
     assert rec.destroy_threads[0] is not threading.main_thread()
     assert rec.destroy_kwargs[0]["timeout"] > 0
+
+
+@pytest.mark.parametrize("url", [
+    "https://[::1MARKER]/pic.png",  # httpx: Invalid IPv6 address, quoting the host
+    "https://" + chr(0x2603) + "MARKER" + chr(0xAD) + "--.example/pic.png",  # Invalid IDNA hostname
+])
+async def test_a_failed_avatar_fetch_logs_the_error_class_never_the_link(user_client, test_user, monkeypatch, caplog, url):
+    """httpx's errors describe the link the user gave, and the link isn't kept."""
+    _patch_avatar_pipeline(monkeypatch)
+    caplog.set_level(logging.ERROR, logger="app.routers.users")
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": url})
+
+    assert r.status_code == 400
+    assert [rec.getMessage() for rec in caplog.records if rec.name == "app.routers.users"] == [
+        f"{RED}Failed to upload avatar for user {test_user.id}: InvalidURL{RESET}",
+    ]

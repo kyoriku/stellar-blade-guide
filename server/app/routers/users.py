@@ -1,5 +1,6 @@
 import logging
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, case, func, select
@@ -20,6 +21,7 @@ from app.core.auth import get_current_user, require_role
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
 from app.core.ids import is_row_id
+from app.core.logging import exc_text
 from app.schemas.users import UpdateProfileRequest, UpdateRoleRequest, UserStatsResponse
 from app.services.users import (
     user_to_response,
@@ -60,7 +62,11 @@ async def update_me(
           except HTTPException:
               raise
           except Exception as e:
-              logger.error(f"{RED}Failed to upload avatar for user {current_user.id}: {e}{RESET}")
+              # httpx's text describes the link or the image server's answer and can
+              # quote its host, and the link isn't kept, so httpx errors are logged by
+              # class only.
+              detail = type(e).__name__ if isinstance(e, (httpx.HTTPError, httpx.InvalidURL)) else exc_text(e)
+              logger.error(f"{RED}Failed to upload avatar for user {current_user.id}: {detail}{RESET}")
               raise HTTPException(status_code=400, detail="Failed to process avatar image")
 
     await db.commit()

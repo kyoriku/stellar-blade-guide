@@ -8,6 +8,7 @@ app.main is deliberately not imported.
 """
 import html
 import json
+import logging
 import os
 
 import pytest
@@ -352,6 +353,25 @@ async def test_unknown_type_gate(client, monkeypatch):
     r = await client.get('/walkthroughs/bogus-type/foo')
     assert f'<title data-seo="server">Bogus Type Walkthrough{SUFFIX}</title>' in r.text
     assert 'rel="canonical"' not in r.text  # unknown type: no canonical, ever
+
+
+async def test_a_failed_head_lookup_logs_its_segments_cleaned_and_the_error_by_name(client, monkeypatch, caplog):
+    """The lookup's failure path logs the page's two segments cleaned like any value from
+    a request (in production the bot filter keeps them to [a-z0-9-] anyway) and the
+    error by exc_text with its frames, never a raw traceback."""
+    monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
+    caplog.set_level(logging.WARNING, logger=seo_head.logger.name)
+
+    r = await client.get('/walkthroughs/main-story/jane@example.com')
+
+    assert r.status_code == 200
+    (record,) = [rec for rec in caplog.records if rec.name == seo_head.logger.name]
+    assert record.exc_info is None
+    first, frames = record.getMessage().split('\n', 1)
+    assert first == ('seo head lookup failed for main-story/[email]; serving the loading-variant head: '
+                     'AssertionError: DB was touched')
+    assert frames.startswith('Traceback (most recent call last):\n')
+    assert 'jane' not in record.getMessage()
 
 
 # --- one spelling per walkthrough page -----------------------------------------

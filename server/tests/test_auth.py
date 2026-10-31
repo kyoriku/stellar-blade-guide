@@ -26,6 +26,7 @@ import httpx
 import pytest
 import pytest_asyncio
 import jwt
+import resend
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI
@@ -40,7 +41,7 @@ import app.core.auth as core_auth
 import app.core.cache as core_cache
 import app.routers.auth as auth_routes
 from app.config.settings import settings
-from app.core.colours import CYAN, RESET
+from app.core.colours import CYAN, RED, RESET
 from app.db.database import Base, get_db
 from app.core.usernames import username_problem
 from app.middleware.logging import add_logging_middleware
@@ -2163,3 +2164,18 @@ async def test_oauth_deactivated_beats_has_password(oauth, provider, test_user):
 
     _assert_refused(r, "deactivated", provider)
     assert oauth.seen["reject_reason"] == "oauth-account-inactive"
+
+
+async def test_a_failed_reset_email_logs_the_error_type_never_its_text(oauth, test_user, reset_mail, caplog):
+    """Resend's message describes what it was sent and can quote the address, so a failed
+    send logs the account number and the error's class, status and type, never its text."""
+    reset_mail.side_effect = resend.exceptions.ValidationError(
+        message=f"Invalid `to` field: {test_user.email}", error_type="validation_error", code=422,
+    )
+    caplog.set_level(logging.INFO, logger=auth_routes.logger.name)
+
+    r = await _forgot(oauth, test_user.email)
+
+    assert (r.status_code, r.content) == (204, b"")
+    lines = [rec.getMessage() for rec in caplog.records if rec.name == auth_routes.logger.name]
+    assert lines == [f"{RED}Failed to send reset email to user {test_user.id}: ValidationError 422 validation_error{RESET}"]

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
 
 from app.config.settings import settings
-from app.core.logging import setup_logging
+from app.core.logging import exc_text, setup_logging
 from app.core.cache import redis_client
 from app.core.colours import GREEN, RED, RESET
 from app.middleware.rate_limit import setup_rate_limiter
@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
         await redis_client.ping()
         print(f"{GREEN}✓ Redis connection established{RESET}")
     except Exception as e:
-        print(f"{RED}✗ Redis connection failed: {e}{RESET}")
+        print(f"{RED}✗ Redis connection failed: {exc_text(e)}{RESET}")
     try:
         yield
     finally:
@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
             await redis_client.close()
             print(f"{GREEN}✓ Redis connection closed{RESET}")
         except Exception as e:
-            print(f"{RED}✗ Error closing Redis: {e}{RESET}")
+            print(f"{RED}✗ Error closing Redis: {exc_text(e)}{RESET}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

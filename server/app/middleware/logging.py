@@ -9,7 +9,7 @@ from app.core.colours import GREEN, RED, YELLOW, CYAN, GRAY, RESET
 # The caps and the cleaner live in core/logging.py, so core, services and routers can
 # use them without importing middleware; imported here for this layer and its tests.
 from app.core.logging import (  # noqa: F401
-    LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX, sanitize_log_field,
+    LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX, exc_text, sanitize_log_field,
 )
 
 logger = logging.getLogger("api")
@@ -99,8 +99,9 @@ async def log_requests_middleware(request: Request, call_next):
         duration_ms = (time.perf_counter() - start_time) * 1000
         client_ip = sanitize_log_field(get_client_ip(request), LOG_IP_MAX)
         path = sanitize_log_field(request.url.path, LOG_PATH_MAX)
-        # An exception message can echo request input, so it is as untrusted as the path.
-        detail = sanitize_log_field(str(exc), LOG_PATH_MAX)
+        # An exception message can echo request input or quote a database value, so it
+        # goes through exc_text like every exception that reaches a log line.
+        detail = exc_text(exc, LOG_PATH_MAX)
         logger.error(
             f'{datetime.now(LOG_TZ).strftime("%m-%d %H:%M:%S")} · {client_ip:<15} → {request.method:<6} '
             f'{RED}500{RESET} {color_duration(duration_ms)} | {path} | unhandled exception: {detail}'
