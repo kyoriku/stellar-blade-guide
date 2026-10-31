@@ -56,7 +56,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 
 import app.core.auth as core_auth
 from app.core.auth import create_access_token
-from app.core.colours import RED, RESET
+from app.core.colours import RED, RESET, YELLOW
 from app.db.database import Base, get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
@@ -811,4 +811,20 @@ async def test_a_failed_avatar_fetch_logs_the_error_class_never_the_link(user_cl
     assert r.status_code == 400
     assert [rec.getMessage() for rec in caplog.records if rec.name == "app.routers.users"] == [
         f"{RED}Failed to upload avatar for user {test_user.id}: InvalidURL{RESET}",
+    ]
+
+
+async def test_a_flagged_avatar_logs_no_categories(user_client, monkeypatch, caplog):
+    """The access line beside it holds the IP, and the categories can say self-harm."""
+    async def _flagged(**kwargs):
+        return _moderation_response(flagged=True)
+
+    _patch_avatar_pipeline(monkeypatch, moderation=_flagged)
+    caplog.set_level(logging.WARNING, logger="app.services.users")
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 400
+    assert [rec.getMessage() for rec in caplog.records if rec.name == "app.services.users"] == [
+        f"{YELLOW}Avatar image flagged by moderation{RESET}",
     ]

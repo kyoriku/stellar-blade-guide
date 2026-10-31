@@ -178,8 +178,9 @@ async def check_image_moderation(image_bytes: bytes, content_type: str) -> None:
             headers={"Retry-After": "30"},
         )
     if result.flagged:
-        flagged_categories = [cat for cat, flagged in result.categories.__dict__.items() if flagged]
-        logger.warning(f"{YELLOW}Avatar image flagged by moderation: {flagged_categories}{RESET}")
+        # Not the categories: the access line beside it holds the IP, and they can say
+        # self-harm or sexual content involving minors.
+        logger.warning(f"{YELLOW}Avatar image flagged by moderation{RESET}")
         raise HTTPException(status_code=400, detail="Image was rejected by content moderation")
 
 async def upload_avatar_to_cloudinary(url: str, user_id: int) -> str:
