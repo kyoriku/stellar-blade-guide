@@ -100,7 +100,7 @@ export default function TermsOfService() {
           <section>
             <SectionHeader icon={Mail}>Contact</SectionHeader>
             <p>Questions about these terms:</p>
-            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 transition-colors">
+            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/50 underline-offset-2 hover:decoration-cyan-400 transition-colors">
               contact@stellarbladeguide.com
             </a>
           </section>

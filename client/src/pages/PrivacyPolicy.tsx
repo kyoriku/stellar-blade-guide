@@ -22,7 +22,7 @@ const sections = [
   { id: 'changes', label: 'Changes to this policy' },
 ]
 
-const linkClass = "text-cyan-400 underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 transition-colors"
+const linkClass = "text-cyan-400 underline decoration-cyan-400/50 underline-offset-2 hover:decoration-cyan-400 transition-colors"
 
 export default function PrivacyPolicy() {
   return (
@@ -149,7 +149,7 @@ export default function PrivacyPolicy() {
           <section>
             <SectionHeader icon={UserCheck} id="rights">Your Rights</SectionHeader>
             <p>Depending on your location, you may have rights to access, correct, delete, or export your personal data, or to withdraw consent for certain processing. In Settings you can change your username and avatar, change your password if your account has one, sign out of all devices, and delete your account. To exercise any of these rights, or for anything Settings doesn't cover, such as changing your email address or getting a copy of your data, contact us and we will respond promptly.</p>
-            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 transition-colors">
+            <a href="mailto:contact@stellarbladeguide.com" className="font-mono text-cyan-400 text-sm underline decoration-cyan-400/50 underline-offset-2 hover:decoration-cyan-400 transition-colors">
               contact@stellarbladeguide.com
             </a>
           </section>

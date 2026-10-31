@@ -122,7 +122,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                       <button
                         type="button"
                         onClick={() => { t.action!.onClick(); dismiss(t.id) }}
-                        className="text-cyan-400 underline decoration-cyan-400/30 underline-offset-2 hover:decoration-cyan-400 cursor-pointer"
+                        className="text-cyan-400 underline decoration-cyan-400/50 underline-offset-2 hover:decoration-cyan-400 cursor-pointer"
                       >
                         {t.action.label}
                       </button>
