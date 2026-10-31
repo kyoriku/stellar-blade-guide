@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { User, KeyRound, Trash2, Save, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
@@ -17,6 +18,7 @@ import seo from '../constants/seo.json'
 export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   // ── Profile ────────────────────────────────────────────────────────────────
   // Note: this runs before the `if (!user)` guard below, so it must be null-safe.
@@ -187,6 +189,9 @@ export default function SettingsPage() {
     try {
       const res = await authFetch(`${API_BASE_URL}/users/me`, { method: 'DELETE' })
       if (!res.ok) throw new Error(await readError(res, 'Failed to delete account'))
+      // The account's comments are erased now, but this tab may still hold them as they
+      // were, text and all, for minutes. Drop them so the next page asks again.
+      queryClient.removeQueries({ queryKey: ['comments'] })
       await logout()
       void navigate('/')
     } catch (err) {

@@ -89,4 +89,42 @@ test.describe('deleting an account', () => {
     await expect(page.locator(`#comment-${aReply}`)).toHaveCount(0);
     for (const name of ['a thread', 'a lone', 'a reply']) await expect(page.getByText(text(name))).toHaveCount(0);
   });
+
+  test("the deleting browser doesn't keep showing the account's comments from its cache", async ({ page }) => {
+    // A comment list stays fresh in the cache for five minutes, so going back to a page
+    // read just before the deletion would show the comments as they were, text and all.
+    const text = (name: string) => `E2E ${fx.token} ${name}`;
+    const thread = await insertComment(fx, { username: a.username, body: text('a thread'), postedAt: '2026-01-01T12:00:00Z', changedAt: '2026-01-01T13:00:00Z' });
+    const bReply = await insertComment(fx, { username: b.username, body: text('b reply'), parentId: thread, postedAt: '2026-01-02T12:00:00Z', changedAt: '2026-01-02T13:00:00Z' });
+    // Signed in as a: the login sets a's refresh cookie, and the hint makes the page use it.
+    const login = await page.request.post('/api/auth/login', {
+      data: { email: a.email, password: a.password },
+      headers: { [TEST_IP_HEADER]: ipA },
+    });
+    expect(login.status()).toBe(200);
+    await page.addInitScript(() => localStorage.setItem('sb_has_session', '1'));
+
+    await page.goto(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}`);
+    await expect(own(page, thread)).toContainText(text('a thread'));
+
+    // To Settings and back with no reload, as someone checking their comments would go.
+    await page.getByRole('button', { name: 'Account menu' }).click();
+    await page.getByRole('link', { name: 'Settings' }).filter({ visible: true }).click();
+    await page.getByLabel(`Type ${a.username} to confirm`, { exact: true }).fill(a.username);
+    const signedOut = page.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/logout');
+    await page.getByRole('button', { name: 'Delete my account' }).click();
+    await signedOut;
+    // The flow ends on '/' or '/login' (the handler's navigate races the protected route's
+    // redirect), so the steps back to the thread vary. None of them reloads the page.
+    await expect(page).toHaveURL(/\/(login)?$/);
+    const onThread = new RegExp(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}$`);
+    await expect.poll(async () => {
+      if (!onThread.test(page.url())) await page.goBack();
+      return page.url();
+    }).toMatch(onThread);
+
+    await expect(own(page, thread).locator('p', { hasText: '[deleted]' })).toBeVisible();
+    await expect(own(page, bReply)).toContainText(text('b reply'));
+    await expect(page.getByText(text('a thread'))).toHaveCount(0);
+  });
 });
