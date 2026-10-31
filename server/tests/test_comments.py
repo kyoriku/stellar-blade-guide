@@ -495,6 +495,25 @@ async def test_delete_keeps_the_comments_updated_at(user_client, comments_db_ses
     assert tuple(row) == (True, "[deleted]", before)
 
 
+async def test_a_deleted_comment_kept_up_by_a_reply_shows_no_author(
+    user_client, comments_client, comments_db_session, test_user, second_user
+):
+    # The list keeps a deleted comment while a reply to it is up, as "[deleted]" with no
+    # username or avatar, which is what the privacy policy promises.
+    parent = await _seed_comment(comments_db_session, test_user.id, body="Parent")
+    reply = Comment(user_id=second_user.id, content_type="walkthrough", content_id=1,
+                    parent_id=parent.id, body="Reply")
+    comments_db_session.add(reply)
+    await comments_db_session.commit()
+
+    r = await user_client.delete(f"/api/comments/{parent.id}")
+    assert r.status_code == 204
+
+    (listed,) = (await comments_client.get("/api/comments/walkthrough/1")).json()
+    assert (listed["id"], listed["body"], listed["user"]) == (parent.id, "[deleted]", None)
+    assert [(x["id"], x["user"]["username"]) for x in listed["replies"]] == [(reply.id, "seconduser")]
+
+
 async def test_delete_other_users_comment_returns_403(second_user_client, comments_db_session, test_user):
     comment = await _seed_comment(comments_db_session, test_user.id)
 
