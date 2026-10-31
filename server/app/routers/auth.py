@@ -586,8 +586,8 @@ async def _oauth_authorize_redirect(provider: str, authorize_url: str, params: s
     """Shared by both login routes: mint the state, add it to the provider URL,
     and pin it to this browser."""
     state = await issue_oauth_state(provider)
-    # token_urlsafe output is already URL-safe, so it is appended as is and the
-    # rest of the URL stays byte-identical to what the providers have always seen.
+    # token_urlsafe output is already URL-safe, so it is appended as is, after
+    # exactly what the login route built.
     redirect = RedirectResponse(f"{authorize_url}?{params}&state={state}")
     set_oauth_state_cookie(redirect, state)
     return redirect
@@ -668,12 +668,13 @@ async def google_login(request: Request):
     """Redirect user to Google's OAuth consent screen."""
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=501, detail="Google OAuth not configured")
+    # No access_type, so Google's default, online: no refresh token. The callback
+    # uses the access token once, to read the profile.
     params = (
         f"client_id={GOOGLE_CLIENT_ID}"
         f"&redirect_uri={GOOGLE_REDIRECT_URI}"
         f"&response_type=code"
         f"&scope=openid%20email%20profile"
-        f"&access_type=offline"
     )
     return await _oauth_authorize_redirect("google", "https://accounts.google.com/o/oauth2/v2/auth", params)
 
