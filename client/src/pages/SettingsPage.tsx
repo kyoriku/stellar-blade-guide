@@ -192,8 +192,11 @@ export default function SettingsPage() {
       // The account's comments are erased now, but this tab may still hold them as they
       // were, text and all, for minutes. Drop them so the next page asks again.
       queryClient.removeQueries({ queryKey: ['comments'] })
+      // Leave Settings before signing out: once the user is gone, its protected route
+      // redirects to /login, which raced a navigation made after the sign-out. Replacing
+      // the entry also keeps Back from returning to it.
+      void navigate('/', { replace: true })
       await logout()
-      void navigate('/')
     } catch (err) {
       setDeleteError(errorMessage(err, 'Failed to delete account'))
     } finally {

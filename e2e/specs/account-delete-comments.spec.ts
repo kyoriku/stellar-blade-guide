@@ -114,14 +114,11 @@ test.describe('deleting an account', () => {
     const signedOut = page.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/logout');
     await page.getByRole('button', { name: 'Delete my account' }).click();
     await signedOut;
-    // The flow ends on '/' or '/login' (the handler's navigate races the protected route's
-    // redirect), so the steps back to the thread vary. None of them reloads the page.
-    await expect(page).toHaveURL(/\/(login)?$/);
-    const onThread = new RegExp(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}$`);
-    await expect.poll(async () => {
-      if (!onThread.test(page.url())) await page.goBack();
-      return page.url();
-    }).toMatch(onThread);
+    // The deletion lands on the home page in place of Settings, so one step back is the
+    // thread, with no reload.
+    await expect(page).toHaveURL('/');
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}$`));
 
     await expect(own(page, thread).locator('p', { hasText: '[deleted]' })).toBeVisible();
     await expect(own(page, bReply)).toContainText(text('b reply'));
