@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, update
 from sqlalchemy import exists as sa_exists
 from sqlalchemy.orm import selectinload, aliased
 
@@ -195,7 +195,18 @@ async def update_comment(
             detail="Comment was flagged as inappropriate"
         )
 
-    comment.body = body.body.strip()
+    # Saved only if the comment is still live and still theirs: moderation can take
+    # seconds, and the comment may be deleted meanwhile, by its account's deletion, a
+    # moderator or another tab. A write by id alone would put the new text into the
+    # erased row.
+    result = await db.execute(
+        update(Comment)
+        .where(Comment.id == comment_id, Comment.user_id == current_user.id, Comment.is_deleted == False)
+        .values(body=body.body.strip())
+    )
+    if result.rowcount != 1:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     await db.commit()
     await db.refresh(comment)
 

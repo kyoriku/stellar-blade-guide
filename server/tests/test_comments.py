@@ -29,7 +29,7 @@ import app.routers.comments as comments_module
 
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.core.auth import create_access_token
@@ -320,6 +320,31 @@ async def test_edit_moves_the_comments_updated_at(user_client, comments_db_sessi
     r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": "Updated body"})
     assert r.status_code == 200
     assert await _updated_at(comments_db_session, comment.id) != before
+
+
+async def test_an_edit_never_lands_in_a_comment_deleted_during_its_moderation(user_client, comments_db_session, test_user, monkeypatch):
+    # Moderation can take seconds, and the comment may be deleted meanwhile, by its
+    # account's deletion, a moderator or another tab. The edit gets the 404, and the
+    # erased row keeps no text.
+    # The id is read once: the route's rollback expires every object in the session the
+    # test shares with it.
+    cid = (await _seed_comment(comments_db_session, test_user.id, body="Original body")).id
+
+    async def deleted_while_moderating(text):
+        await comments_db_session.execute(
+            update(Comment).where(Comment.id == cid).values(is_deleted=True, body="[deleted]")
+        )
+        await comments_db_session.commit()
+        return True
+
+    monkeypatch.setattr(comments_module, "_moderate_content", deleted_while_moderating)
+    r = await user_client.patch(f"/api/comments/{cid}", json={"body": "Edited text"})
+    assert r.status_code == 404
+    assert r.json() == {"detail": "Comment not found"}
+    row = (await comments_db_session.execute(
+        select(Comment.is_deleted, Comment.body).where(Comment.id == cid)
+    )).one()
+    assert tuple(row) == (True, "[deleted]")
 
 
 async def test_edit_other_users_comment_returns_403(second_user_client, comments_db_session, test_user):
