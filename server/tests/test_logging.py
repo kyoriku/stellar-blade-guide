@@ -709,6 +709,17 @@ async def test_the_blocked_referer_line_escapes_and_caps_what_it_copies(api_log,
     assert path_field.endswith("…") and len(path_field) == LOG_PATH_MAX + 1
 
 
+async def test_a_referer_urlparse_cannot_read_is_refused_not_a_500(api_log, prod_mode):
+    """A malformed bracketed host makes urlparse raise. A Referer the filter can't read
+    is no allowed host either, so it gets the referer rule's 404, not a 500."""
+    async with _client(_app_with(add_bot_filter_middleware, add_error_handler_middleware)) as c:
+        r = await c.get("/api/collectibles/", headers={"referer": "http://[x]/"})
+    assert r.status_code == 404
+    (line,) = _access_lines(api_log)
+    assert "(referer)" in line
+    assert _blocked_referer_lines(api_log) == [f"{RED}Blocked referer - on /api/collectibles/{RESET}"]
+
+
 async def test_no_header_the_stack_reads_reaches_the_log_raw(api_log, prod_mode):
     """Every header the layers copy or judge, hostile at once, through the layers that
     log, in main.py's order. Each line they write stays one printable line, and the

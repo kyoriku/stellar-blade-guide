@@ -149,7 +149,12 @@ async def bot_filter_middleware(request: Request, call_next):
     ):
         referer = request.headers.get("referer")
         if referer:
-            hostname = urlparse(referer).hostname or ""
+            try:
+                hostname = urlparse(referer).hostname or ""
+            except ValueError:
+                # A malformed bracketed host (http://[x]/) makes urlparse raise. That's
+                # no allowed host either, and must not become a 500 with a traceback.
+                hostname = ""
             if hostname not in REFERER_ALLOWED_HOSTS:
                 # The host only: it's all the rule reads, and the rest of another site's
                 # address can carry its visitor's data.
