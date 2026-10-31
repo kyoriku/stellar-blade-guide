@@ -19,6 +19,7 @@ endpoint via HTTP.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import openai
@@ -28,6 +29,7 @@ import app.routers.comments as comments_module
 
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.core.auth import create_access_token
@@ -277,6 +279,27 @@ async def test_edit_own_comment_returns_200(user_client, comments_db_session, te
     assert r.json()["body"] == "Updated body"
 
 
+async def _updated_at(session: AsyncSession, comment_id: int):
+    return (await session.execute(select(Comment.updated_at).where(Comment.id == comment_id))).scalar_one()
+
+
+POSTED = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+
+
+async def test_edit_moves_the_comments_updated_at(user_client, comments_db_session, test_user):
+    # A delete keeps the time (see DELETE below) and an edit still moves it, so it stays
+    # the time a comment was last edited.
+    comment = Comment(user_id=test_user.id, content_type="walkthrough", content_id=1,
+                      body="Original body", created_at=POSTED, updated_at=POSTED)
+    comments_db_session.add(comment)
+    await comments_db_session.commit()
+    before = await _updated_at(comments_db_session, comment.id)
+
+    r = await user_client.patch(f"/api/comments/{comment.id}", json={"body": "Updated body"})
+    assert r.status_code == 200
+    assert await _updated_at(comments_db_session, comment.id) != before
+
+
 async def test_edit_other_users_comment_returns_403(second_user_client, comments_db_session, test_user):
     comment = await _seed_comment(comments_db_session, test_user.id)
 
@@ -405,6 +428,24 @@ async def test_delete_own_comment_returns_204(user_client, comments_client, comm
     assert get_r.status_code == 200
     ids = [c["id"] for c in get_r.json()]
     assert comment.id not in ids
+
+
+async def test_delete_keeps_the_comments_updated_at(user_client, comments_db_session, test_user):
+    # A deletion time would set the comment apart from one erased with its account,
+    # which keeps its own (DELETE /api/users/me), and show when it was deleted.
+    comment = Comment(user_id=test_user.id, content_type="walkthrough", content_id=1,
+                      body="Edited once", created_at=POSTED, updated_at=POSTED + timedelta(hours=1))
+    comments_db_session.add(comment)
+    await comments_db_session.commit()
+    before = await _updated_at(comments_db_session, comment.id)
+
+    r = await user_client.delete(f"/api/comments/{comment.id}")
+    assert r.status_code == 204
+
+    row = (await comments_db_session.execute(
+        select(Comment.is_deleted, Comment.body, Comment.updated_at).where(Comment.id == comment.id)
+    )).one()
+    assert tuple(row) == (True, "[deleted]", before)
 
 
 async def test_delete_other_users_comment_returns_403(second_user_client, comments_db_session, test_user):

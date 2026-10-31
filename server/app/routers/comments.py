@@ -230,6 +230,10 @@ async def delete_comment(
 
     comment.is_deleted = True
     comment.body = "[deleted]"
+    # Set to itself, so the column's onupdate doesn't stamp the deletion time: a deleted
+    # comment keeps the time it was last edited, as one erased with its account does
+    # (DELETE /users/me), and never shows how or when it was deleted.
+    comment.updated_at = Comment.updated_at
     await db.commit()
     logger.info(
         f"{CYAN}User {current_user.id} deleted comment {comment_id} "
