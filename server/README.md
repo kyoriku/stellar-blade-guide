@@ -23,7 +23,7 @@ app/
     auth.py          JWT create/decode, refresh-token helpers, get_current_user / require_role deps
     cache.py         Redis client + response-cache helpers (get / set / invalidate by pattern)
     security.py      client-IP resolution + slowapi rate limiter (Redis storage, in-memory fallback)
-    logging.py       logging setup
+    logging.py       logging setup, and the cleaners every copied log field goes through (escaped, capped, no email addresses)
     colours.py       ANSI colour constants for terminal output
     passwords.py     the password rule: 8 to 128 characters for a new password
     usernames.py     the username rule, and the cleaner a provider's display name goes through
@@ -202,7 +202,7 @@ Each content type is written in one transaction, so a run that stops before its 
 
 Schema changes are one-off manual scripts written into `scripts/migrations/` as needed (there is no Alembic). Each runs with `uv run python scripts/migrations/<script>.py` alongside an update to the matching SQLAlchemy model; the directory is gitignored, so the repo holds the model change and never the script. The exception is the two stored generated `search_vector` columns, which sit outside the ORM because nothing writes them: their expressions live in `app/services/search_text.py`, and each column's comment holds a hash of its expression, so `seed_db.py` and the migration can spot a stale one and rebuild it.
 
-Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.14 image runs uvicorn with two workers, serving the API and the built SPA from a single origin as a non-root user. Its start command passes `--no-proxy-headers`: nothing in the app reads the request scheme, and the client's address comes only from Cloudflare's `CF-Connecting-IP`; a custom start command set in Railway would replace it. The service's variables are exactly the production-required list under Environment Variables.
+Production runs from the repo's multi-stage Dockerfile: Node 22 builds the React app, then a Python 3.14 image runs uvicorn with two workers, serving the API and the built SPA from a single origin as a non-root user. Its start command passes `--no-proxy-headers`: nothing in the app reads the request scheme, and the client's address comes only from Cloudflare's `CF-Connecting-IP`. It also passes `--ws none`: no route takes a WebSocket, and uvicorn's handshake line would log a request's query string as sent. It passes `--no-access-log` too: the app writes its own access line, and uvicorn's would do the same. A custom start command set in Railway would replace this one. The service's variables are exactly the production-required list under Environment Variables.
 
 ## Testing
 

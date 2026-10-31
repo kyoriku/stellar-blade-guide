@@ -17,6 +17,9 @@ outermost as in main.py.
 """
 import logging
 import re
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 from fastapi import FastAPI, Request
@@ -25,7 +28,10 @@ from httpx import ASGITransport, AsyncClient
 
 import app.middleware.origin_check as origin_check_module
 from app.config.settings import settings
+from app.core.colours import CYAN, GRAY, GREEN, MAGENTA, RED, RESET, YELLOW
+from app.core.logging import EMAIL_SHAPE, LOG_HOST_MAX, _NamedTracebacks
 from app.middleware.bot_filter import add_bot_filter_middleware
+from app.middleware.error_handler import add_error_handler_middleware
 from app.middleware.logging import (
     LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX,
     add_logging_middleware, parse_colo, sanitize_log_field,
@@ -114,19 +120,19 @@ def _access_lines(caplog):
     return [rec.getMessage() for rec in caplog.records if rec.name == "api" and " → " in rec.getMessage()]
 
 
-async def _asgi_get(app, path: str):
+async def _asgi_get(app, path: str, headers=()):
     """Drive the app with a hand-built ASGI scope.
 
     uvicorn sets scope["path"] to the percent-DECODED target, so `%C2%85` on the
     wire arrives as a real U+0085. Handing the app that decoded scope directly
     keeps the test independent of whatever an HTTP client library chooses to
-    normalise away on its side.
+    normalise away on its side. Header values go in as bytes, exactly as given.
     """
     scope = {
         "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
         "method": "GET", "scheme": "http", "path": path, "raw_path": path.encode(),
         "query_string": b"", "root_path": "",
-        "headers": [(b"host", b"test")],
+        "headers": [(b"host", b"test"), *headers],
         "client": ("127.0.0.1", 1234), "server": ("test", 80),
     }
     sent = []
@@ -224,7 +230,7 @@ async def test_unhandled_exception_line_is_sanitised(api_log):
         with pytest.raises(RuntimeError):
             await c.get("/api/boom%1B[2J")
     (line,) = [rec.getMessage() for rec in api_log.records if rec.levelno == logging.ERROR]
-    assert "/api/boom\\x1b[2J | unhandled exception: bad segment: \\x1b[2J" in line
+    assert "/api/boom\\x1b[2J | unhandled exception: RuntimeError: bad segment: \\x1b[2J" in line
     assert ANSI_PROBE not in line
 
 
@@ -522,3 +528,228 @@ async def test_the_alarm_line_is_neutralised(api_log, prod_mode):
     (warning,) = _cf_warnings(api_log)
     assert ANSI_PROBE not in warning
     assert "\\x1b[2J" in warning
+
+
+# ── email addresses: never in a field, whoever typed them ────────────────────
+#
+# Railway keeps every line for 90 days and can't delete or redact one early, so the
+# cleaner replaces anything shaped like an email address, wherever it came from: an
+# address typed into search, a path, a bot's User-Agent, a cache key.
+
+@pytest.mark.parametrize("value, expected", [
+    ("jane.doe+tag@example.com", "[email]"),
+    ("q jane@mail.example.com x", "q [email] x"),
+    ("JOS" + chr(0xC9) + "@EX" + chr(0xC4) + "MPLE.COM", "[email]"),  # not ASCII-only
+    ("jane%40example.com", "[email]"),  # percent-encoded, as a raw header carries it
+    ("jane@exa", "[email]"),  # cut short: no dot needed after the @
+    ("jane.doe@", "[email]"),  # typed as far as the @, as search logs every keystroke
+    ("100%jane@example.com", "[email]"),
+    ("/api/levels/jane@example.com/x", "/api/levels/[email]/x"),
+    ("o'brien@example.com", "[email]"),  # a surname's apostrophe is part of the address
+    ("jane{1}&co@example.com", "[email]"),  # so are the other symbols an address may hold
+    ("jane" + chr(0x200B) + "doe@example.com", "[email]"),  # an invisible character doesn't split it
+    ("https://user:pw@host.example/x", "https://user:[email]/x"),  # a URL's userinfo, password and all
+    ("search:jane@example.com:20:v3", "search:[email]:20:v3"),  # a cache key keeps its shape
+    ("jane" + chr(0xFF20) + "example.com", "[email]"),  # the full-width at sign
+    ("jane" + chr(0xFE6B) + "example.com", "[email]"),  # the small one
+    ("".join(map(chr, (0x938, 0x940, 0x924, 0x93E))) + "@example.com", "[email]"),  # ends in a vowel sign
+])
+def test_an_email_address_never_survives_the_cleaner(value, expected):
+    assert sanitize_log_field(value, 256) == expected
+
+
+@pytest.mark.parametrize("value", [
+    "users/@me", "@user_script:1", "a @@ b", "tags @> '{x}'", "user @ example", "100% done",
+])
+def test_text_with_only_an_at_sign_is_left_alone(value):
+    assert sanitize_log_field(value, 256) == value
+
+
+def test_uvicorns_traceback_for_an_escaped_exception_is_named_never_quoted():
+    """An exception raised after the response has started escapes every middleware, and
+    uvicorn logs it with exc_info, which prints the exception's own text. setup_logging's
+    filter writes it the way error_handler does: named by exc_text, with its frames."""
+    address = "jane.doe" + "@example.com"  # in pieces: the frames show this file's source lines
+    try:
+        raise RuntimeError(f"Key (email)=({address}) already exists.")
+    except RuntimeError:
+        record = logging.LogRecord(
+            "uvicorn.error", logging.ERROR, __file__, 1, "Exception in ASGI application\n", None, sys.exc_info(),
+        )
+
+    assert _NamedTracebacks().filter(record) is True
+
+    written = logging.Formatter("%(levelname)s: %(name)s: %(message)s").format(record)
+    first, frames = written.split("\n", 1)
+    assert first == "ERROR: uvicorn.error: Exception in ASGI application: RuntimeError: Key (email)=([email]) already exists."
+    assert frames.startswith("Traceback (most recent call last):\n")
+    assert "jane" not in written
+
+
+_SETUP_CHILD = """
+import logging
+from uvicorn.config import LOGGING_CONFIG, Config
+# A worker's order: uvicorn configures its logging, then importing the app runs setup_logging.
+Config("app.main:app", log_config=LOGGING_CONFIG).configure_logging()
+from app.core.logging import _NamedTracebacks, setup_logging
+setup_logging("INFO")
+for name in ("httpx", "openai", "uvicorn.access"):
+    print(name, logging.getLogger(name).getEffectiveLevel())
+named = lambda filters: any(isinstance(f, _NamedTracebacks) for f in filters)
+print("uvicorn", named(logging.getLogger("uvicorn.error").filters))
+print("root", all(named(handler.filters) for handler in logging.getLogger().handlers))
+"""
+
+
+def test_setup_logging_holds_the_loggers_that_print_urls_at_warning():
+    """uvicorn's access line prints every query string (OAuth codes, the sign-in token,
+    search text), and httpx at INFO prints every URL it fetches (an avatar link, each
+    redirect), so these floors keep them out of the log. The log guard
+    copies them, so the two must agree. setup_logging also fits uvicorn's traceback
+    filter, on its error logger and on the root's handler. A fresh interpreter, since
+    setup_logging changes the process's logging."""
+    from tests.conftest import PRODUCTION_FLOORS
+
+    out = subprocess.run([sys.executable, "-c", _SETUP_CHILD], cwd=Path(__file__).resolve().parents[1],
+                         capture_output=True, text=True, timeout=60)
+    assert out.returncode == 0, out.stderr[-2000:]
+    levels = dict(line.split(" ", 1) for line in out.stdout.splitlines() if line)
+    floors = {name: int(levels[name]) for name in ("httpx", "openai", "uvicorn.access")}
+    assert floors == {name: logging.WARNING for name in floors}
+    assert {name: PRODUCTION_FLOORS[name] for name in floors} == floors
+    assert (levels["uvicorn"], levels["root"]) == ("True", "True")
+
+
+def test_an_address_is_replaced_before_the_cap_can_cut_it():
+    out = sanitize_log_field("x" * 35 + " jane.doe@example.com", 40)
+    assert out == "x" * 35 + " [ema…"
+
+
+# The pattern runs on every request's path and User-Agent, uncapped, and a header can
+# be about 32 KB. A pattern that backtracks is quadratic or worse and holds the GIL
+# meanwhile (the bot filter's SPA_SAFE_PATH lesson): one took 4 seconds on 32 KB, just
+# inside a 5 s limit. So each input here is 1 MB, one long run of address characters
+# that can't end in an address. The real pattern clears each in about 30 ms; without
+# the lookbehind that keeps it linear, each takes minutes, so the child is killed
+# after 5 s. The input goes in on stdin, since one argument is capped at 128 KB.
+_SUB_CHILD = "import re,sys; s = sys.stdin.read(); re.compile(sys.argv[1]).sub('[email]', s); print('DONE')"
+
+
+@pytest.mark.parametrize("hostile", [
+    "a" * 2**20 + " @",
+    chr(0xE9) * 2**20 + ":@",  # another script
+    "%41" * (2**20 // 3) + " @",  # percent escapes
+    "a." * 2**19 + "/@",  # dots
+], ids=["run", "non-ascii-run", "percent-run", "dotted-run"])
+def test_the_email_pattern_stays_linear_on_hostile_input(hostile):
+    try:
+        out = subprocess.run([sys.executable, "-c", _SUB_CHILD, EMAIL_SHAPE.pattern], input=hostile,
+                             capture_output=True, text=True, timeout=5)
+    except subprocess.TimeoutExpired:
+        pytest.fail("the email pattern backtracks: 5 s were not enough for 1 MB")
+    assert out.stdout.strip() == "DONE"
+
+
+async def test_an_email_address_typed_into_search_is_never_logged(api_log):
+    """Search runs as you type, so each keystroke's text is logged."""
+    for typed in ("jane", "jane.doe@", "jane.doe@mail.exa", "jane.doe@mail.example.com"):
+        async with _client(_search_app(typed, total=0)) as c:
+            await c.get("/api/search/")
+    assert [line.rsplit(" q=", 1)[1] for line in _access_lines(api_log)] == [
+        "jane", "[email]", "[email]", "[email]",
+    ]
+
+
+async def test_an_email_address_in_a_path_or_a_user_agent_is_never_logged(api_log):
+    async with _client(_app_with()) as c:
+        # /api/auth prefix => the UA is appended even on a 200; a token holding "bot"
+        # is what parse_ua keeps whole.
+        await c.get("/api/auth/x/jane.doe@example.com", headers={"user-agent": "probe ops@robot.example"})
+    (line,) = _access_lines(api_log)
+    assert "| /api/auth/x/[email] |" in line
+    assert "UA: [email]" in line
+    assert "@" not in line
+
+
+# ── the bot filter's own line ────────────────────────────────────────────────
+#
+# A refused Referer gets a line of its own from the bot filter, on the `api` logger,
+# ahead of the access line. The rule reads only the Referer's host, so that is all the
+# line keeps: the rest of another site's address can carry that site's visitor's data.
+# Production's parser (httptools) passes a tab and every byte from 0x80 to 0xFF in a
+# header, and Starlette reads them as Latin-1, so 0x85 arrives as NEL and 0x9B as the
+# one-character CSI; h11, uvicorn's fallback, passes ESC too. The path keeps ESC, NEL
+# and U+2028 after percent-decoding. The scope is built by hand so all of it arrives.
+
+APP_COLOURS = (GREEN, RED, YELLOW, CYAN, MAGENTA, GRAY, RESET)
+
+
+def _blocked_referer_lines(caplog):
+    return [rec.getMessage() for rec in caplog.records if rec.name == "api" and "Blocked referer" in rec.getMessage()]
+
+
+async def test_a_blocked_referer_logs_only_its_host(api_log, prod_mode):
+    async with _client(_app_with(add_bot_filter_middleware)) as c:
+        r = await c.get("/api/collectibles/", headers={
+            "referer": "https://user:pw@Other.Example/p/visitor?e=jane%40mail.example&q=secret",
+        })
+    assert r.status_code == 404
+    assert _blocked_referer_lines(api_log) == [f"{RED}Blocked referer other.example on /api/collectibles/{RESET}"]
+
+
+async def test_the_blocked_referer_line_escapes_and_caps_what_it_copies(api_log, prod_mode):
+    referer = b"https://ev\x1bil\x85\x9b" + b"h" * 600 + b"HOSTTAIL.example/"
+    path = "/api/x" + ANSI_PROBE + "\x85" + chr(0x2028) + "p" * 600 + "PATHTAIL"
+
+    await _asgi_get(_app_with(add_bot_filter_middleware), path, headers=[(b"referer", referer)])
+
+    (line,) = _blocked_referer_lines(api_log)
+    plain = line.removeprefix(RED).removesuffix(RESET)
+    assert plain.isprintable()  # no raw ESC, NEL, CSI or U+2028: one line, no ANSI
+    host, path_field = plain.removeprefix("Blocked referer ").split(" on ", 1)
+    assert host.startswith("ev\\x1bil\\x85\\x9bhhh")  # urlparse lower-cases the host
+    assert host.endswith("…") and len(host) == LOG_HOST_MAX + 1
+    assert path_field.startswith("/api/x\\x1b[2J\\x85\\u2028ppp")
+    assert path_field.endswith("…") and len(path_field) == LOG_PATH_MAX + 1
+
+
+async def test_a_referer_urlparse_cannot_read_is_refused_not_a_500(api_log, prod_mode):
+    """A malformed bracketed host makes urlparse raise. A Referer the filter can't read
+    is no allowed host either, so it gets the referer rule's 404, not a 500."""
+    async with _client(_app_with(add_bot_filter_middleware, add_error_handler_middleware)) as c:
+        r = await c.get("/api/collectibles/", headers={"referer": "http://[x]/"})
+    assert r.status_code == 404
+    (line,) = _access_lines(api_log)
+    assert "(referer)" in line
+    assert _blocked_referer_lines(api_log) == [f"{RED}Blocked referer - on /api/collectibles/{RESET}"]
+
+
+async def test_no_header_the_stack_reads_reaches_the_log_raw(api_log, prod_mode):
+    """Every header the layers copy or judge, hostile at once, through the layers that
+    log, in main.py's order. Each line they write stays one printable line, and the
+    tail of every oversized value is cut, so a future line that copies a header raw
+    fails here."""
+    hostile = ANSI_PROBE + "\x85" + chr(0x2028) + "z" * 600 + "TAIL"
+    headers = [
+        (name, (prefix + hostile).encode())  # UTF-8, read back as Latin-1: U+2028 brings a C1 control
+        for name, prefix in [
+            (b"user-agent", "Firefox/1.0"),
+            (b"referer", "https://evil.example/"),
+            (b"cf-connecting-ip", "1.2.3.4"),
+            (b"cf-ray", "8a1b2c3d4e5f6789-"),
+            (b"x-forwarded-for", "1.2.3.4"),
+        ]
+    ]
+
+    await _asgi_get(
+        _app_with(add_bot_filter_middleware, add_error_handler_middleware), "/api/x" + hostile, headers=headers,
+    )
+
+    lines = [rec.getMessage() for rec in api_log.records if rec.name == "api" or rec.name.startswith("app.")]
+    assert len(lines) == 3  # the blocked Referer, the access line and the CF-Connecting-IP alarm
+    for line in lines:
+        plain = line
+        for code in APP_COLOURS:
+            plain = plain.replace(code, "")
+        assert plain.isprintable(), repr(line)  # repr: a raw failure message would reach the terminal
+        assert "TAIL" not in line

@@ -52,10 +52,13 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
+import app.routers.users as users_routes
 from app.core.auth import create_access_token
+from app.core.colours import RED, RESET, YELLOW
 from app.db.database import Base, get_db
 from app.middleware.rate_limit import setup_rate_limiter
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
@@ -712,6 +715,57 @@ async def test_too_many_redirects_rejected(user_client, monkeypatch):
     assert rec.upload_calls == []
 
 
+# ── PATCH /api/users/me: renaming ─────────────────────────────────────────────
+
+async def _other_account(session, username: str) -> None:
+    session.add(User(email=f"{username}@example.com", username=username, password_hash="x"))
+    await session.commit()
+
+
+async def test_renaming_to_a_taken_username_gets_a_409(user_client, users_db_session):
+    await _other_account(users_db_session, "taken")
+
+    r = await user_client.patch("/api/users/me", json={"username": "taken"})
+
+    assert (r.status_code, r.json()["detail"]) == (409, "Username already taken")
+
+
+async def test_a_rename_that_loses_a_race_gets_the_checks_409(user_client, users_db_session, monkeypatch):
+    """Two accounts renaming to one free username can both pass the check before either
+    commits, and the avatar work between them can take seconds. The loser's commit hits
+    the unique key, which used to answer 500; it now gets the check's own 409."""
+    await _other_account(users_db_session, "taken")
+    real = users_routes._refuse_taken_username
+    calls = []
+
+    async def first_misses(db, username):
+        # The other rename's commit lands after this check, so the check misses.
+        calls.append(username)
+        if len(calls) > 1:
+            await real(db, username)
+
+    monkeypatch.setattr(users_routes, "_refuse_taken_username", first_misses)
+
+    r = await user_client.patch("/api/users/me", json={"username": "taken"})
+
+    assert (r.status_code, r.json()["detail"]) == (409, "Username already taken")
+    assert calls == ["taken", "taken"]  # checked again after the collision
+
+
+async def test_a_rename_collision_the_check_cannot_name_is_not_swallowed(user_client, users_db_session, monkeypatch):
+    """Only a collision the check can name becomes its 409. Anything else is re-raised,
+    so it stays a 500, never a 200 that kept the old name."""
+    await _other_account(users_db_session, "taken")
+
+    async def never_finds(db, username):
+        return None
+
+    monkeypatch.setattr(users_routes, "_refuse_taken_username", never_finds)
+
+    with pytest.raises(IntegrityError):
+        await user_client.patch("/api/users/me", json={"username": "taken"})
+
+
 # ── DELETE /api/users/me ──────────────────────────────────────────────────────
 
 async def _user_exists(session, user_id) -> bool:
@@ -777,3 +831,53 @@ async def test_avatar_destroy_runs_off_the_event_loop(
     assert r.status_code == 204
     assert rec.destroy_threads[0] is not threading.main_thread()
     assert rec.destroy_kwargs[0]["timeout"] > 0
+
+
+async def test_a_compressed_responses_encoding_is_logged_cleaned(user_client, monkeypatch, caplog):
+    """The image server is whoever the link names, and h11 passes ESC and bytes from 0x80
+    in a header, so the Content-Encoding it sends is cleaned and capped like a request's."""
+    encoding = "gz\x1b[2Jip\x85" + chr(0x2028) + "z" * 100 + "TAIL"
+    _patch_avatar_pipeline(monkeypatch, responses=[_ok_image_response(extra_headers={"content-encoding": encoding})])
+    caplog.set_level(logging.WARNING, logger="app.services.users")
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 400
+    (message,) = [rec.getMessage() for rec in caplog.records if "compressed avatar" in rec.getMessage()]
+    field = message.split("content-encoding: ", 1)[1].rsplit(")", 1)[0]
+    assert field.isprintable()
+    assert field.startswith("gz\\x1b[2jip\\x85\\u2028zz")  # lower-cased by the service
+    assert field.endswith("…") and len(field) == 41
+
+
+@pytest.mark.parametrize("url", [
+    "https://[::1MARKER]/pic.png",  # httpx: Invalid IPv6 address, quoting the host
+    "https://" + chr(0x2603) + "MARKER" + chr(0xAD) + "--.example/pic.png",  # Invalid IDNA hostname
+])
+async def test_a_failed_avatar_fetch_logs_the_error_class_never_the_link(user_client, test_user, monkeypatch, caplog, url):
+    """httpx's errors describe the link the user gave, and the link isn't kept."""
+    _patch_avatar_pipeline(monkeypatch)
+    caplog.set_level(logging.ERROR, logger="app.routers.users")
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": url})
+
+    assert r.status_code == 400
+    assert [rec.getMessage() for rec in caplog.records if rec.name == "app.routers.users"] == [
+        f"{RED}Failed to upload avatar for user {test_user.id}: InvalidURL{RESET}",
+    ]
+
+
+async def test_a_flagged_avatar_logs_no_categories(user_client, monkeypatch, caplog):
+    """The access line beside it holds the IP, and the categories can say self-harm."""
+    async def _flagged(**kwargs):
+        return _moderation_response(flagged=True)
+
+    _patch_avatar_pipeline(monkeypatch, moderation=_flagged)
+    caplog.set_level(logging.WARNING, logger="app.services.users")
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 400
+    assert [rec.getMessage() for rec in caplog.records if rec.name == "app.services.users"] == [
+        f"{YELLOW}Avatar image flagged by moderation{RESET}",
+    ]

@@ -14,6 +14,7 @@ from app.core.auth import get_current_user
 from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RESET
 from app.core.ids import is_row_id
+from app.core.logging import exc_text
 from app.schemas.comments import CreateCommentRequest, UpdateCommentRequest
 from app.services.comments import _moderate_content, comment_to_dict
 
@@ -130,7 +131,7 @@ async def create_comment(
     comment = result.scalar_one()
 
     logger.info(
-        f"{CYAN}User {current_user.username} commented on "
+        f"{CYAN}User {current_user.id} commented on "
         f"{body.content_type} {body.content_id}{RESET}"
     )
 
@@ -152,7 +153,7 @@ async def create_comment(
             ))
             await db.commit()
         except Exception as e:
-            logger.warning(f"{YELLOW}Failed to create reply notification: {e}{RESET}")
+            logger.warning(f"{YELLOW}Failed to create reply notification: {exc_text(e)}{RESET}")
             await db.rollback()
 
     return response
@@ -231,6 +232,6 @@ async def delete_comment(
     comment.body = "[deleted]"
     await db.commit()
     logger.info(
-        f"{CYAN}User {current_user.username} deleted comment {comment_id} "
+        f"{CYAN}User {current_user.id} deleted comment {comment_id} "
         f"on {comment.content_type} {comment.content_id}{RESET}"
     )

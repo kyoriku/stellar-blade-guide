@@ -15,6 +15,7 @@ from fastapi import HTTPException
 from app.models.users import User
 from app.core.colours import CYAN, GRAY, RED, YELLOW, RESET
 from app.config.settings import settings
+from app.core.logging import exc_text, sanitize_log_field
 from app.services.auth import user_to_dict
 
 logger = logging.getLogger(__name__)
@@ -117,7 +118,7 @@ async def _fetch_avatar_image(url: str) -> tuple[bytes, str]:
                         # gets rejected here.
                         encoding = response.headers.get("content-encoding", "").strip().lower()
                         if encoding and encoding != "identity":
-                            logger.warning(f"{YELLOW}Rejecting compressed avatar response (content-encoding: {encoding}){RESET}")
+                            logger.warning(f"{YELLOW}Rejecting compressed avatar response (content-encoding: {sanitize_log_field(encoding, 40)}){RESET}")
                             raise HTTPException(
                                 status_code=400,
                                 detail="Image could not be processed. Try uploading a different file.",
@@ -165,20 +166,21 @@ async def check_image_moderation(image_bytes: bytes, content_type: str) -> None:
     except Exception as e:
         status = getattr(e, "status_code", None) if isinstance(e, openai.APIStatusError) else None
         if status is not None and 400 <= status < 500 and status not in _MODERATION_RETRY_STATUSES:
-            logger.warning(f"{YELLOW}Moderation API rejected avatar image ({status}): {e}{RESET}")
+            logger.warning(f"{YELLOW}Moderation API rejected avatar image ({status}): {exc_text(e)}{RESET}")
             raise HTTPException(
                 status_code=400,
                 detail="Image format is not supported. Use PNG, JPEG, GIF, or WebP.",
             )
-        logger.warning(f"{YELLOW}OpenAI moderation unreachable, rejecting avatar upload: {e}{RESET}")
+        logger.warning(f"{YELLOW}OpenAI moderation unreachable, rejecting avatar upload: {exc_text(e)}{RESET}")
         raise HTTPException(
             status_code=503,
             detail="Avatar upload is temporarily unavailable. Please try again in a moment.",
             headers={"Retry-After": "30"},
         )
     if result.flagged:
-        flagged_categories = [cat for cat, flagged in result.categories.__dict__.items() if flagged]
-        logger.warning(f"{YELLOW}Avatar image flagged by moderation: {flagged_categories}{RESET}")
+        # Not the categories: the access line beside it holds the IP, and they can say
+        # self-harm or sexual content involving minors.
+        logger.warning(f"{YELLOW}Avatar image flagged by moderation{RESET}")
         raise HTTPException(status_code=400, detail="Image was rejected by content moderation")
 
 async def upload_avatar_to_cloudinary(url: str, user_id: int) -> str:
@@ -240,7 +242,7 @@ async def delete_avatar_from_cloudinary(user_id: int) -> None:
             else:
                 logger.warning(f"{YELLOW}Unexpected Cloudinary destroy result for {public_id}: {status}{RESET}")
         except Exception as e:
-            logger.error(f"{RED}Failed to delete Cloudinary avatar {public_id} — asset may be orphaned: {e}{RESET}")
+            logger.error(f"{RED}Failed to delete Cloudinary avatar {public_id}; the asset may be orphaned: {exc_text(e)}{RESET}")
 
     # Cancelling this coroutine does NOT stop the thread; CLOUDINARY_TIMEOUT
     # above is the actual bound on how long it lives.

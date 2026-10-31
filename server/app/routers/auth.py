@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from redis.exceptions import RedisError
 
 from app.config.settings import settings
@@ -32,6 +33,8 @@ from app.core.auth import (
 from app.core.cache import redis_client
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET, YELLOW
+from app.core.ids import is_row_id
+from app.core.logging import exc_text, sanitize_log_field
 from app.core.usernames import username_from_provider
 from app.services.auth import (
     hash_password,
@@ -70,6 +73,17 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # Email / Password routes
 
+async def _refuse_taken(db: AsyncSession, email: str, username: str) -> None:
+    """The 409 for an address or username another account already has."""
+    existing = await db.execute(select(User).where(User.email == email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    existing = await db.execute(select(User).where(User.username == username))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register(
@@ -78,15 +92,7 @@ async def register(
     body: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    # Check for existing email
-    existing = await db.execute(select(User).where(User.email == body.email))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
-
-    # Check for existing username
-    existing = await db.execute(select(User).where(User.username == body.username))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+    await _refuse_taken(db, body.email, body.username)
 
     user = User(
         email=body.email,
@@ -94,10 +100,18 @@ async def register(
         password_hash=hash_password(body.password),
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Another sign-up for this address or username committed between the check
+        # above and this commit (a double submit, two tabs). It gets the check's own
+        # 409; a collision the check can't name stays a 500.
+        await db.rollback()
+        await _refuse_taken(db, body.email, body.username)
+        raise
     await db.refresh(user)
 
-    logger.info(f"{CYAN}New user registered: {user.username} ({user.email}){RESET}")
+    logger.info(f"{CYAN}New user registered: user {user.id}{RESET}")
     return await _issue_tokens(user, response)
 
 
@@ -137,6 +151,8 @@ async def refresh(
     try:
         user_id_str, refresh_token = token.split(":", 1)
         user_id = int(user_id_str)
+        if not is_row_id(user_id):
+            raise ValueError  # no account has that number, and the reasons below would log it whole
     except (ValueError, AttributeError):
         request.state.auth_fail_reason = "malformed-cookie"
         # Definitive rejections clear the dead cookie, or the browser re-presents
@@ -259,7 +275,7 @@ async def logout_all(
     """Revoke all active sessions across all devices."""
     await revoke_all_refresh_tokens(current_user.id)
     clear_refresh_cookie(response)
-    logger.info(f"{CYAN}User {current_user.username} logged out of all devices{RESET}")
+    logger.info(f"{CYAN}User {current_user.id} logged out of all devices{RESET}")
 
 
 @router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
@@ -297,7 +313,7 @@ async def change_password(
     await revoke_all_refresh_tokens(current_user.id)
     clear_refresh_cookie(response)
 
-    logger.info(f"{CYAN}User {current_user.username} changed their password{RESET}")
+    logger.info(f"{CYAN}User {current_user.id} changed their password{RESET}")
 
 
 # Password reset
@@ -313,7 +329,7 @@ async def _release_reset_cooldown(key: str) -> None:
     try:
         await redis_client.delete(key)
     except RedisError as e:
-        logger.warning(f"{YELLOW}Could not release a password reset cooldown: {e}{RESET}")
+        logger.warning(f"{YELLOW}Could not release a password reset cooldown: {exc_text(e)}{RESET}")
 
 
 # Minute limit first: slowapi stops at the first limit that fails, so a burst the
@@ -353,9 +369,12 @@ async def forgot_password(
             raise  # still a 503: password reset fails closed, as before
         try:
             await _send_reset_email(user.email, token)
-            logger.info(f"{CYAN}Password reset email sent to {user.username}{RESET}")
+            logger.info(f"{CYAN}Password reset email sent to user {user.id}{RESET}")
         except Exception as e:
-            logger.error(f"{RED}Failed to send reset email to user {user.id}: {e}{RESET}")
+            # Not the error's text: Resend's message describes what it was sent and can
+            # quote the address. Its status and type say enough to act on.
+            kind = sanitize_log_field(f"{getattr(e, 'code', '-')} {getattr(e, 'error_type', '-')}", 40)
+            logger.error(f"{RED}Failed to send reset email to user {user.id}: {type(e).__name__} {kind}{RESET}")
             # Don't expose email errors to the client
             await _release_reset_cooldown(cooldown_key)  # nothing went out; let a retry send
     elif user:
@@ -404,7 +423,7 @@ async def reset_password(
     await revoke_all_refresh_tokens(user.id)
     clear_refresh_cookie(response)
 
-    logger.info(f"{CYAN}User {user.username} successfully reset their password{RESET}")
+    logger.info(f"{CYAN}User {user.id} successfully reset their password{RESET}")
 
 
 # OAuth
@@ -431,6 +450,32 @@ def _refuse_if_deactivated(request: Request, user: User) -> None:
 
 
 async def _get_or_create_oauth_user(
+    request: Request,
+    db: AsyncSession,
+    provider: str,
+    provider_user_id: str,
+    email: str,
+    email_verified: object,
+    username: str | None,
+    avatar_url: str | None,
+) -> User:
+    """_resolve_oauth_user, retried once if another sign-in wins a race.
+
+    Two first sign-ins with one Google or Discord account, a provider sign-in and a
+    sign-up for one address, or two new accounts given one username can all pass the
+    lookups before either writes. The loser's write then hits a unique key. The
+    winner's row is there by then, so one more pass finds it, links to it, or picks
+    the next free username. A second collision stays a 500.
+    """
+    args = (request, db, provider, provider_user_id, email, email_verified, username, avatar_url)
+    try:
+        return await _resolve_oauth_user(*args)
+    except IntegrityError:
+        await db.rollback()
+        return await _resolve_oauth_user(*args)
+
+
+async def _resolve_oauth_user(
     request: Request,
     db: AsyncSession,
     provider: str,
@@ -533,7 +578,7 @@ async def _get_or_create_oauth_user(
     db.add(OAuthAccount(user_id=user.id, provider=provider, provider_user_id=provider_user_id))
     await db.commit()
     await db.refresh(user)
-    logger.info(f"{CYAN}New OAuth user created: {user.username} via {provider}{RESET}")
+    logger.info(f"{CYAN}New OAuth user created: user {user.id} via {provider}{RESET}")
     return user
 
 

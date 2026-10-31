@@ -26,6 +26,7 @@ import httpx
 import pytest
 import pytest_asyncio
 import jwt
+import resend
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI
@@ -34,12 +35,14 @@ from httpx import AsyncClient, ASGITransport
 from redis.exceptions import ConnectionError as RedisConnectionError
 from limits import parse
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
 import app.core.cache as core_cache
 import app.routers.auth as auth_routes
 from app.config.settings import settings
+from app.core.colours import CYAN, RED, RESET
 from app.db.database import Base, get_db
 from app.core.usernames import username_problem
 from app.middleware.logging import add_logging_middleware
@@ -158,6 +161,57 @@ async def test_register_duplicate_email_returns_409(auth_client, test_user):
     assert r.status_code == 409
 
 
+def _first_check_misses(monkeypatch) -> list:
+    """The window a race leaves: the duplicate check misses once, as it does when another
+    sign-up commits between that check and this request's commit, so the database's
+    unique key is what catches the collision. Every later check is the real one."""
+    real = auth_routes._refuse_taken
+    calls = []
+
+    async def first_misses(db, email, username):
+        calls.append((email, username))
+        if len(calls) > 1:
+            await real(db, email, username)
+
+    monkeypatch.setattr(auth_routes, "_refuse_taken", first_misses)
+    return calls
+
+
+@pytest.mark.parametrize("taken, detail", [
+    ("email", "Email already registered"),
+    ("username", "Username already taken"),
+], ids=["email", "username"])
+async def test_a_sign_up_that_loses_a_race_gets_the_checks_409(
+    auth_client, auth_db_session, test_user, monkeypatch, taken, detail,
+):
+    """Two sign-ups for one address or username can both pass the check before either
+    commits. The loser's commit hits the unique key, which used to answer 500; it now
+    gets the same 409 the check gives."""
+    body = {"email": "racer@example.com", "username": "racer", "password": "password123"}
+    body[taken] = getattr(test_user, taken)
+    calls = _first_check_misses(monkeypatch)
+
+    r = await auth_client.post("/api/auth/register", json=body)
+
+    assert (r.status_code, r.json()["detail"]) == (409, detail)
+    assert len(calls) == 2  # checked again after the collision
+    assert len((await auth_db_session.execute(select(User))).scalars().all()) == 1
+
+
+async def test_a_sign_up_collision_the_check_cannot_name_is_not_swallowed(auth_client, test_user, monkeypatch):
+    """Only a collision the check can name becomes its 409. Anything else is re-raised,
+    so it stays a 500 that names its constraint in the log, never a quiet success."""
+    async def never_finds(db, email, username):
+        return None
+
+    monkeypatch.setattr(auth_routes, "_refuse_taken", never_finds)
+
+    with pytest.raises(IntegrityError):
+        await auth_client.post("/api/auth/register", json={
+            "email": test_user.email, "username": "racer", "password": "password123",
+        })
+
+
 async def test_register_invalid_password_returns_422(auth_client):
     r = await auth_client.post("/api/auth/register", json={
         "email": "short@example.com",
@@ -177,6 +231,22 @@ async def test_register_invalid_email_returns_friendly_message(auth_client):
     # Custom message instead of the email-validator library default. The app's
     # RequestValidationError handler flattens 422s to a single string detail.
     assert "Please enter a valid email address" in r.json()["detail"]
+
+
+async def test_register_logs_the_account_number_never_the_email(auth_client, caplog):
+    """Railway keeps each log line for 90 days and can't delete one early, so a sign-up
+    names the new account by its number, never by its email address or username."""
+    caplog.set_level(logging.INFO, logger=auth_routes.logger.name)
+
+    r = await auth_client.post("/api/auth/register", json={
+        "email": "signup-MARKER@example.com",
+        "username": "signup_name",
+        "password": "password123",
+    })
+
+    assert r.status_code == 201
+    lines = [rec.getMessage() for rec in caplog.records if rec.name == auth_routes.logger.name]
+    assert lines == [f"{CYAN}New user registered: user {r.json()['user']['id']}{RESET}"]
 
 
 async def test_register_normalizes_email_domain(auth_client):
@@ -1523,6 +1593,138 @@ async def test_oauth_verified_new_user_is_created_as_before(oauth, provider):
     assert (link.user_id, link.provider) == (user.id, provider)
 
 
+def _commit_inside_the_sign_in(o, monkeypatch, marker: str, winner) -> list:
+    """Run `winner` once, inside the sign-in, right after its first statement whose SQL
+    holds `marker`: after its lookups and before its own write, which is where another
+    sign-in's commit lands in a race. `winner` commits through the same session, so
+    what collides is the real code's own write. Returns the sign-in's passes, counted."""
+    real_execute = o.db.execute
+    real_resolve = auth_routes._resolve_oauth_user
+    fired, passes = [], []
+
+    async def execute(statement, *args, **kwargs):
+        result = await real_execute(statement, *args, **kwargs)
+        if not fired and marker in str(statement):
+            fired.append(marker)
+            await winner(o.db)
+        return result
+
+    async def counted(*args):
+        passes.append(len(passes) + 1)
+        return await real_resolve(*args)
+
+    monkeypatch.setattr(o.db, "execute", execute)
+    monkeypatch.setattr(auth_routes, "_resolve_oauth_user", counted)
+    return passes
+
+
+def _signed_in_as(r) -> str:
+    token = parse_qs(urlsplit(r.headers["location"]).query)["token"][0]
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])["sub"]
+
+
+AFTER_THE_EMAIL_LOOKUP = "WHERE users.email ="
+AFTER_THE_USERNAME_CHECK = "lower(users.username)"
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+async def test_a_first_sign_in_that_loses_a_race_signs_in_to_the_winners_account(oauth, provider, monkeypatch):
+    """Two first sign-ins with one Google or Discord account can both pass the lookups
+    before either writes. The loser's own write hits the unique key on the address,
+    which used to answer a raw 500; one more pass finds the winner's account."""
+    async def winner(db):
+        user = User(email="oauth@example.com", username="winner")
+        db.add(user)
+        await db.flush()
+        db.add(OAuthAccount(user_id=user.id, provider=provider, provider_user_id="provider-user-1"))
+        await db.commit()
+
+    passes = _commit_inside_the_sign_in(oauth, monkeypatch, AFTER_THE_EMAIL_LOOKUP, winner)
+
+    r = await _login(oauth, provider)
+
+    assert (r.status_code, passes) == (307, [1, 2])
+    (user,) = await _rows(oauth, User)
+    assert user.username == "winner"
+    (link,) = await _rows(oauth, OAuthAccount)
+    assert link.user_id == user.id
+    assert _signed_in_as(r) == str(user.id)
+
+
+async def test_a_sign_in_that_loses_to_a_password_sign_up_is_refused_like_one(oauth, monkeypatch):
+    """A password sign-up for the address commits first. The retry finds an account
+    with a password and refuses to link, as a sign-in that came second would be."""
+    async def winner(db):
+        db.add(User(email="oauth@example.com", username="registered", password_hash=hash_password("password123")))
+        await db.commit()
+
+    passes = _commit_inside_the_sign_in(oauth, monkeypatch, AFTER_THE_EMAIL_LOOKUP, winner)
+
+    r = await _login(oauth, "google")
+
+    _assert_refused(r, "has-password", "google")
+    assert passes == [1, 2]
+    assert oauth.seen["reject_reason"] == "oauth-email-has-password"
+    assert await _rows(oauth, OAuthAccount) == []
+    assert len(await _rows(oauth, User)) == 1
+
+
+async def test_a_new_account_that_loses_its_username_takes_the_next_free_one(oauth, monkeypatch):
+    """Another new account takes the same name between this sign-in's check and its
+    write. The retry checks again and picks the next free name."""
+    async def winner(db):
+        db.add(User(email="someone-else@example.com", username="OAuth_User"))
+        await db.commit()
+
+    passes = _commit_inside_the_sign_in(oauth, monkeypatch, AFTER_THE_USERNAME_CHECK, winner)
+
+    r = await _login(oauth, "google")
+
+    assert (r.status_code, passes) == (307, [1, 2])
+    assert sorted((u.email, u.username) for u in await _rows(oauth, User)) == [
+        ("oauth@example.com", "OAuth_User1"),
+        ("someone-else@example.com", "OAuth_User"),
+    ]
+
+
+async def test_a_link_that_loses_a_race_signs_in_to_the_account_it_links(oauth, monkeypatch):
+    """Two sign-ins add the same provider to an existing account at once. The loser's
+    link hits the unique key, and the retry finds the winner's link."""
+    account = User(email="oauth@example.com", username="linked")
+    oauth.db.add(account)
+    await oauth.db.flush()
+    oauth.db.add(OAuthAccount(user_id=account.id, provider="discord", provider_user_id="discord-user-1"))
+    await oauth.db.commit()
+    account_id = account.id
+
+    async def winner(db):
+        db.add(OAuthAccount(user_id=account_id, provider="google", provider_user_id="provider-user-1"))
+        await db.commit()
+
+    passes = _commit_inside_the_sign_in(oauth, monkeypatch, AFTER_THE_EMAIL_LOOKUP, winner)
+
+    r = await _login(oauth, "google")
+
+    assert (r.status_code, passes) == (307, [1, 2])
+    assert _signed_in_as(r) == str(account_id)
+    assert len(await _rows(oauth, User)) == 1
+    assert sorted(link.provider for link in await _rows(oauth, OAuthAccount)) == ["discord", "google"]
+
+
+async def test_a_sign_in_that_collides_twice_is_not_retried_again(oauth, monkeypatch):
+    passes = []
+
+    async def always_collides(request, db, *rest):
+        passes.append(1)
+        raise IntegrityError("INSERT INTO users", {}, Exception("UNIQUE constraint failed: users.email"))
+
+    monkeypatch.setattr(auth_routes, "_resolve_oauth_user", always_collides)
+
+    with pytest.raises(IntegrityError):
+        await _login(oauth, "google")
+    assert len(passes) == 2
+
+
 @pytest.mark.parametrize("provider", PROVIDERS)
 async def test_oauth_unverified_rejection_names_itself_and_never_logs_the_email(oauth, provider, api_log):
     oauth.provider.userinfo["email"] = "victim-MARKER@example.com"
@@ -2146,3 +2348,28 @@ async def test_oauth_deactivated_beats_has_password(oauth, provider, test_user):
 
     _assert_refused(r, "deactivated", provider)
     assert oauth.seen["reject_reason"] == "oauth-account-inactive"
+
+
+async def test_a_failed_reset_email_logs_the_error_type_never_its_text(oauth, test_user, reset_mail, caplog):
+    """Resend's message describes what it was sent and can quote the address, so a failed
+    send logs the account number and the error's class, status and type, never its text."""
+    reset_mail.side_effect = resend.exceptions.ValidationError(
+        message=f"Invalid `to` field: {test_user.email}", error_type="validation_error", code=422,
+    )
+    caplog.set_level(logging.INFO, logger=auth_routes.logger.name)
+
+    r = await _forgot(oauth, test_user.email)
+
+    assert (r.status_code, r.content) == (204, b"")
+    lines = [rec.getMessage() for rec in caplog.records if rec.name == auth_routes.logger.name]
+    assert lines == [f"{RED}Failed to send reset email to user {test_user.id}: ValidationError 422 validation_error{RESET}"]
+
+
+@pytest.mark.parametrize("claimed", ["0", "-5", str(2**31), "9" * 4000], ids=["zero", "negative", "past-int4", "4000-digits"])
+async def test_a_refresh_cookie_naming_no_possible_account_is_malformed(oauth, claimed):
+    """The reasons after the parse put the cookie's account number in the access line, and
+    int() takes up to 4,300 digits and a sign. A number no account can have is a
+    malformed cookie, like any other one that can't be read."""
+    r = await oauth.client.post("/api/auth/refresh", headers={"Cookie": f"refresh_token={claimed}:{uuid.uuid4()}"})
+    assert r.status_code == 401
+    assert oauth.seen["auth_fail_reason"] == "malformed-cookie"

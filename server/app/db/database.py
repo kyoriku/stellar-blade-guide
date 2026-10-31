@@ -11,7 +11,8 @@ engine = create_async_engine(
     # Outside DEBUG, SQLAlchemy leaves its [parameters: ...] dump out of a failed
     # statement's error and the log lines built from it: the values carry emails,
     # password hashes and whatever text a request sent. Driver text can still quote
-    # one, as a unique violation's DETAIL names the duplicate key.
+    # one, as a unique violation's DETAIL names the duplicate key, which is why
+    # error_handler logs a database error by class, SQLSTATE and constraint only.
     hide_parameters=not settings.DEBUG,
     pool_pre_ping=True,
     pool_recycle=1800,

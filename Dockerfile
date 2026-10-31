@@ -33,5 +33,10 @@ USER appuser
 EXPOSE 8000
 # exec makes uvicorn PID 1 so it gets the SIGTERM directly; a shell as PID 1 won't forward it
 # --no-proxy-headers so no env var can turn trust on; IP comes from CF-Connecting-IP (app/core/security.py)
+# --ws none: no route takes a WebSocket, and uvicorn's handshake line logs the query string as sent;
+# an upgrade is now served as plain HTTP with two fixed warnings (the "No supported WebSocket
+# library detected" hint is expected)
+# --no-access-log: the app writes its own access line (app/middleware/logging.py), and uvicorn's
+# would hold each query string as sent
 # A custom start command set in Railway replaces this line
-CMD ["/bin/sh", "-c", "exec /server/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --no-proxy-headers --workers 2 --limit-max-requests 50000"]
+CMD ["/bin/sh", "-c", "exec /server/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --no-proxy-headers --ws none --no-access-log --workers 2 --limit-max-requests 50000"]

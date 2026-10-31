@@ -1,7 +1,7 @@
-"""Production trusts no proxy headers.
+"""Production trusts no proxy headers, and uvicorn logs no query string of its own.
 
-Railway runs the Dockerfile's start command (it has no custom one), so this parses that
-command the way uvicorn does, with every variable set that could turn trust back on.
+Railway runs the Dockerfile's start command (it has no custom one), so these tests parse
+that command the way uvicorn does, with every variable set that could turn either back on.
 """
 
 import json
@@ -51,3 +51,14 @@ def test_production_start_command_trusts_no_proxy_headers(monkeypatch):
     )
     config.load()
     assert not isinstance(config.loaded_app, ProxyHeadersMiddleware)
+
+
+def test_production_start_command_logs_no_query_string(monkeypatch):
+    # uvicorn's WebSocket handshake line and its access line each write the request's
+    # query string as sent, outside the app's cleaning. These turn them back on when the
+    # command leaves them to the environment.
+    monkeypatch.setenv("UVICORN_WS", "auto")
+    monkeypatch.setenv("UVICORN_ACCESS_LOG", "true")
+    params = uvicorn_main.make_context("uvicorn", _start_command_args()).params
+    assert params["ws"] == "none"  # no route takes a WebSocket
+    assert params["access_log"] is False  # the app writes its own (app/middleware/logging.py)

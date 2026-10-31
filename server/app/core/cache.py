@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Any
 import redis.asyncio as redis
 from app.config.settings import settings
+from app.core.logging import LOG_PATH_MAX, exc_text, sanitize_log_field
 
 logger = logging.getLogger(__name__)
 
@@ -67,27 +68,27 @@ async def get_cache(key: str) -> Optional[dict]:
             return None
         return json.loads(data)
     except json.JSONDecodeError:
-        logger.warning(f"Corrupted cache entry for '{key}' — deleting and treating as miss")
+        logger.warning(f"Corrupted cache entry for '{sanitize_log_field(key, LOG_PATH_MAX)}'; deleting and treating as miss")
         try:
             await redis_client.delete(key)
         except redis.RedisError as e:
-            logger.error(f"Failed to delete corrupted key '{key}': {e}")
+            logger.error(f"Failed to delete corrupted key '{sanitize_log_field(key, LOG_PATH_MAX)}': {exc_text(e)}")
         return None
     except redis.RedisError as e:
-        logger.error(f"Redis error on GET {key}: {e}")
+        logger.error(f"Redis error on GET {sanitize_log_field(key, LOG_PATH_MAX)}: {exc_text(e)}")
         return None
 
 async def set_cache(key: str, data: Any, ttl: int = settings.CACHE_TTL) -> bool:
     try:
         serialized = json.dumps(data)
     except (TypeError, ValueError) as e:
-        logger.error(f"Cache serialization error for '{key}': {e}")
+        logger.error(f"Cache serialization error for '{sanitize_log_field(key, LOG_PATH_MAX)}': {exc_text(e)}")
         return False
     try:
         await redis_client.setex(key, ttl, serialized)
         return True
     except redis.RedisError as e:
-        logger.error(f"Redis error on SET {key}: {e}")
+        logger.error(f"Redis error on SET {sanitize_log_field(key, LOG_PATH_MAX)}: {exc_text(e)}")
         return False
 
 async def delete_cache(key: str) -> bool:
@@ -95,7 +96,7 @@ async def delete_cache(key: str) -> bool:
         result = await redis_client.delete(key)
         return bool(result)
     except redis.RedisError as e:
-        logger.error(f"Redis error on DELETE {key}: {e}")
+        logger.error(f"Redis error on DELETE {sanitize_log_field(key, LOG_PATH_MAX)}: {exc_text(e)}")
         return False
 
 async def get_cache_stats() -> dict:
@@ -116,7 +117,7 @@ async def get_cache_stats() -> dict:
         stats["hit_rate"] = f"{(hits / total * 100):.2f}%" if total > 0 else "N/A"
         return stats
     except redis.RedisError as e:
-        logger.error(f"Redis error getting stats: {e}")
+        logger.error(f"Redis error getting stats: {exc_text(e)}")
         return {}
 
 

@@ -12,6 +12,7 @@ from app.models.collectibles import CollectibleType, Level
 from app.models.walkthroughs import Walkthrough
 from app.core.auth import get_current_user
 from app.core.ids import is_row_id
+from app.core.logging import exc_text
 from app.core.navigation import url_type
 from app.core.security import limiter
 from app.config.settings import settings
@@ -54,7 +55,7 @@ async def _build_label_urls(db: AsyncSession, notifications: list[Notification])
                 label = r.slug.replace("-", " ").title()
                 out[("collectible", r.id)] = (label, f"/{r.category_group}/{r.slug}")
         except Exception as e:
-            logger.warning(f"notification collectible label lookup failed: {e}")
+            logger.warning(f"notification collectible label lookup failed: {exc_text(e)}")
 
     if by_type["walkthrough"]:
         try:
@@ -64,7 +65,7 @@ async def _build_label_urls(db: AsyncSession, notifications: list[Notification])
             for r in rows:
                 out[("walkthrough", r.id)] = (r.title, f"/walkthroughs/{url_type(r.mission_type)}/{r.slug}")
         except Exception as e:
-            logger.warning(f"notification walkthrough label lookup failed: {e}")
+            logger.warning(f"notification walkthrough label lookup failed: {exc_text(e)}")
 
     if by_type["level"]:
         try:
@@ -74,7 +75,7 @@ async def _build_label_urls(db: AsyncSession, notifications: list[Notification])
             for r in rows:
                 out[("level", r.id)] = (r.name, f"/levels/{_level_slug(r.name)}")
         except Exception as e:
-            logger.warning(f"notification level label lookup failed: {e}")
+            logger.warning(f"notification level label lookup failed: {exc_text(e)}")
 
     return out
 

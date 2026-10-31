@@ -165,3 +165,66 @@ async def test_a_database_error_that_is_not_a_bad_value_stays_a_500(case, caplog
     assert [(rec.levelno, rec.getMessage().split(":")[0]) for rec in caplog.records] == [
         (logging.ERROR, "Unhandled error")
     ]
+
+
+async def test_a_unique_violation_never_logs_the_key_it_names(caplog):
+    """Postgres names the duplicate key in a unique violation's DETAIL, and asyncpg puts
+    the DETAIL in the error's text: an email address when two sign-ups race for one.
+    The 500 is logged by class, SQLSTATE and constraint, with its frames, and never with
+    that text, in the message or in a traceback."""
+    error = asyncpg.exceptions.PostgresError.new({  # built the way asyncpg builds a server error
+        "C": "23505",
+        "M": 'duplicate key value violates unique constraint "ix_users_email"',
+        "D": "Key (email)=(racer-MARKER@example.com) already exists.",
+        "s": "public", "t": "users", "n": "ix_users_email",
+    })
+    assert type(error) is asyncpg.exceptions.UniqueViolationError
+    assert "racer-MARKER@example.com" in str(error)  # the hazard is real, so the check below bites
+    caplog.set_level(logging.WARNING, logger=error_handler.logger.name)
+
+    r, _ = await _post(error, "ok")
+
+    assert r.status_code == 500
+    (record,) = caplog.records
+    written = logging.Formatter("%(message)s").format(record)  # with any traceback, as production writes it
+    assert "MARKER" not in written
+    first, frames = written.split("\n", 1)
+    assert first == "Unhandled error: IntegrityError (SQLSTATE 23505, constraint ix_users_email) on POST /api/unguarded"
+    # Where it failed is still logged: the frames, down to the route that ran the query.
+    assert frames.startswith("Traceback (most recent call last):\n")
+    assert ", in unguarded\n" in frames
+    # And the SQL it ran, which holds placeholders only: every value is bound.
+    assert written.endswith("\nSQL: SELECT 1")
+
+
+async def test_a_client_side_database_error_keeps_its_text(caplog):
+    """An error with no SQLSTATE is asyncpg's own, about the connection or the call, and
+    its text holds no value, so the record keeps it: without it, a busy connection, a
+    closed one and a wrong argument count would all read the same."""
+    error = asyncpg.exceptions.InterfaceError("cannot perform operation: another operation is in progress")
+    caplog.set_level(logging.WARNING, logger=error_handler.logger.name)
+
+    r, _ = await _post(error, "ok")
+
+    assert r.status_code == 500
+    (record,) = caplog.records
+    assert record.getMessage().split("\n", 1)[0] == (
+        "Unhandled error: InterfaceError (SQLSTATE -: cannot perform operation: another operation is in progress)"
+        " on POST /api/unguarded"
+    )
+
+
+async def test_an_argument_asyncpg_cannot_encode_never_shows_its_value(caplog):
+    """asyncpg's error for an argument it can't encode quotes the value, and carries
+    SQLSTATE 22000, so the record names it by class and code only."""
+    error = _bind_error("'value-MARKER': expected int, got str", TypeError("expected int, got str"))
+    assert "value-MARKER" in str(error)  # the hazard is real, so the check below bites
+    caplog.set_level(logging.WARNING, logger=error_handler.logger.name)
+
+    r, _ = await _post(error, "ok")
+
+    assert r.status_code == 500
+    (record,) = caplog.records
+    written = logging.Formatter("%(message)s").format(record)
+    assert written.split("\n", 1)[0] == "Unhandled error: DBAPIError (SQLSTATE 22000) on POST /api/unguarded"
+    assert "MARKER" not in written

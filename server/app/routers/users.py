@@ -1,8 +1,10 @@
 import logging
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, case, func, select
+from sqlalchemy.exc import IntegrityError
 
 from app.config.settings import settings
 from app.db.database import get_db
@@ -20,6 +22,7 @@ from app.core.auth import get_current_user, require_role
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
 from app.core.ids import is_row_id
+from app.core.logging import exc_text
 from app.schemas.users import UpdateProfileRequest, UpdateRoleRequest, UserStatsResponse
 from app.services.users import (
     user_to_response,
@@ -34,6 +37,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 # Routes
 
+async def _refuse_taken_username(db: AsyncSession, username: str) -> None:
+    """The 409 for a username another account already has."""
+    existing = await db.execute(select(User).where(User.username == username))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+
+
 @router.patch("/me")
 @limiter.limit("5/minute")
 async def update_me(
@@ -43,10 +53,9 @@ async def update_me(
     db: AsyncSession = Depends(get_db),
 ):
     """Update the authenticated user's username or avatar."""
-    if body.username and body.username != current_user.username:
-        existing = await db.execute(select(User).where(User.username == body.username))
-        if existing.scalar_one_or_none():
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+    renaming = bool(body.username) and body.username != current_user.username
+    if renaming:
+        await _refuse_taken_username(db, body.username)
         current_user.username = body.username
 
     if body.avatar_url is not None:
@@ -60,13 +69,28 @@ async def update_me(
           except HTTPException:
               raise
           except Exception as e:
-              logger.error(f"{RED}Failed to upload avatar for user {current_user.id}: {e}{RESET}")
+              # httpx's text describes the link or the image server's answer and can
+              # quote its host, and the link isn't kept, so httpx errors are logged by
+              # class only.
+              detail = type(e).__name__ if isinstance(e, (httpx.HTTPError, httpx.InvalidURL)) else exc_text(e)
+              logger.error(f"{RED}Failed to upload avatar for user {current_user.id}: {detail}{RESET}")
               raise HTTPException(status_code=400, detail="Failed to process avatar image")
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Another account took this username between the check above and this
+        # commit; the avatar work in between can take seconds. It gets the check's
+        # own 409; a collision the check can't name stays a 500. If the request also
+        # changed the avatar, the new image is already on the account's one
+        # Cloudinary asset while the row keeps the old link.
+        await db.rollback()
+        if renaming:
+            await _refuse_taken_username(db, body.username)
+        raise
     await db.refresh(current_user)
 
-    logger.info(f"{CYAN}User {current_user.username} updated their profile{RESET}")
+    logger.info(f"{CYAN}User {current_user.id} updated their profile{RESET}")
     return user_to_response(current_user)
 
 
@@ -79,12 +103,12 @@ async def delete_me(
 ):
     """Permanently delete the authenticated user's account and all their data."""
     from app.core.auth import revoke_all_refresh_tokens
-    user_id, username = current_user.id, current_user.username
+    user_id = current_user.id
 
     await revoke_all_refresh_tokens(user_id)
     await db.delete(current_user)
     await db.commit()
-    logger.info(f"{CYAN}User {username} deleted their account{RESET}")
+    logger.info(f"{CYAN}User {user_id} deleted their account{RESET}")
 
     # After the commit: deleting the account is what the user actually asked
     # for, so a slow or failing Cloudinary call must not block or roll it back.
