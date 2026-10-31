@@ -21,6 +21,7 @@ SQLite, and app.core.auth's redis_client binding patched to the shared FakeRedis
 
 from __future__ import annotations
 
+import logging
 import time
 
 import pytest_asyncio
@@ -30,7 +31,9 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
+import app.core.cache as core_cache
 from app.config.settings import settings
+from app.core.cache import cache_slug, get_cache, search_cache_key, set_cache
 from app.core.security import limiter
 from app.db.database import Base, get_db
 from app.models.users import User, OAuthAccount  # noqa: F401 — registers tables with Base
@@ -226,3 +229,53 @@ def test_limiter_degrades_instead_of_raising():
     # A storage error must fall back to in-memory limits, never reach a route.
     assert limiter._swallow_errors is True
     assert limiter._in_memory_fallback_enabled is True
+
+
+# ── what reaches the log ─────────────────────────────────────────────────────
+
+ANSI_PROBE = "\x1b[2J"  # a sequence the colours module never writes
+
+
+def _error_handler_app():
+    app = FastAPI()
+    add_error_handler_middleware(app)
+
+    @app.get("/api/down/{rest:path}")
+    async def _down(rest: str):
+        raise RedisTimeoutError("redis is down")
+
+    return app
+
+
+async def test_a_redis_outage_logs_the_path_cleaned(caplog):
+    caplog.set_level(logging.WARNING, logger="app.middleware.error_handler")
+    async with AsyncClient(transport=ASGITransport(_error_handler_app()), base_url="http://test") as c:
+        r = await c.get("/api/down/a%1B%5B2Jb%E2%80%A8c")
+    assert r.status_code == 503
+    assert [rec.getMessage() for rec in caplog.records] == [
+        "Redis unavailable for /api/down/a\\x1b[2Jb\\u2028c: TimeoutError: redis is down",
+    ]
+
+
+async def test_a_redis_error_logs_the_cache_key_cleaned(monkeypatch, caplog):
+    """The level, type and walkthrough routes read the cache before their printable-segment
+    check, and a path parameter keeps a decoded LF, so a key holds whatever the URL did;
+    a search key holds the query. get_cache and set_cache log the key when Redis fails."""
+
+    class _Down:
+        async def get(self, key):
+            raise RedisTimeoutError("redis is down")
+
+        async def setex(self, key, ttl, value):
+            raise RedisTimeoutError("redis is down")
+
+    monkeypatch.setattr(core_cache, "redis_client", _Down())
+    caplog.set_level(logging.ERROR, logger=core_cache.logger.name)
+
+    assert await get_cache(f"collectibles:level:{cache_slug('Eidos' + chr(10) + ANSI_PROBE + '7')}") is None
+    assert await set_cache(search_cache_key("jane.doe@example.com", 20), {"results": []}) is False
+
+    assert [rec.getMessage() for rec in caplog.records] == [
+        "Redis error on GET collectibles:level:eidos\\n\\x1b[2j7: TimeoutError: redis is down",
+        "Redis error on SET search:[email]:20:v3: TimeoutError: redis is down",
+    ]

@@ -5,6 +5,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from app.config.settings import settings
 from app.core.colours import RED, RESET
+from app.core.logging import LOG_HOST_MAX, LOG_PATH_MAX, sanitize_log_field
 
 logger = logging.getLogger("api")
 
@@ -150,8 +151,11 @@ async def bot_filter_middleware(request: Request, call_next):
         if referer:
             hostname = urlparse(referer).hostname or ""
             if hostname not in REFERER_ALLOWED_HOSTS:
-                logger.warning("%sBlocked referer %s on %s%s",
-                               RED, referer, original_path, RESET)
+                # The host only: it's all the rule reads, and the rest of another site's
+                # address can carry its visitor's data.
+                logger.warning("%sBlocked referer %s on %s%s", RED,
+                               sanitize_log_field(hostname or "-", LOG_HOST_MAX),
+                               sanitize_log_field(original_path, LOG_PATH_MAX), RESET)
                 return _reject(request, "referer")
 
     # Allow API, static assets, and SEO files (case-sensitive)

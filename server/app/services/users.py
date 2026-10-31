@@ -15,7 +15,7 @@ from fastapi import HTTPException
 from app.models.users import User
 from app.core.colours import CYAN, GRAY, RED, YELLOW, RESET
 from app.config.settings import settings
-from app.core.logging import exc_text
+from app.core.logging import exc_text, sanitize_log_field
 from app.services.auth import user_to_dict
 
 logger = logging.getLogger(__name__)
@@ -118,7 +118,7 @@ async def _fetch_avatar_image(url: str) -> tuple[bytes, str]:
                         # gets rejected here.
                         encoding = response.headers.get("content-encoding", "").strip().lower()
                         if encoding and encoding != "identity":
-                            logger.warning(f"{YELLOW}Rejecting compressed avatar response (content-encoding: {encoding}){RESET}")
+                            logger.warning(f"{YELLOW}Rejecting compressed avatar response (content-encoding: {sanitize_log_field(encoding, 40)}){RESET}")
                             raise HTTPException(
                                 status_code=400,
                                 detail="Image could not be processed. Try uploading a different file.",

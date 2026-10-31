@@ -780,6 +780,23 @@ async def test_avatar_destroy_runs_off_the_event_loop(
     assert rec.destroy_kwargs[0]["timeout"] > 0
 
 
+async def test_a_compressed_responses_encoding_is_logged_cleaned(user_client, monkeypatch, caplog):
+    """The image server is whoever the link names, and h11 passes ESC and bytes from 0x80
+    in a header, so the Content-Encoding it sends is cleaned and capped like a request's."""
+    encoding = "gz\x1b[2Jip\x85" + chr(0x2028) + "z" * 100 + "TAIL"
+    _patch_avatar_pipeline(monkeypatch, responses=[_ok_image_response(extra_headers={"content-encoding": encoding})])
+    caplog.set_level(logging.WARNING, logger="app.services.users")
+
+    r = await user_client.patch("/api/users/me", json={"avatar_url": AVATAR_URL})
+
+    assert r.status_code == 400
+    (message,) = [rec.getMessage() for rec in caplog.records if "compressed avatar" in rec.getMessage()]
+    field = message.split("content-encoding: ", 1)[1].rsplit(")", 1)[0]
+    assert field.isprintable()
+    assert field.startswith("gz\\x1b[2jip\\x85\\u2028zz")  # lower-cased by the service
+    assert field.endswith("…") and len(field) == 41
+
+
 @pytest.mark.parametrize("url", [
     "https://[::1MARKER]/pic.png",  # httpx: Invalid IPv6 address, quoting the host
     "https://" + chr(0x2603) + "MARKER" + chr(0xAD) + "--.example/pic.png",  # Invalid IDNA hostname

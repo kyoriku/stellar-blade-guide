@@ -22,6 +22,7 @@ LOG_UA_MAX = 48      # parse_ua's browser branches have no cap of their own
 LOG_IP_MAX = 45      # longest textual IPv6 (incl. IPv4-mapped); in dev the fallback can be X-Forwarded-For text, so untrusted
 LOG_COLO_MAX = 3     # IATA airport code; hard-sliced so the column never widens
 LOG_QUERY_MAX = 40   # search text; the API allows 100 and the line is already wide
+LOG_HOST_MAX = 253   # a refused Referer's host; DNS's longest, so a real one is never cut
 LOG_EXC_MAX = 256    # an exception's own text
 LOG_SQL_MAX = 512    # the SQL a failed statement ran: placeholders only, values are bound
 

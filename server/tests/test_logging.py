@@ -28,8 +28,10 @@ from httpx import ASGITransport, AsyncClient
 
 import app.middleware.origin_check as origin_check_module
 from app.config.settings import settings
-from app.core.logging import EMAIL_SHAPE, _NamedTracebacks
+from app.core.colours import CYAN, GRAY, GREEN, MAGENTA, RED, RESET, YELLOW
+from app.core.logging import EMAIL_SHAPE, LOG_HOST_MAX, _NamedTracebacks
 from app.middleware.bot_filter import add_bot_filter_middleware
+from app.middleware.error_handler import add_error_handler_middleware
 from app.middleware.logging import (
     LOG_COLO_MAX, LOG_IP_MAX, LOG_PATH_MAX, LOG_QUERY_MAX, LOG_UA_MAX,
     add_logging_middleware, parse_colo, sanitize_log_field,
@@ -118,19 +120,19 @@ def _access_lines(caplog):
     return [rec.getMessage() for rec in caplog.records if rec.name == "api" and " → " in rec.getMessage()]
 
 
-async def _asgi_get(app, path: str):
+async def _asgi_get(app, path: str, headers=()):
     """Drive the app with a hand-built ASGI scope.
 
     uvicorn sets scope["path"] to the percent-DECODED target, so `%C2%85` on the
     wire arrives as a real U+0085. Handing the app that decoded scope directly
     keeps the test independent of whatever an HTTP client library chooses to
-    normalise away on its side.
+    normalise away on its side. Header values go in as bytes, exactly as given.
     """
     scope = {
         "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
         "method": "GET", "scheme": "http", "path": path, "raw_path": path.encode(),
         "query_string": b"", "root_path": "",
-        "headers": [(b"host", b"test")],
+        "headers": [(b"host", b"test"), *headers],
         "client": ("127.0.0.1", 1234), "server": ("test", 80),
     }
     sent = []
@@ -663,3 +665,76 @@ async def test_an_email_address_in_a_path_or_a_user_agent_is_never_logged(api_lo
     assert "| /api/auth/x/[email] |" in line
     assert "UA: [email]" in line
     assert "@" not in line
+
+
+# ── the bot filter's own line ────────────────────────────────────────────────
+#
+# A refused Referer gets a line of its own from the bot filter, on the `api` logger,
+# ahead of the access line. The rule reads only the Referer's host, so that is all the
+# line keeps: the rest of another site's address can carry that site's visitor's data.
+# Production's parser (httptools) passes a tab and every byte from 0x80 to 0xFF in a
+# header, and Starlette reads them as Latin-1, so 0x85 arrives as NEL and 0x9B as the
+# one-character CSI; h11, uvicorn's fallback, passes ESC too. The path keeps ESC, NEL
+# and U+2028 after percent-decoding. The scope is built by hand so all of it arrives.
+
+APP_COLOURS = (GREEN, RED, YELLOW, CYAN, MAGENTA, GRAY, RESET)
+
+
+def _blocked_referer_lines(caplog):
+    return [rec.getMessage() for rec in caplog.records if rec.name == "api" and "Blocked referer" in rec.getMessage()]
+
+
+async def test_a_blocked_referer_logs_only_its_host(api_log, prod_mode):
+    async with _client(_app_with(add_bot_filter_middleware)) as c:
+        r = await c.get("/api/collectibles/", headers={
+            "referer": "https://user:pw@Other.Example/p/visitor?e=jane%40mail.example&q=secret",
+        })
+    assert r.status_code == 404
+    assert _blocked_referer_lines(api_log) == [f"{RED}Blocked referer other.example on /api/collectibles/{RESET}"]
+
+
+async def test_the_blocked_referer_line_escapes_and_caps_what_it_copies(api_log, prod_mode):
+    referer = b"https://ev\x1bil\x85\x9b" + b"h" * 600 + b"HOSTTAIL.example/"
+    path = "/api/x" + ANSI_PROBE + "\x85" + chr(0x2028) + "p" * 600 + "PATHTAIL"
+
+    await _asgi_get(_app_with(add_bot_filter_middleware), path, headers=[(b"referer", referer)])
+
+    (line,) = _blocked_referer_lines(api_log)
+    plain = line.removeprefix(RED).removesuffix(RESET)
+    assert plain.isprintable()  # no raw ESC, NEL, CSI or U+2028: one line, no ANSI
+    host, path_field = plain.removeprefix("Blocked referer ").split(" on ", 1)
+    assert host.startswith("ev\\x1bil\\x85\\x9bhhh")  # urlparse lower-cases the host
+    assert host.endswith("…") and len(host) == LOG_HOST_MAX + 1
+    assert path_field.startswith("/api/x\\x1b[2J\\x85\\u2028ppp")
+    assert path_field.endswith("…") and len(path_field) == LOG_PATH_MAX + 1
+
+
+async def test_no_header_the_stack_reads_reaches_the_log_raw(api_log, prod_mode):
+    """Every header the layers copy or judge, hostile at once, through the layers that
+    log, in main.py's order. Each line they write stays one printable line, and the
+    tail of every oversized value is cut, so a future line that copies a header raw
+    fails here."""
+    hostile = ANSI_PROBE + "\x85" + chr(0x2028) + "z" * 600 + "TAIL"
+    headers = [
+        (name, (prefix + hostile).encode())  # UTF-8, read back as Latin-1: U+2028 brings a C1 control
+        for name, prefix in [
+            (b"user-agent", "Firefox/1.0"),
+            (b"referer", "https://evil.example/"),
+            (b"cf-connecting-ip", "1.2.3.4"),
+            (b"cf-ray", "8a1b2c3d4e5f6789-"),
+            (b"x-forwarded-for", "1.2.3.4"),
+        ]
+    ]
+
+    await _asgi_get(
+        _app_with(add_bot_filter_middleware, add_error_handler_middleware), "/api/x" + hostile, headers=headers,
+    )
+
+    lines = [rec.getMessage() for rec in api_log.records if rec.name == "api" or rec.name.startswith("app.")]
+    assert len(lines) == 3  # the blocked Referer, the access line and the CF-Connecting-IP alarm
+    for line in lines:
+        plain = line
+        for code in APP_COLOURS:
+            plain = plain.replace(code, "")
+        assert plain.isprintable(), repr(line)  # repr: a raw failure message would reach the terminal
+        assert "TAIL" not in line
