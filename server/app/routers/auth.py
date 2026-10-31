@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from redis.exceptions import RedisError
 
 from app.config.settings import settings
@@ -72,6 +73,17 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # Email / Password routes
 
+async def _refuse_taken(db: AsyncSession, email: str, username: str) -> None:
+    """The 409 for an address or username another account already has."""
+    existing = await db.execute(select(User).where(User.email == email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    existing = await db.execute(select(User).where(User.username == username))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register(
@@ -80,15 +92,7 @@ async def register(
     body: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    # Check for existing email
-    existing = await db.execute(select(User).where(User.email == body.email))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
-
-    # Check for existing username
-    existing = await db.execute(select(User).where(User.username == body.username))
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
+    await _refuse_taken(db, body.email, body.username)
 
     user = User(
         email=body.email,
@@ -96,7 +100,15 @@ async def register(
         password_hash=hash_password(body.password),
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Another sign-up for this address or username committed between the check
+        # above and this commit (a double submit, two tabs). It gets the check's own
+        # 409; a collision the check can't name stays a 500.
+        await db.rollback()
+        await _refuse_taken(db, body.email, body.username)
+        raise
     await db.refresh(user)
 
     logger.info(f"{CYAN}New user registered: user {user.id}{RESET}")
@@ -438,6 +450,32 @@ def _refuse_if_deactivated(request: Request, user: User) -> None:
 
 
 async def _get_or_create_oauth_user(
+    request: Request,
+    db: AsyncSession,
+    provider: str,
+    provider_user_id: str,
+    email: str,
+    email_verified: object,
+    username: str | None,
+    avatar_url: str | None,
+) -> User:
+    """_resolve_oauth_user, retried once if another sign-in wins a race.
+
+    Two first sign-ins with one Google or Discord account, a provider sign-in and a
+    sign-up for one address, or two new accounts given one username can all pass the
+    lookups before either writes. The loser's write then hits a unique key. The
+    winner's row is there by then, so one more pass finds it, links to it, or picks
+    the next free username. A second collision stays a 500.
+    """
+    args = (request, db, provider, provider_user_id, email, email_verified, username, avatar_url)
+    try:
+        return await _resolve_oauth_user(*args)
+    except IntegrityError:
+        await db.rollback()
+        return await _resolve_oauth_user(*args)
+
+
+async def _resolve_oauth_user(
     request: Request,
     db: AsyncSession,
     provider: str,

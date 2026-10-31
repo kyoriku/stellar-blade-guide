@@ -52,9 +52,11 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 import app.core.auth as core_auth
+import app.routers.users as users_routes
 from app.core.auth import create_access_token
 from app.core.colours import RED, RESET, YELLOW
 from app.db.database import Base, get_db
@@ -711,6 +713,57 @@ async def test_too_many_redirects_rejected(user_client, monkeypatch):
     assert len(rec.requested_urls) == 4  # MAX_REDIRECTS + 1 requests, then give up
     assert rec.moderation_calls == []
     assert rec.upload_calls == []
+
+
+# ── PATCH /api/users/me: renaming ─────────────────────────────────────────────
+
+async def _other_account(session, username: str) -> None:
+    session.add(User(email=f"{username}@example.com", username=username, password_hash="x"))
+    await session.commit()
+
+
+async def test_renaming_to_a_taken_username_gets_a_409(user_client, users_db_session):
+    await _other_account(users_db_session, "taken")
+
+    r = await user_client.patch("/api/users/me", json={"username": "taken"})
+
+    assert (r.status_code, r.json()["detail"]) == (409, "Username already taken")
+
+
+async def test_a_rename_that_loses_a_race_gets_the_checks_409(user_client, users_db_session, monkeypatch):
+    """Two accounts renaming to one free username can both pass the check before either
+    commits, and the avatar work between them can take seconds. The loser's commit hits
+    the unique key, which used to answer 500; it now gets the check's own 409."""
+    await _other_account(users_db_session, "taken")
+    real = users_routes._refuse_taken_username
+    calls = []
+
+    async def first_misses(db, username):
+        # The other rename's commit lands after this check, so the check misses.
+        calls.append(username)
+        if len(calls) > 1:
+            await real(db, username)
+
+    monkeypatch.setattr(users_routes, "_refuse_taken_username", first_misses)
+
+    r = await user_client.patch("/api/users/me", json={"username": "taken"})
+
+    assert (r.status_code, r.json()["detail"]) == (409, "Username already taken")
+    assert calls == ["taken", "taken"]  # checked again after the collision
+
+
+async def test_a_rename_collision_the_check_cannot_name_is_not_swallowed(user_client, users_db_session, monkeypatch):
+    """Only a collision the check can name becomes its 409. Anything else is re-raised,
+    so it stays a 500, never a 200 that kept the old name."""
+    await _other_account(users_db_session, "taken")
+
+    async def never_finds(db, username):
+        return None
+
+    monkeypatch.setattr(users_routes, "_refuse_taken_username", never_finds)
+
+    with pytest.raises(IntegrityError):
+        await user_client.patch("/api/users/me", json={"username": "taken"})
 
 
 # ── DELETE /api/users/me ──────────────────────────────────────────────────────
