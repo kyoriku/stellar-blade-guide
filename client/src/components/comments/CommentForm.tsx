@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Send } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { errorMessage } from '../../services/api'
+import { useToast } from '../../context/ToastContext'
 
 interface CommentFormProps {
   onSubmit: (body: string) => Promise<void>
@@ -24,6 +25,8 @@ export default function CommentForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
+  const { showToast } = useToast()
+  const formRef = useRef<HTMLFormElement>(null)
 
   if (!isAuthenticated) {
     return (
@@ -57,14 +60,19 @@ export default function CommentForm({
       await onSubmit(trimmed)
       setBody('')
     } catch (err) {
-      setError(errorMessage(err, 'Failed to post comment'))
+      const message = errorMessage(err, 'Failed to post comment')
+      // Leaving the page, or a sign-out that swaps the form for its sign-in links, can
+      // take the form away while its post is out. The error then has nowhere to show but
+      // a toast, as a refused edit's does.
+      if (formRef.current) setError(message)
+      else showToast(message)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-2">
+    <form ref={formRef} onSubmit={(e) => void handleSubmit(e)} className="space-y-2">
       <textarea
         value={body}
         onChange={e => { setBody(e.target.value); setError(null) }}

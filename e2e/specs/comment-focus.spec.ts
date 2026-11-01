@@ -9,8 +9,8 @@ import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type 
 // Reply. A save or a reply that lands after the reader moved on or scrolled away leaves
 // them where they are. While a save or a reply is out, Cancel is refused and the text
 // box takes no typing (Comment.tsx, CommentForm.tsx), since what lands closes the form;
-// a refused one lifts both, and a refused save shows its error as a toast if its editor
-// has gone.
+// a refused one lifts both, and shows its error as a toast if its form has gone (a
+// collapsed thread, a page left).
 // Save and the post buttons are busy rather than disabled while sending, so they keep
 // focus and ignore a second press, and their busy text is read out. A refused one
 // ignores presses, reads its error out and, in forced colours, keeps disabled's grey.
@@ -530,5 +530,27 @@ test.describe('comment edit and reply focus', () => {
     // With something to post, the button no longer is.
     await box.fill(`E2E ${fx.token} new comment`);
     expect(await colour(submit)).not.toBe(grey);
+  });
+
+  test('a refused reply shows its error as a toast once leaving the page has taken its form away', async ({ page }) => {
+    // The reply's POST is held, then refused, as moderation would refuse it.
+    let release = () => {};
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let arrived!: () => void;
+    const seen = new Promise<void>(resolve => { arrived = resolve; });
+    await page.route('**/api/comments/', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      arrived();
+      await gate;
+      await route.fulfill({ status: 400, json: { detail: FLAGGED } });
+    });
+    await startReply(page);
+    await seen;
+    // A link inside the site, so the request outlives the page: a full load would end it.
+    await page.getByRole('link', { name: /All Walkthroughs/ }).click();
+    await expect(page.getByPlaceholder(POST_BOX)).toHaveCount(0);
+
+    release();
+    await expect(page.getByRole('status').getByText(FLAGGED, { exact: true })).toBeVisible();
   });
 });
