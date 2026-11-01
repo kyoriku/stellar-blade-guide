@@ -13,9 +13,11 @@ const ITEMS: Record<RowAction, { label: string; Icon: LucideIcon }> = {
   delete: { label: ADMIN_COPY.delete, Icon: Trash2 },
 }
 
-// The account menu's item classes (Navbar.tsx), with its hover look on keyboard
-// focus too, since the arrows move focus here.
-const ITEM_CLASS = 'w-full flex items-center gap-2.5 px-4 py-2 text-sm text-left border-l-2 border-transparent transition-[color,background-color] duration-200 cursor-pointer focus-visible:outline-hidden'
+// The account menu's item look (accountItemClass in Navbar.tsx), hover and keyboard
+// focus alike, since the arrows move focus here; in forced colors the outline sits
+// inside the item, where the panel's overflow-hidden can't clip it. The two are kept
+// in step by hand.
+const ITEM_CLASS = 'w-full flex items-center gap-2.5 px-4 py-2 text-sm text-left border-l-2 border-transparent transition-[color,background-color] duration-200 cursor-pointer focus-visible:outline-hidden forced-colors:focus-visible:-outline-offset-4'
 const PLAIN_ITEM = `${ITEM_CLASS} text-gray-300 hover:text-white hover:bg-gray-800/50 hover:border-gray-400 focus-visible:text-white focus-visible:bg-gray-800/50 focus-visible:border-gray-400`
 const DANGER_ITEM = `${ITEM_CLASS} text-red-400 hover:bg-red-500/10 hover:border-red-400 focus-visible:bg-red-500/10 focus-visible:border-red-400`
 

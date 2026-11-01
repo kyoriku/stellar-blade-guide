@@ -31,7 +31,7 @@ async function uiLogin(page: Page, user: TestUser): Promise<void> {
 
 async function signOut(page: Page): Promise<void> {
   await accountMenu(page).click();
-  await page.getByRole('button', { name: 'Sign out' }).filter({ visible: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
 }
 
 /** A signs in through the UI; B is a second tab of the same browser, restored by its own refresh. */
@@ -265,5 +265,24 @@ test.describe('cross-tab sign-out', () => {
       release();
       await context.unrouteAll({ behavior: 'ignoreErrors' });
     }
+  });
+
+  test("an account menu open in a tab whose session another tab ends comes back closed with the session", async ({ page: a, context }) => {
+    const b = await signInTwoTabs(a, context, user!);
+    // B's account menu is open when A signs out, which signs B out at once.
+    await accountMenu(b).click();
+    await expect(accountMenu(b)).toHaveAttribute('aria-expanded', 'true');
+    await signOut(a);
+    await expect(accountMenu(b)).toHaveCount(0);
+
+    // A signs in again, and B, with no page change between, recovers on its next focus:
+    // its menu went with the session, so it comes back closed.
+    await uiLogin(a, user!);
+    await expect(accountMenu(a)).toBeVisible();
+    await b.bringToFront();
+    await b.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect(accountMenu(b)).toBeVisible();
+    await expect(accountMenu(b)).toHaveAttribute('aria-expanded', 'false');
+    await expect(b.getByRole('menu')).toHaveCount(0);
   });
 });

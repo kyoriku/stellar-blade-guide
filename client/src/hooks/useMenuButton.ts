@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { FocusEvent, KeyboardEvent, MouseEvent } from 'react'
 
-// The WAI-ARIA menu button pattern, for any menu: the admin page's row menus today,
-// and the navbar's account menu next (its items are links). The consumer renders the
+// The WAI-ARIA menu button pattern, for any menu: the admin page's row menus and the
+// navbar's account menu (whose items are mostly links). The consumer renders the
 // elements and spreads the props:
 //
 //   <div {...rootProps}>                         the trigger and the panel, together
@@ -25,6 +25,12 @@ import type { FocusEvent, KeyboardEvent, MouseEvent } from 'react'
 const ITEM_SELECTOR = '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]'
 
 type FocusTarget = 'first' | 'last'
+
+// How many frames an item that can't take focus yet is tried again: a panel fading in
+// with a visibility transition (the account menu's) is still hidden in the frame it
+// opens, since a transition sits at its start value then. Twelve frames is a fifth of
+// a second at 60 Hz; the account menu's item takes focus in the second.
+const FOCUS_RETRY_FRAMES = 12
 
 function menuItems(menu: HTMLElement | null): HTMLElement[] {
   return menu ? Array.from(menu.querySelectorAll<HTMLElement>(ITEM_SELECTOR)) : []
@@ -69,11 +75,17 @@ export function useMenuButton({ disabled = false }: MenuButtonOptions = {}) {
   const close = useCallback((restoreFocus = false) => {
     setOpen(false)
     pendingFocus.current = null
-    if (restoreFocus) triggerRef.current?.focus()
+    tabbing.current = false
+    // Focus still in the menu (a close from outside it, such as a page change) would
+    // sit on an item that is about to hide and then fall to <body>: it goes back to
+    // the trigger as well.
+    const active = document.activeElement
+    if (restoreFocus || (active && menuRef.current?.contains(active))) triggerRef.current?.focus()
   }, [])
 
   const openOn = (target: FocusTarget) => {
     pendingFocus.current = target
+    tabbing.current = false
     setOpen(true)
   }
 
@@ -82,8 +94,14 @@ export function useMenuButton({ disabled = false }: MenuButtonOptions = {}) {
     const target = pendingFocus.current
     pendingFocus.current = null
     if (!target || focusItem(menuRef.current, target)) return
-    // The next frame, once a fade-in has made the items visible.
-    const frame = requestAnimationFrame(() => { focusItem(menuRef.current, target) })
+    // Each frame until a fade-in has made the items visible, while the menu stays open.
+    let tries = 0
+    let frame = 0
+    const retry = () => {
+      if (focusItem(menuRef.current, target) || ++tries >= FOCUS_RETRY_FRAMES) return
+      frame = requestAnimationFrame(retry)
+    }
+    frame = requestAnimationFrame(retry)
     return () => cancelAnimationFrame(frame)
   }, [open])
 
@@ -136,6 +154,9 @@ export function useMenuButton({ disabled = false }: MenuButtonOptions = {}) {
   }
 
   const onMenuKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+    // A menu that stays mounted keeps its items focusable while it fades out; keys
+    // reaching one then belong to no open menu.
+    if (!open) return
     tabbing.current = e.key === 'Tab'
     const items = menuItems(menuRef.current)
     if (items.length === 0) return
@@ -177,7 +198,8 @@ export function useMenuButton({ disabled = false }: MenuButtonOptions = {}) {
 
   return {
     open,
-    // Closes from outside the menu (a route change, say); true gives focus back to the trigger.
+    // Closes from outside the menu (a route change, say). Focus still inside the menu
+    // goes back to the trigger either way; true sends it there from anywhere.
     close,
     triggerRef,
     rootProps: { ref: setRoot, onBlur: onRootBlur },

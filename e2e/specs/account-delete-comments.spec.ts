@@ -109,7 +109,7 @@ test.describe('deleting an account', () => {
 
     // To Settings and back with no reload, as someone checking their comments would go.
     await page.getByRole('button', { name: 'Account menu' }).click();
-    await page.getByRole('link', { name: 'Settings' }).filter({ visible: true }).click();
+    await page.getByRole('menuitem', { name: 'Settings' }).click();
     await page.getByLabel(`Type ${a.username} to confirm`, { exact: true }).fill(a.username);
     const signedOut = page.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/logout');
     await page.getByRole('button', { name: 'Delete my account' }).click();
