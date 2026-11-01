@@ -302,6 +302,42 @@ test.describe('when the page and the server disagree', () => {
     await expect(action(page, author, 'Delete')).toHaveCount(0);
     await expect(box).toBeFocused();
   });
+
+  test('a refusal whose thread reload fails keeps the thread and its dialog on screen', async ({ page, request }) => {
+    const author = await account(request, 'rku', 'user');
+    const viewer = await account(page.request, 'rkm', 'moderator');
+    await openAs(page, viewer);
+    await expect(action(page, author, 'Delete')).toBeVisible();
+
+    expect(await setUserRole(author.username, 'moderator')).toBe(true);
+    // The refusal's reload meets the list's rate limit, a 4xx, so it isn't retried.
+    const thread = (r: { url(): string }) => new URL(r.url()).pathname.startsWith('/api/comments/walkthrough/');
+    await page.route('**/api/comments/walkthrough/*', route => route.fulfill({ status: 429, json: { detail: 'slow down' } }), { times: 1 });
+    const failed = page.waitForResponse(r => thread(r) && r.status() === 429);
+    await action(page, author, 'Delete').click();
+    await confirmDelete(page).click();
+    await expect(dialog(page).getByRole('alert')).toHaveText(REFUSED);
+    await failed;
+
+    // A second try, from the same dialog, is refused again, and this reload gets
+    // through. The old rule replaced the whole thread with its error and closed the
+    // dialog, which this press, or the checks after the reload, would find gone.
+    const reloaded = page.waitForResponse(r => thread(r) && r.status() === 200);
+    await confirmDelete(page).click({ timeout: 10_000 });
+    await reloaded;
+    await expect(own(page, author).getByText('moderator', { exact: true })).toBeVisible();
+    await expect(action(page, author, 'Delete')).toHaveCount(0);
+    await expect(dialog(page).getByRole('alert')).toHaveText(REFUSED);
+    expect(await isDeleted(author)).toBe(false);
+  });
+});
+
+test('a thread whose first load fails says so, rather than that it has no comments', async ({ page }) => {
+  // A 4xx, so it isn't retried. The page asks for the thread once.
+  await page.route('**/api/comments/walkthrough/*', route => route.fulfill({ status: 429, json: { detail: 'slow down' } }), { times: 1 });
+  await page.goto(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}`);
+  await expect(page.getByText('Failed to load comments', { exact: true })).toBeVisible();
+  await expect(page.getByText('No comments yet. Be the first!', { exact: true })).toHaveCount(0);
 });
 
 test("a moderator deletes a user's comment", async ({ page, request }) => {

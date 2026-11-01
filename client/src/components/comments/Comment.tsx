@@ -17,7 +17,8 @@ interface CommentProps {
   onReply: (parentId: number, body: string) => Promise<void>
   onEdit: (commentId: number, body: string) => Promise<void>
   onDelete: (commentId: number) => Promise<void>
-  // Takes focus once a delete, or a refusal, takes away the Delete button that had it.
+  // Takes focus once a delete takes away the Delete button that had it, or a refusal
+  // shows that button is out of date.
   headingRef: RefObject<HTMLHeadingElement | null>
   depth?: number
   highlightId?: number | null
@@ -75,10 +76,11 @@ export default function Comment({
   const deleted = useRef(false)
   const dialogGone = useRef(false)
   const listUpdated = useRef(false)
-  // A refused delete takes the Delete button away too: the refusal's session refresh
-  // or thread reload shows the viewer can't delete this comment after all. It holds
-  // until the dialog opens again: a later failure in the same dialog doesn't bring
-  // the button back.
+  // A refused delete shows the Delete button is out of date. The refusal's session
+  // refresh (the viewer's role) or thread reload (the author's), whichever carries the
+  // change, normally takes it away. If that one fails, the stale button stays until a
+  // later one of the same kind lands, and focus still goes to the heading. This holds
+  // until the dialog opens again: a later failure in the same dialog doesn't change it.
   const refused = useRef(false)
   const focusHeadingOnceDeleted = useCallback(() => {
     if (!deleted.current || !dialogGone.current || !listUpdated.current) return
@@ -178,8 +180,8 @@ export default function Comment({
   const handleDialogClosed = () => {
     dialogGone.current = true
     if (deleted.current) focusHeadingOnceDeleted()
-    // The refusal's session refresh or thread reload takes the Delete button away,
-    // before or after this close.
+    // The refusal showed the Delete button is out of date: its refresh or reload
+    // normally takes it away, before or after this close.
     else if (refused.current) headingRef.current?.focus({ preventScroll: true })
     else if (deleteButtonRef.current) deleteButtonRef.current.focus()
     // Gone for good already: the session ended, or a refresh landed after a reopen.
@@ -205,8 +207,8 @@ export default function Comment({
       if (deleteModalOpen.current) setDeleteError(message)
       else {
         showToast(message)
-        // That close gave focus back to the Delete button, which the refusal's refresh
-        // or reload is about to take away.
+        // That close gave focus back to the Delete button, which the refusal shows is
+        // out of date: its refresh or reload normally takes it away.
         if (refused.current && focusLeftNowhere(deleteButtonRef.current)) {
           headingRef.current?.focus({ preventScroll: true })
         }
