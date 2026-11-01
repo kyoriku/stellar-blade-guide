@@ -138,7 +138,7 @@ test.describe('account switch', () => {
 
     // UI logout — ProtectedRoute bounces the now-guest tab to /login.
     await page.getByRole('button', { name: 'Account menu' }).click();
-    await page.getByRole('button', { name: 'Sign out' }).filter({ visible: true }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
     await expect(page).toHaveURL(/\/login/);
 
     // SPA-internal login as B; login returns to state.from (/stats), which

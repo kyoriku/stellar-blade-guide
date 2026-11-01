@@ -31,7 +31,7 @@ async function uiLogin(page: Page, user: TestUser): Promise<void> {
 
 async function signOut(page: Page): Promise<void> {
   await accountMenu(page).click();
-  await page.getByRole('button', { name: 'Sign out' }).filter({ visible: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
 }
 
 /** A signs in through the UI; B is a second tab of the same browser, restored by its own refresh. */

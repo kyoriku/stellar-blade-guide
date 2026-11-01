@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { FocusEvent, KeyboardEvent, MouseEvent } from 'react'
 
-// The WAI-ARIA menu button pattern, for any menu: the admin page's row menus today,
-// and the navbar's account menu next (its items are links). The consumer renders the
+// The WAI-ARIA menu button pattern, for any menu: the admin page's row menus and the
+// navbar's account menu (whose items are mostly links). The consumer renders the
 // elements and spreads the props:
 //
 //   <div {...rootProps}>                         the trigger and the panel, together

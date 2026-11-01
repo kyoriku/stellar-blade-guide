@@ -63,7 +63,7 @@ test.describe('auth', () => {
     await expect(accountMenu(page)).toBeVisible();
 
     await accountMenu(page).click();
-    await page.getByRole('button', { name: 'Sign out' }).filter({ visible: true }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
 
     await expect(navSignIn(page)).toBeVisible();
     await expect(accountMenu(page)).toHaveCount(0);

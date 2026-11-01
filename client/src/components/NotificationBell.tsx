@@ -22,7 +22,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Close on outside click (mirrors the user-menu pattern in Navbar).
+  // Close on a mousedown anywhere outside the bell and its panel.
   useEffect(() => {
     if (!open) return
     const onClick = (e: MouseEvent) => {

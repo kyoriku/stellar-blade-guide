@@ -15,6 +15,19 @@ import type { NavSection } from './navbar/navSections'
 import DesktopDropdown from './navbar/DesktopDropdown'
 import MobileAccordionSection from './navbar/MobileAccordionSection'
 import { ADMIN_COPY } from '../constants/adminCopy'
+import { useMenuButton } from '../hooks/useMenuButton'
+
+// The account menu's items: the current page's in cyan, the others lit on hover and
+// on keyboard focus alike, as in the admin page's row menus (the arrows move focus
+// here; outline-hidden, not outline-none, so forced colors still draws an outline,
+// set inside the item, since the panel's overflow-hidden clips anything outside it).
+// The current page's item already wears the highlight, so focus draws a white ring
+// inside its cyan bar and turns its text white.
+const accountItemClass = (current: boolean) =>
+  `flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${current
+    ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium focus-visible:text-white focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white'
+    : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400 focus-visible:outline-hidden forced-colors:focus-visible:-outline-offset-4 focus-visible:text-white focus-visible:bg-gray-800/50 focus-visible:border-gray-400'
+  }`
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,8 +44,11 @@ function Navbar() {
   // at nav time but must not re-run on every keystroke.
   const searchQueryRef = useRef(searchQuery);
   useEffect(() => { searchQueryRef.current = searchQuery }, [searchQuery]);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const userDropdownRef = useRef<HTMLDivElement>(null);
+  // The account menu, on the WAI-ARIA menu button pattern (hooks/useMenuButton.ts):
+  // the arrows, Home and End, Escape, Tab, and a press outside all work as in the
+  // admin page's row menus.
+  const accountMenu = useMenuButton();
+  const closeAccountMenu = accountMenu.close;
   const location = useLocation();
   // const navigate = useNavigate();
   const { user, isAuthenticated, isRestoring, logout } = useAuth();
@@ -52,21 +68,10 @@ function Navbar() {
   const overallPct = ringReady ? Math.floor((ringFound / userStats.total.total) * 100) : 0;
   const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError, error: mobileSearchErrorObj } = useSearch(searchQuery);
   const handleLogout = async () => {
-    setUserDropdownOpen(false)
+    closeAccountMenu()
     await logout()
     // navigate('/')
   }
-
-  // Close user dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
-        setUserDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   // Focus restore target when the drawer is dismissed via the backdrop —
   // inert blurs the drawer's focused element to <body> otherwise.
@@ -139,11 +144,13 @@ function Navbar() {
 
   useEffect(() => {
     setIsOpen(false);
+    // A page change underneath an open account menu (Back, say) closes it too.
+    closeAccountMenu();
     setSearchQuery('');
     if (!searchQueryRef.current) {
       setOpenSections(getActiveSectionFromPath(location.pathname));
     }
-  }, [location]);
+  }, [location, closeAccountMenu]);
 
   // The lock belongs to the drawer being open and nothing else. searchQuery used
   // to be in the deps, so a 12-character query unlocked and re-locked the
@@ -316,11 +323,11 @@ function Navbar() {
                   <div className="w-3.5 h-3.5" />
                 </div>
               ) : isAuthenticated && user ? (
-                <div key="account" className="relative hidden lg:block" ref={userDropdownRef}>
+                <div key="account" className="relative hidden lg:block" {...accountMenu.rootProps}>
                   <button
-                    onClick={() => setUserDropdownOpen(p => !p)}
+                    type="button"
+                    {...accountMenu.triggerProps}
                     aria-label="Account menu"
-                    aria-expanded={userDropdownOpen}
                     className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-800/50 transition-all duration-200 text-gray-300 hover:text-cyan-400 cursor-pointer"
                   >
                     <div className="w-7 h-7 rounded-full bg-cyan-400/20 border border-cyan-400/30 flex items-center justify-center overflow-hidden">
@@ -329,25 +336,23 @@ function Navbar() {
                         : <User className="w-4 h-4 text-cyan-400" />
                       }
                     </div>
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${accountMenu.open ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {/* User dropdown */}
-                  <div className={`absolute right-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${userDropdownOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
+                  {/* The panel stays mounted and fades; the identity header sits outside
+                      the menu, which holds only the items. */}
+                  <div {...accountMenu.panelProps} className={`absolute right-0 mt-2 w-56 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${accountMenu.open ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
                     <div className="px-4 py-3 border-b border-gray-700/50 ">
                       <p className="text-sm font-medium text-white truncate">{user.username}</p>
                       {/* email isn't cached (PII) — hide the line while the
                           identity is optimistic instead of rendering a blank */}
                       {user.email && <p className="text-xs text-gray-400 truncate">{user.email}</p>}
                     </div>
-                    <div className="py-1.5">
+                    <div {...accountMenu.menuProps} aria-label="Account menu" className="py-1.5">
                       <Link
                         to="/progress"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className={`flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${location.pathname === '/progress'
-                          ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                          : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400'
-                          }`}
+                        {...accountMenu.getItemProps()}
+                        className={accountItemClass(location.pathname === '/progress')}
                       >
                         <BarChart3 className="w-4 h-4" />
                         Progress
@@ -360,11 +365,8 @@ function Navbar() {
                       </Link>
                       <Link
                         to="/settings"
-                        onClick={() => setUserDropdownOpen(false)}
-                        className={`flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${location.pathname === '/settings'
-                          ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                          : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400'
-                          }`}
+                        {...accountMenu.getItemProps()}
+                        className={accountItemClass(location.pathname === '/settings')}
                       >
                         <Settings className="w-4 h-4" />
                         Settings
@@ -372,19 +374,17 @@ function Navbar() {
                       {isAdmin && (
                         <Link
                           to="/admin"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className={`flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${location.pathname === '/admin'
-                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
-                            : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400'
-                            }`}
+                          {...accountMenu.getItemProps()}
+                          className={accountItemClass(location.pathname === '/admin')}
                         >
                           <Shield className="w-4 h-4" />
                           {ADMIN_COPY.navLink}
                         </Link>
                       )}
                       <button
-                        onClick={() => void handleLogout()}
-                        className="w-full flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 border-transparent text-gray-300 transition-[color,background-color] duration-200 cursor-pointer hover:text-white hover:bg-gray-800/50 hover:border-gray-400"
+                        type="button"
+                        {...accountMenu.getItemProps(() => void handleLogout())}
+                        className={`w-full cursor-pointer ${accountItemClass(false)}`}
                       >
                         <LogOut className="w-4 h-4" />
                         Sign out

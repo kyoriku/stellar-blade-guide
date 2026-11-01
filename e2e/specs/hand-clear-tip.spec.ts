@@ -228,7 +228,7 @@ test.describe('the hand-clear tip, signed in', () => {
 
     // A client-side visit keeps the toast, which has no timer.
     await page.getByRole('button', { name: 'Account menu' }).click();
-    await page.getByRole('link', { name: /^Progress/ }).filter({ visible: true }).click();
+    await page.getByRole('menuitem', { name: /^Progress/ }).click();
     await expect(page).toHaveURL(/\/progress$/);
     await manageToggle(page).click();
     await scopeSelect(page).selectOption('level:Xion');

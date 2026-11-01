@@ -137,7 +137,7 @@ async function gotoAdmin(page: Page): Promise<{ rows: ListedRow[]; body: string;
 // Through the account menu, as an admin goes, with no reload.
 async function openAdminFromMenu(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('link', { name: ADMIN_COPY.navLink, exact: true }).filter({ visible: true }).click();
+  await page.getByRole('menuitem', { name: ADMIN_COPY.navLink, exact: true }).click();
   await expect(usersTable(page)).toBeVisible();
 }
 
@@ -224,7 +224,8 @@ test.describe('who reaches the admin page', () => {
 
       await page.goto('/');
       await page.getByRole('button', { name: 'Account menu' }).click();
-      await expect(page.getByRole('link', { name: 'Settings', exact: true }).filter({ visible: true })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: 'Settings', exact: true })).toBeVisible();
+      await expect(page.getByRole('menuitem', { name: ADMIN_COPY.navLink, exact: true })).toHaveCount(0);
       await expect(page.getByRole('link', { name: ADMIN_COPY.navLink, exact: true })).toHaveCount(0);
 
       // The drawer keeps its single row of buttons.
@@ -281,9 +282,9 @@ test.describe('who reaches the admin page', () => {
     await registerAdmin(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Account menu' }).click();
-    const settings = page.getByRole('link', { name: 'Settings', exact: true }).filter({ visible: true });
-    const link = page.getByRole('link', { name: ADMIN_COPY.navLink, exact: true }).filter({ visible: true });
-    const signOut = page.getByRole('button', { name: 'Sign out' }).filter({ visible: true });
+    const settings = page.getByRole('menuitem', { name: 'Settings', exact: true });
+    const link = page.getByRole('menuitem', { name: ADMIN_COPY.navLink, exact: true });
+    const signOut = page.getByRole('menuitem', { name: 'Sign out' });
     await expect(link).toBeVisible();
     // Between Settings and Sign out.
     const [s, l, o] = [await settings.boundingBox(), await link.boundingBox(), await signOut.boundingBox()];
@@ -681,7 +682,7 @@ test.describe('the actions', () => {
 
     // Leaving the page drops it: back again, the row is masked and nothing is asked.
     await page.getByRole('button', { name: 'Account menu' }).click();
-    await page.getByRole('link', { name: 'Settings', exact: true }).filter({ visible: true }).click();
+    await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
     await expect(page).toHaveURL('/settings');
     await page.goBack();
     await expect(row).toContainText('e***@s***.dev');
@@ -967,6 +968,14 @@ test.describe('the actions', () => {
     await trigger.focus();
     await page.keyboard.press('Enter');
     await expect(item(ADMIN_COPY.makeModerator)).toBeFocused();
+    // In forced colors the focused item's outline sits inside it, where the panel's
+    // overflow-hidden can't clip its sides.
+    await page.emulateMedia({ forcedColors: 'active' });
+    expect(await item(ADMIN_COPY.makeModerator).evaluate(el => {
+      const s = getComputedStyle(el);
+      return [s.outlineStyle, s.outlineWidth, s.outlineOffset];
+    })).toEqual(['solid', '2px', '-4px']);
+    await page.emulateMedia({ forcedColors: 'none' });
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(trigger).toHaveAttribute('aria-controls', (await menu.getAttribute('id'))!);
     await expect(menu.getByRole('menuitem')).toHaveText([ADMIN_COPY.makeModerator, ADMIN_COPY.deactivate, ADMIN_COPY.delete]);

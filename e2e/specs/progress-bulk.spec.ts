@@ -80,7 +80,7 @@ async function stored(page: Page): Promise<number[] | null> {
 // a reload, so whatever the page holds in memory survives.
 async function signOutAndIn(page: Page, user: TestUser): Promise<void> {
   await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('button', { name: 'Sign out' }).filter({ visible: true }).click();
+  await page.getByRole('menuitem', { name: 'Sign out' }).click();
   await expect(page).toHaveURL(/\/login/);
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password').fill(user.password);
@@ -243,7 +243,7 @@ test.describe('bulk progress, signed in', () => {
     // The ring floors to whole percent, so only these two ends can show a bulk change;
     // the menu opens only once the modal is gone.
     await accountMenu.click();
-    await expect(page.getByRole('link', { name: /^Progress 100%$/ })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: /^Progress 100%$/ })).toBeVisible();
     // Click away to close the menu; the card's heading would close the card.
     await page.getByRole('heading', { name: 'My Progress', level: 1 }).click();
     // Nothing left to mark: a toast, and no dialog.
@@ -259,7 +259,7 @@ test.describe('bulk progress, signed in', () => {
     await expect(toast(page, BULK_COPY.successClear(total, fmt(total), all))).toBeVisible();
     await expect(page.getByText(`0 of ${fmt(total)} collectibles found`)).toBeVisible();
     await accountMenu.click();
-    await expect(page.getByRole('link', { name: /^Progress 0%$/ })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: /^Progress 0%$/ })).toBeVisible();
     expect(await serverIds(page, token, ip)).toEqual([]);
   });
 

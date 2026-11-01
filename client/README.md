@@ -106,7 +106,7 @@ The page lists every account, newest first, with a search that matches any part 
 
 - **Data:** `hooks/useAdminUsers.ts` holds the API's types. The list is debounced 300 ms and sent as a POST when there is a search, so a typed address never goes in a URL. It is never kept (`staleTime` and `gcTime` 0, `cache: 'no-store'`) and is dropped at every sign-out with the other per-user queries. Every call has a deadline, and a 403 refreshes the session once, so a role lost since sign-in ends at the 404.
 - **Layout:** the list is divs with table roles, so it reads as a table at every width. From `lg` a subgrid lines the columns up under a header row; below it each row stacks, the header row stays for screen readers only, and Reveal becomes an eye icon. A long address breaks after the `@` or before a dot (`emailBreakParts` in `utils/adminUsers.ts`), and inside a word only when one piece is longer than a line.
-- **Menus:** `hooks/useMenuButton.ts` is the WAI-ARIA menu button pattern (the arrows, Home and End, Escape, Tab, a press outside), written so the account menu can move onto it too.
+- **Menus:** `hooks/useMenuButton.ts` is the WAI-ARIA menu button pattern (the arrows, Home and End, Escape, Tab, a press outside), shared by these row menus and the navbar's account menu.
 - **Dialogs:** `ConfirmModal` has two optional props for this page: `confirmText`, a typed confirmation (an exact match after NFC normalization and trimming, `utils/confirmText.ts`), and `icon`. The comment delete dialog uses neither.
 - **Settings:** an admin account sees "Admin accounts can't be deleted." in place of the delete form, since the server refuses it.
 
