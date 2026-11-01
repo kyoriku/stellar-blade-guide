@@ -315,10 +315,8 @@ def require_role(*roles: str):
     """
     Dependency factory: raises 403 if the current user's role isn't in the allowed list.
 
-    Usage:
-        @router.delete("/comments/{id}")
-        async def delete(user = Depends(require_role("moderator", "admin"))):
-            ...
+    Its one use is the admin router's (routers/admin.py): `_admin_role = require_role("admin")`.
+    Comment deletion doesn't use it; that follows rank (core/roles.py).
     """
     async def _check(user=Depends(get_current_user)):
         if user.role not in roles:
