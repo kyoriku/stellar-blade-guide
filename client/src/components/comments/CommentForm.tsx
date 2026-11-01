@@ -69,6 +69,9 @@ export default function CommentForm({
         onChange={e => { setBody(e.target.value); setError(null) }}
         placeholder={placeholder}
         autoFocus={autoFocus}
+        // Held while a post is out: the form empties or closes when it lands, and
+        // anything typed meanwhile would be lost.
+        readOnly={isSubmitting}
         rows={3}
         maxLength={2000}
         className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
@@ -82,8 +85,11 @@ export default function CommentForm({
           {onCancel && (
             <button
               type="button"
-              onClick={onCancel}
-              className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+              // Refused while a post is out: it would still land after the form closed.
+              onClick={() => { if (!isSubmitting) onCancel() }}
+              // aria-disabled, not disabled: a disabled button drops focus to <body>.
+              aria-disabled={isSubmitting}
+              className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
             >
               Cancel
             </button>

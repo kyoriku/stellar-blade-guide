@@ -7,11 +7,15 @@ import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type 
 // itself: Edit puts it in the text box, with the caret at the end; Save and Cancel give
 // it back to Edit; the reply form's Cancel, or a reply that lands, gives it back to
 // Reply. A save or a reply that lands after the reader moved on or scrolled away leaves
-// them where they are.
+// them where they are. While a save or a reply is out, Cancel is refused and the text
+// box takes no typing (Comment.tsx, CommentForm.tsx), since what lands closes the form;
+// a refused one lifts both.
 
 let fx: Fixtures;
 
 const POST_BOX = 'Share your thoughts, tips, or questions...';
+// The server's answer when moderation flags a comment.
+const FLAGGED = 'Comment was flagged as inappropriate';
 
 // Lets React run the effects of what just rendered (it posts them as messages; two turns
 // are ample), so a focus check after it would see a move that was going to happen.
@@ -274,5 +278,74 @@ test.describe('comment edit and reply focus', () => {
     await button(page, 'Cancel').click();
     await expect(button(page, 'Reply')).toBeFocused();
     await expect(button(page, 'Reply')).toBeInViewport();
+  });
+
+  test('Cancel waits while a save is out, and the box takes no typing meanwhile', async ({ page }) => {
+    const save = await stubSave(page, true);
+    await startSave(page);
+    await save.seen;
+    const cancel = button(page, 'Cancel');
+    await expect(cancel).toHaveAttribute('aria-disabled', 'true');
+    // Playwright waits on an aria-disabled button, so the press is forced; the handler
+    // is what refuses it.
+    await cancel.click({ force: true });
+    await expect(editBox(page)).toBeVisible();
+    await expect(editBox(page)).not.toBeEditable();
+    await editBox(page).focus();
+    await expect(editBox(page)).toBeFocused();
+    await page.keyboard.type(' more');
+    await expect(editBox(page)).toHaveValue(edited());
+
+    save.release();
+    // Edit is back only once the save has landed; then the text is the saved comment's.
+    await expect(button(page, 'Edit')).toBeFocused();
+    await expect(own(page).getByText(edited(), { exact: true })).toBeVisible();
+  });
+
+  test("the reply form's Cancel waits while a reply is posting, and its box takes no typing meanwhile", async ({ page }) => {
+    const post = await stubReply(page, true);
+    await startReply(page);
+    await post.seen;
+    const cancel = button(page, 'Cancel');
+    await expect(cancel).toHaveAttribute('aria-disabled', 'true');
+    await cancel.click({ force: true });
+    await expect(replyBox(page)).toBeVisible();
+    await expect(replyBox(page)).not.toBeEditable();
+    await replyBox(page).focus();
+    await expect(replyBox(page)).toBeFocused();
+    await page.keyboard.type(' more');
+    await expect(replyBox(page)).toHaveValue(replyText());
+
+    post.release();
+    await expect(replyBox(page)).toHaveCount(0);
+    await expect(drawnReply(page)).toContainText(replyText());
+    await expect(button(page, 'Reply')).toBeFocused();
+  });
+
+  test('a refused save lifts the hold: its error shows, the box takes typing, and Cancel works', async ({ page }) => {
+    await page.route(`**/api/comments/${parentId}`, route =>
+      route.request().method() === 'PATCH' ? route.fulfill({ status: 400, json: { detail: FLAGGED } }) : route.fallback());
+    await startSave(page);
+    await expect(own(page).getByText(FLAGGED, { exact: true })).toBeVisible();
+    await expect(editBox(page)).toBeEditable();
+    const cancel = button(page, 'Cancel');
+    await expect(cancel).toHaveAttribute('aria-disabled', 'false');
+    // Unforced: Playwright would wait on a Cancel still aria-disabled.
+    await cancel.click();
+    await expect(editBox(page)).toHaveCount(0);
+    await expect(button(page, 'Edit')).toBeFocused();
+  });
+
+  test('a refused reply lifts the hold: its error shows, the box takes typing, and Cancel works', async ({ page }) => {
+    await page.route('**/api/comments/', route =>
+      route.request().method() === 'POST' ? route.fulfill({ status: 400, json: { detail: FLAGGED } }) : route.fallback());
+    await startReply(page);
+    await expect(own(page).getByText(FLAGGED, { exact: true })).toBeVisible();
+    await expect(replyBox(page)).toBeEditable();
+    const cancel = button(page, 'Cancel');
+    await expect(cancel).toHaveAttribute('aria-disabled', 'false');
+    await cancel.click();
+    await expect(replyBox(page)).toHaveCount(0);
+    await expect(button(page, 'Reply')).toBeFocused();
   });
 });
