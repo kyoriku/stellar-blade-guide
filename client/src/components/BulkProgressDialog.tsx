@@ -200,11 +200,7 @@ export default function BulkProgressDialog({
                 ? 'flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 transition-all duration-200 cursor-pointer aria-busy:cursor-progress aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-red-500/10 aria-disabled:hover:border-red-500/30'
                 : 'flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-cyan-500 hover:bg-cyan-400 text-black transition-all duration-200 cursor-pointer aria-busy:cursor-progress aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed'}
             >
-              <BusyLabel
-                label={clearing ? BULK_COPY.confirmClear(formatted) : BULK_COPY.confirmMarkFound(formatted)}
-                busy={pending ? BULK_COPY.applying : null}
-                variants={[BULK_COPY.applying]}
-              />
+              <BusyLabel label={clearing ? BULK_COPY.confirmClear(formatted) : BULK_COPY.confirmMarkFound(formatted)} busy={pending} />
             </button>
           </div>
         </form>

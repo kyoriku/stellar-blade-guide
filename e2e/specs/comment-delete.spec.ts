@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, createCommentThread, deleteFixtureComments, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { holdRoute } from '../helpers/route';
+import { expectBusyNow, expectBusyPattern, idleBox } from '../helpers/busy';
 
 // The comment delete dialog (components/ConfirmModal.tsx), on the bulk dialog's
 // pattern: a labelled modal that takes focus and gives it back, and refuses every
@@ -68,28 +69,16 @@ test.describe('comment delete dialog', () => {
     }
   });
 
-  test("keeps the Delete action's room for its busy label after it, not around it", async ({ page }) => {
-    // Reply, Edit and Delete sit in one row; the trash icon must be as far from Edit
-    // as Edit's icon is from Reply, though the button reserves the wider "Deleting…".
-    const button = (name: string) => own(page).getByRole('button', { name, exact: true });
-    const right = (box: { x: number; width: number } | null) => box!.x + box!.width;
-    const replyBox = await button('Reply').boundingBox();
-    const editBox = await button('Edit').boundingBox();
-    const editIcon = await button('Edit').locator('svg').first().boundingBox();
-    const trash = await deleteAction(page).locator('svg').first().boundingBox();
-    expect(Math.round(trash!.x - right(editBox))).toBe(Math.round(editIcon!.x - right(replyBox)));
-  });
-
   test('refuses every way out while the delete is out, and a forced close lets it finish', async ({ page }) => {
     const del = await holdRoute(page, `**/api/comments/${parentId}`);
+    const actionIdle = await idleBox(deleteAction(page));
     await deleteAction(page).click();
+    // The dialog's Delete: a spinner in its label's place, at its idle size.
     const confirm = dialog(page).getByRole('button', { name: 'Delete', exact: true });
-    const idle = await confirm.boundingBox();
-    await confirm.click();
-    await del.seen;
-    await expect(confirm).toHaveAttribute('aria-busy', 'true');
-    const busy = await confirm.boundingBox();
-    expect([busy?.width, busy?.height]).toEqual([idle?.width, idle?.height]);
+    await expectBusyPattern(confirm, {
+      name: 'Delete', busyText: 'Deleting…', live: dialog(page).locator('[aria-live="polite"]'),
+      press: () => confirm.click(), seen: del.seen,
+    });
     await expect(dialog(page)).not.toHaveAttribute('closedby', 'none');
 
     await page.keyboard.press('Escape');
@@ -107,10 +96,11 @@ test.describe('comment delete dialog', () => {
     // gesture; headless Chromium never does, so the test closes it the same way.
     await dialog(page).evaluate(d => (d as HTMLDialogElement).close());
     await expect(dialog(page)).toHaveCount(0);
-    await expect(deleteAction(page)).toHaveAttribute('aria-busy', 'true');
-    await expect(deleteAction(page).getByText(/^Deleting/)).toBeVisible();
-    // The dialog's announcement went with it; the comment's own region says it.
-    await expect(own(page).locator('[aria-live="polite"]')).toHaveText(/^Deleting/);
+    // The comment's own Delete shows it now, the same way. The dialog's announcement
+    // went with it; the comment's own region says it.
+    await expectBusyNow(deleteAction(page), actionIdle, {
+      name: 'Delete', busyText: 'Deleting…', live: own(page).locator('[aria-live="polite"]'),
+    });
 
     del.release();
     await expect(deletedBody(page)).toBeVisible();

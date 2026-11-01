@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { holdRoute } from '../helpers/route';
+import { expectBusyNow, expectBusyPattern, idleBox } from '../helpers/busy';
 import { BULK_COPY } from '../../client/src/constants/bulkProgressCopy';
 import { cycleLabel } from '../../client/src/constants/cycleLabels';
 
@@ -131,6 +132,8 @@ const radio = (page: Page, cycle: string) => page.getByRole('radio', { name: cyc
 const pill = (page: Page, cycle: string) => page.locator('label').filter({ has: radio(page, cycle) });
 const manageCard = (page: Page) =>
   page.locator('section').filter({ has: page.getByRole('heading', { name: BULK_COPY.heading }) });
+// The card's own live region, not the dialog's inside it.
+const cardLive = (page: Page) => manageCard(page).locator('span.sr-only[aria-live="polite"]:not(dialog *)');
 const previewRequest = (page: Page) => page.waitForRequest(r => r.url().endsWith('/api/progress/bulk/preview'));
 const statsResponse = (page: Page) =>
   page.waitForResponse(r => r.url().endsWith('/api/users/me/stats') && r.status() === 200);
@@ -503,16 +506,15 @@ test.describe('bulk progress, signed in', () => {
 
     await page.getByLabel(BULK_COPY.scopeLabel).selectOption('level:Xion');
     const mark = page.getByRole('button', { name: BULK_COPY.markButton });
+    const markIdle = await idleBox(mark);
     await mark.click();
     const dialog = page.getByRole('alertdialog');
     const confirm = dialog.getByRole('button', { name: BULK_COPY.confirmMarkFound(fmt(quantity)) });
-    const confirmSize = size(await confirm.boundingBox());
-    await confirm.click();
-    await writeSeen;
-    // Saving shows in Confirm itself, which keeps its size.
-    await expect(confirm).toHaveAttribute('aria-busy', 'true');
-    await expect(confirm.getByText(BULK_COPY.applying)).toBeVisible();
-    expect(size(await confirm.boundingBox())).toEqual(confirmSize);
+    // Saving shows in Confirm itself: a spinner in place of its label, at its size.
+    await expectBusyPattern(confirm, {
+      name: BULK_COPY.confirmMarkFound(fmt(quantity)), busyText: BULK_COPY.applying, live: dialog.locator('[aria-live="polite"]'),
+      press: () => confirm.click(), seen: writeSeen,
+    });
 
     // A close request mid-write is refused.
     await page.keyboard.press('Escape');
@@ -524,8 +526,8 @@ test.describe('bulk progress, signed in', () => {
     // (headless Chromium does not force it).
     await page.evaluate(() => document.querySelector('dialog')?.close());
     await expect(dialog).toHaveCount(0);
-    await expect(mark).toHaveAttribute('aria-busy', 'true');
-    await expect(mark.getByText(BULK_COPY.applying)).toBeVisible();
+    // The card's button shows it now, the same way, and the card reads it out.
+    await expectBusyNow(mark, markIdle, { name: BULK_COPY.markButton, busyText: BULK_COPY.applying, live: cardLive(page) });
 
     release();
     const scope = { label: 'Xion', everything: false };
@@ -584,13 +586,12 @@ test.describe('bulk progress, sign-in sync in flight', () => {
     const card = page.locator('section').filter({ has: page.getByRole('heading', { name: BULK_COPY.heading }) });
     const clear = page.getByRole('button', { name: BULK_COPY.clearButton });
     const cardSize = size(await card.boundingBox());
-    const clearSize = size(await clear.boundingBox());
+    const clearIdle = await idleBox(clear);
     await clear.click();
-    // The count shows in the pressed button, and nothing in the card moves.
-    await expect(clear).toHaveAttribute('aria-busy', 'true');
-    await expect(clear.getByText(BULK_COPY.counting)).toBeVisible();
+    // The count shows in the pressed button, a spinner in place of its label, and
+    // nothing in the card moves.
+    await expectBusyNow(clear, clearIdle, { name: BULK_COPY.clearButton, busyText: BULK_COPY.counting, live: cardLive(page) });
     expect(size(await card.boundingBox())).toEqual(cardSize);
-    expect(size(await clear.boundingBox())).toEqual(clearSize);
     // Any evaluate runs after the click's handler and its microtasks, so a count that
     // did not wait for the sync has been sent by now, and reaches the server before
     // the sync this releases: it would count 0 and open no dialog.

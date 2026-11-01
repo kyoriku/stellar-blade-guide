@@ -5,6 +5,7 @@ import {
 } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { holdRoute } from '../helpers/route';
+import { expectBusyNow, expectBusyPattern, idleBox } from '../helpers/busy';
 import { ADMIN_COPY } from '../../client/src/constants/adminCopy';
 
 // The admin page (/admin): every account, newest first and searchable, with each
@@ -633,6 +634,40 @@ test.describe('the list', () => {
 });
 
 test.describe('the actions', () => {
+  test('from lg, as on phones, the eye alone sits before the address on a 28px tap area', async ({ page }) => {
+    const target = await register(page, 'eyewide');
+    await registerAdmin(page);
+    await gotoAdmin(page);
+    const eye = await revealButton(page, target).evaluate(el => {
+      const b = el.getBoundingClientRect();
+      const icon = el.querySelector('svg')!.getBoundingClientRect();
+      const address = el.parentElement!.querySelector(':scope > span')!.getBoundingClientRect();
+      return { tap: [b.width, b.height], right: b.right, text: (el as HTMLElement).innerText.trim(), iconWidth: icon.width, iconRight: icon.right, addressLeft: address.left };
+    });
+    expect({ tap: eye.tap, iconWidth: eye.iconWidth, text: eye.text }).toEqual({ tap: [28, 28], iconWidth: 16, text: '' });
+    expect(eye.iconRight, 'the eye comes first').toBeLessThan(eye.addressLeft);
+    expect(eye.right, 'its tap area stops short of the address').toBeLessThanOrEqual(eye.addressLeft);
+  });
+
+  test("a refused reveal says so in a toast, and the live region lets go of \"Revealing…\"", async ({ page }) => {
+    const target = await register(page, 'revealfail');
+    await registerAdmin(page);
+    await gotoAdmin(page);
+    let release!: () => void;
+    const held = new Promise<void>(resolve => { release = resolve; });
+    await page.route(`**/api/admin/users/${target.id}/email`, async route => {
+      await held;
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ detail: 'Internal server error' }) });
+    });
+    const reveal = revealButton(page, target);
+    await reveal.click();
+    await expect(announcement(page)).toHaveText(ADMIN_COPY.revealing);
+    release();
+    await expect(toast(page, ADMIN_COPY.revealError)).toBeVisible();
+    await expect(reveal).toHaveAttribute('aria-busy', 'false');
+    await expect(announcement(page)).toHaveText('');
+  });
+
   test('Reveal shows one whole address, answered no-store, until Hide, and each Reveal asks again', async ({ page }) => {
     const target = await register(page, 'reveal');
     const other = await register(page, 'revealother');
@@ -646,16 +681,15 @@ test.describe('the actions', () => {
     await expect(row).toContainText('e***@s***.dev');
     expect(await page.content(), 'no address before Reveal').not.toContain(target.email);
 
-    // Busy while it loads, at the same size.
+    // Busy while it loads: a spinner in the eye's place, at the same size, and
+    // "Revealing…" read out.
     const held = await holdRoute(page, `**/api/admin/users/${target.id}/email`);
     const reveal = revealButton(page, target);
-    const idle = size(await reveal.boundingBox());
     const answered = page.waitForResponse(r => new URL(r.url()).pathname === `/api/admin/users/${target.id}/email`);
-    await reveal.click();
-    await held.seen;
-    await expect(reveal).toHaveAttribute('aria-busy', 'true');
-    await expect(reveal.getByText(ADMIN_COPY.revealing)).toBeVisible();
-    expect(size(await reveal.boundingBox())).toEqual(idle);
+    await expectBusyPattern(reveal, {
+      name: ADMIN_COPY.revealFor(target.username), busyText: ADMIN_COPY.revealing, live: announcement(page),
+      press: () => reveal.click(), seen: held.seen,
+    });
     held.release();
     const res = await answered;
     expect(res.headers()['cache-control']).toContain('no-store');
@@ -705,7 +739,7 @@ test.describe('the actions', () => {
     await openAdminFromMenu(page);
 
     const trigger = actionsButton(page, target);
-    const idle = size(await trigger.boundingBox());
+    const idle = await idleBox(trigger);
     const put = await holdRoute(page, `**/api/admin/users/${target.id}/role`);
     const sent = page.waitForRequest(r => new URL(r.url()).pathname === `/api/admin/users/${target.id}/role`);
     await trigger.click();
@@ -713,11 +747,10 @@ test.describe('the actions', () => {
     const request = await sent;
     expect([request.method(), request.postDataJSON()]).toEqual(['PUT', { role: 'moderator' }]);
     await put.seen;
-    // Busy at the same size, with focus, and "Saving…" read out.
-    await expect(trigger).toHaveAttribute('aria-busy', 'true');
-    expect(size(await trigger.boundingBox())).toEqual(idle);
+    // Busy: a spinner in the "…"'s place, at the same size, with focus, and "Saving…"
+    // read out.
+    await expectBusyNow(trigger, idle, { name: ADMIN_COPY.actionsFor(target.username), busyText: ADMIN_COPY.saving, live: announcement(page) });
     await expect(trigger).toBeFocused();
-    await expect(announcement(page)).toHaveText(ADMIN_COPY.saving);
     // A busy button ignores presses.
     await trigger.click();
     await expect(actionsMenu(page, target)).toHaveCount(0);
@@ -774,7 +807,14 @@ test.describe('the actions', () => {
 
     await trigger.click();
     await menuItem(page, target, ADMIN_COPY.deactivate).click();
-    await dialog.getByRole('button', { name: ADMIN_COPY.deactivate, exact: true }).click();
+    // Busy: a spinner in place of its label, at its size, and "Deactivating…" read out.
+    const deactivate = dialog.getByRole('button', { name: ADMIN_COPY.deactivate, exact: true });
+    const activeHeld = await holdRoute(page, `**/api/admin/users/${target.id}/active`);
+    await expectBusyPattern(deactivate, {
+      name: ADMIN_COPY.deactivate, busyText: ADMIN_COPY.deactivating, live: dialog.locator('[aria-live="polite"]'),
+      press: () => deactivate.click(), seen: activeHeld.seen,
+    });
+    activeHeld.release();
     await expect(dialog).toHaveCount(0);
     await expect(status).toHaveText(ADMIN_COPY.statusDeactivated);
     await expect(trigger).toBeFocused();
@@ -840,14 +880,13 @@ test.describe('the actions', () => {
     await expect(confirm).toHaveAttribute('aria-disabled', 'false');
     expect(deletes, 'nothing sent before an exact match').toEqual([]);
 
-    // Enter submits. Busy at the same size, and every way out is refused while it runs.
+    // Enter submits. Busy: a spinner in place of its label, at its size, and "Deleting…"
+    // read out; every way out is refused while it runs.
     const held = await holdRoute(page, `**/api/admin/users/${target.id}`);
-    const idle = size(await confirm.boundingBox());
-    await input.press('Enter');
-    await held.seen;
-    await expect(confirm).toHaveAttribute('aria-busy', 'true');
-    await expect(confirm.getByText(ADMIN_COPY.deleting)).toBeVisible();
-    expect(size(await confirm.boundingBox())).toEqual(idle);
+    await expectBusyPattern(confirm, {
+      name: ADMIN_COPY.delete, busyText: ADMIN_COPY.deleting, live: dialog.locator('[aria-live="polite"]'),
+      press: () => input.press('Enter'), seen: held.seen,
+    });
     // closedby="none" would also stop Android's back gesture closing it.
     await expect(dialog).not.toHaveAttribute('closedby', 'none');
     await page.keyboard.press('Escape');
@@ -893,6 +932,7 @@ test.describe('the actions', () => {
     await registerAdmin(page);
     await gotoAdmin(page);
     const trigger = actionsButton(page, target);
+    const idle = await idleBox(trigger);
     await trigger.click();
     await menuItem(page, target, ADMIN_COPY.delete).click();
     const dialog = page.getByRole('alertdialog', { name: ADMIN_COPY.deleteTitle, exact: true });
@@ -905,9 +945,8 @@ test.describe('the actions', () => {
     // headless Chromium never does, so the test closes it the same way.
     await dialog.evaluate(d => (d as HTMLDialogElement).close());
     await expect(dialog).toHaveCount(0);
-    // The row's button carries on showing it, and the page reads it out.
-    await expect(trigger).toHaveAttribute('aria-busy', 'true');
-    await expect(announcement(page)).toHaveText(ADMIN_COPY.deleting);
+    // The row's button carries on showing it, the same way, and the page reads it out.
+    await expectBusyNow(trigger, idle, { name: ADMIN_COPY.actionsFor(target.username), busyText: ADMIN_COPY.deleting, live: announcement(page) });
     await trigger.click();
     await expect(actionsMenu(page, target)).toHaveCount(0);
 
@@ -1079,9 +1118,13 @@ test.describe('the actions', () => {
     const liveLog = () => page.evaluate(() => (window as unknown as { liveLog: string[] }).liveLog);
 
     // A retry that fails with the same words leaves the box, and focus, where they
-    // were, and the words are read out again, every time: the region is cleared first.
+    // were, and the words are read out again, every time: the region reads "Loading
+    // accounts…" first.
     await tryAgain.focus();
-    const sameTwice = [[ADMIN_COPY.loadError], [ADMIN_COPY.loadError, '', ADMIN_COPY.loadError]];
+    const sameTwice = [
+      [ADMIN_COPY.loading, ADMIN_COPY.loadError],
+      [ADMIN_COPY.loading, ADMIN_COPY.loadError, ADMIN_COPY.loading, ADMIN_COPY.loadError],
+    ];
     for (const expected of sameTwice) {
       const before = asked;
       await page.keyboard.press('Enter');
@@ -1091,12 +1134,14 @@ test.describe('the actions', () => {
     }
 
     // One that fails with new words: the alert reads them out itself, so the polite
-    // region doesn't say them a second time.
+    // region doesn't say them a second time, and lets "Loading accounts…" go.
     mode = 'offline';
     await page.keyboard.press('Enter');
     await expect(alert).not.toContainText(ADMIN_COPY.loadError);
     await expect(tryAgain).toBeFocused();
-    expect(await liveLog()).toEqual([ADMIN_COPY.loadError, '', ADMIN_COPY.loadError, '']);
+    await expect.poll(liveLog).toEqual([
+      ADMIN_COPY.loading, ADMIN_COPY.loadError, ADMIN_COPY.loading, ADMIN_COPY.loadError, ADMIN_COPY.loading, '',
+    ]);
 
     // While a retry runs, the box stays, at its size, with a spinner in the pressed
     // button, which keeps focus. A second press changes nothing: the box and focus
@@ -1105,10 +1150,10 @@ test.describe('the actions', () => {
     mode = 'pass';
     const idle = size(await alert.boundingBox());
     const before = asked;
-    await page.keyboard.press('Enter');
-    await held.seen;
-    await expect(tryAgain).toHaveAttribute('aria-busy', 'true');
-    await expect(tryAgain.locator('svg.animate-spin')).toBeVisible();
+    await expectBusyPattern(tryAgain, {
+      name: ADMIN_COPY.tryAgain, busyText: ADMIN_COPY.loading, live: announcement(page),
+      press: () => page.keyboard.press('Enter'), seen: held.seen,
+    });
     expect(size(await alert.boundingBox())).toEqual(idle);
     await page.keyboard.press('Enter');
     await expect(alert).toBeVisible();
@@ -1117,11 +1162,13 @@ test.describe('the actions', () => {
     expect(asked, 'one request for the two presses').toBe(before + 1);
     await expect(usersTable(page)).toHaveCount(0);
 
-    // Once it loads, the box goes and the Users heading takes focus.
+    // Once it loads, the box goes, the Users heading takes focus, and the live region
+    // lets go of "Loading accounts…".
     held.release();
     await expect(usersTable(page)).toBeVisible();
     await expect(alert).toHaveCount(0);
     await expect(usersHeading(page)).toBeFocused();
+    await expect(announcement(page)).toHaveText('');
   });
 
   test('a search still runs after a refresh that failed for a moment dropped the session token', async ({ page }) => {

@@ -350,14 +350,7 @@ export default function Comment({
                   title="Delete comment"
                   className="flex items-center text-xs text-gray-400 hover:text-red-400 transition-colors cursor-pointer aria-busy:cursor-progress"
                 >
-                  <BusyLabel
-                    label="Delete"
-                    busy={isDeleting ? 'Deleting…' : null}
-                    variants={['Deleting…']}
-                    icon={<Trash2 className="w-3.5 h-3.5" />}
-                    gap="gap-1"
-                    align="start"
-                  />
+                  <BusyLabel label="Delete" busy={isDeleting} icon={<Trash2 className="w-3.5 h-3.5" />} gap="gap-1" />
                 </button>
                 {/* The dialog's own announcement goes with it, so this reads out a
                     delete the browser closed the dialog on. */}

@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
-import { Ellipsis, Loader2, ShieldMinus, ShieldPlus, Trash2, UserCheck, UserX } from 'lucide-react'
+import { Ellipsis, ShieldMinus, ShieldPlus, Trash2, UserCheck, UserX } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import BusyLabel from '../BusyLabel'
 import { useMenuButton } from '../../hooks/useMenuButton'
 import { ADMIN_COPY } from '../../constants/adminCopy'
 import type { RowAction } from '../../utils/adminUsers'
@@ -48,7 +49,7 @@ export default function RowActionsMenu({ userId, username, actions, busy, onActi
         aria-busy={busy}
         className="flex items-center justify-center w-10 h-10 -my-2.5 -mr-3 rounded-lg text-gray-300 hover:text-cyan-400 aria-expanded:text-cyan-400 transition-colors duration-200 cursor-pointer aria-busy:cursor-progress lg:w-9 lg:h-9 lg:m-0 lg:border lg:border-gray-700 lg:hover:bg-gray-800/50 lg:aria-expanded:bg-gray-800/50"
       >
-        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ellipsis className="w-4 h-4" />}
+        <BusyLabel busy={busy} icon={<Ellipsis className="w-4 h-4" />} />
       </button>
 
       {open && (

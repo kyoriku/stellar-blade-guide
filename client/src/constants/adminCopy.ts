@@ -40,8 +40,6 @@ export const ADMIN_COPY = {
   joined: 'Joined',
   noActions: 'No actions',
 
-  reveal: 'Reveal',
-  hide: 'Hide',
   revealing: 'Revealing…',
   revealFor: (username: string) => `Reveal email for ${username}`,
   hideFor: (username: string) => `Hide email for ${username}`,

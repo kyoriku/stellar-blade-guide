@@ -1,43 +1,26 @@
 import type { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 
-// A button label that a spinner and a short busy text can replace without the
-// button changing size: every variant shares one grid cell, so the button is as
-// wide as the widest of them, and only the active one shows. The label fades
-// rather than hides, so it stays the button's accessible name. An icon fades with
-// the label, so the spinner takes its place instead of joining it. A borderless
-// action in a row of them aligns to the start, so the room kept for the wider
-// variant falls after the label rather than around it.
-//
-// iconOnlyBelowLg hides the label and busy texts below lg, leaving the icon, and the
-// spinner in its place while busy, so nothing moves (the admin page's Reveal on
-// phones). The label is then no name below lg, so the button needs an aria-label.
-export default function BusyLabel({ label, busy, variants, icon, gap = 'gap-2', align = 'center', iconOnlyBelowLg = false }: {
-  label: string
-  busy: string | null // the variant showing now, or null for the label
-  variants: readonly string[]
+// A button's label, which a spinner replaces while the button is busy. The label (with
+// its icon) and the spinner share one grid cell, and the label turns transparent rather
+// than leaving, so the button keeps its idle width and the label stays its accessible
+// name. The spinner is always there, unseen until busy, so a label narrower than it
+// can't change the width either. The busy text is for screen readers only: each button
+// reads it out from a polite live region beside it, since text inside the button would
+// join its name. An icon-only button passes no label and is named by its aria-label.
+export default function BusyLabel({ label = '', busy, icon, gap = 'gap-2' }: {
+  label?: string
+  busy: boolean
   icon?: ReactNode
-  gap?: 'gap-1' | 'gap-2' // between the icon or spinner and the text
-  align?: 'center' | 'start'
-  iconOnlyBelowLg?: boolean
+  gap?: 'gap-1' | 'gap-1.5' | 'gap-2' // between the icon and the label
 }) {
-  const text = (value: string) => (iconOnlyBelowLg ? <span className="max-lg:hidden">{value}</span> : value)
   return (
-    <span className={align === 'start' ? 'grid items-center justify-items-start' : 'grid place-items-center'}>
+    <span className="grid place-items-center">
       <span className={`col-start-1 row-start-1${icon ? ` flex items-center ${gap}` : ''}${busy ? ' opacity-0' : ''}`}>
         {icon}
-        {text(label)}
+        {label}
       </span>
-      {variants.map(variant => (
-        <span
-          key={variant}
-          aria-hidden
-          className={`col-start-1 row-start-1 flex items-center ${gap}${busy === variant ? '' : ' invisible'}`}
-        >
-          <Loader2 className={`w-4 h-4${busy === variant ? ' animate-spin' : ''}`} />
-          {text(variant)}
-        </span>
-      ))}
+      <Loader2 aria-hidden className={`col-start-1 row-start-1 w-4 h-4 ${busy ? 'animate-spin' : 'invisible'}`} />
     </span>
   )
 }

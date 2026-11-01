@@ -29,9 +29,6 @@ const CYCLE_OPTIONS: { value: BulkCycle | ''; label: string }[] = [
   ...CYCLE_NAMES.map(c => ({ value: c as BulkCycle, label: cycleLabel(c) })),
 ]
 
-// Both busy texts size each action button, so neither press changes its width.
-const BUSY_VARIANTS = [BULK_COPY.counting, BULK_COPY.applying] as const
-
 export default function BulkProgressSection({ stats }: { stats?: UserStatsResponse }) {
   const [open, setOpen] = useState(false)
   const [scopeValue, setScopeValue] = useState('')
@@ -332,7 +329,7 @@ export default function BulkProgressSection({ stats }: { stats?: UserStatsRespon
             aria-busy={!!busyText('clear')}
             className={`${actionButton} bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 aria-disabled:opacity-40 aria-disabled:hover:bg-red-500/10 aria-disabled:hover:border-red-500/30`}
           >
-            <BusyLabel label={BULK_COPY.clearButton} busy={busyText('clear')} variants={BUSY_VARIANTS} />
+            <BusyLabel label={BULK_COPY.clearButton} busy={!!busyText('clear')} />
           </button>
           <button
             ref={markRef}
@@ -342,7 +339,7 @@ export default function BulkProgressSection({ stats }: { stats?: UserStatsRespon
             aria-busy={!!busyText('mark_found')}
             className={`${actionButton} bg-cyan-500 hover:bg-cyan-400 text-black aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50`}
           >
-            <BusyLabel label={BULK_COPY.markButton} busy={busyText('mark_found')} variants={BUSY_VARIANTS} />
+            <BusyLabel label={BULK_COPY.markButton} busy={!!busyText('mark_found')} />
           </button>
         </div>
 
