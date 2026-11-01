@@ -119,7 +119,7 @@ test.describe('comment edit and reply focus', () => {
     await expect(box).toBeFocused();
   });
 
-  test("a save that lands after the reader scrolled away doesn't scroll them back", async ({ page }) => {
+  test("a save that lands after the reader scrolled away leaves focus on the page and doesn't scroll them back", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 400 });
     const save = await stubSave(page, true);
     await startSave(page);
@@ -129,8 +129,15 @@ test.describe('comment edit and reply focus', () => {
     expect(await own(page).evaluate(el => el.getBoundingClientRect().top > window.innerHeight), 'comment off-screen').toBe(true);
 
     save.release();
-    await expect(button(page, 'Edit')).toBeFocused();
+    // The editor closes only once the save lands.
+    await expect(editBox(page)).toHaveCount(0);
+    await settle(page);
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // So Space pages the window, rather than pressing an Edit they can't see.
+    await page.keyboard.press('Space');
+    await settle(page);
+    await expect(editBox(page)).toHaveCount(0);
   });
 
   test('Cancel on a long comment brings Edit into view, since the editor was on screen', async ({ page }) => {

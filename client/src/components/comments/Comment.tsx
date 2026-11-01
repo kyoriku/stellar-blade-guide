@@ -107,7 +107,8 @@ export default function Comment({
   const editButtonRef = useRef<HTMLButtonElement>(null)
   const editClosed = useRef(false)
   // Whether the editor was on screen as it closed. If not, the reader scrolled away
-  // while a save was out, and giving focus back mustn't scroll them to it.
+  // while a save was out, and focus stays on the page: an Edit they can't see would
+  // take their next Space, and moving focus to it mustn't scroll them back either.
   const editorOnScreen = useRef(true)
   useEffect(() => {
     if (isEditing) {
@@ -118,8 +119,8 @@ export default function Comment({
       }
     } else if (editClosed.current) {
       editClosed.current = false
-      // Not if someone moved on while a save was out.
-      if (focusLeftNowhere()) editButtonRef.current?.focus({ preventScroll: !editorOnScreen.current })
+      // Not if someone moved on while a save was out, or scrolled the editor away.
+      if (editorOnScreen.current && focusLeftNowhere()) editButtonRef.current?.focus()
     }
   }, [isEditing])
   // The reply form's Cancel gives focus back to Reply.
