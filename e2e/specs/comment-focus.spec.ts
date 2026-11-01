@@ -9,7 +9,8 @@ import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type 
 // Reply. A save or a reply that lands after the reader moved on or scrolled away leaves
 // them where they are. While a save or a reply is out, Cancel is refused and the text
 // box takes no typing (Comment.tsx, CommentForm.tsx), since what lands closes the form;
-// a refused one lifts both.
+// a refused one lifts both, and a refused save shows its error as a toast if its editor
+// has gone.
 
 let fx: Fixtures;
 
@@ -32,6 +33,7 @@ test.describe('comment edit and reply focus', () => {
   let ip: string;
   let user: TestUser;
   let parentId: number;
+  let replyId: number;
 
   test.beforeAll(() => {
     fx = readFixtures();
@@ -42,7 +44,7 @@ test.describe('comment edit and reply focus', () => {
     await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
     user = makeUser(fx.token, 'cfocus');
     await apiRegister(page, user, ip);
-    ({ parentId } = await createCommentThread(fx, user.username));
+    ({ parentId, replyId } = await createCommentThread(fx, user.username));
     await page.addInitScript(() => localStorage.setItem('sb_has_session', '1'));
     await page.goto(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}`);
   });
@@ -327,6 +329,9 @@ test.describe('comment edit and reply focus', () => {
       route.request().method() === 'PATCH' ? route.fulfill({ status: 400, json: { detail: FLAGGED } }) : route.fallback());
     await startSave(page);
     await expect(own(page).getByText(FLAGGED, { exact: true })).toBeVisible();
+    // Its editor is still there, so no toast as well. One-shot: a toast fades on its
+    // timer, so a retrying count could pass once it had.
+    expect(await page.getByRole('status').getByText(FLAGGED, { exact: true }).count()).toBe(0);
     await expect(editBox(page)).toBeEditable();
     const cancel = button(page, 'Cancel');
     await expect(cancel).toHaveAttribute('aria-disabled', 'false');
@@ -347,5 +352,35 @@ test.describe('comment edit and reply focus', () => {
     await cancel.click();
     await expect(replyBox(page)).toHaveCount(0);
     await expect(button(page, 'Reply')).toBeFocused();
+  });
+
+  test('a refused save shows its error as a toast once collapsing the replies has taken its editor away', async ({ page }) => {
+    const reply = page.locator(`#comment-${replyId}`).locator(':scope > div').first();
+    const replies = own(page).getByRole('button', { name: '1 reply', exact: true });
+    // The reply's PATCH is held, then refused, as moderation would refuse it.
+    let release = () => {};
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let arrived!: () => void;
+    const seen = new Promise<void>(resolve => { arrived = resolve; });
+    await page.route(`**/api/comments/${replyId}`, async route => {
+      if (route.request().method() !== 'PATCH') return route.fallback();
+      arrived();
+      await gate;
+      await route.fulfill({ status: 400, json: { detail: FLAGGED } });
+    });
+    await reply.getByRole('button', { name: 'Edit', exact: true }).click();
+    await reply.getByRole('textbox').fill(`E2E ${fx.token} reply edited`);
+    await reply.getByRole('button', { name: 'Save', exact: true }).click();
+    await seen;
+    // Collapsing the thread takes the reply, and its editor, off the page mid-save.
+    await replies.click();
+    await expect(reply).toHaveCount(0);
+
+    release();
+    await expect(page.getByRole('status').getByText(FLAGGED, { exact: true })).toBeVisible();
+    // Opened again, the reply shows its old text, and no editor.
+    await replies.click();
+    await expect(reply.getByText(`E2E ${fx.token} reply`, { exact: true })).toBeVisible();
+    await expect(reply.getByRole('textbox')).toHaveCount(0);
   });
 });

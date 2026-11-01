@@ -173,7 +173,12 @@ export default function Comment({
       await onEdit(comment.id, trimmed)
       closeEdit()
     } catch (err) {
-      setEditError(errorMessage(err, 'Failed to edit comment'))
+      const message = errorMessage(err, 'Failed to edit comment')
+      // Collapsing the replies above, or leaving the page, can take the editor away while
+      // its save is out. The error then has nowhere to show but a toast, as a delete's
+      // does once the browser has closed its dialog.
+      if (editorRef.current) setEditError(message)
+      else showToast(message)
     } finally {
       setIsSaving(false)
     }
