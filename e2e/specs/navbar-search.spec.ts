@@ -88,6 +88,10 @@ test.describe('navbar mobile search', () => {
     // Reopen: query cleared, sections reset to the route-appropriate state —
     // landing on /walkthroughs/... auto-expands Walkthroughs, others stay closed.
     await page.getByRole('button', { name: 'Toggle menu' }).click();
+    // The page has rendered by now, and the drawer stays open over it: a reopen that
+    // landed while the page was still rendering used to be closed when it committed.
+    await expect(page.getByRole('heading', { level: 1, name: fx.walkthroughTitle })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Toggle menu' })).toHaveAttribute('aria-expanded', 'true');
     await expect(drawer).not.toHaveClass(/-translate-x-full/);
     await expect(drawer).not.toHaveAttribute('inert');
     await expect(input).toHaveValue('');
@@ -103,4 +107,63 @@ test.describe('navbar mobile search', () => {
       await expect(sectionButton(label).locator('svg.lucide-chevron-right')).not.toHaveClass(/rotate-90/);
     }
   });
+
+  test('a drawer reopened while the page chosen from it still renders stays open, starts fresh for that page, and keeps what is done in it meanwhile', async ({ page }) => {
+    await page.goto('/');
+    const hamburger = page.getByRole('button', { name: 'Toggle menu' });
+    await hamburger.click();
+    const input = page.getByPlaceholder('Search collectibles, walkthroughs, levels...');
+    await input.fill(fx.token);
+    await expect(page.locator('#mobile-menu a', { hasText: fx.walkthroughTitle }).first()).toBeVisible();
+
+    // In one task: choose the result, let React commit the drawer's close (a microtask),
+    // reopen it, then open the Levels section and type a search, each committed in turn,
+    // all while the walkthrough page, which React Router renders as a transition, is
+    // still to come. That page's commit used to close the drawer, empty its search and
+    // reset its sections.
+    const onReopen = await page.evaluate(async title => {
+      const settle = () => Promise.resolve();
+      const sectionButton = (label: string) =>
+        [...document.querySelectorAll<HTMLButtonElement>('#mobile-menu button')].find(b => b.textContent?.trim() === label);
+      [...document.querySelectorAll<HTMLAnchorElement>('#mobile-menu a')].find(a => a.textContent?.includes(title))!.click();
+      await settle();
+      document.querySelector<HTMLButtonElement>('button[aria-label="Toggle menu"]')!.click();
+      await settle();
+      const box = document.querySelector<HTMLInputElement>('#mobile-menu input[name="text"]')!;
+      // The sections show only with the search empty.
+      const fresh = { search: box.value, walkthroughs: sectionButton('Walkthroughs')?.getAttribute('aria-expanded') ?? 'not shown' };
+      if (fresh.walkthroughs === 'not shown') return fresh;
+      sectionButton('Levels')!.click();
+      await settle();
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(box, 'eidos');
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      await settle();
+      return fresh;
+    }, fx.walkthroughTitle);
+    // Fresh for the walkthrough page: an empty search, and its section open.
+    expect(onReopen).toEqual({ search: '', walkthroughs: 'true' });
+
+    // The page has rendered, and the drawer is still open with what was done in it.
+    await expect(page.getByRole('heading', { level: 1, name: fx.walkthroughTitle })).toBeVisible();
+    await expect(hamburger).toHaveAttribute('aria-expanded', 'true');
+    await expect(input).toHaveValue('eidos');
+    await input.fill('');
+    const sectionButton = (label: string) => page.getByRole('button', { name: label }).filter({ visible: true });
+    // Levels, opened meanwhile, is still the open section: a reset would have put
+    // Walkthroughs back.
+    await expect(sectionButton('Levels')).toHaveAttribute('aria-expanded', 'true');
+    await expect(sectionButton('Walkthroughs')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+
+  test('a page change underneath an open drawer still closes it: the logo, which closes nothing itself', async ({ page }) => {
+    await page.goto('/levels');
+    const hamburger = page.getByRole('button', { name: 'Toggle menu' });
+    await hamburger.click();
+    await expect(hamburger).toHaveAttribute('aria-expanded', 'true');
+    await page.locator('nav a[href="/"]').first().click();
+    await expect(page).toHaveURL('/');
+    await expect(hamburger).toHaveAttribute('aria-expanded', 'false');
+  });
+
 });

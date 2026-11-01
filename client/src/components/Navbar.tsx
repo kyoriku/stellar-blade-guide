@@ -45,6 +45,11 @@ function Navbar() {
   // at nav time but must not re-run on every keystroke.
   const searchQueryRef = useRef(searchQuery);
   useEffect(() => { searchQueryRef.current = searchQuery }, [searchQuery]);
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { isOpenRef.current = isOpen }, [isOpen]);
+  // The address the drawer was last opened on. While a navigation is still rendering
+  // (React Router renders it as a transition), that is already the new page's.
+  const drawerOpenedFor = useRef<string | null>(null);
   // The account menu, on the WAI-ARIA menu button pattern (hooks/useMenuButton.ts):
   // the arrows, Home and End, Escape, Tab, and a press outside all work as in the
   // admin page's row menus.
@@ -159,12 +164,29 @@ function Navbar() {
   }, []);
 
   useEffect(() => {
+    // A drawer opened for the page now committing (reopened while that page was still
+    // rendering) already shows what it should: closing it, emptying its search or
+    // resetting its sections now would undo what the reader has done in it since.
+    if (isOpenRef.current && drawerOpenedFor.current === location.pathname + location.search + location.hash) return;
     setIsOpen(false);
     setSearchQuery('');
     if (!searchQueryRef.current) {
       setOpenSections(getActiveSectionFromPath(location.pathname));
     }
   }, [location]);
+
+  const openDrawer = () => {
+    const opened = window.location.pathname + window.location.search + window.location.hash;
+    drawerOpenedFor.current = opened;
+    // Reopened while a page chosen from it is still rendering: the location effect
+    // will leave this drawer alone when that page commits, so it starts fresh for the
+    // page now, as it would have after the commit.
+    if (opened !== location.pathname + location.search + location.hash) {
+      setSearchQuery('');
+      setOpenSections(getActiveSectionFromPath(window.location.pathname));
+    }
+    setIsOpen(true);
+  };
 
   // Back and Forward close the account menu at once, before the new page renders.
   // Every other page change from the menu closes it already (choosing an item, a
@@ -438,7 +460,7 @@ function Navbar() {
               {/* Mobile menu button */}
               <button
                 ref={menuButtonRef}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => (isOpen ? setIsOpen(false) : openDrawer())}
                 className="lg:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
                 aria-label="Toggle menu"
                 aria-expanded={isOpen}
