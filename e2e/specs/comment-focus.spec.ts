@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFixtures, createCommentThread, insertComment, deleteFixtureComments, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
@@ -11,6 +11,9 @@ import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type 
 // box takes no typing (Comment.tsx, CommentForm.tsx), since what lands closes the form;
 // a refused one lifts both, and a refused save shows its error as a toast if its editor
 // has gone.
+// Save and the post buttons are busy rather than disabled while sending, so they keep
+// focus and ignore a second press, and their busy text is read out. A refused one
+// ignores presses, reads its error out and, in forced colours, keeps disabled's grey.
 
 let fx: Fixtures;
 
@@ -68,33 +71,38 @@ test.describe('comment edit and reply focus', () => {
 
   // Answers the parent's PATCH as the server would, with the comment and its new text,
   // without asking the server, which would first send the text to OpenAI's moderation.
-  // When `held`, the answer waits for release().
+  // When `held`, the answer waits for release(); count() is how many PATCHes came.
   async function stubSave(page: Page, held = false) {
     const parent = await listedParent(page);
     let release = () => {};
     const gate = held ? new Promise<void>(resolve => { release = resolve; }) : Promise.resolve();
     let arrived!: () => void;
     const seen = new Promise<void>(resolve => { arrived = resolve; });
+    let count = 0;
     await page.route(`**/api/comments/${parentId}`, async route => {
       if (route.request().method() !== 'PATCH') return route.fallback();
+      count += 1;
       arrived();
       await gate;
       const { body } = route.request().postDataJSON() as { body: string };
       await route.fulfill({ json: { ...parent, replies: undefined, body } });
     });
-    return { release: () => release(), seen };
+    return { release: () => release(), seen, count: () => count };
   }
 
-  // Answers a reply's POST as the server would, with the new reply, without asking the
-  // server, which would moderate it first. When `held`, the answer waits for release().
-  async function stubReply(page: Page, held = false) {
+  // Answers a POST, a reply's or a new comment's, as the server would, with the new
+  // comment, without asking the server, which would moderate it first. When `held`, the
+  // answer waits for release(); count() is how many POSTs came.
+  async function stubPost(page: Page, held = false) {
     const parent = await listedParent(page);
     let release = () => {};
     const gate = held ? new Promise<void>(resolve => { release = resolve; }) : Promise.resolve();
     let arrived!: () => void;
     const seen = new Promise<void>(resolve => { arrived = resolve; });
+    let count = 0;
     await page.route('**/api/comments/', async route => {
       if (route.request().method() !== 'POST') return route.fallback();
+      count += 1;
       arrived();
       await gate;
       const sent = route.request().postDataJSON() as Record<string, unknown>;
@@ -102,11 +110,28 @@ test.describe('comment edit and reply focus', () => {
       // An id no row holds: the page only draws it.
       await route.fulfill({
         status: 201,
-        json: { id: 2_000_000_000, ...sent, is_deleted: false, created_at: now, updated_at: now, user: parent.user },
+        json: { id: 2_000_000_000, parent_id: null, ...sent, is_deleted: false, created_at: now, updated_at: now, user: parent.user },
       });
     });
-    return { release: () => release(), seen };
+    return { release: () => release(), seen, count: () => count };
   }
+  // Answers the first `method` request to `url` with moderation's refusal and holds any
+  // later one until release(), so a press that should have been refused shows as a busy
+  // button and an extra count.
+  async function refuseFirst(page: Page, url: string, method: string) {
+    let release = () => {};
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let count = 0;
+    await page.route(url, async route => {
+      if (route.request().method() !== method) return route.fallback();
+      count += 1;
+      if (count > 1) await gate;
+      await route.fulfill({ status: 400, json: { detail: FLAGGED } });
+    });
+    return { release: () => release(), count: () => count };
+  }
+  // Its name is its busy text while a save runs.
+  const saveButton = (page: Page) => own(page).getByRole('button', { name: /^(Save|Saving\.\.\.)$/ });
   const replyBox = (page: Page) => own(page).getByPlaceholder(/^Reply to /);
   const drawnReply = (page: Page) => page.locator('#comment-2000000000');
   const replyText = () => `E2E ${fx.token} second reply`;
@@ -212,7 +237,7 @@ test.describe('comment edit and reply focus', () => {
   });
 
   test('a reply that lands gives focus back to Reply', async ({ page }) => {
-    await stubReply(page);
+    await stubPost(page);
     await startReply(page);
     // The form closes only once the reply lands.
     await expect(replyBox(page)).toHaveCount(0);
@@ -221,7 +246,7 @@ test.describe('comment edit and reply focus', () => {
   });
 
   test('a reply that lands after someone moved on leaves focus where they put it', async ({ page }) => {
-    const post = await stubReply(page, true);
+    const post = await stubPost(page, true);
     await startReply(page);
     await post.seen;
     // While it posts, they start writing a new comment.
@@ -237,7 +262,7 @@ test.describe('comment edit and reply focus', () => {
 
   test("a reply that lands after the reader scrolled away leaves focus on the page and doesn't scroll them back", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 400 });
-    const post = await stubReply(page, true);
+    const post = await stubPost(page, true);
     await startReply(page);
     await post.seen;
     // They read back up the page while it posts.
@@ -305,7 +330,7 @@ test.describe('comment edit and reply focus', () => {
   });
 
   test("the reply form's Cancel waits while a reply is posting, and its box takes no typing meanwhile", async ({ page }) => {
-    const post = await stubReply(page, true);
+    const post = await stubPost(page, true);
     await startReply(page);
     await post.seen;
     const cancel = button(page, 'Cancel');
@@ -382,5 +407,128 @@ test.describe('comment edit and reply focus', () => {
     await replies.click();
     await expect(reply.getByText(`E2E ${fx.token} reply`, { exact: true })).toBeVisible();
     await expect(reply.getByRole('textbox')).toHaveCount(0);
+  });
+
+  test('Save keeps focus while its save runs, busy rather than disabled, and a second press saves nothing', async ({ page }) => {
+    const save = await stubSave(page, true);
+    await button(page, 'Edit').click();
+    await editBox(page).fill(edited());
+    await saveButton(page).focus();
+    await page.keyboard.press('Enter');
+    await save.seen;
+    await expect(saveButton(page)).toHaveAttribute('aria-busy', 'true');
+    await expect(saveButton(page)).toHaveAttribute('aria-disabled', 'false');
+    await expect(saveButton(page)).toBeFocused();
+    await expect(own(page).locator('[aria-live="polite"]')).toHaveText('Saving...');
+    await page.keyboard.press('Enter');
+
+    save.release();
+    await expect(button(page, 'Edit')).toBeFocused();
+    expect(save.count()).toBe(1);
+  });
+
+  test('a refused save keeps focus on Save, its error is read out, and Save then refuses a press', async ({ page }) => {
+    const refusal = await refuseFirst(page, `**/api/comments/${parentId}`, 'PATCH');
+    await button(page, 'Edit').click();
+    await editBox(page).fill(edited());
+    await saveButton(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(own(page).getByRole('alert')).toHaveText(FLAGGED);
+    await expect(saveButton(page)).toBeFocused();
+    await expect(saveButton(page)).toHaveAttribute('aria-disabled', 'true');
+
+    // Pressed again while refused, it sends nothing and the error stands. A press that got
+    // through would clear the error and make Save busy at once, its request held.
+    await page.keyboard.press('Enter');
+    await settle(page);
+    await expect(saveButton(page)).toHaveAttribute('aria-busy', 'false');
+    await expect(own(page).getByRole('alert')).toHaveText(FLAGGED);
+    expect(refusal.count()).toBe(1);
+    refusal.release();
+  });
+
+  test('Save refuses a press while nothing has changed', async ({ page }) => {
+    await button(page, 'Edit').click();
+    await saveButton(page).focus();
+    await expect(saveButton(page)).toHaveAttribute('aria-disabled', 'true');
+    await page.keyboard.press('Enter');
+    await settle(page);
+    // A press that got through would close the editor, as Cancel does.
+    await expect(editBox(page)).toBeVisible();
+    await expect(saveButton(page)).toBeFocused();
+  });
+
+  test("a refused reply keeps focus on the form's button, its error is read out, and the button then refuses a press", async ({ page }) => {
+    const refusal = await refuseFirst(page, '**/api/comments/', 'POST');
+    await button(page, 'Reply').click();
+    await replyBox(page).fill(replyText());
+    const submit = own(page).locator('form button[type="submit"]');
+    await submit.focus();
+    await page.keyboard.press('Enter');
+    await expect(own(page).getByRole('alert')).toHaveText(FLAGGED);
+    await expect(submit).toBeFocused();
+    await expect(submit).toHaveAttribute('aria-disabled', 'true');
+
+    await page.keyboard.press('Enter');
+    await settle(page);
+    await expect(submit).toHaveAttribute('aria-busy', 'false');
+    await expect(own(page).getByRole('alert')).toHaveText(FLAGGED);
+    expect(refusal.count()).toBe(1);
+    refusal.release();
+  });
+
+  test('a new comment keeps focus on its button while it posts and after, with the box held meanwhile and a second press sending nothing', async ({ page }) => {
+    const post = await stubPost(page, true);
+    const box = page.getByPlaceholder(POST_BOX);
+    const form = page.locator('form').filter({ has: box });
+    const submit = form.locator('button[type="submit"]');
+    const text = `E2E ${fx.token} new comment`;
+    await box.fill(text);
+    await submit.focus();
+    await page.keyboard.press('Enter');
+    await post.seen;
+    await expect(submit).toHaveAttribute('aria-busy', 'true');
+    await expect(submit).toHaveAttribute('aria-disabled', 'false');
+    await expect(submit).toBeFocused();
+    await expect(form.locator('[aria-live="polite"]')).toHaveText('Posting...');
+    await expect(box).not.toBeEditable();
+    await page.keyboard.press('Enter');
+
+    post.release();
+    await expect(box).toHaveValue('');
+    await expect(page.locator('#comment-2000000000')).toContainText(text);
+    // The box is empty now, so the button is refused, and it still holds focus.
+    await expect(submit).toBeFocused();
+    await expect(submit).toHaveAttribute('aria-disabled', 'true');
+    // Pressed while refused, it sends nothing: a press that got through would be busy.
+    await page.keyboard.press('Enter');
+    await settle(page);
+    await expect(submit).toHaveAttribute('aria-busy', 'false');
+    expect(post.count()).toBe(1);
+  });
+
+  test('a refused Save or post button keeps a disabled button\'s grey in forced colours', async ({ page }) => {
+    await page.emulateMedia({ forcedColors: 'active' });
+    // The system colour a disabled button got, read from a probe, so the comparison holds
+    // in whatever palette the emulation uses.
+    const grey = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'GrayText';
+      document.body.append(probe);
+      const colour = getComputedStyle(probe).color;
+      probe.remove();
+      return colour;
+    });
+    const colour = (l: Locator) => l.evaluate(el => getComputedStyle(el).color);
+    const box = page.getByPlaceholder(POST_BOX);
+    const submit = page.locator('form').filter({ has: box }).locator('button[type="submit"]');
+
+    // Refused: the empty post button, and Save with nothing changed.
+    expect(await colour(submit)).toBe(grey);
+    await button(page, 'Edit').click();
+    expect(await colour(saveButton(page))).toBe(grey);
+    // With something to post, the button no longer is.
+    await box.fill(`E2E ${fx.token} new comment`);
+    expect(await colour(submit)).not.toBe(grey);
   });
 });

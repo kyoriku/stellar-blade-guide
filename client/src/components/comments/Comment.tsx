@@ -145,6 +145,7 @@ export default function Comment({
   // Edit is the author's alone; Delete follows rank (utils/roles.ts mirrors the server).
   const canDelete = canDeleteComment(user, comment.user)
   const hasReplies = comment.replies && comment.replies.length > 0
+  const saveRefused = !editBody.trim() || editBody.trim() === comment.body || !!editError
 
   const closeReply = () => {
     const form = replyFormRef.current?.getBoundingClientRect()
@@ -278,7 +279,7 @@ export default function Comment({
               />
               <div className="flex gap-2 justify-end">
                 {editError
-                  ? <p className="text-red-400 text-xs my-auto mr-auto">{editError}</p>
+                  ? <p role="alert" className="text-red-400 text-xs my-auto mr-auto">{editError}</p>
                   : <span className="text-xs text-gray-400 my-auto mr-auto">{editBody.length}/2000</span>
                 }
                 <button
@@ -292,12 +293,20 @@ export default function Comment({
                   Cancel
                 </button>
                 <button
-                  onClick={() => void handleEdit()}
-                  disabled={isSaving || !editBody.trim() || editBody.trim() === comment.body || !!editError}
-                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all cursor-pointer"
+                  // Busy rather than disabled while the save runs, so it keeps focus and
+                  // doesn't dim, as the delete dialog's Delete does. Refused, and dimmed
+                  // (grey text in forced colours, which drop the tint), while there's
+                  // nothing new to save or an error stands.
+                  onClick={() => { if (!isSaving && !saveRefused) void handleEdit() }}
+                  aria-busy={isSaving}
+                  aria-disabled={!isSaving && saveRefused}
+                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/30 aria-disabled:hover:bg-cyan-500/30 aria-disabled:cursor-not-allowed aria-busy:cursor-progress forced-colors:aria-disabled:text-[GrayText] text-black font-semibold text-sm transition-all cursor-pointer"
                 >
                   {isSaving ? 'Saving...' : 'Save'}
                 </button>
+                {/* Focus stays on Save while its text changes, which screen readers don't
+                    reliably read out, so the busy text is read from here. */}
+                <span className="sr-only" aria-live="polite">{isSaving ? 'Saving...' : ''}</span>
               </div>
           </div>
         ) : (

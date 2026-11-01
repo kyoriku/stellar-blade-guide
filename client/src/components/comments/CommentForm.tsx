@@ -49,7 +49,8 @@ export default function CommentForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = body.trim()
-    if (!trimmed) return
+    // The button is busy or refused rather than disabled, so its presses come here.
+    if (isSubmitting || !trimmed || error) return
     setError(null)
     setIsSubmitting(true)
     try {
@@ -78,7 +79,7 @@ export default function CommentForm({
       />
       <div className="flex items-center justify-between">
         {error
-          ? <p className="text-red-400 text-xs">{error}</p>
+          ? <p role="alert" className="text-red-400 text-xs">{error}</p>
           : <span className="text-xs text-gray-400">{body.length}/2000</span>
         }
         <div className="flex items-center gap-2">
@@ -96,12 +97,20 @@ export default function CommentForm({
           )}
           <button
             type="submit"
-            disabled={isSubmitting || !body.trim() || !!error}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
+            // Busy rather than disabled while the post runs, so it keeps focus and doesn't
+            // dim, as the delete dialog's Delete does. Refused, and dimmed (grey text in
+            // forced colours, which drop the tint), while the box is empty or an error
+            // stands; handleSubmit ignores those presses.
+            aria-busy={isSubmitting}
+            aria-disabled={!isSubmitting && (!body.trim() || !!error)}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress forced-colors:aria-disabled:text-[GrayText] text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
             {isSubmitting ? 'Posting...' : buttonLabel}
           </button>
+          {/* Focus stays on the button while its text changes, which screen readers don't
+              reliably read out, so the busy text is read from here. */}
+          <span className="sr-only" aria-live="polite">{isSubmitting ? 'Posting...' : ''}</span>
         </div>
       </div>
     </form>
