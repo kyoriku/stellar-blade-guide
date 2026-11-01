@@ -343,3 +343,20 @@ test('a delete that fails another way keeps focus on Delete and asks for nothing
   expect(asked).toEqual([]);
   expect(await isDeleted(author)).toBe(false);
 });
+
+test('the role badge shows only for moderators and admins, so a role typed by hand shows none', async ({ page, request }) => {
+  const plain = await account(request, 'rku', 'user');
+  const mod = await account(request, 'rkm', 'moderator');
+  const admin = await account(request, 'rka', 'admin');
+  const typed = await account(request, 'rkt', 'user');
+  expect(await setUserRole(typed.username, 'Admin')).toBe(true);
+
+  // Signed out: everyone sees the badges.
+  await page.goto(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}`);
+  await expect(own(page, typed)).toBeVisible();
+  const badge = (a: Account, text: string) => own(page, a).getByText(text, { exact: true });
+  await expect(badge(mod, 'moderator')).toBeVisible();
+  await expect(badge(admin, 'admin')).toBeVisible();
+  await expect(badge(plain, 'user')).toHaveCount(0);
+  await expect(badge(typed, 'Admin')).toHaveCount(0);
+});

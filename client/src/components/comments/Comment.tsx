@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth'
 import type { CommentData } from '../../hooks/useComments'
 import { ApiError, errorMessage } from '../../services/api'
 import { useToast } from '../../context/ToastContext'
-import { canDeleteComment } from '../../utils/roles'
+import { canDeleteComment, roleRank } from '../../utils/roles'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
 import BusyLabel from '../BusyLabel'
@@ -195,7 +195,9 @@ export default function Comment({
           <span className="text-sm font-medium text-gray-200">
             {comment.user?.username ?? '[deleted]'}
           </span>
-          {comment.user?.role && comment.user.role !== 'user' && (
+          {/* Moderators and admins only, as on the admin page: a role typed by hand
+              outside the three ranks as a user and gets none. */}
+          {comment.user && roleRank(comment.user.role) > roleRank('user') && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
               {comment.user.role}
             </span>

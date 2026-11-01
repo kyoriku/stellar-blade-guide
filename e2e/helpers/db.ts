@@ -236,8 +236,9 @@ function suiteAccount(username: string): string {
 }
 
 // An account's role, set as the real admin's was: no route can make or unmake an
-// admin. False when the account is gone.
-export async function setUserRole(username: string, role: 'user' | 'moderator' | 'admin'): Promise<boolean> {
+// admin. Any text goes, as in SQL (the column has no constraint), for a role typed by
+// hand. False when the account is gone.
+export async function setUserRole(username: string, role: string): Promise<boolean> {
   const pool = pgPool();
   try {
     const res = await pool.query(`UPDATE users SET role = $2 WHERE username = $1`, [suiteAccount(username), role]);
