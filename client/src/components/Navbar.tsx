@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3, Shield } from 'lucide-react'
+import BusyLabel from './BusyLabel'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useAuth } from '../hooks/useAuth'
 import { useSearch } from '../hooks/useSearch'
@@ -67,10 +68,25 @@ function Navbar() {
   const ringFound = ringReady ? weightedFound(completedIds, userStats.quantity_overrides) : 0;
   const overallPct = ringReady ? Math.floor((ringFound / userStats.total.total) * 100) : 0;
   const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError, error: mobileSearchErrorObj } = useSearch(searchQuery);
+  // Sign out shows its progress where it was pressed, the account menu or the drawer,
+  // which stays open until it lands (it waits for a refresh in another tab of this
+  // browser, then the request), and ignores a second press meanwhile. The menu goes
+  // with the signed-in navbar; the drawer closes.
+  const [signingOut, setSigningOut] = useState(false)
+  const signingOutRef = useRef(false)
   const handleLogout = async () => {
-    closeAccountMenu()
-    await logout()
-    // navigate('/')
+    if (signingOutRef.current) return
+    signingOutRef.current = true
+    setSigningOut(true)
+    try {
+      await logout()
+    } catch {
+      // logout() has signed this tab out either way; only the request failed.
+    } finally {
+      signingOutRef.current = false
+      setSigningOut(false)
+      setIsOpen(false)
+    }
   }
 
   // Focus restore target when the drawer is dismissed via the backdrop —
@@ -399,11 +415,11 @@ function Navbar() {
                       )}
                       <button
                         type="button"
-                        {...accountMenu.getItemProps(() => void handleLogout())}
-                        className={`w-full cursor-pointer ${accountItemClass(false)}`}
+                        {...accountMenu.getItemProps(() => void handleLogout(), { keepOpen: true })}
+                        aria-busy={signingOut}
+                        className={`w-full cursor-pointer aria-busy:cursor-progress ${accountItemClass(false)}`}
                       >
-                        <LogOut className="w-4 h-4" />
-                        Sign out
+                        <BusyLabel label="Sign out" busy={signingOut} icon={<LogOut className="w-4 h-4" />} gap="gap-2.5" />
                       </button>
                     </div>
                   </div>
@@ -441,6 +457,9 @@ function Navbar() {
                   />
                 </div>
               </button>
+              {/* Sign out keeps its name while busy, so the busy text is read out from here,
+                  outside the account menu and the drawer, one of which is always hidden. */}
+              <span className="sr-only" aria-live="polite">{signingOut ? 'Signing out…' : ''}</span>
             </div>
           </div>
         </div>
@@ -627,11 +646,11 @@ function Navbar() {
                         </Link>
                       )}
                       <button
-                        onClick={() => { setIsOpen(false); void handleLogout(); }}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
+                        onClick={() => void handleLogout()}
+                        aria-busy={signingOut}
+                        className="flex-1 flex items-center justify-center py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium aria-busy:cursor-progress"
                       >
-                        <LogOut className="w-4 h-4" />
-                        Sign out
+                        <BusyLabel label="Sign out" busy={signingOut} icon={<LogOut className="w-4 h-4" />} />
                       </button>
                     </div>
                   </div>

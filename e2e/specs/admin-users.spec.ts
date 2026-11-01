@@ -116,8 +116,8 @@ const hideButton = (page: Page, account: Account) =>
 const searchBox = (page: Page) => page.getByLabel(ADMIN_COPY.searchLabel, { exact: true });
 // The count above the list.
 const statusLine = (page: Page) => page.locator('p[aria-live="polite"]');
-// The page's own announcements; an open dialog has a live region of its own.
-const announcement = (page: Page) => page.locator('span.sr-only[aria-live="polite"]:not(dialog *)');
+// The page's own announcements: not an open dialog's live region, nor the navbar's.
+const announcement = (page: Page) => page.locator('span.sr-only[aria-live="polite"]:not(dialog *):not(nav *)');
 // Results are toasts; the toast container is the page's only role="status".
 const toast = (page: Page, text: string) => page.getByRole('status').getByText(text, { exact: true });
 const pageNotFound = (page: Page) => page.getByRole('heading', { level: 1, name: 'Page Not Found', exact: true });

@@ -12,7 +12,7 @@ export default function BusyLabel({ label = '', busy, icon, gap = 'gap-2' }: {
   label?: string
   busy: boolean
   icon?: ReactNode
-  gap?: 'gap-1' | 'gap-1.5' | 'gap-2' // between the icon and the label
+  gap?: 'gap-1' | 'gap-1.5' | 'gap-2' | 'gap-2.5' // between the icon and the label
 }) {
   return (
     <span className="grid place-items-center">
