@@ -144,13 +144,22 @@ function Navbar() {
 
   useEffect(() => {
     setIsOpen(false);
-    // A page change underneath an open account menu (Back, say) closes it too.
-    closeAccountMenu();
     setSearchQuery('');
     if (!searchQueryRef.current) {
       setOpenSections(getActiveSectionFromPath(location.pathname));
     }
-  }, [location, closeAccountMenu]);
+  }, [location]);
+
+  // Back and Forward close the account menu at once, before the new page renders.
+  // Every other page change from the menu closes it already (choosing an item, a
+  // press outside, Tab), so the location effect above leaves it alone: that effect
+  // runs when a navigation commits, which React Router renders as a transition, so
+  // it came after any key pressed meanwhile and took down a menu reopened in that wait.
+  useEffect(() => {
+    const onPop = () => closeAccountMenu();
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [closeAccountMenu]);
 
   // The lock belongs to the drawer being open and nothing else. searchQuery used
   // to be in the deps, so a 12-character query unlocked and re-locked the

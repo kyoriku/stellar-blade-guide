@@ -193,6 +193,32 @@ test('a page change underneath it closes it', async ({ page }) => {
   await expect(button).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('Down pressed while the page chosen from it is still rendering reopens it, and it stays open', async ({ page }) => {
+  const button = await home(page);
+  await button.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(item(page, PROGRESS)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(item(page, 'Settings')).toBeFocused();
+  // In one task: choose Settings, let React commit the menu's close (a microtask), and
+  // press Down on the button while the Settings page, which React Router renders as a
+  // transition, is still to come. The location effect used to close the menu again
+  // when that page committed.
+  await page.evaluate(async () => {
+    const settings = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(el => el.textContent?.trim() === 'Settings')!;
+    settings.click();
+    await Promise.resolve();
+    document.querySelector<HTMLElement>('button[aria-label="Account menu"]')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+  });
+  await expect(page.getByRole('heading', { level: 1, name: 'Account Settings' })).toBeVisible();
+  // The page has rendered, and the menu is still open, with the keys working in it.
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(item(page, PROGRESS)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(item(page, 'Settings')).toBeFocused();
+});
+
 test("an admin's menu holds Admin between Settings and Sign out, and the keys reach it", async ({ page }) => {
   expect(await setUserRole(user.username, 'admin')).toBe(true);
   const button = await home(page);
