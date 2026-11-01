@@ -163,6 +163,8 @@ export default function BulkProgressDialog({
                 type="text"
                 value={word}
                 onChange={e => setWord(e.target.value)}
+                // Held while the write is out, as the admin page's typed confirmation is.
+                readOnly={pending}
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}

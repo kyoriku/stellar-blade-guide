@@ -46,10 +46,23 @@ async function settle(page: Page): Promise<void> {
 // Each button's live region comes right after it.
 const liveAfter = (button: Locator) => button.locator('xpath=following-sibling::*[@aria-live="polite"][1]');
 
+// Fields a request holds take no typing while it's out (a success clears or replaces
+// them), and take it again once it has been refused.
+async function expectHeld(page: Page, fields: Locator[]): Promise<void> {
+  for (const field of fields) {
+    await expect(field, 'held while the request is out').not.toBeEditable();
+    const before = await field.inputValue();
+    await field.focus();
+    await page.keyboard.type('x');
+    await expect(field).toHaveValue(before);
+  }
+}
+
 // The busy pattern, a second press and Enter in a field, which must send nothing more,
-// and then the refusal, read out as an alert, with the button at rest again.
+// the fields it holds, and then the refusal, read out as an alert, with the button at
+// rest and the fields taking typing again.
 async function busyThenRefused(page: Page, button: Locator, opts: {
-  name: string; busyText: string; hold: Hold; live?: Locator; field?: Locator;
+  name: string; busyText: string; hold: Hold; live?: Locator; field?: Locator; held?: Locator[];
 }): Promise<void> {
   await expectBusyPattern(button, {
     name: opts.name, busyText: opts.busyText, live: opts.live ?? liveAfter(button),
@@ -61,9 +74,11 @@ async function busyThenRefused(page: Page, button: Locator, opts: {
   await settle(page);
   expect(opts.hold.count(), 'one request, whatever was pressed meanwhile').toBe(1);
   await expect(button).toHaveAttribute('aria-busy', 'true');
+  await expectHeld(page, opts.held ?? []);
   opts.hold.release();
   await expect(page.getByRole('alert')).toContainText(REFUSED);
   await expect(button).toHaveAttribute('aria-busy', 'false');
+  for (const field of opts.held ?? []) await expect(field).toBeEditable();
 }
 
 test.describe('busy sign-in forms', () => {
@@ -142,13 +157,16 @@ test.describe('busy Settings', () => {
 
   const main = (page: Page) => page.locator('main');
   const saveChanges = (page: Page) => main(page).getByRole('button', { name: 'Save changes', exact: true });
+  const avatarField = (page: Page) => main(page).getByPlaceholder('https://example.com/avatar.png');
 
   test('Save changes', async ({ page }) => {
     await page.goto('/settings');
     const username = main(page).getByPlaceholder('yourname');
     await username.fill(`${user.username}x`);
     const hold = await holdThenRefuse(page, '**/api/users/me', 'PATCH', 409);
-    await busyThenRefused(page, saveChanges(page), { name: 'Save changes', busyText: 'Saving…', hold, field: username });
+    await busyThenRefused(page, saveChanges(page), {
+      name: 'Save changes', busyText: 'Saving…', hold, field: username, held: [username, avatarField(page)],
+    });
   });
 
   test('Remove, the avatar, which shows its own busy state and holds Save changes meanwhile', async ({ page }) => {
@@ -168,19 +186,23 @@ test.describe('busy Settings', () => {
     await saveChanges(page).click({ force: true });
     await settle(page);
     expect(hold.count(), 'one request, whatever was pressed meanwhile').toBe(1);
+    const fields = [main(page).getByPlaceholder('yourname'), avatarField(page)];
+    await expectHeld(page, fields);
     hold.release();
     await expect(page.getByRole('alert')).toContainText(REFUSED);
     await expect(remove).toHaveAttribute('aria-busy', 'false');
+    for (const field of fields) await expect(field).toBeEditable();
   });
 
   test('Update password', async ({ page }) => {
     await page.goto('/settings');
-    await main(page).getByLabel('Current password').fill('e2e-Password-123');
+    const currentPassword = main(page).getByLabel('Current password');
+    await currentPassword.fill('e2e-Password-123');
     const newPassword = main(page).getByLabel('New password');
     await newPassword.fill('e2e-Password-456');
     const hold = await holdThenRefuse(page, '**/api/auth/change-password', 'POST');
     await busyThenRefused(page, main(page).getByRole('button', { name: 'Update password', exact: true }), {
-      name: 'Update password', busyText: 'Updating…', hold, field: newPassword,
+      name: 'Update password', busyText: 'Updating…', hold, field: newPassword, held: [currentPassword, newPassword],
     });
   });
 
@@ -198,7 +220,7 @@ test.describe('busy Settings', () => {
     await confirm.fill(user.username);
     const hold = await holdThenRefuse(page, '**/api/users/me', 'DELETE');
     await busyThenRefused(page, main(page).getByRole('button', { name: 'Delete my account', exact: true }), {
-      name: 'Delete my account', busyText: 'Deleting…', hold, field: confirm,
+      name: 'Delete my account', busyText: 'Deleting…', hold, field: confirm, held: [confirm],
     });
   });
 

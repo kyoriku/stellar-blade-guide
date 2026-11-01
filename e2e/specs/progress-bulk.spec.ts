@@ -534,6 +534,35 @@ test.describe('bulk progress, signed in', () => {
     await expect(toast(page, BULK_COPY.successMarkFound(quantity, fmt(quantity), scope))).toBeVisible();
     await expect(mark).toHaveAttribute('aria-busy', 'false');
   });
+
+  test("the everything dialog's word takes no typing while the write is out", async ({ page }) => {
+    await gotoProgress(page);
+    await openManage(page);
+    await page.getByLabel(BULK_COPY.scopeLabel).selectOption('everything');
+    await page.getByRole('button', { name: BULK_COPY.markButton }).click();
+    const dialog = page.getByRole('alertdialog');
+    const word = dialog.getByLabel(BULK_COPY.confirmWordLabel(BULK_COPY.confirmWord));
+    await word.fill(BULK_COPY.confirmWord);
+    // The write is held, then refused, so nothing is written.
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let arrived!: () => void;
+    const seen = new Promise<void>(resolve => { arrived = resolve; });
+    await page.route('**/api/progress/bulk', async route => {
+      arrived();
+      await gate;
+      await route.fulfill({ status: 500, json: { detail: 'Internal server error' } });
+    });
+    await dialog.getByRole('button', { name: /^Mark .* found$/ }).click();
+    await seen;
+    await expect(word).not.toBeEditable();
+    await word.focus();
+    await page.keyboard.type('x');
+    await expect(word).toHaveValue(BULK_COPY.confirmWord);
+    release();
+    await expect(dialog.getByRole('alert')).toBeVisible();
+    await expect(word).toBeEditable();
+  });
 });
 
 test.describe('bulk progress, sign-in sync in flight', () => {

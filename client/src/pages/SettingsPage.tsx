@@ -259,6 +259,9 @@ export default function SettingsPage() {
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
+                // Held while a save or a Remove is out, as the comment editor's box is:
+                // a save clears or replaces what's here, so typing meanwhile would be lost.
+                readOnly={profileLoading || avatarRemoving}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
                 placeholder="yourname"
               />
@@ -275,6 +278,9 @@ export default function SettingsPage() {
                 type="url"
                 value={avatarUrl}
                 onChange={e => setAvatarUrl(e.target.value)}
+                // Held while a save or a Remove is out, as the comment editor's box is:
+                // a save clears or replaces what's here, so typing meanwhile would be lost.
+                readOnly={profileLoading || avatarRemoving}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
                 placeholder="https://example.com/avatar.png"
               />
@@ -363,6 +369,8 @@ export default function SettingsPage() {
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
+                    // Held while the change is out: a success empties both fields.
+                    readOnly={passwordLoading}
                     autoComplete="current-password"
                     required
                     className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
@@ -389,6 +397,7 @@ export default function SettingsPage() {
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
+                    readOnly={passwordLoading}
                     autoComplete="new-password"
                     required
                     className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
@@ -484,6 +493,8 @@ export default function SettingsPage() {
                     type="text"
                     value={deleteConfirm}
                     onChange={e => setDeleteConfirm(e.target.value)}
+                    // Held while the delete is out, as the dialogs' typed words are.
+                    readOnly={deleteLoading}
                     // The match is exact, so a phone must not capitalize, correct or fill it.
                     autoCapitalize="none"
                     autoCorrect="off"
