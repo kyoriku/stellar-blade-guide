@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFixtures, createCommentThread, insertComment, deleteFixtureComments, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { expectBusyPattern } from '../helpers/busy';
 
 // Focus while editing and replying (components/comments/Comment.tsx). Each of these
 // controls takes away the one that had focus, which used to leave it on the page
@@ -130,8 +131,9 @@ test.describe('comment edit and reply focus', () => {
     });
     return { release: () => release(), count: () => count };
   }
-  // Its name is its busy text while a save runs.
-  const saveButton = (page: Page) => own(page).getByRole('button', { name: /^(Save|Saving\.\.\.)$/ });
+  // Named Save while busy too: the spinner takes its label's place, and the label stays
+  // its name.
+  const saveButton = (page: Page) => button(page, 'Save');
   const replyBox = (page: Page) => own(page).getByPlaceholder(/^Reply to /);
   const drawnReply = (page: Page) => page.locator('#comment-2000000000');
   const replyText = () => `E2E ${fx.token} second reply`;
@@ -419,7 +421,7 @@ test.describe('comment edit and reply focus', () => {
     await expect(saveButton(page)).toHaveAttribute('aria-busy', 'true');
     await expect(saveButton(page)).toHaveAttribute('aria-disabled', 'false');
     await expect(saveButton(page)).toBeFocused();
-    await expect(own(page).locator('[aria-live="polite"]')).toHaveText('Saving...');
+    await expect(own(page).locator('[aria-live="polite"]')).toHaveText('Saving…');
     await page.keyboard.press('Enter');
 
     save.release();
@@ -490,7 +492,7 @@ test.describe('comment edit and reply focus', () => {
     await expect(submit).toHaveAttribute('aria-busy', 'true');
     await expect(submit).toHaveAttribute('aria-disabled', 'false');
     await expect(submit).toBeFocused();
-    await expect(form.locator('[aria-live="polite"]')).toHaveText('Posting...');
+    await expect(form.locator('[aria-live="polite"]')).toHaveText('Posting…');
     await expect(box).not.toBeEditable();
     await page.keyboard.press('Enter');
 
@@ -553,4 +555,41 @@ test.describe('comment edit and reply focus', () => {
     release();
     await expect(page.getByRole('status').getByText(FLAGGED, { exact: true })).toBeVisible();
   });
+
+  test('Save, Post comment and Reply show the busy pattern: a spinner in place of the label, at their size and name', async ({ page }) => {
+    const save = await stubSave(page, true);
+    await button(page, 'Edit').click();
+    await editBox(page).fill(edited());
+    await expectBusyPattern(saveButton(page), {
+      name: 'Save', busyText: 'Saving…', live: own(page).locator('[aria-live="polite"]'),
+      press: () => saveButton(page).click(), seen: save.seen,
+    });
+    save.release();
+    await expect(editBox(page)).toHaveCount(0);
+
+    const post = await stubPost(page, true);
+    const box = page.getByPlaceholder(POST_BOX);
+    const form = page.locator('form').filter({ has: box });
+    const submit = form.locator('button[type="submit"]');
+    await box.fill(`E2E ${fx.token} new comment`);
+    await expectBusyPattern(submit, {
+      name: 'Post comment', busyText: 'Posting…', live: form.locator('[aria-live="polite"]'),
+      press: () => submit.click(), seen: post.seen,
+    });
+    post.release();
+    await expect(box).toHaveValue('');
+
+    // Registered after the post's stub, so it answers this POST first.
+    const reply = await stubPost(page, true);
+    await button(page, 'Reply').click();
+    await replyBox(page).fill(replyText());
+    const replySubmit = own(page).locator('form button[type="submit"]');
+    await expectBusyPattern(replySubmit, {
+      name: 'Reply', busyText: 'Posting…', live: own(page).locator('form [aria-live="polite"]'),
+      press: () => replySubmit.click(), seen: reply.seen,
+    });
+    reply.release();
+    await expect(replyBox(page)).toHaveCount(0);
+  });
+
 });

@@ -302,11 +302,10 @@ export default function Comment({
                   aria-disabled={!isSaving && saveRefused}
                   className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/30 aria-disabled:hover:bg-cyan-500/30 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all cursor-pointer"
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  <BusyLabel label="Save" busy={isSaving} />
                 </button>
-                {/* Focus stays on Save while its text changes, which screen readers don't
-                    reliably read out, so the busy text is read from here. */}
-                <span className="sr-only" aria-live="polite">{isSaving ? 'Saving...' : ''}</span>
+                {/* Save keeps its name while busy, so the busy text is read out from here. */}
+                <span className="sr-only" aria-live="polite">{isSaving ? 'Saving…' : ''}</span>
               </div>
           </div>
         ) : (

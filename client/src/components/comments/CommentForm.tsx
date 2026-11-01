@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Send } from 'lucide-react'
+import BusyLabel from '../BusyLabel'
 import { useAuth } from '../../hooks/useAuth'
 import { errorMessage } from '../../services/api'
 import { useToast } from '../../context/ToastContext'
@@ -111,14 +112,12 @@ export default function CommentForm({
             // stands; handleSubmit ignores those presses.
             aria-busy={isSubmitting}
             aria-disabled={!isSubmitting && (!body.trim() || !!error)}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
+            className="flex items-center px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
           >
-            <Send className="w-3.5 h-3.5" />
-            {isSubmitting ? 'Posting...' : buttonLabel}
+            <BusyLabel label={buttonLabel} busy={isSubmitting} icon={<Send className="w-3.5 h-3.5" />} gap="gap-1.5" />
           </button>
-          {/* Focus stays on the button while its text changes, which screen readers don't
-              reliably read out, so the busy text is read from here. */}
-          <span className="sr-only" aria-live="polite">{isSubmitting ? 'Posting...' : ''}</span>
+          {/* The button keeps its name while busy, so the busy text is read out from here. */}
+          <span className="sr-only" aria-live="polite">{isSubmitting ? 'Posting…' : ''}</span>
         </div>
       </div>
     </form>
