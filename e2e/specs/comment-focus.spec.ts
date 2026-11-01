@@ -96,8 +96,10 @@ test.describe('comment edit and reply focus', () => {
   test('Save gives focus back to Edit', async ({ page }) => {
     await stubSave(page);
     await startSave(page);
-    await expect(own(page).getByText(edited(), { exact: true })).toBeVisible();
+    // Edit is back only once the save has landed. Until then the edited text is also
+    // the open box's own text, so it can't show the save landed.
     await expect(button(page, 'Edit')).toBeFocused();
+    await expect(own(page).getByText(edited(), { exact: true })).toBeVisible();
   });
 
   test('a save that lands after someone moved on leaves focus where they put it', async ({ page }) => {
@@ -110,6 +112,8 @@ test.describe('comment edit and reply focus', () => {
     await expect(box).toBeFocused();
 
     save.release();
+    // The editor closes only once the save lands.
+    await expect(editBox(page)).toHaveCount(0);
     await expect(own(page).getByText(edited(), { exact: true })).toBeVisible();
     await settle(page);
     await expect(box).toBeFocused();
