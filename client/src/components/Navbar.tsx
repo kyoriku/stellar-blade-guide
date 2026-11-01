@@ -192,6 +192,13 @@ function Navbar() {
     setOpenSections(getActiveSectionFromPath(location.pathname));
   }, [isOpen, location.pathname, searchQuery]);
 
+  // A session that ends underneath an open account menu (signed out in another tab,
+  // say) takes the menu down with it, so a sign-in with no page change between
+  // doesn't bring it back open.
+  useEffect(() => {
+    if (!user) closeAccountMenu();
+  }, [user, closeAccountMenu]);
+
   return (
     <>
       <style>{`
