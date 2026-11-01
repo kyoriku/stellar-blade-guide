@@ -564,7 +564,7 @@ function Navbar() {
                   // Trimmed, like the search itself (useSearch): "x " sends nothing.
                   : searchQuery.trim().length < 2
                     ? 'Type at least 2 characters...'
-                    : 'Searching...'}
+                    : 'Searching…'}
               </div>
             )}
           </div>

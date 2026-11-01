@@ -210,8 +210,21 @@ test.describe('search results, phone typing', () => {
   test('the drawer asks for a second letter when "x " is typed, since nothing is sent', async ({ page }) => {
     await page.goto('/');
     await (await PHONE.open(page)).fill('x ');
-    // The status line under the field. Counting the space, it said "Searching..." for good.
-    await expect(PHONE.panel(page).getByText(/^(Type at least 2 characters|Searching)\.\.\.$/))
+    // The status line under the field. Counting the space, it said "Searching" for good.
+    await expect(PHONE.panel(page).getByText(/^(Type at least 2 characters\.\.\.|Searching…)$/))
       .toHaveText('Type at least 2 characters...');
+  });
+
+  test('the drawer says "Searching…", with the ellipsis character, while a search is out', async ({ page }) => {
+    let release!: () => void;
+    const held = new Promise<void>(resolve => { release = resolve; });
+    await page.route(url => url.pathname === '/api/search/', async route => {
+      await held;
+      await route.fulfill({ response: await route.fetch() });
+    });
+    await page.goto('/');
+    await (await PHONE.open(page)).fill('eidos');
+    await expect(PHONE.panel(page).getByText('Searching…', { exact: true })).toBeVisible();
+    release();
   });
 });
