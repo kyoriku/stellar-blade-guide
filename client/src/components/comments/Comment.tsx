@@ -100,6 +100,36 @@ export default function Comment({
     focusHeadingOnceDeleted()
   }, [focusHeadingOnceDeleted])
   const [isSaving, setIsSaving] = useState(false)
+  // Focus follows the edit: into the text box, caret at the end, when it opens, and back
+  // to Edit once Cancel or a save closes it. Each takes away the control that had focus.
+  const editorRef = useRef<HTMLDivElement>(null)
+  const editBoxRef = useRef<HTMLTextAreaElement>(null)
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const editClosed = useRef(false)
+  // Whether the editor was on screen as it closed. If not, the reader scrolled away
+  // while a save was out, and giving focus back mustn't scroll them to it.
+  const editorOnScreen = useRef(true)
+  useEffect(() => {
+    if (isEditing) {
+      const box = editBoxRef.current
+      if (box) {
+        box.focus()
+        box.setSelectionRange(box.value.length, box.value.length)
+      }
+    } else if (editClosed.current) {
+      editClosed.current = false
+      // Not if someone moved on while a save was out.
+      if (focusLeftNowhere()) editButtonRef.current?.focus({ preventScroll: !editorOnScreen.current })
+    }
+  }, [isEditing])
+  // The reply form's Cancel gives focus back to Reply.
+  const replyButtonRef = useRef<HTMLButtonElement>(null)
+  const replyCancelled = useRef(false)
+  useEffect(() => {
+    if (showReplyForm || !replyCancelled.current) return
+    replyCancelled.current = false
+    replyButtonRef.current?.focus()
+  }, [showReplyForm])
 
   // A comment whose author deleted their account arrives with user null, and a
   // guest is null too: compared bare, undefined === undefined would make a guest
@@ -114,14 +144,21 @@ export default function Comment({
     setShowReplyForm(false)
   }
 
+  const closeEdit = () => {
+    const editor = editorRef.current?.getBoundingClientRect()
+    editorOnScreen.current = !editor || (editor.bottom > 0 && editor.top < window.innerHeight)
+    editClosed.current = true
+    setIsEditing(false)
+    setEditError(null)
+  }
   const handleEdit = async () => {
     const trimmed = editBody.trim()
-    if (!trimmed || trimmed === comment.body) { setIsEditing(false); return }
+    if (!trimmed || trimmed === comment.body) { closeEdit(); return }
     setEditError(null)
     setIsSaving(true)
     try {
       await onEdit(comment.id, trimmed)
-      setIsEditing(false)
+      closeEdit()
     } catch (err) {
       setEditError(errorMessage(err, 'Failed to edit comment'))
     } finally {
@@ -209,8 +246,9 @@ export default function Comment({
         {comment.is_deleted ? (
           <p className="text-gray-400 text-sm italic">[deleted]</p>
         ) : isEditing ? (
-          <div className="space-y-2">
+          <div ref={editorRef} className="space-y-2">
               <textarea
+                ref={editBoxRef}
                 value={editBody}
                 onChange={e => { setEditBody(e.target.value); setEditError(null) }}
                 rows={3}
@@ -223,7 +261,7 @@ export default function Comment({
                   : <span className="text-xs text-gray-400 my-auto mr-auto">{editBody.length}/2000</span>
                 }
                 <button
-                  onClick={() => { setIsEditing(false); setEditError(null) }}
+                  onClick={closeEdit}
                   className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
                 >
                   Cancel
@@ -246,6 +284,7 @@ export default function Comment({
           <div className="flex items-center gap-3 mt-2">
             {depth === 0 && user && !showReplyForm && (
               <button
+                ref={replyButtonRef}
                 onClick={() => setShowReplyForm(true)}
                 title="Reply to comment"
                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer"
@@ -259,6 +298,7 @@ export default function Comment({
               <>
                 {isOwner && (
                   <button
+                    ref={editButtonRef}
                     onClick={() => { setIsEditing(true); setEditBody(comment.body) }}
                     title="Edit comment"
                     className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-100 transition-colors cursor-pointer"
@@ -311,7 +351,7 @@ export default function Comment({
               placeholder={`Reply to ${comment.user?.username ?? 'comment'}...`}
               buttonLabel="Reply"
               autoFocus
-              onCancel={() => setShowReplyForm(false)}
+              onCancel={() => { replyCancelled.current = true; setShowReplyForm(false) }}
             />
           </div>
         )}
