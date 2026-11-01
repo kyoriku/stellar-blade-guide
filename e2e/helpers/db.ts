@@ -248,6 +248,18 @@ export async function setUserRole(username: string, role: string): Promise<boole
   }
 }
 
+// An account's avatar link, set behind the app's back, for a page that needs one to
+// show (Settings' Remove). False when the account is gone.
+export async function setUserAvatar(username: string, url: string | null): Promise<boolean> {
+  const pool = pgPool();
+  try {
+    const res = await pool.query(`UPDATE users SET avatar_url = $2 WHERE username = $1`, [suiteAccount(username), url]);
+    return res.rowCount === 1;
+  } finally {
+    await pool.end();
+  }
+}
+
 // Deactivates or reactivates an account behind the app's back: its sessions are left
 // as they were. False when the account is gone.
 export async function setUserActive(username: string, active: boolean): Promise<boolean> {

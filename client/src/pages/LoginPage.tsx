@@ -7,6 +7,7 @@ import { oauthErrorNotice, type OAuthNotice } from '../utils/oauthError'
 import { returnPath } from '../utils/returnPath'
 import { CURRENT_PASSWORD_MAX_LENGTH, CURRENT_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
 import SEO from '../components/SEO'
+import BusyLabel from '../components/BusyLabel'
 import seo from '../constants/seo.json'
 
 // Same box as the form error; a cancel is the user's own choice, so it is not red.
@@ -53,6 +54,9 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // The button is busy rather than disabled, so a second press, or Enter in a field,
+    // comes here while the first is out.
+    if (isSubmitting) return
     setError(null)
     setOauthNotice(null)
     if (passwordTooLong(password, CURRENT_PASSWORD_MAX_LENGTH)) {
@@ -137,7 +141,7 @@ export default function LoginPage() {
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             {/* One slot: a form error replaces the OAuth notice, so there are never two boxes. */}
             {error ? (
-              <div className={NOTICE_CLASSES.error}>
+              <div role="alert" className={NOTICE_CLASSES.error}>
                 {error}
               </div>
             ) : oauthNotice && (
@@ -196,13 +200,19 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 mt-2 cursor-pointer"
-            >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </button>
+            {/* One box, so the live region doesn't count as the form's last row. */}
+            <div>
+              <button
+                type="submit"
+                // Busy rather than disabled while it signs in, so it keeps focus and doesn't dim.
+                aria-busy={isSubmitting}
+                className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 mt-2 cursor-pointer"
+              >
+                <BusyLabel label="Sign in" busy={isSubmitting} />
+              </button>
+              {/* The button keeps its name while busy, so the busy text is read out from here. */}
+              <span className="sr-only" aria-live="polite">{isSubmitting ? 'Signing in…' : ''}</span>
+            </div>
           </form>
         </div>
 

@@ -67,7 +67,8 @@ test.describe('password length limits', () => {
       await submit(page).click();
       await expect(page.locator('form div.text-red-400')).toHaveText(NEW_PASSWORD_TOO_LONG);
       expect(sent()).toBe(0);
-      await expect(submit(page)).toBeEnabled();
+      // Never went busy: the button is busy, not disabled, while a request is out.
+      await expect(submit(page)).toHaveAttribute('aria-busy', 'false');
     });
 
     test('sends a new password at its limit untruncated', async ({ page }) => {
@@ -96,7 +97,8 @@ test.describe('password length limits', () => {
       await submit(page).click();
       await expect(page.locator('form div.text-red-400')).toHaveText(CURRENT_PASSWORD_TOO_LONG);
       expect(sent()).toBe(0);
-      await expect(submit(page)).toBeEnabled();
+      // Never went busy: the button is busy, not disabled, while a request is out.
+      await expect(submit(page)).toHaveAttribute('aria-busy', 'false');
     });
 
     test('sends a password at the stored limit untruncated', async ({ page }) => {
@@ -124,7 +126,8 @@ test.describe('password length limits', () => {
       await submit(page).click();
       await expect(page.locator('form div.text-red-400')).toHaveText(NEW_PASSWORD_TOO_LONG);
       expect(sent()).toBe(0);
-      await expect(submit(page)).toBeEnabled();
+      // Never went busy: the button is busy, not disabled, while a request is out.
+      await expect(submit(page)).toHaveAttribute('aria-busy', 'false');
     });
 
     test('sends a new password at its limit untruncated', async ({ page }) => {
@@ -169,7 +172,8 @@ test.describe('password length limits', () => {
       await submit(page).click();
       await expect(form(page).locator('div.text-red-400')).toHaveText(CURRENT_PASSWORD_TOO_LONG);
       expect(sent()).toBe(0);
-      await expect(submit(page)).toBeEnabled();
+      // Never went busy: the button is busy, not disabled, while a request is out.
+      await expect(submit(page)).toHaveAttribute('aria-busy', 'false');
     });
 
     test('refuses a new password over its limit without sending it', async ({ page }) => {
@@ -179,7 +183,8 @@ test.describe('password length limits', () => {
       await submit(page).click();
       await expect(form(page).locator('div.text-red-400')).toHaveText(NEW_PASSWORD_TOO_LONG);
       expect(sent()).toBe(0);
-      await expect(submit(page)).toBeEnabled();
+      // Never went busy: the button is busy, not disabled, while a request is out.
+      await expect(submit(page)).toHaveAttribute('aria-busy', 'false');
     });
 
     test('sends both passwords at their limits untruncated', async ({ page }) => {
