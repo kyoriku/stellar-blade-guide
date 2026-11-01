@@ -68,5 +68,6 @@ export function useNotifications() {
     refetch: query.refetch,
     markRead: markRead.mutate,
     markAllRead: markAllRead.mutate,
+    markingAllRead: markAllRead.isPending,
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
+import BusyLabel from './BusyLabel'
 import { useNotifications } from '../hooks/useNotifications'
 
 function timeAgo(dateStr: string): string {
@@ -17,10 +18,17 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NotificationBell() {
-  const { items, unreadCount, markRead, markAllRead } = useNotifications()
+  const { items, unreadCount, markRead, markAllRead, markingAllRead } = useNotifications()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  // Read synchronously, so a second press before the busy state renders sends nothing.
+  const markingAll = useRef(false)
+  const onMarkAllRead = () => {
+    if (markingAll.current) return
+    markingAll.current = true
+    markAllRead(undefined, { onSettled: () => { markingAll.current = false } })
+  }
 
   // Close on a mousedown anywhere outside the bell and its panel.
   useEffect(() => {
@@ -51,12 +59,18 @@ export default function NotificationBell() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
           <p className="text-sm font-medium text-white">Notifications</p>
           {unreadCount > 0 && (
-            <button
-              onClick={() => markAllRead()}
-              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
-            >
-              Mark all read
-            </button>
+            <>
+              <button
+                onClick={onMarkAllRead}
+                // Busy while its request is out, and a second press sends nothing.
+                aria-busy={markingAllRead}
+                className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer aria-busy:cursor-progress"
+              >
+                <BusyLabel label="Mark all read" busy={markingAllRead} />
+              </button>
+              {/* The button keeps its name while busy, so the busy text is read out from here. */}
+              <span className="sr-only" aria-live="polite">{markingAllRead ? 'Marking all read…' : ''}</span>
+            </>
           )}
         </div>
 

@@ -203,6 +203,22 @@ export async function insertComment(
   }
 }
 
+// An unread reply notification for `recipient` about comment `commentId` on the fixture
+// walkthrough, as a reply by someone else would make. It goes with the comment.
+export async function insertReplyNotification(fx: Fixtures, recipient: string, commentId: number): Promise<number> {
+  const pool = pgPool();
+  try {
+    const row = await pool.query(
+      `INSERT INTO notifications (user_id, actor_id, type, comment_id, content_type, content_id, is_read)
+       VALUES ((SELECT id FROM users WHERE username = $1), NULL, 'comment_reply', $2, 'walkthrough', $3, false) RETURNING id`,
+      [suiteAccount(recipient), commentId, fx.walkthroughId],
+    );
+    return row.rows[0].id;
+  } finally {
+    await pool.end();
+  }
+}
+
 export interface CommentRow {
   userId: number | null;
   isDeleted: boolean;
