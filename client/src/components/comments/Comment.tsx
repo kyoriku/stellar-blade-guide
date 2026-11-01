@@ -125,13 +125,17 @@ export default function Comment({
       if (editorOnScreen.current && focusLeftNowhere()) editButtonRef.current?.focus()
     }
   }, [isEditing])
-  // The reply form's Cancel gives focus back to Reply.
+  // Focus goes back to Reply once Cancel or a reply that landed closes the reply form,
+  // on the same terms as Edit: not if someone moved on while a reply was posting, or
+  // scrolled the form off the screen.
+  const replyFormRef = useRef<HTMLDivElement>(null)
   const replyButtonRef = useRef<HTMLButtonElement>(null)
-  const replyCancelled = useRef(false)
+  const replyClosed = useRef(false)
+  const replyFormOnScreen = useRef(true)
   useEffect(() => {
-    if (showReplyForm || !replyCancelled.current) return
-    replyCancelled.current = false
-    replyButtonRef.current?.focus()
+    if (showReplyForm || !replyClosed.current) return
+    replyClosed.current = false
+    if (replyFormOnScreen.current && focusLeftNowhere()) replyButtonRef.current?.focus()
   }, [showReplyForm])
 
   // A comment whose author deleted their account arrives with user null, and a
@@ -142,9 +146,15 @@ export default function Comment({
   const canDelete = canDeleteComment(user, comment.user)
   const hasReplies = comment.replies && comment.replies.length > 0
 
+  const closeReply = () => {
+    const form = replyFormRef.current?.getBoundingClientRect()
+    replyFormOnScreen.current = !form || (form.bottom > 0 && form.top < window.innerHeight)
+    replyClosed.current = true
+    setShowReplyForm(false)
+  }
   const handleReply = async (body: string) => {
     await onReply(comment.id, body)
-    setShowReplyForm(false)
+    closeReply()
   }
 
   const closeEdit = () => {
@@ -348,13 +358,13 @@ export default function Comment({
 
         {/* Reply form */}
         {showReplyForm && (
-          <div className="mt-3">
+          <div ref={replyFormRef} className="mt-3">
             <CommentForm
               onSubmit={handleReply}
               placeholder={`Reply to ${comment.user?.username ?? 'comment'}...`}
               buttonLabel="Reply"
               autoFocus
-              onCancel={() => { replyCancelled.current = true; setShowReplyForm(false) }}
+              onCancel={closeReply}
             />
           </div>
         )}

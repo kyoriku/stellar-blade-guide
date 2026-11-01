@@ -5,8 +5,9 @@ import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type 
 // Focus while editing and replying (components/comments/Comment.tsx). Each of these
 // controls takes away the one that had focus, which used to leave it on the page
 // itself: Edit puts it in the text box, with the caret at the end; Save and Cancel give
-// it back to Edit; the reply form's Cancel gives it back to Reply. A save that lands
-// after the reader moved on or scrolled away leaves them where they are.
+// it back to Edit; the reply form's Cancel, or a reply that lands, gives it back to
+// Reply. A save or a reply that lands after the reader moved on or scrolled away leaves
+// them where they are.
 
 let fx: Fixtures;
 
@@ -53,12 +54,17 @@ test.describe('comment edit and reply focus', () => {
   const editBox = (page: Page) => own(page).getByRole('textbox');
   const edited = () => `E2E ${fx.token} edited`;
 
+  // The parent comment as the thread lists it.
+  async function listedParent(page: Page) {
+    const listed = await page.request.get(`/api/comments/walkthrough/${fx.walkthroughId}`);
+    return ((await listed.json()) as { id: number; user: unknown }[]).find(c => c.id === parentId)!;
+  }
+
   // Answers the parent's PATCH as the server would, with the comment and its new text,
   // without asking the server, which would first send the text to OpenAI's moderation.
   // When `held`, the answer waits for release().
   async function stubSave(page: Page, held = false) {
-    const listed = await page.request.get(`/api/comments/walkthrough/${fx.walkthroughId}`);
-    const parent = ((await listed.json()) as { id: number }[]).find(c => c.id === parentId)!;
+    const parent = await listedParent(page);
     let release = () => {};
     const gate = held ? new Promise<void>(resolve => { release = resolve; }) : Promise.resolve();
     let arrived!: () => void;
@@ -71,6 +77,39 @@ test.describe('comment edit and reply focus', () => {
       await route.fulfill({ json: { ...parent, replies: undefined, body } });
     });
     return { release: () => release(), seen };
+  }
+
+  // Answers a reply's POST as the server would, with the new reply, without asking the
+  // server, which would moderate it first. When `held`, the answer waits for release().
+  async function stubReply(page: Page, held = false) {
+    const parent = await listedParent(page);
+    let release = () => {};
+    const gate = held ? new Promise<void>(resolve => { release = resolve; }) : Promise.resolve();
+    let arrived!: () => void;
+    const seen = new Promise<void>(resolve => { arrived = resolve; });
+    await page.route('**/api/comments/', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      arrived();
+      await gate;
+      const sent = route.request().postDataJSON() as Record<string, unknown>;
+      const now = new Date().toISOString();
+      // An id no row holds: the page only draws it.
+      await route.fulfill({
+        status: 201,
+        json: { id: 2_000_000_000, ...sent, is_deleted: false, created_at: now, updated_at: now, user: parent.user },
+      });
+    });
+    return { release: () => release(), seen };
+  }
+  const replyBox = (page: Page) => own(page).getByPlaceholder(/^Reply to /);
+  const drawnReply = (page: Page) => page.locator('#comment-2000000000');
+  const replyText = () => `E2E ${fx.token} second reply`;
+
+  async function startReply(page: Page): Promise<void> {
+    await button(page, 'Reply').click();
+    await replyBox(page).fill(replyText());
+    // The form's own button is named Reply too; the comment's is hidden while it's open.
+    await button(page, 'Reply').click();
   }
 
   async function startSave(page: Page): Promise<void> {
@@ -159,11 +198,81 @@ test.describe('comment edit and reply focus', () => {
 
   test("the reply form's Cancel gives focus back to Reply", async ({ page }) => {
     await button(page, 'Reply').click();
-    const replyBox = own(page).getByPlaceholder(/^Reply to /);
-    await expect(replyBox).toBeFocused();
+    await expect(replyBox(page)).toBeFocused();
 
     await button(page, 'Cancel').click();
-    await expect(replyBox).toHaveCount(0);
+    await expect(replyBox(page)).toHaveCount(0);
     await expect(button(page, 'Reply')).toBeFocused();
+  });
+
+  test('a reply that lands gives focus back to Reply', async ({ page }) => {
+    await stubReply(page);
+    await startReply(page);
+    // The form closes only once the reply lands.
+    await expect(replyBox(page)).toHaveCount(0);
+    await expect(drawnReply(page)).toContainText(replyText());
+    await expect(button(page, 'Reply')).toBeFocused();
+  });
+
+  test('a reply that lands after someone moved on leaves focus where they put it', async ({ page }) => {
+    const post = await stubReply(page, true);
+    await startReply(page);
+    await post.seen;
+    // While it posts, they start writing a new comment.
+    const box = page.getByPlaceholder(POST_BOX);
+    await box.click();
+    await expect(box).toBeFocused();
+
+    post.release();
+    await expect(replyBox(page)).toHaveCount(0);
+    await settle(page);
+    await expect(box).toBeFocused();
+  });
+
+  test("a reply that lands after the reader scrolled away leaves focus on the page and doesn't scroll them back", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 400 });
+    const post = await stubReply(page, true);
+    await startReply(page);
+    await post.seen;
+    // They read back up the page while it posts.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    expect(await own(page).evaluate(el => el.getBoundingClientRect().top > window.innerHeight), 'comment off-screen').toBe(true);
+
+    post.release();
+    // The form closes only once the reply lands.
+    await expect(replyBox(page)).toHaveCount(0);
+    await settle(page);
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // So Space pages the window, rather than pressing a Reply they can't see.
+    await page.keyboard.press('Space');
+    await settle(page);
+    await expect(replyBox(page)).toHaveCount(0);
+  });
+
+  test('Cancel brings Reply into view when the window cut through the reply form', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 400 });
+    await button(page, 'Reply').click();
+    await expect(replyBox(page)).toBeFocused();
+    // Two things would bring Reply back into view by themselves as the form goes:
+    // Chromium's scroll anchoring, keeping what's below it in place (WebKit has none),
+    // and a page that ends near the form, whose shorter scroll range pulls the window
+    // up. Both off, so only the focus call can.
+    await page.addStyleTag({ content: 'html, body { overflow-anchor: none } body { padding-bottom: 100vh }' });
+    // The window's top edge cuts through the form, so it counts as on screen, while the
+    // row Reply comes back to sits above the window.
+    await replyBox(page).evaluate(el => {
+      window.scrollTo(0, window.scrollY + el.closest('form')!.getBoundingClientRect().top + 20);
+    });
+    const [top, bottom] = await replyBox(page).evaluate(el => {
+      const r = el.closest('form')!.getBoundingClientRect();
+      return [r.top, r.bottom];
+    });
+    expect(top, 'form top above the window').toBeLessThan(0);
+    expect(bottom, 'form bottom in the window').toBeGreaterThan(0);
+
+    await button(page, 'Cancel').click();
+    await expect(button(page, 'Reply')).toBeFocused();
+    await expect(button(page, 'Reply')).toBeInViewport();
   });
 });
