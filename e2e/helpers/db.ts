@@ -225,6 +225,60 @@ export async function commentRows(ids: number[]): Promise<Map<number, CommentRow
   }
 }
 
+// Only this run's own accounts (makeUser names every one e2e_<run token>_...): the dev
+// database also holds real accounts, an admin's among them, which these helpers must
+// never touch, and an e2e_ name alone is one anyone can register.
+function suiteAccount(username: string): string {
+  if (!username.startsWith(`e2e_${readFixtures().token}_`)) {
+    throw new Error(`Refusing to change an account this run did not make: ${username}`);
+  }
+  return username;
+}
+
+// An account's role, set as the real admin's was: no route can make or unmake an
+// admin. False when the account is gone.
+export async function setUserRole(username: string, role: 'user' | 'moderator' | 'admin'): Promise<boolean> {
+  const pool = pgPool();
+  try {
+    const res = await pool.query(`UPDATE users SET role = $2 WHERE username = $1`, [suiteAccount(username), role]);
+    return res.rowCount === 1;
+  } finally {
+    await pool.end();
+  }
+}
+
+// Deactivates or reactivates an account behind the app's back: its sessions are left
+// as they were. False when the account is gone.
+export async function setUserActive(username: string, active: boolean): Promise<boolean> {
+  const pool = pgPool();
+  try {
+    const res = await pool.query(`UPDATE users SET is_active = $2 WHERE username = $1`, [suiteAccount(username), active]);
+    return res.rowCount === 1;
+  } finally {
+    await pool.end();
+  }
+}
+
+export interface UserRow {
+  id: number;
+  email: string;
+  role: string;
+  isActive: boolean;
+}
+
+// One account as stored, or null once it is gone.
+export async function userRow(username: string): Promise<UserRow | null> {
+  const pool = pgPool();
+  try {
+    const rows = await pool.query(`SELECT id, email, role, is_active FROM users WHERE username = $1`, [username]);
+    if (!rows.rows.length) return null;
+    const r = rows.rows[0] as { id: number; email: string; role: string; is_active: boolean };
+    return { id: r.id, email: r.email, role: r.role, isActive: r.is_active };
+  } finally {
+    await pool.end();
+  }
+}
+
 // A deleted account leaves its erased comments behind, linked to no account, so they
 // go by what they are on.
 export async function deleteFixtureComments(fx: Fixtures): Promise<void> {

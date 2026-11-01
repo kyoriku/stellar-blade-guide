@@ -152,3 +152,16 @@ async def test_root_seo_files_pass_through(bot_client):
     for path in ("/robots.txt", "/sitemap.xml", "/ads.txt"):
         r = await bot_client.get(path)
         assert r.status_code == 200, f"{path} must not be treated as a bot probe"
+
+
+async def test_the_admin_page_and_its_api_pass_through(bot_client):
+    # /admin is a site route, and the bot signatures hold only longer CMS paths that start
+    # with it (/administrator, /admin/controller). The API passes with no Referer and with
+    # the site's own.
+    for path in ("/admin", "/admin/", "/api/admin/users"):
+        r = await bot_client.get(path)
+        assert r.status_code == 200, f"{path} must not be treated as a bot probe"
+    r = await bot_client.get("/api/admin/users", headers={"referer": "https://stellarbladeguide.com/admin"})
+    assert r.status_code == 200
+    for path in ("/administrator", "/admin/controller"):
+        assert (await bot_client.get(path)).status_code == 404, path

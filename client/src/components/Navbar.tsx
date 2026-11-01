@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3 } from 'lucide-react'
+import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3, Shield } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useAuth } from '../hooks/useAuth'
 import { useSearch } from '../hooks/useSearch'
@@ -14,6 +14,7 @@ import { NAV_SECTIONS } from './navbar/navSections'
 import type { NavSection } from './navbar/navSections'
 import DesktopDropdown from './navbar/DesktopDropdown'
 import MobileAccordionSection from './navbar/MobileAccordionSection'
+import { ADMIN_COPY } from '../constants/adminCopy'
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +36,9 @@ function Navbar() {
   const location = useLocation();
   // const navigate = useNavigate();
   const { user, isAuthenticated, isRestoring, logout } = useAuth();
+  // The Admin link shows for admins only; the page's route guard and the server
+  // refuse everyone else anyway.
+  const isAdmin = user?.role === 'admin';
   const { prefetchLevel, prefetchCollectiblesByType, prefetchWalkthroughsByType } = usePrefetch();
   // "Progress" completion ring: denominator from the stats snapshot, numerator
   // live from the progress set (quantity-weighted via the overrides map) so
@@ -365,6 +369,19 @@ function Navbar() {
                         <Settings className="w-4 h-4" />
                         Settings
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className={`flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 transition-[color,background-color] duration-200 ${location.pathname === '/admin'
+                            ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium'
+                            : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400'
+                            }`}
+                        >
+                          <Shield className="w-4 h-4" />
+                          {ADMIN_COPY.navLink}
+                        </Link>
+                      )}
                       <button
                         onClick={() => void handleLogout()}
                         className="w-full flex items-center gap-2.5 px-4 py-2 text-sm border-l-2 border-transparent text-gray-300 transition-[color,background-color] duration-200 cursor-pointer hover:text-white hover:bg-gray-800/50 hover:border-gray-400"
@@ -564,7 +581,9 @@ function Navbar() {
                         {user.email && <p className="text-xs text-gray-400 truncate">{user.email}</p>}
                       </div>
                     </div>
-                    <div className="flex gap-3">
+                    {/* Four buttons don't fit one row at 320px, so an admin's become a
+                        2x2 grid (flex-1 does nothing to a grid item). */}
+                    <div className={isAdmin ? 'grid grid-cols-2 gap-3' : 'flex gap-3'}>
                       <Link
                         to="/progress"
                         onClick={() => setIsOpen(false)}
@@ -581,6 +600,16 @@ function Navbar() {
                         <Settings className="w-4 h-4" />
                         Settings
                       </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsOpen(false)}
+                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
+                        >
+                          <Shield className="w-4 h-4" />
+                          {ADMIN_COPY.navLink}
+                        </Link>
+                      )}
                       <button
                         onClick={() => { setIsOpen(false); void handleLogout(); }}
                         className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"

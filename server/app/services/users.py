@@ -10,9 +10,13 @@ import cloudinary
 import cloudinary.uploader
 import openai
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.comments import Comment
 from app.models.users import User
+from app.core.auth import revoke_all_refresh_tokens
 from app.core.colours import CYAN, GRAY, RED, YELLOW, RESET
 from app.config.settings import settings
 from app.core.logging import exc_text, sanitize_log_field
@@ -48,6 +52,96 @@ def user_to_response(user: User) -> dict:
     # One builder. This used to be a second copy of the same dict, which would have
     # drifted the day only one of them learned a new field.
     return user_to_dict(user)
+
+
+def mask_email(email: str) -> str:
+    """An address as the admin page shows it before a reveal: the first character of
+    each half, then the last label of the domain. kyoriku@gmail.com becomes
+    k***@g***.com. Anything not shaped like local@name.tld becomes *** whole, so a
+    malformed address never shows more than a well-formed one."""
+    local, at, domain = email.partition("@")
+    labels = domain.split(".")
+    if not at or not local or "@" in domain or len(labels) < 2 or not all(labels):
+        return "***"
+    return f"{local[0]}***@{labels[0][0]}***.{labels[-1]}"
+
+
+def admin_user_row(user: User) -> dict:
+    """One account as every admin list, role and status answer gives it (AdminUser).
+    The address is masked: only the reveal route ever sends one whole."""
+    return {
+        "id": user.id,
+        "username": user.username,
+        "avatar_url": user.avatar_url,
+        "email_masked": mask_email(user.email),
+        "role": user.role,
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat(),
+    }
+
+
+ADMIN_UNDELETABLE = "Admin accounts can't be deleted."
+
+
+async def delete_account(db: AsyncSession, user: User, *, admin_id: int | None = None) -> bool:
+    """Delete an account and everything tied to it: Settings (DELETE /api/users/me)
+    and the admin page (DELETE /api/admin/users/{id}, which passes admin_id) both
+    come here.
+
+    An admin account is refused everywhere with a 403, before its sessions are
+    touched, so the site can't lose its admin through the app. The role is read
+    again under the row lock, since a promotion by SQL can land after the caller
+    loaded the row: that is refused too, and its only cost is the account's
+    sessions, already ended by then.
+
+    False when the account was already gone at the lock (another deletion won), with
+    nothing written, logged or sent to Cloudinary; True once it is deleted."""
+    if user.role == "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ADMIN_UNDELETABLE)
+    user_id = user.id
+
+    # Before anything changes: a Redis outage is a 503 with the account untouched.
+    await revoke_all_refresh_tokens(user_id)
+    # Lock the account row first. A comment the account posts from another tab meanwhile
+    # then either commits before the erase below, which sees it, or waits on this lock
+    # (its foreign key check needs the row) and fails once the account is gone, rather
+    # than slipping in after the erase with its text. SQLite ignores FOR UPDATE.
+    role = (await db.execute(
+        select(User.role).where(User.id == user_id).with_for_update()
+    )).scalar_one_or_none()
+    if role is None:
+        await db.rollback()
+        return False
+    if role == "admin":
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=ADMIN_UNDELETABLE)
+
+    # Each comment is erased as DELETE /comments/{id} erases one, so the list leaves it
+    # out, or shows "[deleted]" while a reply to it is up. user_id is cleared here, not
+    # by deleting the user, whose UPDATE would stamp every comment with one updated_at
+    # (the column's onupdate) and tie them to one account.
+    await db.execute(
+        update(Comment)
+        .where(Comment.user_id == user_id)
+        .values(user_id=None, is_deleted=True, body="[deleted]", updated_at=Comment.updated_at)
+    )
+    # The ORM deletes the OAuth links; the database cascades remove the progress and
+    # the notifications the account received, and clear it from the ones it caused.
+    await db.delete(user)
+    await db.commit()
+    # Logged as it commits, by account number: the line is the deletion's only record,
+    # so a deploy or a crash during the avatar call below must not cost it.
+    if admin_id is None:
+        logger.info(f"{CYAN}User {user_id} deleted their account{RESET}")
+    else:
+        logger.info(f"{CYAN}Admin {admin_id} deleted user {user_id}{RESET}")
+
+    # After the commit: deleting the account is what was asked for, so a slow or
+    # failing Cloudinary call must not block or roll it back. The public_id is derived
+    # from the user id, so deleting the row first loses nothing, and destroying a
+    # non-existent asset is a no-op.
+    await delete_avatar_from_cloudinary(user_id)
+    return True
 
 def _resolve_host(hostname: str) -> list[str]:
     """DNS-resolve a hostname to its addresses. Module-level so tests can stub it."""

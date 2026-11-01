@@ -54,9 +54,10 @@ def add_security_headers_middleware(app: FastAPI):
             elif request.url.path.startswith("/api/"):
                 # Hand-maintained security allowlist: any per-user/authenticated
                 # /api route MUST be added here, or its responses get s-maxage CDN
-                # caching and are served to other users. /api/users/me is kept
-                # even though no GET exists today, so a re-added one is covered.
-                if request.url.path.startswith(("/api/progress", "/api/auth", "/api/comments", "/api/health", "/api/notifications", "/api/users/me")):
+                # caching and are served to other users. /api/users/me covers the
+                # stats GET (/api/users/me/stats) and any GET added beside it later;
+                # /api/admin covers the admin page's account list.
+                if request.url.path.startswith(("/api/progress", "/api/auth", "/api/comments", "/api/health", "/api/notifications", "/api/users/me", "/api/admin")):
                     response.headers["Cache-Control"] = "no-store"
                 elif request.url.path.startswith("/api/search"):
                     # Every other cached route is purged by URL when a content

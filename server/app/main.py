@@ -16,7 +16,7 @@ from app.middleware.security_headers import add_security_headers_middleware, add
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.origin_check import add_origin_check_middleware
-from app.routers import collectibles, walkthroughs, auth, users, comments, health, progress, search, notifications
+from app.routers import collectibles, walkthroughs, auth, users, comments, health, progress, search, notifications, admin
 setup_logging()
 
 cloudinary.config(
@@ -88,6 +88,7 @@ app.include_router(comments.router, prefix=settings.API_PREFIX)
 app.include_router(progress.router, prefix=settings.API_PREFIX)
 app.include_router(search.router, prefix=settings.API_PREFIX)
 app.include_router(notifications.router, prefix=settings.API_PREFIX)
+app.include_router(admin.router, prefix=settings.API_PREFIX)
 
 @app.get("/.well-known/traffic-advice", include_in_schema=False)
 async def traffic_advice():

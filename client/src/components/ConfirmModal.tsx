@@ -1,7 +1,9 @@
-import { useEffect, useId, useRef } from 'react'
-import type { MouseEvent, PointerEvent } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import type { MouseEvent, PointerEvent, ReactNode } from 'react'
 import { Trash2, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import BusyLabel from './BusyLabel'
+import { confirmTextMatches } from '../utils/confirmText'
 
 interface ConfirmModalProps {
   title: string
@@ -18,6 +20,12 @@ interface ConfirmModalProps {
   onClosed: () => void
   isLoading?: boolean
   error?: string | null
+  // Typed mode (the admin page's Delete): a labelled input, which takes focus, and
+  // Confirm stays aria-disabled until `expected` is typed exactly (utils/confirmText.ts).
+  // The caller writes the label, so it can set the text to type apart.
+  confirmText?: { expected: string; label: ReactNode }
+  // Stands in for the trash can, in the badge and on Confirm.
+  icon?: LucideIcon
 }
 
 // A native modal <dialog>, on BulkProgressDialog's pattern: showModal() makes the
@@ -36,15 +44,23 @@ export default function ConfirmModal({
   onClosed,
   isLoading = false,
   error = null,
+  confirmText,
+  icon: Icon = Trash2,
 }: ConfirmModalProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const confirmRef = useRef<HTMLButtonElement>(null)
   const pressedOutside = useRef(false)
+  const [typed, setTyped] = useState('')
   // The close below calls the latest onClosed, not the one it was opened with.
   const onClosedRef = useRef(onClosed)
   useEffect(() => { onClosedRef.current = onClosed })
   const titleId = useId()
   const bodyId = useId()
+  const inputId = useId()
+  // Read once: whether the dialog has an input never changes while it is open.
+  const typedMode = useRef(confirmText !== undefined)
 
   useEffect(() => {
     // Read once: React clears refs before passive cleanups run.
@@ -52,7 +68,7 @@ export default function ConfirmModal({
     if (!dialog) return
     // Guarded because StrictMode runs this twice in dev, closing in between.
     if (!dialog.open) dialog.showModal()
-    cancelRef.current?.focus()
+    ;(typedMode.current ? inputRef.current : cancelRef.current)?.focus()
     // Written only while mounted, as BulkProgressDialog does: there is no count.
     document.body.style.overflow = 'hidden'
     return () => {
@@ -62,6 +78,8 @@ export default function ConfirmModal({
       onClosedRef.current()
     }
   }, [])
+
+  const canConfirm = !isLoading && (!confirmText || confirmTextMatches(typed, confirmText.expected))
 
   const requestClose = () => {
     // Not mid-action: a closed dialog would hide a change still landing. Only the
@@ -103,20 +121,59 @@ export default function ConfirmModal({
         if (e.target === e.currentTarget && pressedOutside.current && outside(e)) requestClose()
         pressedOutside.current = false
       }}
-      // Preflight zeroes the UA's margin: auto, so the margins centre it. The UA
-      // colours dialog text black. The backdrop takes literal values, as on
-      // BulkProgressDialog: not every browser lets ::backdrop see :root's variables.
-      // overscroll-none, not contain: contain rubber-bands the content on macOS even
-      // when nothing overflows, and either keeps the page behind from scrolling.
-      className="m-auto w-[calc(100%-2rem)] max-w-sm max-h-[calc(100svh-2rem)] overflow-y-auto overscroll-none p-0 scheme-dark text-gray-100 bg-secondary border border-gray-700 rounded-xl shadow-2xl backdrop:bg-[rgba(0,0,0,0.6)] backdrop:backdrop-blur-[8px]"
+      // Preflight zeroes the UA's margin: auto, so the margins centre it. Below sm the
+      // typed dialog is pinned near the top instead, as the bulk dialog's word mode is:
+      // centred, its input would sit under the iOS keyboard. The UA colours dialog
+      // text black. The backdrop takes literal values, as on BulkProgressDialog: not
+      // every browser lets ::backdrop see :root's variables. overscroll-none, not
+      // contain: contain rubber-bands the content on macOS even when nothing
+      // overflows, and either keeps the page behind from scrolling.
+      className={`${confirmText ? 'mx-auto mt-4 mb-auto sm:my-auto' : 'm-auto'} w-[calc(100%-2rem)] max-w-sm max-h-[calc(100svh-2rem)] overflow-y-auto overscroll-none p-0 scheme-dark text-gray-100 bg-secondary border border-gray-700 rounded-xl shadow-2xl backdrop:bg-[rgba(0,0,0,0.6)] backdrop:backdrop-blur-[8px]`}
     >
       <div className="relative p-6">
         <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 mb-4">
-          <Trash2 className="w-5 h-5 text-red-400" />
+          <Icon className="w-5 h-5 text-red-400" />
         </div>
 
         <h2 id={titleId} className="text-base font-semibold text-white mb-1">{title}</h2>
-        <p id={bodyId} className="text-sm text-gray-400 mb-6">{message}</p>
+        {/* wrap-anywhere: a username can run 50 characters with nowhere to break. */}
+        <p id={bodyId} className={`text-sm text-gray-400 wrap-anywhere ${confirmText ? 'mb-4' : 'mb-6'}`}>{message}</p>
+
+        {confirmText && (
+          // A form only for its Enter, which also waits out an input method's composition.
+          <form
+            className="mb-6"
+            onSubmit={e => {
+              e.preventDefault()
+              if (!canConfirm) return
+              // Keeps focus in the dialog and closes a phone keyboard, so the result shows.
+              confirmRef.current?.focus()
+              onConfirm()
+            }}
+          >
+            <label htmlFor={inputId} className="block text-sm font-medium text-gray-300 mb-1.5 wrap-anywhere">
+              {confirmText.label}
+            </label>
+            <input
+              id={inputId}
+              ref={inputRef}
+              type="text"
+              value={typed}
+              onChange={e => setTyped(e.target.value)}
+              readOnly={isLoading}
+              // The match is exact, so a phone must not capitalize, correct or fill it.
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              autoComplete="off"
+              enterKeyHint="go"
+              // outline-hidden, not outline-none: forced colors still draws it. Touch
+              // screens get 16px from index.css, so iOS doesn't zoom.
+              className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-colors text-sm"
+            />
+          </form>
+        )}
+
         <span className="sr-only" aria-live="polite">{isLoading ? busyLabel : ''}</span>
 
         {error && (
@@ -137,17 +194,20 @@ export default function ConfirmModal({
             Cancel
           </button>
           <button
+            ref={confirmRef}
             type="button"
-            onClick={() => { if (!isLoading) onConfirm() }}
+            onClick={() => { if (canConfirm) onConfirm() }}
             // Busy rather than disabled while it runs, so it keeps focus and does not dim.
             aria-busy={isLoading}
-            className="flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 transition-all duration-200 cursor-pointer aria-busy:cursor-progress"
+            // Typed mode only: dimmed, and refused, until the text matches.
+            aria-disabled={confirmText ? !isLoading && !canConfirm : undefined}
+            className={`flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 transition-all duration-200 cursor-pointer aria-busy:cursor-progress${confirmText ? ' aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-red-500/10 aria-disabled:hover:border-red-500/30' : ''}`}
           >
             <BusyLabel
               label={confirmLabel}
               busy={isLoading ? busyLabel : null}
               variants={[busyLabel]}
-              icon={<Trash2 className="w-3.5 h-3.5" />}
+              icon={<Icon className="w-3.5 h-3.5" />}
             />
           </button>
         </div>
