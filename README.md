@@ -106,9 +106,9 @@ Content is versioned JSON in its own repository, and a content deploy lands in o
 - Rate-limited to 30 req/min; results cached in Redis for 1 hour
 
 **Testing**
-- 2,059 pytest tests on in-memory SQLite and fakeredis, so they need no running services; 1,900 of them run in CI, since 159 need the private content repo
-- 267 Vitest unit tests for the client's pure logic
-- 219 Playwright end-to-end tests in 30 specs, run before merging against the real dev servers and a dev database loaded from the private content repo
+- Over 2,000 pytest tests on in-memory SQLite and fakeredis, so they need no running services; CI runs all but the seed-data checks, which need the private content repo
+- Over 250 Vitest unit tests for the client's pure logic
+- Over 200 Playwright end-to-end tests, run before merging against the real dev servers and a dev database loaded from the private content repo
 - CI runs pytest, ESLint, Vitest, and the type-checking build on pushes to main and on pull requests
 
 ## Repository Layout
