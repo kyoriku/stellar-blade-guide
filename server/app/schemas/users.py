@@ -84,15 +84,3 @@ class UserStatsResponse(BaseModel):
     quantity_overrides: Dict[int, int]
     comments_posted: int
     member_since: str
-
-
-class UpdateRoleRequest(BaseModel):
-    role: str
-
-    @field_validator("role")
-    @classmethod
-    def role_valid(cls, v: str) -> str:
-        allowed = {"user", "moderator", "admin"}
-        if v not in allowed:
-            raise ValueError(f"Role must be one of: {', '.join(allowed)}")
-        return v

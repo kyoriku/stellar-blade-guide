@@ -17,8 +17,8 @@ class ETagMiddleware(BaseHTTPMiddleware):
         if 'etag' in response.headers:
             return response
         
-        # Skip mutable per-user endpoints
-        if request.url.path.startswith(("/api/progress", "/api/users/me/stats")):
+        # Skip mutable per-user endpoints, and the admin page's account list
+        if request.url.path.startswith(("/api/progress", "/api/users/me/stats", "/api/admin")):
             return response
 
         # Only bother for successful GET responses

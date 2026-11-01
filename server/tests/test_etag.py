@@ -173,3 +173,14 @@ async def test_weak_prefix_is_not_stripped_from_the_middle_of_a_value():
         await client.get("/api/test/")
         r = await client.get("/api/test/", headers={"if-none-match": '"aW/bc"'})
         assert r.status_code == 200
+
+
+async def test_per_user_and_admin_answers_carry_no_etag():
+    """Mutable per-user answers, and the admin page's account list, are never hashed:
+    no ETag, so no 304 can stand in for a fresh read."""
+    for path in ("/api/progress", "/api/users/me/stats", "/api/admin/users"):
+        app = make_etag_app(path)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            r = await client.get(path)
+            assert r.status_code == 200
+            assert "etag" not in r.headers, path

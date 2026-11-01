@@ -21,6 +21,7 @@ from limits import parse_many
 from limits.strategies import MovingWindowRateLimiter
 
 # The routers register their limits on the shared limiter when imported.
+import app.routers.admin  # noqa: F401
 import app.routers.auth  # noqa: F401
 import app.routers.collectibles  # noqa: F401
 import app.routers.comments  # noqa: F401
@@ -148,6 +149,32 @@ def _limits(endpoint: str) -> list:
     return [lim.limit for lim in limiter._route_limits[endpoint]]
 
 
+def test_admin_routes_count_per_admin_account_and_every_other_route_per_client():
+    # One admin session has one budget wherever it calls from (admin_rate_key); the
+    # rest of the site counts per client address.
+    from app.routers.admin import admin_rate_key
+
+    keys = {
+        name: {lim.key_func for lim in limits}
+        for name, limits in limiter._route_limits.items()
+        if name.startswith("app.routers.")
+    }
+    admin = {name for name in keys if name.startswith("app.routers.admin.")}
+    assert len(admin) == 6
+    for name, funcs in keys.items():
+        assert funcs == ({admin_rate_key} if name in admin else {rate_limit_key}), name
+    assert "request" in inspect.signature(admin_rate_key).parameters
+
+
+def test_the_admin_key_is_the_account_and_falls_back_to_the_address():
+    from app.routers.admin import admin_rate_key
+
+    request = _request({"cf-connecting-ip": "203.0.113.7"})
+    assert admin_rate_key(request) == "203.0.113.7"
+    request.state.admin_id = 42
+    assert admin_rate_key(request) == "admin:42"
+
+
 def test_forgot_password_has_a_minute_limit_then_a_day_limit():
     # A typo in the string leaves a route silently unlimited (slowapi only logs it),
     # and the order matters: the first limit to fail stops the evaluation, so a
@@ -169,9 +196,26 @@ def test_profile_updates_allow_5_a_minute():
     assert _limits("app.routers.users.update_me") == parse_many("5/minute")
 
 
+@pytest.mark.parametrize("endpoint, value", [
+    ("app.routers.admin.reveal_email", "10/minute;100/day"),
+    ("app.routers.admin.search_users", "100/minute;1000/day"),
+    ("app.routers.admin.delete_user", "5/minute;50/day"),
+])
+def test_admin_reveals_searches_and_deletions_have_a_minute_limit_then_a_day_limit(endpoint, value):
+    # Minute first, as on forgot-password: a burst the minute limit refuses never
+    # spends the day's budget.
+    assert _limits(endpoint) == parse_many(value)
+
+
 # Every limited route, so a typo in any limit string (which slowapi only logs, leaving
 # the route unlimited) or an unreviewed change fails here.
 ROUTE_LIMITS = {
+    "app.routers.admin.delete_user": "5/minute;50/day",
+    "app.routers.admin.list_users": "100/minute",
+    "app.routers.admin.reveal_email": "10/minute;100/day",
+    "app.routers.admin.search_users": "100/minute;1000/day",
+    "app.routers.admin.set_active": "20/minute",
+    "app.routers.admin.set_role": "20/minute",
     "app.routers.auth.change_password": "10/minute",
     "app.routers.auth.discord_callback": "20/minute",
     "app.routers.auth.discord_login": "20/minute",
@@ -203,11 +247,9 @@ ROUTE_LIMITS = {
     "app.routers.progress.sync_progress": "10/minute",
     "app.routers.progress.unset_progress": "300/minute",
     "app.routers.search.search": "30/minute",
-    "app.routers.users.deactivate_user": "20/minute",
     "app.routers.users.delete_me": "5/minute",
     "app.routers.users.get_my_stats": "100/minute",
     "app.routers.users.update_me": "5/minute",
-    "app.routers.users.update_user_role": "20/minute",
     "app.routers.walkthroughs.get_all_walkthroughs": "100/minute",
     "app.routers.walkthroughs.get_walkthrough_by_slug": "100/minute",
     "app.routers.walkthroughs.get_walkthroughs_by_type": "100/minute",

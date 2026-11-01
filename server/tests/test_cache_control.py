@@ -126,6 +126,7 @@ async def test_purgeable_content_routes_keep_the_long_ttl(headers_client, path):
 @pytest.mark.parametrize("path", [
     "/api/progress", "/api/auth/refresh", "/api/comments/x/1",
     "/api/health", "/api/notifications", "/api/users/me/stats",
+    "/api/admin/users",
 ])
 async def test_no_store_allowlist_still_wins(headers_client, path):
     cc = await _cc(headers_client, path)

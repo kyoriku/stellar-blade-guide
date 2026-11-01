@@ -3,7 +3,7 @@ import logging
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, case, func, select, update
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.config.settings import settings
@@ -18,13 +18,13 @@ from app.models.collectibles import (
 from app.models.comments import Comment
 from app.models.progress import UserProgress
 from app.models.users import User
-from app.core.auth import get_current_user, require_role
+from app.core.auth import get_current_user
 from app.core.security import limiter
 from app.core.colours import CYAN, RED, RESET
-from app.core.ids import is_row_id
 from app.core.logging import exc_text
-from app.schemas.users import UpdateProfileRequest, UpdateRoleRequest, UserStatsResponse
+from app.schemas.users import UpdateProfileRequest, UserStatsResponse
 from app.services.users import (
+    delete_account,
     user_to_response,
     upload_avatar_to_cloudinary,
     delete_avatar_from_cloudinary,
@@ -101,34 +101,10 @@ async def delete_me(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Permanently delete the authenticated user's account and all their data."""
-    from app.core.auth import revoke_all_refresh_tokens
-    user_id = current_user.id
-
-    await revoke_all_refresh_tokens(user_id)
-    # Lock the account row first. A comment the account posts from another tab meanwhile
-    # then either commits before the erase below, which sees it, or waits on this lock
-    # (its foreign key check needs the row) and fails once the account is gone, rather
-    # than slipping in after the erase with its text. SQLite ignores FOR UPDATE.
-    await db.execute(select(User.id).where(User.id == user_id).with_for_update())
-    # Each comment is erased as DELETE /comments/{id} erases one, so the list leaves it
-    # out, or shows "[deleted]" while a reply to it is up. user_id is cleared here, not
-    # by deleting the user, whose UPDATE would stamp every comment with one updated_at
-    # (the column's onupdate) and tie them to one account.
-    await db.execute(
-        update(Comment)
-        .where(Comment.user_id == user_id)
-        .values(user_id=None, is_deleted=True, body="[deleted]", updated_at=Comment.updated_at)
-    )
-    await db.delete(current_user)
-    await db.commit()
-    logger.info(f"{CYAN}User {user_id} deleted their account{RESET}")
-
-    # After the commit: deleting the account is what the user actually asked
-    # for, so a slow or failing Cloudinary call must not block or roll it back.
-    # The public_id is derived from the user id, so deleting the row first
-    # loses nothing, and destroying a non-existent asset is a no-op.
-    await delete_avatar_from_cloudinary(user_id)
+    """Permanently delete the authenticated user's account and all their data, through
+    delete_account, which logs it (an admin account gets its 403). A 204 once the
+    account is gone, also when another deletion got there first."""
+    await delete_account(db, current_user)
 
 
 CYCLE_DISPLAY_ORDER = ("Base", "NG+", "NG++", "DLC")
@@ -337,53 +313,3 @@ async def get_my_stats(
         "comments_posted": comments_posted,
         "member_since": current_user.created_at.isoformat(),
     }
-
-
-# Admin-only
-
-@router.patch("/{user_id}/role")
-@limiter.limit("20/minute")
-async def update_user_role(
-    request: Request,
-    user_id: int,
-    body: UpdateRoleRequest,
-    db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_role("admin")),
-):
-    """Admin only: change a user's role."""
-    if not is_row_id(user_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    user.role = body.role
-    await db.commit()
-    await db.refresh(user)
-
-    logger.info(f"{CYAN}Admin updated user {user_id} role to {body.role}{RESET}")
-    return user_to_response(user)
-
-
-@router.patch("/{user_id}/deactivate")
-@limiter.limit("20/minute")
-async def deactivate_user(
-    request: Request,
-    user_id: int,
-    db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_role("admin")),
-):
-    """Admin only: deactivate a user account."""
-    if not is_row_id(user_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    user.is_active = False
-    await db.commit()
-
-    logger.info(f"{CYAN}Admin deactivated user {user_id}{RESET}")
-    return {"status": "ok", "message": f"User {user_id} deactivated"}
