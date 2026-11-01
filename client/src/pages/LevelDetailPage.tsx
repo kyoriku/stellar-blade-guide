@@ -30,6 +30,11 @@ import MobileBackToTop from '../components/MobileBackToTop'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
 
+// A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
+// 2px Highlight border, with a pixel less padding so its size doesn't change (the
+// Progress page's cycle pills do the same).
+const PILL_SELECTED = 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 forced-colors:border-2 forced-colors:border-[Highlight] forced-colors:px-2.75 forced-colors:py-1.25'
+
 function LevelDetailPage() {
   const { levelName } = useParams<{ levelName: string }>();
   const location = useLocation();
@@ -363,7 +368,7 @@ function LevelDetailPage() {
                         onClick={() => setCycleFilter(cycle)}
                         title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} collectibles`}
                         className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
-                          ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                          ? PILL_SELECTED
                           : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                           }`}
                       >

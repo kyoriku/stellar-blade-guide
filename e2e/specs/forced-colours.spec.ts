@@ -128,3 +128,48 @@ test.describe('refused controls in forced colours', () => {
     await expect(dialog).toHaveCount(0);
   });
 });
+
+// The level and type pages' filter pills, and the type page's A–Z toggle, show which is
+// selected (or on) by a tint, which forced colours replace: there it is a 2px Highlight
+// border instead, with a pixel less padding so the pill keeps its size.
+test.describe('the selected filter pill in forced colours', () => {
+  const border = (l: Locator) => l.evaluate(el => {
+    const style = getComputedStyle(el);
+    return { colour: style.borderTopColor, width: style.borderTopWidth };
+  });
+
+  test.beforeEach(async ({ page, context }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+    await page.emulateMedia({ forcedColors: 'active' });
+    await page.setViewportSize({ width: 1280, height: 800 });
+  });
+
+  test("a level's selected cycle pill has a 2px Highlight border, at the size it has unselected", async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    const highlight = await systemColour(page, 'Highlight');
+    const all = page.getByRole('button', { name: 'All', exact: true });
+    const ngPlus = page.getByRole('button', { name: 'NG+', exact: true });
+    // The pills fade between colours, so each check waits for the fade to end.
+    await expect.poll(() => border(all)).toEqual({ colour: highlight, width: '2px' });
+    const selected = (await all.boundingBox())!;
+    expect((await border(ngPlus)).colour).not.toBe(highlight);
+    await ngPlus.click();
+    await expect.poll(() => border(ngPlus)).toEqual({ colour: highlight, width: '2px' });
+    await expect.poll(async () => (await border(all)).colour).not.toBe(highlight);
+    const unselected = (await all.boundingBox())!;
+    expect([unselected.width, unselected.height], 'the same size, selected or not').toEqual([selected.width, selected.height]);
+  });
+
+  test("the type page's A–Z, when on, has a 2px Highlight border, at the size it has off", async ({ page }) => {
+    await page.goto('/collectibles/documents');
+    const highlight = await systemColour(page, 'Highlight');
+    const az = page.getByRole('button', { name: 'A–Z', exact: true });
+    await expect(az).toBeVisible();
+    expect((await border(az)).colour).not.toBe(highlight);
+    const off = (await az.boundingBox())!;
+    await az.click();
+    await expect.poll(() => border(az)).toEqual({ colour: highlight, width: '2px' });
+    const on = (await az.boundingBox())!;
+    expect([on.width, on.height], 'the same size, on or off').toEqual([off.width, off.height]);
+  });
+});
