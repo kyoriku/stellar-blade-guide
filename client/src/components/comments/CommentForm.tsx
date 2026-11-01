@@ -106,12 +106,12 @@ export default function CommentForm({
           <button
             type="submit"
             // Busy rather than disabled while the post runs, so it keeps focus and doesn't
-            // dim, as the delete dialog's Delete does. Refused, and dimmed (grey text in
-            // forced colours, which drop the tint), while the box is empty or an error
+            // dim, as the delete dialog's Delete does. Refused, and dimmed (grey in
+            // forced colours, through index.css), while the box is empty or an error
             // stands; handleSubmit ignores those presses.
             aria-busy={isSubmitting}
             aria-disabled={!isSubmitting && (!body.trim() || !!error)}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress forced-colors:aria-disabled:text-[GrayText] text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
             {isSubmitting ? 'Posting...' : buttonLabel}

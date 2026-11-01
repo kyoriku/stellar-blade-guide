@@ -44,6 +44,18 @@
   }
 }
 
+/* A refused (aria-disabled) control is grey in forced colours, as a natively disabled
+   button is. Forced colours replace the tint it dims with, and the browser greys only
+   :disabled, so this gives it GrayText for its text and border, in every state, hover
+   and focus included. A busy control is aria-disabled="false", so it keeps its colour.
+   Unlayered, like the rule above. Pinned by e2e/specs/forced-colours.spec.ts. */
+@media (forced-colors: active) {
+  [aria-disabled='true'] {
+    color: GrayText;
+    border-color: GrayText;
+  }
+}
+
 /* Custom Scrollbar */
 .custom-scrollbar {
   scrollbar-width: thin;

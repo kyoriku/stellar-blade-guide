@@ -295,12 +295,12 @@ export default function Comment({
                 <button
                   // Busy rather than disabled while the save runs, so it keeps focus and
                   // doesn't dim, as the delete dialog's Delete does. Refused, and dimmed
-                  // (grey text in forced colours, which drop the tint), while there's
-                  // nothing new to save or an error stands.
+                  // (grey in forced colours, through index.css), while there's nothing
+                  // new to save or an error stands.
                   onClick={() => { if (!isSaving && !saveRefused) void handleEdit() }}
                   aria-busy={isSaving}
                   aria-disabled={!isSaving && saveRefused}
-                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/30 aria-disabled:hover:bg-cyan-500/30 aria-disabled:cursor-not-allowed aria-busy:cursor-progress forced-colors:aria-disabled:text-[GrayText] text-black font-semibold text-sm transition-all cursor-pointer"
+                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/30 aria-disabled:hover:bg-cyan-500/30 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all cursor-pointer"
                 >
                   {isSaving ? 'Saving...' : 'Save'}
                 </button>
