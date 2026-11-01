@@ -96,7 +96,7 @@ Content is versioned JSON in its own repository, and a content deploy lands in o
 **Comments**
 - Threaded comments (one level of nesting) on walkthrough, level, and type pages
 - Post, edit, and delete with ownership checks
-- Moderator and admin controls
+- Moderation by rank: moderators can delete users' comments, the admin can delete moderators' comments too, and nobody can edit anyone else's
 - AI moderation via OpenAI flags inappropriate content before it's saved
 - Soft delete preserves thread context when a parent comment is removed
 

@@ -16,7 +16,7 @@ export interface CommentData {
 }
 
 export function useComments(contentType: string, contentId: number) {
-  const { authFetch } = useAuth()
+  const { authFetch, refreshToken } = useAuth()
   const queryClient = useQueryClient()
   const queryKey = ['comments', contentType, contentId] as const
 
@@ -104,7 +104,17 @@ export function useComments(contentType: string, contentId: number) {
    */
   const deleteComment = async (commentId: number): Promise<void> => {
     const res = await authFetch(`${API_BASE_URL}/comments/${commentId}`, { method: 'DELETE' })
-    if (!res.ok) throw new Error(await readError(res, 'Failed to delete comment'))
+    if (!res.ok) {
+      // A refusal means this tab's roles are out of date: the viewer's own, changed
+      // since sign-in, or the author's, changed since the thread loaded. Both are asked
+      // for again, so the Delete buttons follow the server. (A 404 reloads nothing: the
+      // comment is gone, and its dialog lives inside it.)
+      if (res.status === 403) {
+        void queryClient.invalidateQueries({ queryKey })
+        void refreshToken()
+      }
+      throw new ApiError(res.status, await readError(res, 'Failed to delete comment'))
+    }
     setComments(prev => processDeleted(prev, commentId))
   }
 

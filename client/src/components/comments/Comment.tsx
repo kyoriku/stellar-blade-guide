@@ -3,8 +3,9 @@ import type { RefObject } from 'react'
 import { MessageSquare, Pencil, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import type { CommentData } from '../../hooks/useComments'
-import { errorMessage } from '../../services/api'
+import { ApiError, errorMessage } from '../../services/api'
 import { useToast } from '../../context/ToastContext'
+import { canDeleteComment } from '../../utils/roles'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
 import BusyLabel from '../BusyLabel'
@@ -16,7 +17,7 @@ interface CommentProps {
   onReply: (parentId: number, body: string) => Promise<void>
   onEdit: (commentId: number, body: string) => Promise<void>
   onDelete: (commentId: number) => Promise<void>
-  // Takes focus once a delete has removed the Delete button that had it.
+  // Takes focus once a delete, or a refusal, takes away the Delete button that had it.
   headingRef: RefObject<HTMLHeadingElement | null>
   depth?: number
   highlightId?: number | null
@@ -32,6 +33,13 @@ function timeAgo(dateStr: string): string {
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
   return new Date(dateStr).toLocaleDateString()
+}
+
+// True when focus is on nothing, on the page itself, or on `leaving`, a control about to
+// go: moving it then costs no one their place.
+function focusLeftNowhere(leaving?: Element | null): boolean {
+  const active = document.activeElement
+  return !active || active === document.body || active === leaving
 }
 
 export default function Comment({
@@ -59,18 +67,23 @@ export default function Comment({
   // Read when a delete settles: the browser may have closed the dialog meanwhile.
   const deleteModalOpen = useRef(false)
   // Where focus goes after the dialog follows the outcome. A cancel or a failed
-  // delete gives it back to the Delete button. A successful delete takes that
-  // button with the comment's actions, so the heading gets it once both the
-  // dialog's close and the list's update have landed: the list updates on
-  // TanStack's timer, in no fixed order with the close.
+  // delete gives it back to the Delete button, unless the server refused it
+  // (below). A successful delete takes that button with the comment's actions,
+  // so the heading gets it once both the dialog's close and the list's update
+  // have landed: the list updates on TanStack's timer, in no fixed order with
+  // the close.
   const deleted = useRef(false)
   const dialogGone = useRef(false)
   const listUpdated = useRef(false)
+  // A refused delete takes the Delete button away too: the refusal's session refresh
+  // or thread reload shows the viewer can't delete this comment after all. It holds
+  // until the dialog opens again: a later failure in the same dialog doesn't bring
+  // the button back.
+  const refused = useRef(false)
   const focusHeadingOnceDeleted = useCallback(() => {
     if (!deleted.current || !dialogGone.current || !listUpdated.current) return
     // Only when the delete left focus nowhere: anyone who moved on meanwhile keeps their place.
-    const active = document.activeElement
-    if (active && active !== document.body && active !== deleteButtonRef.current) return
+    if (!focusLeftNowhere(deleteButtonRef.current)) return
     // preventScroll: the heading can be a long way up a thread.
     headingRef.current?.focus({ preventScroll: true })
   }, [headingRef])
@@ -89,11 +102,11 @@ export default function Comment({
   const [isSaving, setIsSaving] = useState(false)
 
   // A comment whose author deleted their account arrives with user null, and a
-  // guest is null too: undefined === undefined would hand every visitor its
-  // Edit and Delete.
+  // guest is null too: compared bare, undefined === undefined would make a guest
+  // its owner.
   const isOwner = !!comment.user && user?.id === comment.user.id
-  const isMod = user?.role === 'moderator' || user?.role === 'admin'
-  const canModify = isOwner || isMod
+  // Edit is the author's alone; Delete follows rank (utils/roles.ts mirrors the server).
+  const canDelete = canDeleteComment(user, comment.user)
   const hasReplies = comment.replies && comment.replies.length > 0
 
   const handleReply = async (body: string) => {
@@ -118,6 +131,7 @@ export default function Comment({
   const openDeleteModal = () => {
     deleteModalOpen.current = true
     deleted.current = false
+    refused.current = false
     dialogGone.current = false
     listUpdated.current = false
     setDeleteError(null)
@@ -126,7 +140,12 @@ export default function Comment({
   const handleDialogClosed = () => {
     dialogGone.current = true
     if (deleted.current) focusHeadingOnceDeleted()
-    else deleteButtonRef.current?.focus()
+    // The refusal's session refresh or thread reload takes the Delete button away,
+    // before or after this close.
+    else if (refused.current) headingRef.current?.focus({ preventScroll: true })
+    else if (deleteButtonRef.current) deleteButtonRef.current.focus()
+    // Gone for good already: the session ended, or a refresh landed after a reopen.
+    else headingRef.current?.focus({ preventScroll: true })
   }
   const closeDeleteModal = () => {
     deleteModalOpen.current = false
@@ -142,10 +161,18 @@ export default function Comment({
       deleted.current = true
       closeDeleteModal()
     } catch (err) {
+      refused.current ||= err instanceof ApiError && err.status === 403
       const message = errorMessage(err, 'Failed to delete comment')
       // A dialog the browser closed mid-delete has nowhere to show the error.
       if (deleteModalOpen.current) setDeleteError(message)
-      else showToast(message)
+      else {
+        showToast(message)
+        // That close gave focus back to the Delete button, which the refusal's refresh
+        // or reload is about to take away.
+        if (refused.current && focusLeftNowhere(deleteButtonRef.current)) {
+          headingRef.current?.focus({ preventScroll: true })
+        }
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -226,7 +253,7 @@ export default function Comment({
               </button>
             )}
 
-            {canModify && !showReplyForm && (
+            {canDelete && !showReplyForm && (
               <>
                 {isOwner && (
                   <button

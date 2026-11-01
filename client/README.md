@@ -66,8 +66,9 @@ src/
                      (category images, level, type, and walkthrough SEO)
   utils/             image URL/srcset helpers (image.ts), image cache, slug
                      generation and dedup, TOC builders, description parser,
-                     text layout, username and password validation, breadcrumbs,
-                     auth helpers (refresh lock, return path, OAuth errors), the
+                     text layout, username and password validation, role ranks
+                     (whose comments a viewer may delete), breadcrumbs, auth
+                     helpers (refresh lock, return path, OAuth errors), the
                      typed confirmation's match, and the pure logic behind the
                      Progress page, its Manage progress card, the tip that points
                      to it, and the admin page
