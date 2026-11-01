@@ -296,6 +296,10 @@
     "/progress": {
       "title": "Progress",
       "description": ""
+    },
+    "/admin": {
+      "title": "Admin",
+      "description": ""
     }
   },
   "notFound": {

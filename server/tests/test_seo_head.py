@@ -224,6 +224,9 @@ async def test_noindex_routes(client):
     r = await client.get('/login')
     assert f'<title data-seo="server">Login{SUFFIX}</title>' in r.text
     assert 'content="noindex, nofollow"' in r.text
+    r = await client.get('/admin')
+    assert f'<title data-seo="server">Admin{SUFFIX}</title>' in r.text
+    assert 'content="noindex, nofollow"' in r.text
     r = await client.get('/levels/nest')
     assert 'content="noindex, nofollow"' not in r.text
 
@@ -479,7 +482,7 @@ def test_seo_json_sections_complete():
         'collectibles': 7, 'upgrades': 7, 'cosmetics': 7}
     assert len(SEO['walkthroughTypes']) == 6
     assert len(SEO['pages']) == 4
-    assert len(SEO['noindex']) == 7
+    assert len(SEO['noindex']) == 8
     for section in ('levels',):
         for entry in SEO[section].values():
             assert entry['title'] and entry['description'] and entry['image']

@@ -8,28 +8,34 @@ import { Loader2 } from 'lucide-react'
 // the label, so the spinner takes its place instead of joining it. A borderless
 // action in a row of them aligns to the start, so the room kept for the wider
 // variant falls after the label rather than around it.
-export default function BusyLabel({ label, busy, variants, icon, gap = 'gap-2', align = 'center' }: {
+//
+// iconOnlyBelowLg hides the label and busy texts below lg, leaving the icon, and the
+// spinner in its place while busy, so nothing moves (the admin page's Reveal on
+// phones). The label is then no name below lg, so the button needs an aria-label.
+export default function BusyLabel({ label, busy, variants, icon, gap = 'gap-2', align = 'center', iconOnlyBelowLg = false }: {
   label: string
   busy: string | null // the variant showing now, or null for the label
   variants: readonly string[]
   icon?: ReactNode
   gap?: 'gap-1' | 'gap-2' // between the icon or spinner and the text
   align?: 'center' | 'start'
+  iconOnlyBelowLg?: boolean
 }) {
+  const text = (value: string) => (iconOnlyBelowLg ? <span className="max-lg:hidden">{value}</span> : value)
   return (
     <span className={align === 'start' ? 'grid items-center justify-items-start' : 'grid place-items-center'}>
       <span className={`col-start-1 row-start-1${icon ? ` flex items-center ${gap}` : ''}${busy ? ' opacity-0' : ''}`}>
         {icon}
-        {label}
+        {text(label)}
       </span>
-      {variants.map(text => (
+      {variants.map(variant => (
         <span
-          key={text}
+          key={variant}
           aria-hidden
-          className={`col-start-1 row-start-1 flex items-center ${gap}${busy === text ? '' : ' invisible'}`}
+          className={`col-start-1 row-start-1 flex items-center ${gap}${busy === variant ? '' : ' invisible'}`}
         >
-          <Loader2 className={`w-4 h-4${busy === text ? ' animate-spin' : ''}`} />
-          {text}
+          <Loader2 className={`w-4 h-4${busy === variant ? ' animate-spin' : ''}`} />
+          {text(variant)}
         </span>
       ))}
     </span>

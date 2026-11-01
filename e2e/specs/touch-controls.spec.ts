@@ -1,7 +1,8 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
-import { readFixtures, type Fixtures } from '../helpers/db';
+import { readFixtures, setUserRole, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { BULK_COPY } from '../../client/src/constants/bulkProgressCopy';
+import { ADMIN_COPY } from '../../client/src/constants/adminCopy';
 
 // Form controls are 16px on touch screens (client/src/index.css), so iOS Safari
 // never zooms the page into one; desktop keeps the sizes the classes give. Focus
@@ -10,6 +11,7 @@ import { BULK_COPY } from '../../client/src/constants/bulkProgressCopy';
 let fx: Fixtures;
 let ip: string;
 let user: TestUser | null = null;
+let admin: TestUser | null = null;
 let seq = 0;
 
 test.beforeAll(() => {
@@ -20,9 +22,15 @@ test.beforeEach(async ({ context }) => {
   ip = nextTestIp();
   await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: ip });
   user = null;
+  admin = null;
 });
 
 test.afterEach(async ({ page }) => {
+  if (admin) {
+    // Its own deletion route refuses an admin account.
+    await setUserRole(admin.username, 'user');
+    await apiDeleteUser(page, admin, ip);
+  }
   if (user) await apiDeleteUser(page, user, ip);
 });
 
@@ -30,6 +38,19 @@ async function signIn(page: Page): Promise<void> {
   user = makeUser(fx.token, `touch${++seq}`);
   await apiRegister(page, user, ip);
   await page.addInitScript(() => localStorage.setItem('sb_has_session', '1'));
+}
+
+// A user to act on, then an admin, registered last so the page signs in as the admin,
+// and made one by SQL: no route can make an admin.
+async function signInAdmin(page: Page): Promise<TestUser> {
+  const target = makeUser(fx.token, `touch${++seq}`);
+  user = target;
+  await apiRegister(page, target, ip);
+  admin = makeUser(fx.token, `touchadmin${seq}`);
+  await apiRegister(page, admin, ip);
+  await setUserRole(admin.username, 'admin');
+  await page.addInitScript(() => localStorage.setItem('sb_has_session', '1'));
+  return target;
 }
 
 type Control = { what: string; cls: string; size: string };
@@ -111,6 +132,19 @@ for (const [name, viewport] of [
       await page.goto(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}`);
       await expect(page.locator('textarea').first()).toBeVisible();
       await expectAll16(page, 'comment form');
+    });
+
+    test("an admin's search box and the delete dialog's input are 16px", async ({ page }) => {
+      const target = await signInAdmin(page);
+      await page.goto('/admin');
+      await expect(page.getByLabel(ADMIN_COPY.searchLabel, { exact: true })).toBeVisible();
+      await expectAll16(page, 'admin page');
+
+      await page.getByRole('button', { name: ADMIN_COPY.actionsFor(target.username), exact: true }).click();
+      await page.getByRole('menuitem', { name: ADMIN_COPY.delete, exact: true }).click();
+      await expect(page.getByLabel(ADMIN_COPY.deleteConfirmLabel(target.username), { exact: true })).toBeVisible();
+      await expectAll16(page, 'delete dialog');
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel', exact: true }).click();
     });
   });
 }

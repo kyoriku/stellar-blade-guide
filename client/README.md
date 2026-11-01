@@ -8,7 +8,7 @@ The React single-page app for [Stellar Blade Guide](../README.md). See the root 
 - **Vite** (dev server + build)
 - **Tailwind CSS v4** via `@tailwindcss/vite`
 - **React Router v7** for routing
-- **TanStack Query** for server state (content reads, search, progress and stats, comments, notifications)
+- **TanStack Query** for server state (content reads, search, progress and stats, comments, notifications, the admin page's accounts)
 - `yet-another-react-lightbox` for the full-size image viewer, `lucide-react` for icons
 - **Vitest** for unit tests
 
@@ -44,28 +44,33 @@ src/
   pages/             route components: the home page, five thin index pages over the shared
                      CategoryIndexPage, the walkthrough category lists, three scroll-spy
                      detail pages (walkthrough, level, collectible type), a Blood Rain news
-                     page, plus auth/account (including Progress), legal, and error pages
+                     page, plus auth/account (including Progress), the admin page, legal,
+                     and error pages
   components/        reusable UI: the shared index page and cards, image gallery, table of
                      contents, SEO and structured data, search, comments, notifications,
-                     the Manage progress card, navbar, skeletons, modals
+                     the Manage progress card, navbar, skeletons, modals, and admin/ (the
+                     admin page's rows, row menu and address)
   hooks/             one data-domain hook per resource (collectibles, walkthroughs, progress,
-                     user stats, comments, notifications, search) plus useAuth (with
-                     authFetch) and useAuthContext, useBulkProgress, useHandClearTip,
-                     usePrefetch, useFloatingControl, and the useActiveSection scroll-spy
+                     user stats, comments, notifications, search, the admin page's
+                     accounts) plus useAuth (with authFetch) and useAuthContext,
+                     useBulkProgress, useHandClearTip, usePrefetch, useFloatingControl,
+                     useMenuButton (the menu button pattern, for any menu), and the
+                     useActiveSection scroll-spy
   context/           AuthContext (session + token lifecycle), ToastContext
   layouts/           RootLayout (scroll reset + navbar + outlet + footer)
   services/          api.ts: typed fetch wrappers for content and search + most TypeScript
                      interfaces (comment, notification, and auth types live in their hooks)
   constants/         navigation structure, section names, type intros, cycle labels, Manage
-                     progress copy, and seo.json (the site's static head text and images,
-                     also read by the server) with typed views over it (category images,
-                     level, type, and walkthrough SEO)
+                     progress and admin page copy, and seo.json (the site's static head
+                     text and images, also read by the server) with typed views over it
+                     (category images, level, type, and walkthrough SEO)
   utils/             image URL/srcset helpers (image.ts), image cache, slug
                      generation and dedup, TOC builders, description parser,
                      text layout, username and password validation, breadcrumbs,
-                     auth helpers (refresh lock, return path, OAuth errors), and
-                     the pure logic behind the Progress page, its Manage progress
-                     card, and the tip that points to it
+                     auth helpers (refresh lock, return path, OAuth errors), the
+                     typed confirmation's match, and the pure logic behind the
+                     Progress page, its Manage progress card, the tip that points
+                     to it, and the admin page
 public/              robots.txt, static sitemap.xml, favicons, README screenshots;
                      assets/images/ is gitignored local source imagery (production serves
                      from Cloudflare R2 at img.stellarbladeguide.com)
@@ -75,7 +80,7 @@ Route shape: `/walkthroughs/:type` (a category's list), `/walkthroughs/:type/:sl
 
 ## Data fetching
 
-`services/api.ts` wraps `fetch` with typed helpers for the content reads and search, and holds most of the API's TypeScript interfaces (the comment, notification, and auth types live in their hooks), maintained by hand to mirror the server's Pydantic schemas. Most signed-in requests go through `authFetch` (`hooks/useAuth.ts`), which attaches the access token (refreshing first when none is held) and, on a 401, refreshes it and retries once. One hook module per domain wraps TanStack Query. Content queries default to a 30-minute `staleTime` (1-hour `gcTime`); user data (progress, comments, notifications) uses shorter windows.
+`services/api.ts` wraps `fetch` with typed helpers for the content reads and search, and holds most of the API's TypeScript interfaces (the comment, notification, and auth types live in their hooks), maintained by hand to mirror the server's Pydantic schemas. Most signed-in requests go through `authFetch` (`hooks/useAuth.ts`), which attaches the access token (refreshing first when none is held) and, on a 401, refreshes it and retries once. One hook module per domain wraps TanStack Query. Content queries default to a 30-minute `staleTime` (1-hour `gcTime`); user data (progress, comments, notifications) uses shorter windows, and the admin page's account list none at all.
 
 ## Images
 
@@ -93,10 +98,22 @@ There is no react-helmet; the app relies on React 19's native metadata hoisting.
 
 Guests' completed collectible IDs live in `localStorage` (`sb_progress`). On sign-in the client merges them into the account (`POST /api/progress/sync`, additive only) and, once the server accepts them, drops the IDs it sent from the key; from then on progress is API-backed. Checkmarks send intents (`PUT` to set, `DELETE` to clear), never a toggle: each one updates the cache optimistically and rolls back on failure, and a no-op answer triggers a re-sync. The access token is held in memory only, never persisted; the app refreshes it through the HttpOnly refresh cookie on load when a session hint is set, every 14 minutes, when a returning tab's token is missing or more than 10 minutes old, and from `authFetch` when a request finds no token or gets a 401. The OAuth callback page uses the token in the URL only as a success signal, never stores it, and authenticates off the cookie instead.
 
+## Admin page
+
+`/admin` is for admin accounts only. `ProtectedRoute`'s `adminOnly` shows the spinner while the session restores, sends a signed-out visitor to sign in (and back afterwards), and gives anyone else signed in the same 404 page an unknown path gets; the server checks the role on every request regardless. Only admins see the Admin link, in the account menu and in the drawer, where their four buttons sit in a 2×2 grid.
+
+The page lists every account, newest first, with a search that matches any part of a username or a whole email address. Addresses arrive masked (`k***@g***.com`); Reveal asks the server for one address at a time (each reveal is logged there), and it stays on screen until Hide, leaving the page or signing out, since it lives only in the page's state. Each row's "…" menu (`components/admin/RowActionsMenu.tsx`) changes the role between user and moderator or reactivates an account at once, while Deactivate asks first and Delete asks for the username to be typed. Admin accounts, the caller's own included, get no actions.
+
+- **Data:** `hooks/useAdminUsers.ts` holds the API's types. The list is debounced 300 ms and sent as a POST when there is a search, so a typed address never goes in a URL. It is never kept (`staleTime` and `gcTime` 0, `cache: 'no-store'`) and is dropped at every sign-out with the other per-user queries. Every call has a deadline, and a 403 refreshes the session once, so a role lost since sign-in ends at the 404.
+- **Layout:** the list is divs with table roles, so it reads as a table at every width. From `lg` a subgrid lines the columns up under a header row; below it each row stacks, the header row stays for screen readers only, and Reveal becomes an eye icon. A long address breaks after the `@` or before a dot (`emailBreakParts` in `utils/adminUsers.ts`), and inside a word only when one piece is longer than a line.
+- **Menus:** `hooks/useMenuButton.ts` is the WAI-ARIA menu button pattern (the arrows, Home and End, Escape, Tab, a press outside), written so the account menu can move onto it too.
+- **Dialogs:** `ConfirmModal` has two optional props for this page: `confirmText`, a typed confirmation (an exact match after NFC normalization and trimming, `utils/confirmText.ts`), and `icon`. The comment delete dialog uses neither.
+- **Settings:** an admin account sees "Admin accounts can't be deleted." in place of the delete form, since the server refuses it.
+
 ## Tailwind v4 caveat
 
 Tailwind v4 generates CSS from the current file inventory, so an in-place build over a dirty tree (deleted-but-unstaged files, case-only renames) can silently drop classes; the navbar is the usual casualty. Builds from a clean checkout are always correct, and so are Docker builds, which is how deploys are built. If a local build looks unstyled, rebuild from a clean tree before debugging anything else.
 
 ## Verification
 
-`npm test` runs 222 Vitest unit tests in 21 files, colocated with the modules they cover (`src/**/*.test.ts`); they test pure logic only, with no jsdom or component tests. CI runs `npm run lint` (a type-checked ESLint config), `npm test`, and `npm run build` (`tsc -b` in strict mode, then the production build) on every pull request and every push to main. Behaviour that depends on timing, the network, or the real servers is left to the Playwright suite in `../e2e/` (192 tests in 27 specs, `npm run e2e` from the repo root), which drives the real FastAPI and Vite dev servers in the dev container before merging and is not part of CI.
+`npm test` runs 267 Vitest unit tests in 24 files, colocated with the modules they cover (`src/**/*.test.ts`); they test pure logic only, with no jsdom or component tests. CI runs `npm run lint` (a type-checked ESLint config), `npm test`, and `npm run build` (`tsc -b` in strict mode, then the production build) on every pull request and every push to main. Behaviour that depends on timing, the network, or the real servers is left to the Playwright suite in `../e2e/` (219 tests in 30 specs, `npm run e2e` from the repo root), which drives the real FastAPI and Vite dev servers in the dev container before merging and is not part of CI.

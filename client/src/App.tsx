@@ -29,6 +29,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import SettingsPage from './pages/SettingsPage'
 import ProgressPage from './pages/ProgressPage'
+import AdminPage from './pages/AdminPage'
 
 // Other pages
 import BloodRainPage from './pages/BloodRainPage'
@@ -74,6 +75,12 @@ function App() {
           <Route path="/progress" element={
             <ProtectedRoute renderWhileRestoring>
               <ProgressPage />
+            </ProtectedRoute>
+          } />
+          {/* Admins only: anyone else signed in gets the 404 page (ProtectedRoute). */}
+          <Route path="/admin" element={
+            <ProtectedRoute adminOnly>
+              <AdminPage />
             </ProtectedRoute>
           } />
 

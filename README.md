@@ -58,7 +58,7 @@ An unofficial game guide for *Stellar Blade*: 1,078 collectibles across 21 types
 - SQLAlchemy ORM with async support
 - Pydantic for request/response validation
 - Role-based access control (user, moderator, admin)
-- Rate limiting (slowapi, per route and client) and a bot-filter middleware that answers probe paths (CMS and admin paths, file-shaped or overlong URLs) and off-site API referers with a 404
+- Rate limiting (slowapi, per route and client, and per admin account on the admin routes) and a bot-filter middleware that answers probe paths (CMS and admin paths, file-shaped or overlong URLs) and off-site API referers with a 404
 - AI-powered comment moderation via OpenAI Moderation API
 - Progress tracking with guest-to-authenticated sync on login
 - Production runs uvicorn with two workers, and FastAPI serves the built React SPA as a catch-all, with no separate static server
@@ -73,7 +73,7 @@ An unofficial game guide for *Stellar Blade*: 1,078 collectibles across 21 types
 **Performance & Caching**
 - Multi-tier caching: Cloudflare's edge (content API responses for up to 30 days, purged by URL when a content deploy changes them) + Redis (server-side, 30-day TTL) + ETag/304 responses + TanStack Query (client-side)
 - Redis outages degrade gracefully: cached reads fail open to PostgreSQL, rate limiting falls back to in-memory counters, and auth endpoints fail closed with a 503 + Retry-After
-- `no-store` on per-user and mutable routes (progress, auth, account, comments, notifications), so the edge never caches them
+- `no-store` on per-user and mutable routes (progress, auth, account, admin, comments, notifications), so the edge never caches them
 - Cloudflare R2 with edge caching for image delivery (pre-generated WebP variants, immutable cache headers)
 - Every API response carries an X-Process-Time timing header
 
@@ -91,6 +91,7 @@ Content is versioned JSON in its own repository, and a content deploy lands in o
 - OAuth binds a single-use `state` to an HttpOnly cookie and a 10-minute Redis record against login CSRF, and links or creates an account only for a provider-verified email, never linking into an account with a password
 - Refresh tokens rotate on every use, a superseded token reused after a 60-second grace ends its session, and a 90-day cap ends every session however often it refreshes
 - Account settings: username, avatar from an image URL (fetched once, moderated by OpenAI, and re-hosted on Cloudinary), password change for password accounts, sign out of all devices, account deletion
+- An admin page: every account with its email masked until one is revealed (each reveal logged by account number), moderator promotion and demotion, deactivation, and deletion through the same function as Settings; admin accounts can't be changed there
 
 **Comments**
 - Threaded comments (one level of nesting) on walkthrough, level, and type pages
@@ -105,9 +106,9 @@ Content is versioned JSON in its own repository, and a content deploy lands in o
 - Rate-limited to 30 req/min; results cached in Redis for 1 hour
 
 **Testing**
-- 1,899 pytest tests on in-memory SQLite and fakeredis, so they need no running services; 1,740 of them run in CI, since 159 need the private content repo
-- 222 Vitest unit tests for the client's pure logic
-- 192 Playwright end-to-end tests in 27 specs, run before merging against the real dev servers and a dev database loaded from the private content repo
+- 2,059 pytest tests on in-memory SQLite and fakeredis, so they need no running services; 1,900 of them run in CI, since 159 need the private content repo
+- 267 Vitest unit tests for the client's pure logic
+- 219 Playwright end-to-end tests in 30 specs, run before merging against the real dev servers and a dev database loaded from the private content repo
 - CI runs pytest, ESLint, Vitest, and the type-checking build on pushes to main and on pull requests
 
 ## Repository Layout

@@ -14,6 +14,7 @@ import {
 } from '../utils/validatePassword'
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
+import { ADMIN_COPY } from '../constants/adminCopy'
 
 export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   // Below this point TypeScript narrows `user` to non-null (it's a const, so the
   // narrowing carries into the handler closures and JSX).
   if (!user) return null
+  const isAdmin = user.role === 'admin'
 
   // Profile dirty-check — shared by the Save button (disabled state) and the
   // save handler, so the button enables only when a save would actually change
@@ -413,50 +415,63 @@ export default function SettingsPage() {
 
         {/* ── Danger Zone ──────────────────────────────────────────────────── */}
         <section className="bg-secondary border border-red-500/20 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-2">
+          <div className={`flex items-center gap-2 ${isAdmin ? 'mb-4' : 'mb-2'}`}>
             <Trash2 className="w-5 h-5 text-red-400" />
             <h2 className="text-lg font-semibold text-gray-100">Danger Zone</h2>
           </div>
-          <p className="text-gray-400 text-sm mb-6">
-            Permanently delete your account, your progress, and your notifications, and erase the text of your comments. This cannot be undone.
-          </p>
 
-          {deleteError && (
-            <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
-              {deleteError}
-            </div>
+          {/* The server refuses to delete an admin account, from here or the admin
+              page, so the site can't lose its only admin through the app; the form
+              would only end in that refusal. */}
+          {isAdmin ? (
+            <p className="px-4 py-3 rounded-lg bg-gray-800/60 border border-gray-700 text-sm text-gray-300">
+              {ADMIN_COPY.settingsRefusal}
+            </p>
+          ) : (
+            <>
+              <p className="text-gray-400 text-sm mb-6">
+                Permanently delete your account, your progress, and your notifications, and erase the text of your comments. This cannot be undone.
+              </p>
+
+              {deleteError && (
+                <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
+                  {deleteError}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  {/* wrap-anywhere: a username can run 50 characters with nowhere to break. */}
+                  <label htmlFor={deleteConfirmId} className="block text-sm font-medium text-gray-300 mb-1.5 wrap-anywhere">
+                    Type <span className="text-white font-mono">{user.username}</span> to confirm
+                  </label>
+                  <input
+                    id={deleteConfirmId}
+                    type="text"
+                    value={deleteConfirm}
+                    onChange={e => setDeleteConfirm(e.target.value)}
+                    // The match is exact, so a phone must not capitalize, correct or fill it.
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoComplete="off"
+                    // outline-hidden, not outline-none: forced colors still draws it.
+                    className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-colors text-sm"
+                    placeholder={user.username}
+                  />
+                </div>
+
+                <button
+                  onClick={() => void handleDeleteAccount()}
+                  disabled={deleteConfirm !== user.username || deleteLoading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed text-red-400 font-semibold text-sm transition-all duration-200 cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteLoading ? 'Deleting...' : 'Delete my account'}
+                </button>
+              </div>
+            </>
           )}
-
-          <div className="space-y-3">
-            <div>
-              <label htmlFor={deleteConfirmId} className="block text-sm font-medium text-gray-300 mb-1.5">
-                Type <span className="text-white font-mono">{user.username}</span> to confirm
-              </label>
-              <input
-                id={deleteConfirmId}
-                type="text"
-                value={deleteConfirm}
-                onChange={e => setDeleteConfirm(e.target.value)}
-                // The match is exact, so a phone must not capitalise, correct or fill it.
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                autoComplete="off"
-                // outline-hidden, not outline-none: forced colors still draws it.
-                className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-red-500 focus:ring-1 focus:ring-red-500/30 transition-colors text-sm"
-                placeholder={user.username}
-              />
-            </div>
-
-            <button
-              onClick={() => void handleDeleteAccount()}
-              disabled={deleteConfirm !== user.username || deleteLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed text-red-400 font-semibold text-sm transition-all duration-200 cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-              {deleteLoading ? 'Deleting...' : 'Delete my account'}
-            </button>
-          </div>
         </section>
       </div>
     </div>

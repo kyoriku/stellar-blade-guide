@@ -96,10 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ['progress'] and ['notifications'] keys are unscoped, so without this the next
   // account on the same tab would be served the previous one's data until it went
   // stale; removal rather than invalidation means none of it is ever painted.
+  // ['admin'] is the admin page's account list (hooks/useAdminUsers.ts): keyed by the
+  // admin's id and kept for no time, but dropped here too, so no account list
+  // outlives the session that loaded it.
   const clearUserQueries = useCallback(() => {
     queryClient.removeQueries({ queryKey: ['progress'] })
     queryClient.removeQueries({ queryKey: ['user-stats'] })
     queryClient.removeQueries({ queryKey: NOTIFICATIONS_KEY })
+    queryClient.removeQueries({ queryKey: ['admin'] })
   }, [queryClient])
 
   // Restore the session from the HttpOnly refresh cookie. This is the single

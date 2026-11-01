@@ -114,7 +114,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   {t.message}
                 </button>
               ) : (
-                <span className="flex-1">
+                // min-w-0 and wrap-anywhere: a message can hold a 50-character username
+                // with nowhere to break.
+                <span className="flex-1 min-w-0 wrap-anywhere">
                   {t.message}
                   {t.action && (
                     <>
