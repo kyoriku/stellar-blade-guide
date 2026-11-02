@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
 import BusyLabel from './BusyLabel'
 import { useNotifications } from '../hooks/useNotifications'
+import { useToast } from '../context/ToastContext'
+import { errorMessage } from '../services/api'
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -20,6 +22,7 @@ function timeAgo(dateStr: string): string {
 export default function NotificationBell() {
   const { items, unreadCount, markRead, markAllRead, markingAllRead } = useNotifications()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   // Read synchronously, so a second press before the busy state renders sends nothing.
@@ -27,7 +30,11 @@ export default function NotificationBell() {
   const onMarkAllRead = () => {
     if (markingAll.current) return
     markingAll.current = true
-    markAllRead(undefined, { onSettled: () => { markingAll.current = false } })
+    markAllRead(undefined, {
+      // The panel has no place for an error, so a refusal is a toast.
+      onError: err => showToast(errorMessage(err, 'Failed to mark notifications as read')),
+      onSettled: () => { markingAll.current = false },
+    })
   }
 
   // Close on a mousedown anywhere outside the bell and its panel.

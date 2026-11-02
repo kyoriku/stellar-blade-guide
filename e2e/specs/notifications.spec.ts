@@ -4,9 +4,11 @@ import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type 
 import { expectBusyPattern } from '../helpers/busy';
 
 // The bell's Mark all read (components/NotificationBell.tsx) shows the busy pattern
-// (helpers/busy.ts) while its request is out, and a second press meanwhile sends nothing.
+// (helpers/busy.ts) while its request is out, a second press meanwhile sends nothing,
+// and a refusal is shown rather than passing silently.
 
 let fx: Fixtures;
+const REFUSED = 'e2e: Mark all read refused';
 
 // React runs what a press set off, its effects included, within two message turns.
 async function settle(page: Page): Promise<void> {
@@ -73,5 +75,18 @@ test.describe('notifications', () => {
     await expect(page.getByRole('button', { name: 'Notifications', exact: true })).toBeVisible();
     await expect(markAll).toHaveCount(0);
     expect(sent).toBe(1);
+  });
+
+  test('a refused Mark all read says so, and the notification stays unread', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Notifications (1 unread)', exact: true }).click();
+    const markAll = page.getByRole('button', { name: 'Mark all read', exact: true });
+    await page.route('**/api/notifications/read-all', route =>
+      route.fulfill({ status: 400, json: { detail: REFUSED } }));
+
+    await markAll.click();
+    await expect(page.getByText(REFUSED, { exact: true })).toBeVisible();
+    await expect(markAll).toHaveAttribute('aria-busy', 'false');
+    await expect(page.getByRole('button', { name: 'Notifications (1 unread)', exact: true })).toBeVisible();
   });
 });
