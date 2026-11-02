@@ -3,9 +3,9 @@ import { readFixtures, createCommentThread, deleteFixtureComments, insertReplyNo
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { expectBusyPattern } from '../helpers/busy';
 
-// The bell's Mark all read (components/NotificationBell.tsx) shows the busy pattern
-// (helpers/busy.ts) while its request is out, a second press meanwhile sends nothing,
-// and a refusal is shown rather than passing silently.
+// The bell (components/NotificationBell.tsx) says whether its panel is open. Its Mark
+// all read shows the busy pattern (helpers/busy.ts) while its request is out, a second
+// press meanwhile sends nothing, and a refusal is shown rather than passing silently.
 
 let fx: Fixtures;
 const REFUSED = 'e2e: Mark all read refused';
@@ -75,6 +75,27 @@ test.describe('notifications', () => {
     await expect(page.getByRole('button', { name: 'Notifications', exact: true })).toBeVisible();
     await expect(markAll).toHaveCount(0);
     expect(sent).toBe(1);
+  });
+
+  test('the bell says whether its panel is open, and which panel it opens', async ({ page }) => {
+    await page.goto('/');
+    const bell = page.getByRole('button', { name: 'Notifications (1 unread)', exact: true });
+    await expect(bell).toHaveAttribute('aria-expanded', 'false');
+    const panel = page.locator(`[id="${await bell.getAttribute('aria-controls')}"]`);
+    await expect(panel).toBeHidden();
+
+    await bell.click();
+    await expect(bell).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel.getByRole('button', { name: 'Mark all read', exact: true })).toBeVisible();
+    await bell.click();
+    await expect(bell).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel).toBeHidden();
+
+    // A press outside closes it too.
+    await bell.click();
+    await expect(bell).toHaveAttribute('aria-expanded', 'true');
+    await page.getByRole('heading', { level: 1 }).click();
+    await expect(bell).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('a refused Mark all read says so, and the notification stays unread', async ({ page }) => {

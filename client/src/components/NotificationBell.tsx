@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
@@ -24,6 +24,7 @@ export default function NotificationBell() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const [open, setOpen] = useState(false)
+  const panelId = useId()
   const ref = useRef<HTMLDivElement>(null)
   // Read synchronously, so a second press before the busy state renders sends nothing.
   const markingAll = useRef(false)
@@ -51,6 +52,9 @@ export default function NotificationBell() {
     <div className="relative hidden lg:flex h-10 items-center" ref={ref}>
       <button
         onClick={() => setOpen(p => !p)}
+        // Says whether the panel is open, as the drawer's button does.
+        aria-expanded={open}
+        aria-controls={panelId}
         className="relative flex items-center p-2 rounded-lg text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 transition-colors cursor-pointer"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
@@ -62,7 +66,7 @@ export default function NotificationBell() {
         )}
       </button>
 
-      <div className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${open ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
+      <div id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${open ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
           <p className="text-sm font-medium text-white">Notifications</p>
           {unreadCount > 0 && (
