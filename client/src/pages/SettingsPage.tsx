@@ -387,7 +387,6 @@ export default function SettingsPage() {
                     aria-label="Show current password"
                     aria-pressed={showCurrentPassword}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
-                    tabIndex={-1}
                   >
                     {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -417,7 +416,6 @@ export default function SettingsPage() {
                     aria-label="Show new password"
                     aria-pressed={showNewPassword}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
-                    tabIndex={-1}
                   >
                     {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>

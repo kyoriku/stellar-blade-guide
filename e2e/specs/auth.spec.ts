@@ -24,6 +24,23 @@ async function expectShowPassword(page: Page, name: string, field: Locator, wher
   await expect(field, where).toHaveAttribute('type', 'password');
 }
 
+// A show-password toggle sits in the Tab order right after its field, Space and Enter work
+// it (Enter on a plain button sends no form), and the next Tab moves on.
+async function expectToggleByKeyboard(page: Page, field: Locator, name: string, next: Locator, where: string): Promise<void> {
+  const toggle = page.getByRole('button', { name, exact: true });
+  await field.focus();
+  await page.keyboard.press('Tab');
+  await expect(toggle, where).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'true');
+  await expect(field, where).toHaveAttribute('type', 'text');
+  await page.keyboard.press('Enter');
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'false');
+  await expect(field, where).toHaveAttribute('type', 'password');
+  await page.keyboard.press('Tab');
+  await expect(next, where).toBeFocused();
+}
+
 async function uiLogin(page: Page, user: TestUser): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
@@ -420,6 +437,27 @@ test.describe('auth', () => {
       await page.goto(path);
       await expectShowPassword(page, 'Show password', page.locator('#password'), path);
     }
+  });
+
+  test('every show-password toggle is in the Tab order, and works by keyboard without sending the form', async ({ page }) => {
+    let sent = 0;
+    await page.route(/\/api\/auth\/(login|register|reset-password)$/, route => { sent += 1; return route.abort(); });
+    for (const [path, submit] of [['/login', 'Sign in'], ['/register', 'Create account'], ['/reset-password?token=e2e', 'Update password']] as const) {
+      await page.goto(path);
+      await expectToggleByKeyboard(page, page.locator('#password'), 'Show password', page.getByRole('button', { name: submit, exact: true }), path);
+    }
+    expect(sent, 'the toggles sent no form').toBe(0);
+  });
+
+  test("Settings' show-password toggles are in the Tab order, each after its field", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    const current = page.getByLabel('Current password', { exact: true });
+    const next = page.getByLabel('New password', { exact: true });
+    await expectToggleByKeyboard(page, current, 'Show current password', next, 'current');
+    await expectToggleByKeyboard(page, next, 'Show new password',
+      page.getByRole('button', { name: 'Update password', exact: true }), 'new');
   });
 
   test("Settings' show-password toggles are named for their fields", async ({ page }) => {
