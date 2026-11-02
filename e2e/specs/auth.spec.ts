@@ -363,6 +363,17 @@ test.describe('auth', () => {
     await expect(page.getByRole('heading', { name: 'Password updated' })).toBeVisible();
     await expect(page.getByText('Redirecting you to login…', { exact: true })).toBeVisible();
   });
+
+  test('every show-password toggle shows the pointer', async ({ page }) => {
+    for (const path of ['/login', '/register', '/reset-password?token=e2e']) {
+      await page.goto(path);
+      const toggle = page.locator('#password + button');
+      await expect(toggle, path).toHaveCSS('cursor', 'pointer');
+      // And it is the show-password toggle.
+      await toggle.click();
+      await expect(page.locator('#password'), path).toHaveAttribute('type', 'text');
+    }
+  });
 });
 
 // ── Return paths ─────────────────────────────────────────────────────────────
