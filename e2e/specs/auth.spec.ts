@@ -220,6 +220,16 @@ test.describe('auth', () => {
     await expect(accountMenu(page)).toBeVisible();
   });
 
+  test('the provider callback says it is signing you in, with the ellipsis character', async ({ page }) => {
+    const refresh = await holdRoute(page, '**/api/auth/refresh');
+    await page.goto('/oauth/callback?token=x');
+    await refresh.seen;
+    await expect(page.getByText(/^Signing you in/)).toHaveText('Signing you in…');
+    // No cookie (beforeEach cleared it), so the refresh ends at the sign-in page.
+    refresh.release();
+    await expect(page).toHaveURL(/\/login$/);
+  });
+
   test('a refresh the server refuses after provider consent gets the toast only', async ({ page }) => {
     // No cookie (beforeEach cleared it), so the refresh is a definitive 401.
     await page.goto('/oauth/callback?token=x');

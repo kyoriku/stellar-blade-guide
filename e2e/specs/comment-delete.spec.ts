@@ -115,7 +115,7 @@ test.describe('comment delete dialog', () => {
     await dialog(page).evaluate(d => (d as HTMLDialogElement).close());
     await expect(dialog(page)).toHaveCount(0);
     // While it runs, they start writing a comment; the delete must not pull them away.
-    const box = page.getByPlaceholder('Share your thoughts, tips, or questions...');
+    const box = page.getByPlaceholder('Share your thoughts, tips, or questions…');
     await box.click();
     await expect(box).toBeFocused();
     del.release();

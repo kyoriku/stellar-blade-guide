@@ -16,7 +16,7 @@ interface CommentFormProps {
 
 export default function CommentForm({
   onSubmit,
-  placeholder = 'Share your thoughts, tips, or questions...',
+  placeholder = 'Share your thoughts, tips, or questions…',
   buttonLabel = 'Post comment',
   autoFocus = false,
   onCancel,

@@ -20,7 +20,7 @@ const PHONE = {
   viewport: { width: 390, height: 844 },
   async open(page: Page): Promise<Locator> {
     await page.getByRole('button', { name: 'Toggle menu' }).click();
-    return page.getByPlaceholder('Search collectibles, walkthroughs, levels...');
+    return page.getByPlaceholder('Search collectibles, walkthroughs, levels…');
   },
   // The drawer, where results take the place of the sections.
   panel: (page: Page) => page.locator('#mobile-menu'),
@@ -31,7 +31,7 @@ const DESKTOP = {
   viewport: { width: 1280, height: 800 },
   async open(page: Page): Promise<Locator> {
     await page.getByRole('button', { name: 'Search (Ctrl+K)' }).click();
-    return page.getByPlaceholder('Search...');
+    return page.getByPlaceholder('Search…');
   },
   // The dropdown under the bar's input, the one panel that drops in.
   panel: (page: Page) => page.locator('.animate-drop-in'),
@@ -201,6 +201,17 @@ test.describe('search results, desktop typing', () => {
     search.release();
     await expect(rows(DESKTOP.panel(page)).first()).toContainText('Nano Suits');
     expect(await sawNoResults()).toBe(false);
+  });
+});
+
+test.describe('search results, desktop prompt', () => {
+  test.use({ viewport: DESKTOP.viewport });
+
+  test('the panel asks for a search, with the ellipsis character, until two letters are typed', async ({ page }) => {
+    await page.goto('/');
+    await (await DESKTOP.open(page)).pressSequentially('x');
+    await expect(DESKTOP.panel(page).getByText(/^Search collectibles, walkthroughs, levels/))
+      .toHaveText('Search collectibles, walkthroughs, levels…');
   });
 });
 

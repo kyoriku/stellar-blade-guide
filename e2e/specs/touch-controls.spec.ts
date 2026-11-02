@@ -88,7 +88,7 @@ const GUEST_SCREENS: [string, (page: Page) => Promise<unknown>][] = [
 async function openDrawerSearch(page: Page): Promise<void> {
   await page.goto('/');
   await page.getByRole('button', { name: 'Toggle menu' }).click();
-  await expect(page.getByPlaceholder('Search collectibles, walkthroughs, levels...')).toBeVisible();
+  await expect(page.getByPlaceholder('Search collectibles, walkthroughs, levels…')).toBeVisible();
 }
 
 for (const [name, viewport] of [
@@ -157,7 +157,7 @@ test.describe('a tablet in landscape', () => {
     await page.goto('/');
     expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true);
     await page.getByRole('button', { name: 'Search (Ctrl+K)' }).click();
-    await expect(page.getByPlaceholder('Search...')).toBeVisible();
+    await expect(page.getByPlaceholder('Search…')).toBeVisible();
     await expectAll16(page, 'bar search');
   });
 });
@@ -182,7 +182,7 @@ test.describe('desktop', () => {
       await check(screen);
     }
     await page.getByRole('button', { name: 'Search (Ctrl+K)' }).click();
-    await expect(page.getByPlaceholder('Search...')).toBeVisible();
+    await expect(page.getByPlaceholder('Search…')).toBeVisible();
     await check('bar search');
     expect(small, 'some text-sm control was measured').toBeGreaterThan(0);
   });

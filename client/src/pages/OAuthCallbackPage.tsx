@@ -51,7 +51,7 @@ export default function OAuthCallbackPage() {
       <SEO title={seo.noindex['/oauth/callback'].title} description={seo.noindex['/oauth/callback'].description} noindex />
       <div className="text-center">
         <div className="inline-block w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-gray-400 text-sm">Signing you in...</p>
+        <p className="text-gray-400 text-sm">Signing you in…</p>
       </div>
     </div>
   )

@@ -18,7 +18,7 @@ import { expectBusyPattern } from '../helpers/busy';
 
 let fx: Fixtures;
 
-const POST_BOX = 'Share your thoughts, tips, or questions...';
+const POST_BOX = 'Share your thoughts, tips, or questions…';
 // The server's answer when moderation flags a comment.
 const FLAGGED = 'Comment was flagged as inappropriate';
 

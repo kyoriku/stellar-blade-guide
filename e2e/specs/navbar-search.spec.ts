@@ -36,7 +36,7 @@ test.describe('navbar mobile search', () => {
       await redis.del(key);
       await page.goto('/');
       await page.getByRole('button', { name: 'Toggle menu' }).click();
-      await page.getByPlaceholder('Search collectibles, walkthroughs, levels...').fill(title);
+      await page.getByPlaceholder('Search collectibles, walkthroughs, levels…').fill(title);
       await page
         .locator('#mobile-menu a[href^="/walkthroughs/"]')
         .filter({ has: page.getByText(title, { exact: true }) })
@@ -57,7 +57,7 @@ test.describe('navbar mobile search', () => {
     await hamburger.click();
     await expect(hamburger).toHaveAttribute('aria-expanded', 'true');
 
-    const input = page.getByPlaceholder('Search collectibles, walkthroughs, levels...');
+    const input = page.getByPlaceholder('Search collectibles, walkthroughs, levels…');
     await expect(input).toBeVisible();
     await input.fill(fx.token); // unique run token — matches only our fixtures
 
@@ -112,7 +112,7 @@ test.describe('navbar mobile search', () => {
     await page.goto('/');
     const hamburger = page.getByRole('button', { name: 'Toggle menu' });
     await hamburger.click();
-    const input = page.getByPlaceholder('Search collectibles, walkthroughs, levels...');
+    const input = page.getByPlaceholder('Search collectibles, walkthroughs, levels…');
     await input.fill(fx.token);
     await expect(page.locator('#mobile-menu a', { hasText: fx.walkthroughTitle }).first()).toBeVisible();
 
