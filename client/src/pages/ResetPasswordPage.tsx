@@ -122,6 +122,9 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(p => !p)}
+                    // The eye has no text, so the name is here; pressed while the password shows.
+                    aria-label="Show password"
+                    aria-pressed={showPassword}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
                     tabIndex={-1}
                   >

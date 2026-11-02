@@ -58,7 +58,7 @@ test.describe('password length limits', () => {
       await page.goto('/register');
       await page.getByLabel('Email').fill(`e2e-${fx.token}-pwlimit${seq}@sbg-e2e-suite.dev`);
       await page.getByLabel('Username').fill(`e2e_${fx.token}_pwlimit${seq}`);
-      await page.getByLabel('Password').fill(password);
+      await page.getByLabel('Password', { exact: true }).fill(password);
     }
 
     test('refuses a new password over its limit without sending it', async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe('password length limits', () => {
     async function fill(page: Page, password: string): Promise<void> {
       await page.goto('/login');
       await page.getByLabel('Email').fill(`e2e-${fx.token}-nobody@sbg-e2e-suite.dev`);
-      await page.getByLabel('Password').fill(password);
+      await page.getByLabel('Password', { exact: true }).fill(password);
     }
 
     test('refuses a password over the stored limit without sending it', async ({ page }) => {
@@ -117,7 +117,7 @@ test.describe('password length limits', () => {
 
     async function fill(page: Page, password: string): Promise<void> {
       await page.goto('/reset-password?token=e2e');
-      await page.getByLabel('New password').fill(password);
+      await page.getByLabel('New password', { exact: true }).fill(password);
     }
 
     test('refuses a new password over its limit without sending it', async ({ page }) => {
@@ -155,7 +155,7 @@ test.describe('password length limits', () => {
       await context.clearCookies();
       await page.goto('/login');
       await page.getByLabel('Email').fill(user.email);
-      await page.getByLabel('Password').fill(user.password);
+      await page.getByLabel('Password', { exact: true }).fill(user.password);
       await page.getByRole('button', { name: 'Sign in', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
       await page.goto('/settings');
@@ -167,8 +167,8 @@ test.describe('password length limits', () => {
 
     test('refuses a current password over the stored limit without sending it', async ({ page }) => {
       const sent = await refuseAll(page, '/api/auth/change-password');
-      await page.getByLabel('Current password').fill('p'.repeat(CURRENT_PASSWORD_MAX_LENGTH + 1));
-      await page.getByLabel('New password').fill('a-new-password-1');
+      await page.getByLabel('Current password', { exact: true }).fill('p'.repeat(CURRENT_PASSWORD_MAX_LENGTH + 1));
+      await page.getByLabel('New password', { exact: true }).fill('a-new-password-1');
       await submit(page).click();
       await expect(form(page).locator('div.text-red-400')).toHaveText(CURRENT_PASSWORD_TOO_LONG);
       expect(sent()).toBe(0);
@@ -178,8 +178,8 @@ test.describe('password length limits', () => {
 
     test('refuses a new password over its limit without sending it', async ({ page }) => {
       const sent = await refuseAll(page, '/api/auth/change-password');
-      await page.getByLabel('Current password').fill(user.password);
-      await page.getByLabel('New password').fill('p'.repeat(NEW_PASSWORD_MAX_LENGTH + 1));
+      await page.getByLabel('Current password', { exact: true }).fill(user.password);
+      await page.getByLabel('New password', { exact: true }).fill('p'.repeat(NEW_PASSWORD_MAX_LENGTH + 1));
       await submit(page).click();
       await expect(form(page).locator('div.text-red-400')).toHaveText(NEW_PASSWORD_TOO_LONG);
       expect(sent()).toBe(0);
@@ -191,8 +191,8 @@ test.describe('password length limits', () => {
       const bodies = await answerWithSentinel(page, '/api/auth/change-password');
       const current = EMOJI.repeat(CURRENT_PASSWORD_MAX_LENGTH);
       const next = EMOJI.repeat(NEW_PASSWORD_MAX_LENGTH);
-      await page.getByLabel('Current password').fill(current);
-      await page.getByLabel('New password').fill(next);
+      await page.getByLabel('Current password', { exact: true }).fill(current);
+      await page.getByLabel('New password', { exact: true }).fill(next);
       await submit(page).click();
       await expect(form(page).locator('div.text-red-400')).toHaveText(SENTINEL);
       expect(bodies).toEqual([{ current_password: current, new_password: next }]);

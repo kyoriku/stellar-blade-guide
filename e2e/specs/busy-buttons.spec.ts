@@ -125,7 +125,7 @@ test.describe('busy sign-in forms', () => {
 
   test('Update password, from a reset link', async ({ page }) => {
     await page.goto('/reset-password?token=e2e-not-a-token');
-    const password = page.getByLabel('New password');
+    const password = page.getByLabel('New password', { exact: true });
     await password.fill('e2e-Password-456');
     const hold = await holdThenRefuse(page, '**/api/auth/reset-password', 'POST');
     await busyThenRefused(page, page.getByRole('button', { name: 'Update password', exact: true }), {
@@ -196,9 +196,9 @@ test.describe('busy Settings', () => {
 
   test('Update password', async ({ page }) => {
     await page.goto('/settings');
-    const currentPassword = main(page).getByLabel('Current password');
+    const currentPassword = main(page).getByLabel('Current password', { exact: true });
     await currentPassword.fill('e2e-Password-123');
-    const newPassword = main(page).getByLabel('New password');
+    const newPassword = main(page).getByLabel('New password', { exact: true });
     await newPassword.fill('e2e-Password-456');
     const hold = await holdThenRefuse(page, '**/api/auth/change-password', 'POST');
     await busyThenRefused(page, main(page).getByRole('button', { name: 'Update password', exact: true }), {
@@ -254,8 +254,8 @@ test.describe('busy Settings', () => {
     await page.route('**/api/auth/change-password', route => route.fulfill({ json: {} }));
     // A changed password signs this browser out two seconds later; the page is
     // checked before then.
-    await main(page).getByLabel('Current password').fill('e2e-Password-123');
-    await main(page).getByLabel('New password').fill('e2e-Password-456');
+    await main(page).getByLabel('Current password', { exact: true }).fill('e2e-Password-123');
+    await main(page).getByLabel('New password', { exact: true }).fill('e2e-Password-456');
     const update = main(page).getByRole('button', { name: 'Update password', exact: true });
     await update.click();
     await expect(liveAfter(update)).toHaveText('Password changed. Signing you out…');

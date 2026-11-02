@@ -270,7 +270,7 @@ test.describe('who reaches the admin page', () => {
     expect(asked).toEqual([]);
 
     await page.getByLabel('Email').fill(admin.email);
-    await page.getByLabel('Password').fill(admin.password);
+    await page.getByLabel('Password', { exact: true }).fill(admin.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await expect(page).toHaveURL('/admin');
     await expect(page.getByRole('heading', { level: 1, name: ADMIN_COPY.pageHeading, exact: true })).toBeVisible();

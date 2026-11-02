@@ -383,6 +383,9 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(p => !p)}
+                    // The eye has no text, so the name is here; pressed while the password shows.
+                    aria-label="Show current password"
+                    aria-pressed={showCurrentPassword}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
                     tabIndex={-1}
                   >
@@ -410,6 +413,9 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(p => !p)}
+                    // The eye has no text, so the name is here; pressed while the password shows.
+                    aria-label="Show new password"
+                    aria-pressed={showNewPassword}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
                     tabIndex={-1}
                   >

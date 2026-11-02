@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFixtures, pgPool, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 
@@ -8,10 +8,25 @@ const accountMenu = (page: Page) => page.getByRole('button', { name: 'Account me
 const navSignIn = (page: Page) =>
   page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true });
 
+// A show-password toggle: named for screen readers (the eye has no text), pressed while
+// its field shows the password, and showing the pointer.
+async function expectShowPassword(page: Page, name: string, field: Locator, where: string): Promise<void> {
+  const toggle = page.getByRole('button', { name, exact: true });
+  await expect(toggle, where).toHaveCSS('cursor', 'pointer');
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'false');
+  await expect(field, where).toHaveAttribute('type', 'password');
+  await toggle.click();
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'true');
+  await expect(field, where).toHaveAttribute('type', 'text');
+  await toggle.click();
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'false');
+  await expect(field, where).toHaveAttribute('type', 'password');
+}
+
 async function uiLogin(page: Page, user: TestUser): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
-  await page.getByLabel('Password').fill(user.password);
+  await page.getByLabel('Password', { exact: true }).fill(user.password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 }
 
@@ -116,7 +131,7 @@ test.describe('auth', () => {
     await page.goto('/login?oauth_error=has-password&provider=google');
     await expect(page.locator('form div.text-red-400')).toHaveText(HAS_PASSWORD);
     await page.getByLabel('Email').fill(user!.email);
-    await page.getByLabel('Password').fill('definitely-wrong-password');
+    await page.getByLabel('Password', { exact: true }).fill('definitely-wrong-password');
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     const boxes = page.locator('form div.text-red-400');
     await expect(boxes).toHaveCount(1);
@@ -142,7 +157,7 @@ test.describe('auth', () => {
     await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
     await page.goto('/login?oauth_error=has-password&provider=google');
     await page.getByLabel('Email').fill(user!.email);
-    await page.getByLabel('Password').fill(user!.password);
+    await page.getByLabel('Password', { exact: true }).fill(user!.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await expect(page).toHaveURL(/\/levels\/eidos-7$/);
     await expect(accountMenu(page)).toBeVisible();
@@ -358,21 +373,25 @@ test.describe('auth', () => {
     // Answered here, so no reset token is needed.
     await page.route('**/api/auth/reset-password', route => route.fulfill({ status: 204 }));
     await page.goto('/reset-password?token=e2e');
-    await page.getByLabel('New password').fill('e2e-Password-456');
+    await page.getByLabel('New password', { exact: true }).fill('e2e-Password-456');
     await page.getByRole('button', { name: 'Update password', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Password updated' })).toBeVisible();
     await expect(page.getByText('Redirecting you to login…', { exact: true })).toBeVisible();
   });
 
-  test('every show-password toggle shows the pointer', async ({ page }) => {
+  test('every show-password toggle is named, says when it shows the password, and shows the pointer', async ({ page }) => {
     for (const path of ['/login', '/register', '/reset-password?token=e2e']) {
       await page.goto(path);
-      const toggle = page.locator('#password + button');
-      await expect(toggle, path).toHaveCSS('cursor', 'pointer');
-      // And it is the show-password toggle.
-      await toggle.click();
-      await expect(page.locator('#password'), path).toHaveAttribute('type', 'text');
+      await expectShowPassword(page, 'Show password', page.locator('#password'), path);
     }
+  });
+
+  test("Settings' show-password toggles are named for their fields", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    await expectShowPassword(page, 'Show current password', page.getByLabel('Current password', { exact: true }), 'current');
+    await expectShowPassword(page, 'Show new password', page.getByLabel('New password', { exact: true }), 'new');
   });
 });
 
@@ -416,7 +435,7 @@ test.describe('return paths', () => {
     await expect(page.getByRole('heading', { name: 'Create account', level: 1 })).toBeVisible();
     await page.getByLabel('Email').fill(created.email);
     await page.getByLabel('Username').fill(created.username);
-    await page.getByLabel('Password').fill(created.password);
+    await page.getByLabel('Password', { exact: true }).fill(created.password);
     await page.getByRole('button', { name: 'Create account', exact: true }).click();
   }
 
@@ -462,7 +481,7 @@ test.describe('return paths', () => {
     // Same transition race in the other direction: the register form has an Email field too.
     await expect(page.getByRole('heading', { name: 'Welcome back', level: 1 })).toBeVisible();
     await page.getByLabel('Email').fill(user.email);
-    await page.getByLabel('Password').fill(user.password);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await expect(accountMenu(page)).toBeVisible();
     await expect(page).toHaveURL(/\/$/);
