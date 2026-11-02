@@ -14,6 +14,15 @@ const navSignIn = (page: Page) =>
 async function expectShowPassword(page: Page, name: string, field: Locator, where: string): Promise<void> {
   const toggle = page.getByRole('button', { name, exact: true });
   await expect(toggle, where).toHaveCSS('cursor', 'pointer');
+  // A target of at least 24 by 24 px (WCAG 2.2), with the eye where it always was: 12px
+  // inside the field's right edge, and centred on the field.
+  const target = (await toggle.boundingBox())!;
+  expect(target.width, `${where}: target width`).toBeGreaterThanOrEqual(24);
+  expect(target.height, `${where}: target height`).toBeGreaterThanOrEqual(24);
+  const eye = (await toggle.locator('svg').boundingBox())!;
+  const box = (await field.boundingBox())!;
+  expect(Math.abs(box.x + box.width - (eye.x + eye.width) - 12), `${where}: eye 12px inside the field`).toBeLessThanOrEqual(1);
+  expect(Math.abs(box.y + box.height / 2 - (eye.y + eye.height / 2)), `${where}: eye centred on the field`).toBeLessThanOrEqual(1);
   await expect(toggle, where).toHaveAttribute('aria-pressed', 'false');
   await expect(field, where).toHaveAttribute('type', 'password');
   await toggle.click();

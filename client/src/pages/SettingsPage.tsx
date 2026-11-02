@@ -383,10 +383,11 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(p => !p)}
-                    // The eye has no text, so the name is here; pressed while the password shows.
+                    // The eye has no text, so the name is here; pressed while the password shows. The padding
+                    // makes a 28px target, and the right margin takes it back so the eye stays put.
                     aria-label="Show current password"
                     aria-pressed={showCurrentPassword}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 -mr-1.5 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
                   >
                     {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -412,10 +413,11 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(p => !p)}
-                    // The eye has no text, so the name is here; pressed while the password shows.
+                    // The eye has no text, so the name is here; pressed while the password shows. The padding
+                    // makes a 28px target, and the right margin takes it back so the eye stays put.
                     aria-label="Show new password"
                     aria-pressed={showNewPassword}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 -mr-1.5 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
                   >
                     {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
