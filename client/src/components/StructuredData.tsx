@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { breadcrumbList, type Crumb } from '../utils/breadcrumbs';
 
 interface StructuredDataProps {
@@ -18,7 +19,9 @@ export default function StructuredData({
   extraSchemas,
   breadcrumbs
 }: StructuredDataProps) {
-  const pathname = window.location.pathname;
+  // The router's location, not window.location: a link moves the address bar at once,
+  // while the page on screen can still render until the next one is ready.
+  const { pathname } = useLocation();
   // Pages pass a fresh array on every render, so the effect is keyed on the
   // trail's content rather than its identity.
   const crumbsKey = breadcrumbs?.length ? JSON.stringify(breadcrumbs) : '';
