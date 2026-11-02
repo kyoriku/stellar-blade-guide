@@ -7,7 +7,7 @@ import BusyLabel from '../components/BusyLabel'
 import seo from '../constants/seo.json'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
 import { NEW_PASSWORD_MAX_LENGTH, NEW_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
-import { focusIfLeftNowhere } from '../utils/focusIfLeftNowhere'
+import { focusIfLeftNowhere } from '../utils/focus'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()

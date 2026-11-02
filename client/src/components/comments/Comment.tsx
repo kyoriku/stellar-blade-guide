@@ -6,6 +6,7 @@ import type { CommentData } from '../../hooks/useComments'
 import { ApiError, errorMessage } from '../../services/api'
 import { useToast } from '../../context/ToastContext'
 import { canDeleteComment, roleRank } from '../../utils/roles'
+import { focusLeftNowhere } from '../../utils/focus'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
 import BusyLabel from '../BusyLabel'
@@ -34,13 +35,6 @@ function timeAgo(dateStr: string): string {
   const days = Math.floor(hrs / 24)
   if (days < 30) return `${days}d ago`
   return new Date(dateStr).toLocaleDateString()
-}
-
-// True when focus is on nothing, on the page itself, or on `leaving`, a control about to
-// go: moving it then costs no one their place.
-function focusLeftNowhere(leaving?: Element | null): boolean {
-  const active = document.activeElement
-  return !active || active === document.body || active === leaving
 }
 
 export default function Comment({

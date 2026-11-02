@@ -5,7 +5,7 @@ import SEO from '../components/SEO'
 import BusyLabel from '../components/BusyLabel'
 import seo from '../constants/seo.json'
 import { API_BASE_URL, errorMessage, readError } from '../services/api'
-import { focusIfLeftNowhere } from '../utils/focusIfLeftNowhere'
+import { focusIfLeftNowhere } from '../utils/focus'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
