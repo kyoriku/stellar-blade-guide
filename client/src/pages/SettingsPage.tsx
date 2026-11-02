@@ -34,6 +34,8 @@ export default function SettingsPage() {
   const [avatarRemoving, setAvatarRemoving] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState(false)
+  const usernameId = useId()
+  const avatarUrlId = useId()
 
   // ── Password ───────────────────────────────────────────────────────────────
   const [currentPassword, setCurrentPassword] = useState('')
@@ -252,10 +254,11 @@ export default function SettingsPage() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label htmlFor={usernameId} className="block text-sm font-medium text-gray-300 mb-1.5">
                 Username
               </label>
               <input
+                id={usernameId}
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
@@ -271,10 +274,11 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label htmlFor={avatarUrlId} className="block text-sm font-medium text-gray-300 mb-1.5">
                 Avatar URL
               </label>
               <input
+                id={avatarUrlId}
                 type="url"
                 value={avatarUrl}
                 onChange={e => setAvatarUrl(e.target.value)}

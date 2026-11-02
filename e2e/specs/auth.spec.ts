@@ -309,6 +309,16 @@ test.describe('auth', () => {
     await expect(box).toHaveAttribute('autocomplete', 'off');
   });
 
+  test("Settings' Username and Avatar URL fields are labelled", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    await expect(page.getByLabel('Username', { exact: true })).toHaveValue(user!.username);
+    const avatar = page.getByLabel('Avatar URL', { exact: true });
+    await expect(avatar).toHaveAttribute('type', 'url');
+    await expect(avatar).toHaveValue('');
+  });
+
   test('Forgot password tells a provider-only address the truth, and nobody else anything', async ({ page }) => {
     // An unknown address: the generic answer, as for a password or deactivated account.
     // (A real password account is not submitted here: in dev that would call Resend.)
