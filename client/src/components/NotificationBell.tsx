@@ -89,7 +89,10 @@ export default function NotificationBell() {
         )}
       </button>
 
-      <div id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${open ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
+      {/* Opening leaves visibility out of the transition, so Mark all read and the links can
+          take focus in the frame the panel opens (a Tab straight after Enter); closing keeps
+          it in, so the panel stays visible while it fades. The desktop nav menus do the same. */}
+      <div id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden duration-200 ${open ? 'transition-[opacity,translate] opacity-100 visible translate-y-0 pointer-events-auto' : 'transition-all opacity-0 invisible translate-y-2 pointer-events-none'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
           {/* Focusable for Mark all read leaving with focus on it (markAllRef). */}
           <p ref={headingRef} tabIndex={-1} className="text-sm font-medium text-white">Notifications</p>

@@ -147,6 +147,25 @@ test.describe('notifications', () => {
     await expect(bell).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test("the panel's controls can take focus in the frame it opens", async ({ page }) => {
+    await page.goto('/');
+    const bell = page.getByRole('button', { name: 'Notifications (1 unread)', exact: true });
+    await bell.waitFor();
+    // All in one task: the press, React's commit (a microtask), then the reads, before any
+    // frame runs. With visibility in its fade the panel stayed hidden until the fade's
+    // first step, so a Tab straight after opening skipped Mark all read and the links.
+    const seen = await bell.evaluate(async el => {
+      el.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      const panel = document.getElementById(el.getAttribute('aria-controls')!)!;
+      const first = panel.querySelector<HTMLElement>('button')!;
+      first.focus();
+      return { expanded: el.getAttribute('aria-expanded'), visibility: getComputedStyle(panel).visibility, focused: document.activeElement === first, name: first.textContent };
+    });
+    expect(seen).toEqual({ expanded: 'true', visibility: 'visible', focused: true, name: 'Mark all read' });
+  });
+
   test('a refused Mark all read says so, and the notification stays unread', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Notifications (1 unread)', exact: true }).click();
