@@ -12,6 +12,7 @@ import { ADMIN_COPY } from '../constants/adminCopy'
 import seo from '../constants/seo.json'
 import { adminErrorMessage, listStatus } from '../utils/adminUsers'
 import type { RowAction } from '../utils/adminUsers'
+import { focusLeftNowhere } from '../utils/focus'
 
 type DialogKind = 'delete' | 'deactivate'
 
@@ -111,9 +112,7 @@ export default function AdminPage() {
   // nowhere, or in the row it takes away: anyone who moved on meanwhile keeps their
   // place. preventScroll: the heading can be a long way up the list.
   const focusHeadingIfLost = useCallback((id: number) => {
-    const active = document.activeElement
-    if (active && active !== document.body && !rowFor(id)?.contains(active)) return
-    headingRef.current?.focus({ preventScroll: true })
+    if (focusLeftNowhere(rowFor(id))) headingRef.current?.focus({ preventScroll: true })
   }, [])
 
   const onReveal = useCallback((id: number) => {
@@ -287,10 +286,7 @@ export default function AdminPage() {
     setAnnouncement('')
     // Read before the re-render takes the box away: anyone who moved on meanwhile
     // keeps their place.
-    const active = document.activeElement
-    if (!active || active === document.body || active === tryAgainRef.current) {
-      headingRef.current?.focus({ preventScroll: true })
-    }
+    if (focusLeftNowhere(tryAgainRef.current)) headingRef.current?.focus({ preventScroll: true })
   }
 
   const users = list.data
