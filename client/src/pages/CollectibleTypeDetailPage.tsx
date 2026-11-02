@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
@@ -252,11 +252,13 @@ function CollectibleTypeDetailPage() {
   );
   const resetActiveSection = () => setActiveSection('');
 
-  // Render-phase reset on type change; must sit below the useActiveSection
-  // call because it invokes setActiveSection during render.
-  const prevTypeName = useRef(typeName);
-  if (typeName !== prevTypeName.current) {
-    prevTypeName.current = typeName;
+  // A new type starts with its filters cleared, during render, so this sits below the
+  // useActiveSection call. The type they belong to is kept in state, not a ref: React
+  // can set aside a render it has started, and a ref written there would keep the new
+  // type while the cleared filters were thrown away.
+  const [filtersFor, setFiltersFor] = useState(typeName);
+  if (typeName !== filtersFor) {
+    setFiltersFor(typeName);
     setActiveSection('');
     setCycleFilter('All');
     setSubtypeFilter('All');

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
@@ -61,9 +61,12 @@ function LevelDetailPage() {
   }, [toggle, noteToggle])
   const resetActiveSection = () => setActiveSection('');
 
-  const prevLevelName = useRef(levelName);
-  if (levelName !== prevLevelName.current) {
-    prevLevelName.current = levelName;
+  // A new level starts with its filters cleared. The level they belong to is kept in
+  // state, not a ref: React can set aside a render it has started, and a ref written
+  // there would keep the new level while the cleared filters were thrown away.
+  const [filtersFor, setFiltersFor] = useState(levelName);
+  if (levelName !== filtersFor) {
+    setFiltersFor(levelName);
     setActiveSection('');
     setCycleFilter('All');
   }
