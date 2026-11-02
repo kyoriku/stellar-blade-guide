@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import type { NavSection } from './navSections';
@@ -19,6 +19,19 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
   const panelId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // An open menu closes on a press anywhere outside it, whatever the pointer. A tap doesn't
+  // focus the arrow in every browser (iOS Safari), so focus leaving can't close it there,
+  // and a tap no longer counts as hover leaving.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPress = (e: PointerEvent) => {
+      if (!wrapperRef.current?.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('pointerdown', onPress);
+    return () => document.removeEventListener('pointerdown', onPress);
+  }, [isOpen, onClose]);
 
   const isItemActive = (slug: string) =>
     itemActiveMatch === 'prefix'
@@ -27,9 +40,17 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
 
   return (
     <div
+      ref={wrapperRef}
       className="relative"
-      onMouseEnter={onOpen}
-      onMouseLeave={onClose}
+      // Hover opens and closes a menu for a mouse only. A tap fires an emulated hover too,
+      // which opened the menu just before the tap's click on the arrow toggled it shut, so
+      // touch screens couldn't open it; for a tap, the arrow is a plain toggle.
+      onPointerEnter={e => {
+        if (e.pointerType === 'mouse') onOpen();
+      }}
+      onPointerLeave={e => {
+        if (e.pointerType === 'mouse') onClose();
+      }}
       onClick={onClose}
       // From the keyboard: Escape closes an open menu, giving focus back to its arrow when
       // it was in the menu, and focus leaving the menu closes it, so it doesn't stay open

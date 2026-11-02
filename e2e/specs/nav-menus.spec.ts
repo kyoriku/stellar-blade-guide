@@ -17,6 +17,16 @@ async function levelsMenu(page: Page) {
 
 const focusInside = (panel: ReturnType<Page['locator']>) => panel.evaluate(el => el.contains(document.activeElement));
 
+// Lets everything a tap set off run, React's effects included: two message turns.
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise(resolve => {
+    const ch = new MessageChannel();
+    let turns = 0;
+    ch.port1.onmessage = () => (++turns === 2 ? resolve(null) : ch.port2.postMessage(null));
+    ch.port2.postMessage(null);
+  }));
+}
+
 test.describe('desktop nav menus', () => {
   test.beforeEach(async ({ context, page }) => {
     await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
@@ -104,5 +114,43 @@ test.describe('desktop nav menus', () => {
     // The pointer hasn't left, so only the click can open it again.
     await arrow.click();
     await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+// By touch (Chromium's touch emulation): hover opens a menu for a mouse only. A tap fires an
+// emulated hover too, which opened the menu just before the tap's click on the arrow toggled
+// it shut, so a touch screen at this width couldn't open the menus at all.
+test.describe('desktop nav menus by touch', () => {
+  test.use({ hasTouch: true });
+
+  test.beforeEach(async ({ context, page }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+    await page.goto('/privacy');
+  });
+
+  test('a tap on the arrow opens its menu, and a second tap closes it', async ({ page }) => {
+    const { arrow, items } = await levelsMenu(page);
+    await arrow.tap();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(items.first()).toBeVisible();
+    // Still open once everything the tap set off has run, its pointer leaving included.
+    await settle(page);
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await arrow.tap();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('a tap elsewhere closes an open menu, even where a tap leaves the arrow unfocused', async ({ page }) => {
+    const { arrow } = await levelsMenu(page);
+    // iOS Safari doesn't focus a tapped button, so focus never leaves the menu there.
+    await arrow.evaluate(el => el.addEventListener('mousedown', e => e.preventDefault()));
+    await arrow.tap();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(arrow).not.toBeFocused();
+    // The heading's far end: the open menu covers its middle.
+    const heading = page.getByRole('heading', { level: 1 });
+    const box = (await heading.boundingBox())!;
+    await heading.tap({ position: { x: box.width - 10, y: box.height / 2 } });
+    await expect(arrow).toHaveAttribute('aria-expanded', 'false');
   });
 });
