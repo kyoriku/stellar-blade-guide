@@ -258,6 +258,6 @@ test.describe('busy Settings', () => {
     await main(page).getByLabel('New password').fill('e2e-Password-456');
     const update = main(page).getByRole('button', { name: 'Update password', exact: true });
     await update.click();
-    await expect(liveAfter(update)).toHaveText('Password changed. Signing you out...');
+    await expect(liveAfter(update)).toHaveText('Password changed. Signing you out…');
   });
 });

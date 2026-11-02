@@ -563,7 +563,7 @@ function Navbar() {
                   ? `${mobileSearchData.total} result${mobileSearchData.total !== 1 ? 's' : ''} found`
                   // Trimmed, like the search itself (useSearch): "x " sends nothing.
                   : searchQuery.trim().length < 2
-                    ? 'Type at least 2 characters...'
+                    ? 'Type at least 2 characters…'
                     : 'Searching…'}
               </div>
             )}

@@ -211,8 +211,8 @@ test.describe('search results, phone typing', () => {
     await page.goto('/');
     await (await PHONE.open(page)).fill('x ');
     // The status line under the field. Counting the space, it said "Searching" for good.
-    await expect(PHONE.panel(page).getByText(/^(Type at least 2 characters\.\.\.|Searching…)$/))
-      .toHaveText('Type at least 2 characters...');
+    await expect(PHONE.panel(page).getByText(/^(Type at least 2 characters…|Searching…)$/))
+      .toHaveText('Type at least 2 characters…');
   });
 
   test('the drawer says "Searching…", with the ellipsis character, while a search is out', async ({ page }) => {

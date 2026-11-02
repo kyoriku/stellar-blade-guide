@@ -353,6 +353,16 @@ test.describe('auth', () => {
     await expect(page.getByText("You're doing that too fast. Please wait a moment and try again.")).toBeVisible();
     await expect(page.getByText('Check your email')).toHaveCount(0);
   });
+
+  test('a reset that lands says so, and that sign-in is next', async ({ page }) => {
+    // Answered here, so no reset token is needed.
+    await page.route('**/api/auth/reset-password', route => route.fulfill({ status: 204 }));
+    await page.goto('/reset-password?token=e2e');
+    await page.getByLabel('New password').fill('e2e-Password-456');
+    await page.getByRole('button', { name: 'Update password', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Password updated' })).toBeVisible();
+    await expect(page.getByText('Redirecting you to login…', { exact: true })).toBeVisible();
+  });
 });
 
 // ── Return paths ─────────────────────────────────────────────────────────────

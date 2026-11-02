@@ -93,7 +93,7 @@ export default function ResetPasswordPage() {
                 </svg>
               </div>
               <h2 className="text-gray-100 font-semibold mb-2">Password updated</h2>
-              <p className="text-gray-400 text-sm">Redirecting you to login...</p>
+              <p className="text-gray-400 text-sm">Redirecting you to login…</p>
             </div>
           ) : (
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">

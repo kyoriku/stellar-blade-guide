@@ -19,7 +19,7 @@ import BusyLabel from '../components/BusyLabel'
 
 // Shown, and read out by the section's live region, once each request lands.
 const PROFILE_SAVED = 'Profile updated successfully.'
-const PASSWORD_CHANGED = 'Password changed. Signing you out...'
+const PASSWORD_CHANGED = 'Password changed. Signing you out…'
 
 export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()
