@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, KeyRound } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
@@ -7,6 +7,7 @@ import BusyLabel from '../components/BusyLabel'
 import seo from '../constants/seo.json'
 import { API_BASE_URL, readError, errorMessage } from '../services/api'
 import { NEW_PASSWORD_MAX_LENGTH, NEW_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
+import { focusIfLeftNowhere } from '../utils/focusIfLeftNowhere'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -19,6 +20,7 @@ export default function ResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const successTextId = useId()
 
   if (!token) {
     return (
@@ -92,8 +94,9 @@ export default function ResetPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-gray-100 font-semibold mb-2">Password updated</h2>
-              <p className="text-gray-400 text-sm">Redirecting you to login…</p>
+              {/* Takes focus in place of the form, and reads out where it goes next. */}
+              <h2 ref={focusIfLeftNowhere} tabIndex={-1} aria-describedby={successTextId} className="text-gray-100 font-semibold mb-2">Password updated</h2>
+              <p id={successTextId} className="text-gray-400 text-sm">Redirecting you to login…</p>
             </div>
           ) : (
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">

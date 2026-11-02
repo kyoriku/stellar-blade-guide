@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
 import BusyLabel from '../components/BusyLabel'
 import seo from '../constants/seo.json'
 import { API_BASE_URL, errorMessage, readError } from '../services/api'
+import { focusIfLeftNowhere } from '../utils/focusIfLeftNowhere'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -12,6 +13,9 @@ export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState(false)
   const [noPassword, setNoPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const noPasswordTextId = useId()
+  const sentTextId = useId()
+  const expiryTextId = useId()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,8 +72,9 @@ export default function ForgotPasswordPage() {
               <div className="w-12 h-12 rounded-full bg-gray-800/60 border border-gray-700 flex items-center justify-center mx-auto mb-4">
                 <KeyRound className="w-6 h-6 text-gray-300" />
               </div>
-              <h2 className="text-gray-100 font-semibold mb-2">No password to reset</h2>
-              <p className="text-gray-400 text-sm">
+              {/* Each answer's heading takes focus in place of the form, and reads out its text. */}
+              <h2 ref={focusIfLeftNowhere} tabIndex={-1} aria-describedby={noPasswordTextId} className="text-gray-100 font-semibold mb-2">No password to reset</h2>
+              <p id={noPasswordTextId} className="text-gray-400 text-sm">
                 This email signs in with Google or Discord and has no password.
               </p>
             </div>
@@ -80,11 +85,11 @@ export default function ForgotPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-gray-100 font-semibold mb-2">Check your email</h2>
-              <p className="text-gray-400 text-sm">
+              <h2 ref={focusIfLeftNowhere} tabIndex={-1} aria-describedby={`${sentTextId} ${expiryTextId}`} className="text-gray-100 font-semibold mb-2">Check your email</h2>
+              <p id={sentTextId} className="text-gray-400 text-sm">
                 If an account exists for <span className="text-gray-200">{email}</span>, you'll receive a reset link within a few minutes.
               </p>
-              <p className="text-gray-400 text-xs mt-3">The link expires in 1 hour.</p>
+              <p id={expiryTextId} className="text-gray-400 text-xs mt-3">The link expires in 1 hour.</p>
             </div>
           ) : (
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">

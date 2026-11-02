@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFixtures, pgPool, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { holdRoute } from '../helpers/route';
 
 let fx: Fixtures;
 
@@ -342,6 +343,11 @@ test.describe('auth', () => {
     await page.getByRole('button', { name: /send/i }).click();
     await expect(page.getByText('Check your email')).toBeVisible();
     await expect(page.getByText(NO_PASSWORD_FORGOT)).toHaveCount(0);
+    // Each answer's heading takes focus in place of the form, and reads on.
+    const sent = page.getByRole('heading', { name: 'Check your email' });
+    await expect(sent).toBeFocused();
+    await expect(sent).toHaveAccessibleDescription(
+      `If an account exists for nobody-${fx.token}@example.com, you'll receive a reset link within a few minutes. The link expires in 1 hour.`);
 
     await asProviderOnly(user!.email, async () => {
       await page.goto('/forgot-password');
@@ -349,7 +355,23 @@ test.describe('auth', () => {
       await page.getByRole('button', { name: /send/i }).click();
       await expect(page.getByText(NO_PASSWORD_FORGOT)).toBeVisible();
       await expect(page.getByText('Check your email')).toHaveCount(0);
+      const none = page.getByRole('heading', { name: 'No password to reset' });
+      await expect(none).toBeFocused();
+      await expect(none).toHaveAccessibleDescription(NO_PASSWORD_FORGOT);
     });
+  });
+
+  test('a reset-link answer leaves focus alone when it moved on while the request was out', async ({ page }) => {
+    const hold = await holdRoute(page, '**/api/auth/forgot-password');
+    await page.goto('/forgot-password');
+    await page.getByLabel('Email').fill(`nobody-${fx.token}@example.com`);
+    await page.getByRole('button', { name: 'Send reset link', exact: true }).click();
+    await hold.seen;
+    const back = page.getByRole('link', { name: 'Back to login' });
+    await back.focus();
+    hold.release();
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    await expect(back).toBeFocused();
   });
 
   test('Forgot password says it was refused, not "Check your email", when rate limited', async ({ page }) => {
@@ -369,14 +391,18 @@ test.describe('auth', () => {
     await expect(page.getByText('Check your email')).toHaveCount(0);
   });
 
-  test('a reset that lands says so, and that sign-in is next', async ({ page }) => {
+  test('a reset that lands says so, and that sign-in is next, with focus on the news', async ({ page }) => {
     // Answered here, so no reset token is needed.
     await page.route('**/api/auth/reset-password', route => route.fulfill({ status: 204 }));
     await page.goto('/reset-password?token=e2e');
     await page.getByLabel('New password', { exact: true }).fill('e2e-Password-456');
     await page.getByRole('button', { name: 'Update password', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Password updated' })).toBeVisible();
+    const heading = page.getByRole('heading', { name: 'Password updated' });
+    await expect(heading).toBeVisible();
     await expect(page.getByText('Redirecting you to login…', { exact: true })).toBeVisible();
+    // The form left with focus on its button, so the heading takes focus and reads on.
+    await expect(heading).toBeFocused();
+    await expect(heading).toHaveAccessibleDescription('Redirecting you to login…');
   });
 
   test('every show-password toggle is named, says when it shows the password, and shows the pointer', async ({ page }) => {
