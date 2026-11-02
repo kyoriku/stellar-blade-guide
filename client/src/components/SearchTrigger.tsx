@@ -25,8 +25,10 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  // The latest onExpand, for the Ctrl+K listener registered once below. Updated after each
+  // commit rather than during render, so a render React sets aside never reaches it.
   const onExpandRef = useRef(onExpand)
-  onExpandRef.current = onExpand
+  useEffect(() => { onExpandRef.current = onExpand })
   const navigate = useNavigate()
   // isPending, as on mobile: TanStack's isLoading is false while the query is still
   // debouncing (disabled), which flashed "No results" on the second character.

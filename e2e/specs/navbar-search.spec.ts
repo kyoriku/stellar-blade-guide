@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, pgPool, redisClient, searchKey, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 
@@ -166,4 +166,33 @@ test.describe('navbar mobile search', () => {
     await expect(hamburger).toHaveAttribute('aria-expanded', 'false');
   });
 
+});
+
+// From lg up the search sits in the bar beside the nav menus, and opening it closes an open
+// menu (SearchTrigger's onExpand), by its button and by Ctrl+K alike. A menu opens on
+// hover, and the mouse stays where it is, so only the search can close it here.
+test.describe('navbar desktop search', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ context }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+  });
+
+  for (const [how, open] of [
+    ['its button', async (page: Page) => {
+      await page.getByRole('button', { name: 'Search (Ctrl+K)' }).focus();
+      await page.keyboard.press('Enter');
+    }],
+    ['Ctrl+K', async (page: Page) => { await page.keyboard.press('Control+k'); }],
+  ] as const) {
+    test(`opening the search by ${how} closes an open nav menu`, async ({ page }) => {
+      await page.goto('/privacy');
+      const levels = page.getByRole('button', { name: 'Toggle levels menu' });
+      await levels.hover();
+      await expect(levels).toHaveAttribute('aria-expanded', 'true');
+      await open(page);
+      await expect(page.getByPlaceholder('Search…')).toBeVisible();
+      await expect(levels).toHaveAttribute('aria-expanded', 'false');
+    });
+  }
 });
