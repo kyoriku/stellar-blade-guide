@@ -12,6 +12,7 @@ import { ADMIN_COPY } from '../constants/adminCopy'
 import seo from '../constants/seo.json'
 import { adminErrorMessage, listStatus } from '../utils/adminUsers'
 import type { RowAction } from '../utils/adminUsers'
+import { focusLeftNowhere } from '../utils/focus'
 
 type DialogKind = 'delete' | 'deactivate'
 
@@ -111,17 +112,16 @@ export default function AdminPage() {
   // nowhere, or in the row it takes away: anyone who moved on meanwhile keeps their
   // place. preventScroll: the heading can be a long way up the list.
   const focusHeadingIfLost = useCallback((id: number) => {
-    const active = document.activeElement
-    if (active && active !== document.body && !rowFor(id)?.contains(active)) return
-    headingRef.current?.focus({ preventScroll: true })
+    if (focusLeftNowhere(rowFor(id))) headingRef.current?.focus({ preventScroll: true })
   }, [])
 
   const onReveal = useCallback((id: number) => {
     if (revealingIds.current.has(id)) return
     revealingIds.current.add(id)
     setRevealing(prev => withItem(prev, id))
-    // Cleared first, so an address revealed again is read out again.
-    setAnnouncement('')
+    // The eye shows a spinner while the address loads, and this reads it out. It also
+    // replaces an address read out before, so the same address is read out again.
+    setAnnouncement(ADMIN_COPY.revealing)
     void revealEmail(id)
       .then(email => {
         setRevealed(prev => new Map(prev).set(id, email))
@@ -129,7 +129,10 @@ export default function AdminPage() {
         // read out here.
         setAnnouncement(email, id)
       })
-      .catch((err: unknown) => showToast(adminErrorMessage(err, 'reveal')))
+      .catch((err: unknown) => {
+        setAnnouncement('')
+        showToast(adminErrorMessage(err, 'reveal'))
+      })
       .finally(() => {
         revealingIds.current.delete(id)
         setRevealing(prev => withoutItem(prev, id))
@@ -259,10 +262,11 @@ export default function AdminPage() {
     if (announce) setAnnouncement(announce)
   }, [dialog, setAnnouncement, showToast])
 
-  // Try again: the button shows the retry, and keeps focus. A retry that fails with
-  // the same words leaves the alert unchanged, so the live region says them again (one
-  // with new words is read out by the alert itself). One that loads the list takes the
-  // box away, and focus goes to the Users heading, as after a delete.
+  // Try again: the button shows the retry, and keeps focus, and the live region reads
+  // "Loading accounts…". A retry that fails with the same words leaves the alert
+  // unchanged, so the live region says them again (one with new words is read out by
+  // the alert itself). One that loads the list takes the box away, and focus goes to
+  // the Users heading, as after a delete.
   const retryList = async () => {
     // A second press mid-retry would copy the error TanStack holds while pending,
     // null, and take the box away with the focused button in it.
@@ -270,22 +274,19 @@ export default function AdminPage() {
     retrying.current = true
     const shown = adminErrorMessage(list.error, 'load')
     setRetryingAfter(list.error)
-    // Cleared first, so the same words set again are read out again.
-    setAnnouncement('')
+    setAnnouncement(ADMIN_COPY.loading)
     const result = await list.refetch()
     retrying.current = false
     setRetryingAfter(null)
     if (result.isError) {
       const message = adminErrorMessage(result.error, 'load')
-      if (message === shown) setAnnouncement(message)
+      setAnnouncement(message === shown ? message : '')
       return
     }
+    setAnnouncement('')
     // Read before the re-render takes the box away: anyone who moved on meanwhile
     // keeps their place.
-    const active = document.activeElement
-    if (!active || active === document.body || active === tryAgainRef.current) {
-      headingRef.current?.focus({ preventScroll: true })
-    }
+    if (focusLeftNowhere(tryAgainRef.current)) headingRef.current?.focus({ preventScroll: true })
   }
 
   const users = list.data
@@ -361,15 +362,7 @@ export default function AdminPage() {
                 aria-busy={retryingAfter !== null}
                 className="text-cyan-400 underline decoration-cyan-400/50 underline-offset-2 hover:decoration-cyan-400 cursor-pointer aria-busy:no-underline aria-busy:cursor-progress"
               >
-                {/* While it runs, a spinner beside the same words. The button keeps one
-                    width, holding 24px after the words for the spinner, far less than a
-                    busy text would take. */}
-                <BusyLabel
-                  label={ADMIN_COPY.tryAgain}
-                  busy={retryingAfter ? ADMIN_COPY.tryAgain : null}
-                  variants={[ADMIN_COPY.tryAgain]}
-                  align="start"
-                />
+                <BusyLabel label={ADMIN_COPY.tryAgain} busy={retryingAfter !== null} />
               </button>
             </div>
           ) : (

@@ -1,6 +1,7 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFixtures, pgPool, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { holdRoute } from '../helpers/route';
 
 let fx: Fixtures;
 
@@ -8,10 +9,51 @@ const accountMenu = (page: Page) => page.getByRole('button', { name: 'Account me
 const navSignIn = (page: Page) =>
   page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true });
 
+// A show-password toggle: named for screen readers (the eye has no text), pressed while
+// its field shows the password, and showing the pointer.
+async function expectShowPassword(page: Page, name: string, field: Locator, where: string): Promise<void> {
+  const toggle = page.getByRole('button', { name, exact: true });
+  await expect(toggle, where).toHaveCSS('cursor', 'pointer');
+  // A target of at least 24 by 24 px (WCAG 2.2), with the eye where it always was: 12px
+  // inside the field's right edge, and centred on the field.
+  const target = (await toggle.boundingBox())!;
+  expect(target.width, `${where}: target width`).toBeGreaterThanOrEqual(24);
+  expect(target.height, `${where}: target height`).toBeGreaterThanOrEqual(24);
+  const eye = (await toggle.locator('svg').boundingBox())!;
+  const box = (await field.boundingBox())!;
+  expect(Math.abs(box.x + box.width - (eye.x + eye.width) - 12), `${where}: eye 12px inside the field`).toBeLessThanOrEqual(1);
+  expect(Math.abs(box.y + box.height / 2 - (eye.y + eye.height / 2)), `${where}: eye centred on the field`).toBeLessThanOrEqual(1);
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'false');
+  await expect(field, where).toHaveAttribute('type', 'password');
+  await toggle.click();
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'true');
+  await expect(field, where).toHaveAttribute('type', 'text');
+  await toggle.click();
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'false');
+  await expect(field, where).toHaveAttribute('type', 'password');
+}
+
+// A show-password toggle sits in the Tab order right after its field, Space and Enter work
+// it (Enter on a plain button sends no form), and the next Tab moves on.
+async function expectToggleByKeyboard(page: Page, field: Locator, name: string, next: Locator, where: string): Promise<void> {
+  const toggle = page.getByRole('button', { name, exact: true });
+  await field.focus();
+  await page.keyboard.press('Tab');
+  await expect(toggle, where).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'true');
+  await expect(field, where).toHaveAttribute('type', 'text');
+  await page.keyboard.press('Enter');
+  await expect(toggle, where).toHaveAttribute('aria-pressed', 'false');
+  await expect(field, where).toHaveAttribute('type', 'password');
+  await page.keyboard.press('Tab');
+  await expect(next, where).toBeFocused();
+}
+
 async function uiLogin(page: Page, user: TestUser): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
-  await page.getByLabel('Password').fill(user.password);
+  await page.getByLabel('Password', { exact: true }).fill(user.password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 }
 
@@ -116,7 +158,7 @@ test.describe('auth', () => {
     await page.goto('/login?oauth_error=has-password&provider=google');
     await expect(page.locator('form div.text-red-400')).toHaveText(HAS_PASSWORD);
     await page.getByLabel('Email').fill(user!.email);
-    await page.getByLabel('Password').fill('definitely-wrong-password');
+    await page.getByLabel('Password', { exact: true }).fill('definitely-wrong-password');
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     const boxes = page.locator('form div.text-red-400');
     await expect(boxes).toHaveCount(1);
@@ -142,7 +184,7 @@ test.describe('auth', () => {
     await page.evaluate(() => localStorage.setItem('oauth_redirect', '/levels/eidos-7'));
     await page.goto('/login?oauth_error=has-password&provider=google');
     await page.getByLabel('Email').fill(user!.email);
-    await page.getByLabel('Password').fill(user!.password);
+    await page.getByLabel('Password', { exact: true }).fill(user!.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await expect(page).toHaveURL(/\/levels\/eidos-7$/);
     await expect(accountMenu(page)).toBeVisible();
@@ -202,6 +244,16 @@ test.describe('auth', () => {
     await page.reload();
     await refreshed;
     await expect(accountMenu(page)).toBeVisible();
+  });
+
+  test('the provider callback says it is signing you in, with the ellipsis character', async ({ page }) => {
+    const refresh = await holdRoute(page, '**/api/auth/refresh');
+    await page.goto('/oauth/callback?token=x');
+    await refresh.seen;
+    await expect(page.getByText(/^Signing you in/)).toHaveText('Signing you in…');
+    // No cookie (beforeEach cleared it), so the refresh ends at the sign-in page.
+    refresh.release();
+    await expect(page).toHaveURL(/\/login$/);
   });
 
   test('a refresh the server refuses after provider consent gets the toast only', async ({ page }) => {
@@ -309,6 +361,16 @@ test.describe('auth', () => {
     await expect(box).toHaveAttribute('autocomplete', 'off');
   });
 
+  test("Settings' Username and Avatar URL fields are labelled", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    await expect(page.getByLabel('Username', { exact: true })).toHaveValue(user!.username);
+    const avatar = page.getByLabel('Avatar URL', { exact: true });
+    await expect(avatar).toHaveAttribute('type', 'url');
+    await expect(avatar).toHaveValue('');
+  });
+
   test('Forgot password tells a provider-only address the truth, and nobody else anything', async ({ page }) => {
     // An unknown address: the generic answer, as for a password or deactivated account.
     // (A real password account is not submitted here: in dev that would call Resend.)
@@ -317,6 +379,11 @@ test.describe('auth', () => {
     await page.getByRole('button', { name: /send/i }).click();
     await expect(page.getByText('Check your email')).toBeVisible();
     await expect(page.getByText(NO_PASSWORD_FORGOT)).toHaveCount(0);
+    // Each answer's heading takes focus in place of the form, and reads on.
+    const sent = page.getByRole('heading', { name: 'Check your email' });
+    await expect(sent).toBeFocused();
+    await expect(sent).toHaveAccessibleDescription(
+      `If an account exists for nobody-${fx.token}@example.com, you'll receive a reset link within a few minutes. The link expires in 1 hour.`);
 
     await asProviderOnly(user!.email, async () => {
       await page.goto('/forgot-password');
@@ -324,7 +391,23 @@ test.describe('auth', () => {
       await page.getByRole('button', { name: /send/i }).click();
       await expect(page.getByText(NO_PASSWORD_FORGOT)).toBeVisible();
       await expect(page.getByText('Check your email')).toHaveCount(0);
+      const none = page.getByRole('heading', { name: 'No password to reset' });
+      await expect(none).toBeFocused();
+      await expect(none).toHaveAccessibleDescription(NO_PASSWORD_FORGOT);
     });
+  });
+
+  test('a reset-link answer leaves focus alone when it moved on while the request was out', async ({ page }) => {
+    const hold = await holdRoute(page, '**/api/auth/forgot-password');
+    await page.goto('/forgot-password');
+    await page.getByLabel('Email').fill(`nobody-${fx.token}@example.com`);
+    await page.getByRole('button', { name: 'Send reset link', exact: true }).click();
+    await hold.seen;
+    const back = page.getByRole('link', { name: 'Back to login' });
+    await back.focus();
+    hold.release();
+    await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    await expect(back).toBeFocused();
   });
 
   test('Forgot password says it was refused, not "Check your email", when rate limited', async ({ page }) => {
@@ -342,6 +425,56 @@ test.describe('auth', () => {
     await page.getByRole('button', { name: /send/i }).click();
     await expect(page.getByText("You're doing that too fast. Please wait a moment and try again.")).toBeVisible();
     await expect(page.getByText('Check your email')).toHaveCount(0);
+  });
+
+  test('a reset that lands says so, and that sign-in is next, with focus on the news', async ({ page }) => {
+    // Answered here, so no reset token is needed.
+    await page.route('**/api/auth/reset-password', route => route.fulfill({ status: 204 }));
+    await page.goto('/reset-password?token=e2e');
+    await page.getByLabel('New password', { exact: true }).fill('e2e-Password-456');
+    await page.getByRole('button', { name: 'Update password', exact: true }).click();
+    const heading = page.getByRole('heading', { name: 'Password updated' });
+    await expect(heading).toBeVisible();
+    await expect(page.getByText('Redirecting you to login…', { exact: true })).toBeVisible();
+    // The form left with focus on its button, so the heading takes focus and reads on.
+    await expect(heading).toBeFocused();
+    await expect(heading).toHaveAccessibleDescription('Redirecting you to login…');
+  });
+
+  test('every show-password toggle is named, says when it shows the password, and shows the pointer', async ({ page }) => {
+    for (const path of ['/login', '/register', '/reset-password?token=e2e']) {
+      await page.goto(path);
+      await expectShowPassword(page, 'Show password', page.locator('#password'), path);
+    }
+  });
+
+  test('every show-password toggle is in the Tab order, and works by keyboard without sending the form', async ({ page }) => {
+    let sent = 0;
+    await page.route(/\/api\/auth\/(login|register|reset-password)$/, route => { sent += 1; return route.abort(); });
+    for (const [path, submit] of [['/login', 'Sign in'], ['/register', 'Create account'], ['/reset-password?token=e2e', 'Update password']] as const) {
+      await page.goto(path);
+      await expectToggleByKeyboard(page, page.locator('#password'), 'Show password', page.getByRole('button', { name: submit, exact: true }), path);
+    }
+    expect(sent, 'the toggles sent no form').toBe(0);
+  });
+
+  test("Settings' show-password toggles are in the Tab order, each after its field", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    const current = page.getByLabel('Current password', { exact: true });
+    const next = page.getByLabel('New password', { exact: true });
+    await expectToggleByKeyboard(page, current, 'Show current password', next, 'current');
+    await expectToggleByKeyboard(page, next, 'Show new password',
+      page.getByRole('button', { name: 'Update password', exact: true }), 'new');
+  });
+
+  test("Settings' show-password toggles are named for their fields", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    await page.goto('/settings');
+    await expectShowPassword(page, 'Show current password', page.getByLabel('Current password', { exact: true }), 'current');
+    await expectShowPassword(page, 'Show new password', page.getByLabel('New password', { exact: true }), 'new');
   });
 });
 
@@ -385,7 +518,7 @@ test.describe('return paths', () => {
     await expect(page.getByRole('heading', { name: 'Create account', level: 1 })).toBeVisible();
     await page.getByLabel('Email').fill(created.email);
     await page.getByLabel('Username').fill(created.username);
-    await page.getByLabel('Password').fill(created.password);
+    await page.getByLabel('Password', { exact: true }).fill(created.password);
     await page.getByRole('button', { name: 'Create account', exact: true }).click();
   }
 
@@ -431,7 +564,7 @@ test.describe('return paths', () => {
     // Same transition race in the other direction: the register form has an Email field too.
     await expect(page.getByRole('heading', { name: 'Welcome back', level: 1 })).toBeVisible();
     await page.getByLabel('Email').fill(user.email);
-    await page.getByLabel('Password').fill(user.password);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await expect(accountMenu(page)).toBeVisible();
     await expect(page).toHaveURL(/\/$/);

@@ -15,6 +15,7 @@ from app.core.security import limiter
 from app.core.colours import CYAN, YELLOW, RESET
 from app.core.ids import is_row_id
 from app.core.logging import exc_text
+from app.core.roles import can_delete_comment
 from app.schemas.comments import CreateCommentRequest, UpdateCommentRequest
 from app.services.comments import _moderate_content, comment_to_dict
 
@@ -186,6 +187,7 @@ async def update_comment(
 
     is_owner = comment.user_id == current_user.id
 
+    # Only the author edits a comment, every role included: moderation is delete only.
     if not is_owner:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit this comment")
 
@@ -225,7 +227,8 @@ async def delete_comment(
 ):
     """
     Soft-delete a comment. Body is replaced with [deleted] but replies are preserved.
-    Users can delete their own. Moderators and admins can delete any.
+    You can delete your own comment, or one whose author's role ranks below yours
+    (core/roles.py). Nobody edits anyone else's: moderation is delete only.
     """
     if not is_row_id(comment_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
@@ -235,11 +238,21 @@ async def delete_comment(
     if not comment or comment.is_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
 
-    is_owner = comment.user_id == current_user.id
-    is_privileged = current_user.role in ("moderator", "admin")
-
-    if not is_owner and not is_privileged:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot delete this comment")
+    if comment.user_id != current_user.id:
+        # Both roles as they are now, held until the commit (FOR SHARE: a role change on
+        # either account waits for it; SQLite ignores the clause). The role read at the
+        # start of the request could be stale by the write. Read as columns: the comment's
+        # author isn't loaded, and loading it lazily here fails.
+        ids = [current_user.id] if comment.user_id is None else [current_user.id, comment.user_id]
+        roles = dict((await db.execute(
+            select(User.id, User.role).where(User.id.in_(ids)).with_for_update(read=True)
+        )).all())
+        if comment.user_id is not None and comment.user_id not in roles:
+            # The author's account was deleted meanwhile, its comments erased with it.
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        if not can_delete_comment(current_user.id, roles.get(current_user.id), comment.user_id, roles.get(comment.user_id)):
+            request.state.reject_reason = "comment-rank"
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot delete this comment")
 
     comment.is_deleted = True
     comment.body = "[deleted]"

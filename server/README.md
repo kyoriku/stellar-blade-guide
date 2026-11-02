@@ -27,6 +27,7 @@ app/
     colours.py       ANSI colour constants for terminal output
     passwords.py     the password rule: 8 to 128 characters for a new password
     usernames.py     the username rule, and the cleaner a provider's display name goes through
+    roles.py         the roles by rank (admin, moderator, user), and whose comments each may delete
     navigation.py    walkthrough URL spellings, levels with a page, and search's page titles, from seo.json
     ids.py           the int4 check run on every client-supplied id before any query
     segments.py      the printable-text check every level, type, and walkthrough lookup runs first
@@ -157,7 +158,7 @@ An outage degrades the service rather than breaking it:
 - **JWT access tokens**: short-lived, returned in the response body, and held in client memory only.
 - **Rotating refresh tokens**: opaque tokens delivered as HttpOnly cookies, SHA-256 hashed before storage in Redis, and rotated on every refresh. Logout and password change revoke sessions.
 - **OAuth** sign-in with Google and Discord. Each flow's `state` is bound to an HttpOnly cookie and to a single-use, provider-bound Redis record with a 10-minute TTL, and checked before any code exchange. A sign-in links to or creates an account only on a provider-verified email and never links into an account that has a password; the callback redirects into the SPA, and a refusal redirects to the login page with a fixed error code and never echoes the request.
-- Passwords are hashed with argon2, and a new one takes 8 to 128 characters. Roles are `user`, `moderator`, and `admin`, read from the database on every request (the access token's role claim is never read). The `/api/admin` router requires `admin` through a FastAPI dependency (`require_role`) on the router itself, and comment deletion checks for a moderator or admin in the route. No route makes or unmakes an admin, and account deletion refuses admin accounts, from Settings too, so the site can't lose its admin through the app.
+- Passwords are hashed with argon2, and a new one takes 8 to 128 characters. Roles are `user`, `moderator`, and `admin`, read from the database on every request (the access token's role claim is never read). The `/api/admin` router requires `admin` through a FastAPI dependency (`require_role`) on the router itself, and comment deletion follows rank (`core/roles.py`): your own comment, or one whose author's current role ranks below yours. No route makes or unmakes an admin, and account deletion refuses admin accounts, from Settings too, so the site can't lose its admin through the app.
 
 ## Middleware
 

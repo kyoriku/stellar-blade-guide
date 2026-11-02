@@ -16,7 +16,6 @@ const ROLE_PILL = `${PILL} bg-cyan-400/10 text-cyan-400 border-cyan-400/20`
 // as the mock's inline pill does, and its box spills two pixels above and below,
 // which the line lets through, since it clips only sideways.
 const DEACTIVATED_PILL = `${PILL} max-lg:-my-0.5 bg-yellow-500/10 text-yellow-400 border-yellow-500/25`
-const REVEAL_VARIANTS = [ADMIN_COPY.revealing] as const
 
 interface Props {
   user: AdminUser
@@ -60,11 +59,11 @@ function AdminUserRow({ user, self, email, revealing, busy, onReveal, onHide, on
               {self && <span className="text-xs text-gray-400">{ADMIN_COPY.you}</span>}
               {pill && <span className={ROLE_PILL}>{pill === 'admin' ? ADMIN_COPY.roleAdmin : ADMIN_COPY.roleModerator}</span>}
             </div>
-            {/* From lg the address, then Reveal as a word. Below lg the eye alone comes
-                first, its 28px tap area taking no more room than the icon and stopping
-                short of the address, which wraps in its own box beside it. */}
-            <div className="flex flex-wrap items-center gap-2 text-xs max-lg:flex-nowrap max-lg:items-start">
-              <AdminEmail address={email ?? user.email_masked} revealed={revealed} />
+            {/* The eye alone comes first, at every width: its 28px tap area takes no
+                more room than the icon and stops short of the address, which wraps in
+                its own box beside it. While the address loads, a spinner takes the
+                eye's place. */}
+            <div className="flex items-start gap-2 text-xs">
               {changeable && (
                 <button
                   type="button"
@@ -75,21 +74,12 @@ function AdminUserRow({ user, self, email, revealing, busy, onReveal, onHide, on
                   }}
                   aria-label={revealed ? ADMIN_COPY.hideFor(name) : ADMIN_COPY.revealFor(name)}
                   aria-busy={revealing}
-                  className="flex shrink-0 items-center text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer aria-busy:cursor-progress max-lg:order-first max-lg:p-1.5 max-lg:-m-1.5"
+                  className="flex shrink-0 items-center p-1.5 -m-1.5 text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer aria-busy:cursor-progress"
                 >
-                  <BusyLabel
-                    label={revealed ? ADMIN_COPY.hide : ADMIN_COPY.reveal}
-                    busy={revealing ? ADMIN_COPY.revealing : null}
-                    variants={REVEAL_VARIANTS}
-                    icon={revealed
-                      ? <EyeOff className="w-3.5 h-3.5 max-lg:w-4 max-lg:h-4" />
-                      : <Eye className="w-3.5 h-3.5 max-lg:w-4 max-lg:h-4" />}
-                    gap="gap-1"
-                    align="start"
-                    iconOnlyBelowLg
-                  />
+                  <BusyLabel busy={revealing} icon={revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />} />
                 </button>
               )}
+              <AdminEmail address={email ?? user.email_masked} revealed={revealed} />
             </div>
           </div>
         </div>

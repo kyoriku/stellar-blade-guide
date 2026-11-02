@@ -72,7 +72,7 @@ export function SearchResults({
   if (query.trim().length < 2) {
     return (
       <div className="px-4 py-6 text-sm text-gray-400 text-center">
-        Search collectibles, walkthroughs, levels...
+        Search collectibles, walkthroughs, levels…
       </div>
     )
   }

@@ -203,6 +203,22 @@ export async function insertComment(
   }
 }
 
+// An unread reply notification for `recipient` about comment `commentId` on the fixture
+// walkthrough, as a reply by someone else would make. It goes with the comment.
+export async function insertReplyNotification(fx: Fixtures, recipient: string, commentId: number): Promise<number> {
+  const pool = pgPool();
+  try {
+    const row = await pool.query(
+      `INSERT INTO notifications (user_id, actor_id, type, comment_id, content_type, content_id, is_read)
+       VALUES ((SELECT id FROM users WHERE username = $1), NULL, 'comment_reply', $2, 'walkthrough', $3, false) RETURNING id`,
+      [suiteAccount(recipient), commentId, fx.walkthroughId],
+    );
+    return row.rows[0].id;
+  } finally {
+    await pool.end();
+  }
+}
+
 export interface CommentRow {
   userId: number | null;
   isDeleted: boolean;
@@ -236,11 +252,24 @@ function suiteAccount(username: string): string {
 }
 
 // An account's role, set as the real admin's was: no route can make or unmake an
-// admin. False when the account is gone.
-export async function setUserRole(username: string, role: 'user' | 'moderator' | 'admin'): Promise<boolean> {
+// admin. Any text goes, as in SQL (the column has no constraint), for a role typed by
+// hand. False when the account is gone.
+export async function setUserRole(username: string, role: string): Promise<boolean> {
   const pool = pgPool();
   try {
     const res = await pool.query(`UPDATE users SET role = $2 WHERE username = $1`, [suiteAccount(username), role]);
+    return res.rowCount === 1;
+  } finally {
+    await pool.end();
+  }
+}
+
+// An account's avatar link, set behind the app's back, for a page that needs one to
+// show (Settings' Remove). False when the account is gone.
+export async function setUserAvatar(username: string, url: string | null): Promise<boolean> {
+  const pool = pgPool();
+  try {
+    const res = await pool.query(`UPDATE users SET avatar_url = $2 WHERE username = $1`, [suiteAccount(username), url]);
     return res.rowCount === 1;
   } finally {
     await pool.end();

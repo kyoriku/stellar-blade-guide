@@ -20,7 +20,7 @@ const PHONE = {
   viewport: { width: 390, height: 844 },
   async open(page: Page): Promise<Locator> {
     await page.getByRole('button', { name: 'Toggle menu' }).click();
-    return page.getByPlaceholder('Search collectibles, walkthroughs, levels...');
+    return page.getByPlaceholder('Search collectibles, walkthroughs, levels…');
   },
   // The drawer, where results take the place of the sections.
   panel: (page: Page) => page.locator('#mobile-menu'),
@@ -31,7 +31,7 @@ const DESKTOP = {
   viewport: { width: 1280, height: 800 },
   async open(page: Page): Promise<Locator> {
     await page.getByRole('button', { name: 'Search (Ctrl+K)' }).click();
-    return page.getByPlaceholder('Search...');
+    return page.getByPlaceholder('Search…');
   },
   // The dropdown under the bar's input, the one panel that drops in.
   panel: (page: Page) => page.locator('.animate-drop-in'),
@@ -204,14 +204,38 @@ test.describe('search results, desktop typing', () => {
   });
 });
 
+test.describe('search results, desktop prompt', () => {
+  test.use({ viewport: DESKTOP.viewport });
+
+  test('the panel asks for a search, with the ellipsis character, until two letters are typed', async ({ page }) => {
+    await page.goto('/');
+    await (await DESKTOP.open(page)).pressSequentially('x');
+    await expect(DESKTOP.panel(page).getByText(/^Search collectibles, walkthroughs, levels/))
+      .toHaveText('Search collectibles, walkthroughs, levels…');
+  });
+});
+
 test.describe('search results, phone typing', () => {
   test.use({ viewport: PHONE.viewport });
 
   test('the drawer asks for a second letter when "x " is typed, since nothing is sent', async ({ page }) => {
     await page.goto('/');
     await (await PHONE.open(page)).fill('x ');
-    // The status line under the field. Counting the space, it said "Searching..." for good.
-    await expect(PHONE.panel(page).getByText(/^(Type at least 2 characters|Searching)\.\.\.$/))
-      .toHaveText('Type at least 2 characters...');
+    // The status line under the field. Counting the space, it said "Searching" for good.
+    await expect(PHONE.panel(page).getByText(/^(Type at least 2 characters…|Searching…)$/))
+      .toHaveText('Type at least 2 characters…');
+  });
+
+  test('the drawer says "Searching…", with the ellipsis character, while a search is out', async ({ page }) => {
+    let release!: () => void;
+    const held = new Promise<void>(resolve => { release = resolve; });
+    await page.route(url => url.pathname === '/api/search/', async route => {
+      await held;
+      await route.fulfill({ response: await route.fetch() });
+    });
+    await page.goto('/');
+    await (await PHONE.open(page)).fill('eidos');
+    await expect(PHONE.panel(page).getByText('Searching…', { exact: true })).toBeVisible();
+    release();
   });
 });

@@ -641,7 +641,7 @@ async def test_a_role_change_shows_on_comments_and_counts_at_once(world):
     assert r.status_code == 200
     assert (r.json()["role"], (await world.row("newplayer_22")).role) == ("moderator", "moderator")
     assert await _role_on_comments(world) == "moderator"
-    # A moderator may delete anyone's comment, whatever the token's role claim says.
+    # A moderator may delete a user's comment, whatever the token's role claim says.
     lily_top = world.comments["lily_top"]
     r = await world.call("DELETE", f"/api/comments/{lily_top}", token=world.token("newplayer_22", role="user"))
     assert r.status_code == 204
@@ -649,9 +649,9 @@ async def test_a_role_change_shows_on_comments_and_counts_at_once(world):
     r = await world.call("PUT", f"/api/admin/users/{np}/role", who="site_admin", json={"role": "user"})
     assert (r.status_code, r.json()["role"]) == (200, "user")
     assert await _role_on_comments(world) == "user"
-    # The demoted moderator's next delete of someone else's comment is refused.
-    mod_top = world.comments["mod_top"]
-    r = await world.call("DELETE", f"/api/comments/{mod_top}", token=world.token("newplayer_22", role="moderator"))
+    # The demoted moderator's next delete of a user's comment is refused.
+    lily_reply = world.comments["lily_reply"]
+    r = await world.call("DELETE", f"/api/comments/{lily_reply}", token=world.token("newplayer_22", role="moderator"))
     assert (r.status_code, r.json()) == (403, {"detail": "Cannot delete this comment"})
 
 

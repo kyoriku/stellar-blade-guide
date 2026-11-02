@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Send } from 'lucide-react'
+import BusyLabel from '../BusyLabel'
 import { useAuth } from '../../hooks/useAuth'
 import { errorMessage } from '../../services/api'
+import { useToast } from '../../context/ToastContext'
 
 interface CommentFormProps {
   onSubmit: (body: string) => Promise<void>
@@ -14,7 +16,7 @@ interface CommentFormProps {
 
 export default function CommentForm({
   onSubmit,
-  placeholder = 'Share your thoughts, tips, or questions...',
+  placeholder = 'Share your thoughts, tips, or questions…',
   buttonLabel = 'Post comment',
   autoFocus = false,
   onCancel,
@@ -24,6 +26,8 @@ export default function CommentForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const location = useLocation()
+  const { showToast } = useToast()
+  const formRef = useRef<HTMLFormElement>(null)
 
   if (!isAuthenticated) {
     return (
@@ -49,53 +53,71 @@ export default function CommentForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = body.trim()
-    if (!trimmed) return
+    // The button is busy or refused rather than disabled, so its presses come here.
+    if (isSubmitting || !trimmed || error) return
     setError(null)
     setIsSubmitting(true)
     try {
       await onSubmit(trimmed)
       setBody('')
     } catch (err) {
-      setError(errorMessage(err, 'Failed to post comment'))
+      const message = errorMessage(err, 'Failed to post comment')
+      // Leaving the page, or a sign-out that swaps the form for its sign-in links, can
+      // take the form away while its post is out. The error then has nowhere to show but
+      // a toast, as a refused edit's does.
+      if (formRef.current) setError(message)
+      else showToast(message)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-2">
+    <form ref={formRef} onSubmit={(e) => void handleSubmit(e)} className="space-y-2">
       <textarea
         value={body}
         onChange={e => { setBody(e.target.value); setError(null) }}
         placeholder={placeholder}
         autoFocus={autoFocus}
+        // Held while a post is out: the form empties or closes when it lands, and
+        // anything typed meanwhile would be lost.
+        readOnly={isSubmitting}
         rows={3}
         maxLength={2000}
         className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
       />
       <div className="flex items-center justify-between">
         {error
-          ? <p className="text-red-400 text-xs">{error}</p>
+          ? <p role="alert" className="text-red-400 text-xs">{error}</p>
           : <span className="text-xs text-gray-400">{body.length}/2000</span>
         }
         <div className="flex items-center gap-2">
           {onCancel && (
             <button
               type="button"
-              onClick={onCancel}
-              className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+              // Refused while a post is out: it would still land after the form closed.
+              onClick={() => { if (!isSubmitting) onCancel() }}
+              // aria-disabled, not disabled: a disabled button drops focus to <body>.
+              aria-disabled={isSubmitting}
+              className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
             >
               Cancel
             </button>
           )}
           <button
             type="submit"
-            disabled={isSubmitting || !body.trim() || !!error}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
+            // Busy rather than disabled while the post runs, so it keeps focus and doesn't
+            // dim, as the delete dialog's Delete does. Refused, and dimmed (grey in
+            // forced colours, through index.css), while the box is empty or an error
+            // stands; handleSubmit ignores those presses.
+            aria-busy={isSubmitting}
+            aria-disabled={!isSubmitting && (!body.trim() || !!error)}
+            className="flex items-center px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
           >
-            <Send className="w-3.5 h-3.5" />
-            {isSubmitting ? 'Posting...' : buttonLabel}
+            <BusyLabel label={buttonLabel} busy={isSubmitting} icon={<Send className="w-3.5 h-3.5" />} gap="gap-1.5" />
           </button>
+          {/* The button keeps its name while busy, so the busy text is read out from here. */}
+          <span className="sr-only" aria-live="polite">{isSubmitting ? 'Posting…' : ''}</span>
         </div>
       </div>
     </form>

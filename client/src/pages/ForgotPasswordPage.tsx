@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { KeyRound } from 'lucide-react'
 import SEO from '../components/SEO'
+import BusyLabel from '../components/BusyLabel'
 import seo from '../constants/seo.json'
 import { API_BASE_URL, errorMessage, readError } from '../services/api'
+import { focusIfLeftNowhere } from '../utils/focus'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -11,9 +13,15 @@ export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState(false)
   const [noPassword, setNoPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const noPasswordTextId = useId()
+  const sentTextId = useId()
+  const expiryTextId = useId()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // The button is busy rather than disabled, so a second press, or Enter in a field,
+    // comes here while the first is out.
+    if (isSubmitting) return
     setError(null)
     setIsSubmitting(true)
     try {
@@ -64,8 +72,9 @@ export default function ForgotPasswordPage() {
               <div className="w-12 h-12 rounded-full bg-gray-800/60 border border-gray-700 flex items-center justify-center mx-auto mb-4">
                 <KeyRound className="w-6 h-6 text-gray-300" />
               </div>
-              <h2 className="text-gray-100 font-semibold mb-2">No password to reset</h2>
-              <p className="text-gray-400 text-sm">
+              {/* Each answer's heading takes focus in place of the form, and reads out its text. */}
+              <h2 ref={focusIfLeftNowhere} tabIndex={-1} aria-describedby={noPasswordTextId} className="text-gray-100 font-semibold mb-2">No password to reset</h2>
+              <p id={noPasswordTextId} className="text-gray-400 text-sm">
                 This email signs in with Google or Discord and has no password.
               </p>
             </div>
@@ -76,16 +85,16 @@ export default function ForgotPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-gray-100 font-semibold mb-2">Check your email</h2>
-              <p className="text-gray-400 text-sm">
+              <h2 ref={focusIfLeftNowhere} tabIndex={-1} aria-describedby={`${sentTextId} ${expiryTextId}`} className="text-gray-100 font-semibold mb-2">Check your email</h2>
+              <p id={sentTextId} className="text-gray-400 text-sm">
                 If an account exists for <span className="text-gray-200">{email}</span>, you'll receive a reset link within a few minutes.
               </p>
-              <p className="text-gray-400 text-xs mt-3">The link expires in 1 hour.</p>
+              <p id={expiryTextId} className="text-gray-400 text-xs mt-3">The link expires in 1 hour.</p>
             </div>
           ) : (
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
               {error && (
-                <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                <div role="alert" className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                   {error}
                 </div>
               )}
@@ -106,13 +115,19 @@ export default function ForgotPasswordPage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
-              >
-                {isSubmitting ? 'Sending...' : 'Send reset link'}
-              </button>
+              {/* One box, so the live region doesn't count as the form's last row. */}
+              <div>
+                <button
+                  type="submit"
+                  // Busy rather than disabled while it sends, so it keeps focus and doesn't dim.
+                  aria-busy={isSubmitting}
+                  className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
+                >
+                  <BusyLabel label="Send reset link" busy={isSubmitting} />
+                </button>
+                {/* The button keeps its name while busy, so the busy text is read out from here. */}
+                <span className="sr-only" aria-live="polite">{isSubmitting ? 'Sending…' : ''}</span>
+              </div>
             </form>
           )}
         </div>

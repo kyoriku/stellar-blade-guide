@@ -59,7 +59,7 @@ test.describe('guest progress survives sign-in', () => {
       (r) => r.url().endsWith('/api/progress/sync') && r.status() === 200
     );
     await page.getByLabel('Email').fill(user.email);
-    await page.getByLabel('Password').fill(user.password);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await synced;
     return () => progressGets;
@@ -139,7 +139,7 @@ test.describe('guest progress survives sign-in', () => {
     await page.goto('/progress');
     await expect(page).toHaveURL(/\/login/);
     await page.getByLabel('Email').fill(user.email);
-    await page.getByLabel('Password').fill(user.password);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await sync.seen;
 

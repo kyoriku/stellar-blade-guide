@@ -6,6 +6,7 @@ import { API_BASE_URL, errorMessage } from '../services/api'
 import { returnPath } from '../utils/returnPath'
 import { NEW_PASSWORD_MAX_LENGTH, NEW_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
 import SEO from '../components/SEO'
+import BusyLabel from '../components/BusyLabel'
 import seo from '../constants/seo.json'
 
 export default function RegisterPage() {
@@ -26,6 +27,9 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // The button is busy rather than disabled, so a second press, or Enter in a field,
+    // comes here while the first is out.
+    if (isSubmitting) return
     setError(null)
     if (passwordTooLong(password, NEW_PASSWORD_MAX_LENGTH)) {
       setError(NEW_PASSWORD_TOO_LONG)
@@ -110,7 +114,7 @@ export default function RegisterPage() {
           {/* Form */}
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             {error && (
-              <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div role="alert" className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {error}
               </div>
             )}
@@ -168,8 +172,11 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
-                  tabIndex={-1}
+                  // The eye has no text, so the name is here; pressed while the password shows. The padding
+                  // makes a 28px target, and the right margin takes it back so the eye stays put.
+                  aria-label="Show password"
+                  aria-pressed={showPassword}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 -mr-1.5 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -177,13 +184,19 @@ export default function RegisterPage() {
               <p className="mt-1.5 text-xs text-gray-500">Minimum 8 characters.</p>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 mt-2 cursor-pointer"
-            >
-              {isSubmitting ? 'Creating account...' : 'Create account'}
-            </button>
+            {/* One box, so the live region doesn't count as the form's last row. */}
+            <div>
+              <button
+                type="submit"
+                // Busy rather than disabled while it signs up, so it keeps focus and doesn't dim.
+                aria-busy={isSubmitting}
+                className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 mt-2 cursor-pointer"
+              >
+                <BusyLabel label="Create account" busy={isSubmitting} />
+              </button>
+              {/* The button keeps its name while busy, so the busy text is read out from here. */}
+              <span className="sr-only" aria-live="polite">{isSubmitting ? 'Creating account…' : ''}</span>
+            </div>
           </form>
         </div>
 

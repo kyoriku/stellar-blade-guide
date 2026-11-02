@@ -1,3 +1,5 @@
+import { useInRouterContext, useLocation } from 'react-router-dom';
+
 interface SEOProps {
   title: string;
   description: string;
@@ -7,18 +9,34 @@ interface SEOProps {
   noindex?: boolean;
 }
 
-export default function SEO({
+export default function SEO(props: SEOProps) {
+  // The root error boundary's page renders outside the router (see ErrorPage), where
+  // useLocation throws. Nothing navigates there, so the address bar is that page's.
+  return useInRouterContext()
+    ? <RoutedHead {...props} />
+    : <Head {...props} path={window.location.pathname} />;
+}
+
+// The router's location, not window.location: a link moves the address bar at once,
+// while the page on screen can still render until the next one is ready.
+function RoutedHead(props: SEOProps) {
+  const { pathname } = useLocation();
+  return <Head {...props} path={pathname} />;
+}
+
+function Head({
   title,
   description,
   canonical,
   ogImage = 'https://img.stellarbladeguide.com/stellar-blade/site/og-banner.webp',
   ogType = 'website',
-  noindex = false
-}: SEOProps) {
+  noindex = false,
+  path
+}: SEOProps & { path: string }) {
   const siteName = 'Stellar Blade Guide';
   const fullTitle = title ? `${title} | ${siteName}` : siteName;
   const siteUrl = 'https://stellarbladeguide.com';
-  const canonicalUrl = canonical ? `${siteUrl}${canonical}` : `${siteUrl}${window.location.pathname}`;
+  const canonicalUrl = canonical ? `${siteUrl}${canonical}` : `${siteUrl}${path}`;
 
   return (
     <>

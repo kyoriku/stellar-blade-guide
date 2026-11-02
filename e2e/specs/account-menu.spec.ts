@@ -2,6 +2,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import { readFixtures, setUserRole, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { ADMIN_COPY } from '../../client/src/constants/adminCopy';
+import { expectBusyPattern } from '../helpers/busy';
 
 // The navbar's account menu (desktop) runs on the WAI-ARIA menu button pattern, as the
 // admin page's row menus do (client/src/hooks/useMenuButton.ts): the button opens it
@@ -24,6 +25,43 @@ const item = (page: Page, name: string | RegExp) => page.getByRole('menuitem', {
 // Its accessible name carries the completion ring's percentage once stats load.
 const PROGRESS = /^Progress/;
 const navSignIn = (page: Page) => page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true });
+// Sign out's live region, after the drawer toggle, which is hidden from lg; the region
+// itself shows at every width.
+const signOutLive = (page: Page) => page.locator('button[aria-controls="mobile-menu"] ~ span[aria-live="polite"]');
+
+// Holds every sign-out request until release(), then lets the server answer it.
+async function holdSignOut(page: Page) {
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let arrived!: () => void;
+  const seen = new Promise<void>(resolve => { arrived = resolve; });
+  let sent = 0;
+  await page.route('**/api/auth/logout', async route => {
+    sent += 1;
+    arrived();
+    await gate;
+    await route.fulfill({ response: await route.fetch() });
+  });
+  return { release: () => release(), seen, sent: () => sent };
+}
+
+// A second sign-out sent while the first was out would wait behind it for the refresh
+// lock (sb_auth_refresh, utils/refreshLock.ts) and go once it landed. Everything queued
+// for the lock has run by the time this turn at it comes.
+async function expectNoSecondSignOut(page: Page, hold: { sent: () => number }): Promise<void> {
+  await page.evaluate(() => navigator.locks.request('sb_auth_refresh', () => undefined));
+  expect(hold.sent(), 'still one sign-out once the first has landed').toBe(1);
+}
+
+// React runs what a press set off, its effects included, within two message turns.
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise(resolve => {
+    const ch = new MessageChannel();
+    let turns = 0;
+    ch.port1.onmessage = () => (++turns === 2 ? resolve(null) : ch.port2.postMessage(null));
+    ch.port2.postMessage(null);
+  }));
+}
 
 test.beforeAll(() => {
   fx = readFixtures();
@@ -191,6 +229,75 @@ test('a page change underneath it closes it', async ({ page }) => {
   await expect(button).toHaveAttribute('aria-expanded', 'true');
   await button.click();
   await expect(button).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('Down pressed while the page chosen from it is still rendering reopens it, and it stays open', async ({ page }) => {
+  const button = await home(page);
+  await button.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(item(page, PROGRESS)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(item(page, 'Settings')).toBeFocused();
+  // In one task: choose Settings, let React commit the menu's close (a microtask), and
+  // press Down on the button while the Settings page, which React Router renders as a
+  // transition, is still to come. The location effect used to close the menu again
+  // when that page committed.
+  await page.evaluate(async () => {
+    const settings = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(el => el.textContent?.trim() === 'Settings')!;
+    settings.click();
+    await Promise.resolve();
+    document.querySelector<HTMLElement>('button[aria-label="Account menu"]')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+  });
+  await expect(page.getByRole('heading', { level: 1, name: 'Account Settings' })).toBeVisible();
+  // The page has rendered, and the menu is still open, with the keys working in it.
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(item(page, PROGRESS)).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(item(page, 'Settings')).toBeFocused();
+});
+
+test('Sign out shows the busy pattern in the menu, which stays open until it lands, and a second press sends nothing', async ({ page }) => {
+  const button = await home(page);
+  const hold = await holdSignOut(page);
+  await button.click();
+  const signOut = item(page, 'Sign out');
+  await expectBusyPattern(signOut, {
+    name: 'Sign out', busyText: 'Signing out…', live: signOutLive(page),
+    press: () => signOut.click(), seen: hold.seen,
+  });
+  await expect(button).toHaveAttribute('aria-expanded', 'true');
+  await expect(signOut).toBeFocused();
+  await signOut.click();
+  await settle(page);
+  expect(hold.sent(), 'one sign-out, however often it was pressed').toBe(1);
+  hold.release();
+  await expect(navSignIn(page)).toBeVisible();
+  await expect(trigger(page)).toHaveCount(0);
+  await expectNoSecondSignOut(page, hold);
+});
+
+test('in the drawer, Sign out shows the busy pattern, the drawer stays open until it lands, and a second press sends nothing', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const toggle = page.getByRole('button', { name: 'Toggle menu' });
+  const drawer = page.locator('#mobile-menu');
+  await toggle.click();
+  const signOut = drawer.getByRole('button', { name: 'Sign out', exact: true });
+  await expect(signOut).toBeVisible();
+  const hold = await holdSignOut(page);
+  await expectBusyPattern(signOut, {
+    name: 'Sign out', busyText: 'Signing out…', live: signOutLive(page),
+    press: () => signOut.click(), seen: hold.seen,
+  });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await signOut.click();
+  await settle(page);
+  expect(hold.sent(), 'one sign-out, however often it was pressed').toBe(1);
+  hold.release();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(drawer.getByRole('link', { name: 'Sign in', exact: true })).toBeAttached();
+  await expectNoSecondSignOut(page, hold);
 });
 
 test("an admin's menu holds Admin between Settings and Sign out, and the keys reach it", async ({ page }) => {

@@ -3,8 +3,10 @@ import type { RefObject } from 'react'
 import { MessageSquare, Pencil, Trash2, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import type { CommentData } from '../../hooks/useComments'
-import { errorMessage } from '../../services/api'
+import { ApiError, errorMessage } from '../../services/api'
 import { useToast } from '../../context/ToastContext'
+import { canDeleteComment, roleRank } from '../../utils/roles'
+import { focusLeftNowhere } from '../../utils/focus'
 import CommentForm from './CommentForm'
 import ConfirmModal from '../ConfirmModal'
 import BusyLabel from '../BusyLabel'
@@ -16,7 +18,8 @@ interface CommentProps {
   onReply: (parentId: number, body: string) => Promise<void>
   onEdit: (commentId: number, body: string) => Promise<void>
   onDelete: (commentId: number) => Promise<void>
-  // Takes focus once a delete has removed the Delete button that had it.
+  // Takes focus once a delete takes away the Delete button that had it, or a refusal
+  // shows that button is out of date.
   headingRef: RefObject<HTMLHeadingElement | null>
   depth?: number
   highlightId?: number | null
@@ -59,18 +62,24 @@ export default function Comment({
   // Read when a delete settles: the browser may have closed the dialog meanwhile.
   const deleteModalOpen = useRef(false)
   // Where focus goes after the dialog follows the outcome. A cancel or a failed
-  // delete gives it back to the Delete button. A successful delete takes that
-  // button with the comment's actions, so the heading gets it once both the
-  // dialog's close and the list's update have landed: the list updates on
-  // TanStack's timer, in no fixed order with the close.
+  // delete gives it back to the Delete button, unless the server refused it
+  // (below). A successful delete takes that button with the comment's actions,
+  // so the heading gets it once both the dialog's close and the list's update
+  // have landed: the list updates on TanStack's timer, in no fixed order with
+  // the close.
   const deleted = useRef(false)
   const dialogGone = useRef(false)
   const listUpdated = useRef(false)
+  // A refused delete shows the Delete button is out of date. The refusal's session
+  // refresh (the viewer's role) or thread reload (the author's), whichever carries the
+  // change, normally takes it away. If that one fails, the stale button stays until a
+  // later one of the same kind lands, and focus still goes to the heading. This holds
+  // until the dialog opens again: a later failure in the same dialog doesn't change it.
+  const refused = useRef(false)
   const focusHeadingOnceDeleted = useCallback(() => {
     if (!deleted.current || !dialogGone.current || !listUpdated.current) return
     // Only when the delete left focus nowhere: anyone who moved on meanwhile keeps their place.
-    const active = document.activeElement
-    if (active && active !== document.body && active !== deleteButtonRef.current) return
+    if (!focusLeftNowhere(deleteButtonRef.current)) return
     // preventScroll: the heading can be a long way up a thread.
     headingRef.current?.focus({ preventScroll: true })
   }, [headingRef])
@@ -87,30 +96,84 @@ export default function Comment({
     focusHeadingOnceDeleted()
   }, [focusHeadingOnceDeleted])
   const [isSaving, setIsSaving] = useState(false)
+  // Focus follows the edit: into the text box, caret at the end, when it opens, and back
+  // to Edit once Cancel or a save closes it. Each takes away the control that had focus.
+  const editorRef = useRef<HTMLDivElement>(null)
+  const editBoxRef = useRef<HTMLTextAreaElement>(null)
+  const editButtonRef = useRef<HTMLButtonElement>(null)
+  const editClosed = useRef(false)
+  // Whether the editor was on screen as it closed. If not, the reader scrolled away
+  // while a save was out, and focus stays on the page: an Edit they can't see would
+  // take their next Space, and moving focus to it mustn't scroll them back either.
+  const editorOnScreen = useRef(true)
+  useEffect(() => {
+    if (isEditing) {
+      const box = editBoxRef.current
+      if (box) {
+        box.focus()
+        box.setSelectionRange(box.value.length, box.value.length)
+      }
+    } else if (editClosed.current) {
+      editClosed.current = false
+      // Not if someone moved on while a save was out, or scrolled the editor away.
+      if (editorOnScreen.current && focusLeftNowhere()) editButtonRef.current?.focus()
+    }
+  }, [isEditing])
+  // Focus goes back to Reply once Cancel or a reply that landed closes the reply form,
+  // on the same terms as Edit: not if someone moved on while a reply was posting, or
+  // scrolled the form off the screen.
+  const replyFormRef = useRef<HTMLDivElement>(null)
+  const replyButtonRef = useRef<HTMLButtonElement>(null)
+  const replyClosed = useRef(false)
+  const replyFormOnScreen = useRef(true)
+  useEffect(() => {
+    if (showReplyForm || !replyClosed.current) return
+    replyClosed.current = false
+    if (replyFormOnScreen.current && focusLeftNowhere()) replyButtonRef.current?.focus()
+  }, [showReplyForm])
 
   // A comment whose author deleted their account arrives with user null, and a
-  // guest is null too: undefined === undefined would hand every visitor its
-  // Edit and Delete.
+  // guest is null too: compared bare, undefined === undefined would make a guest
+  // its owner.
   const isOwner = !!comment.user && user?.id === comment.user.id
-  const isMod = user?.role === 'moderator' || user?.role === 'admin'
-  const canModify = isOwner || isMod
+  // Edit is the author's alone; Delete follows rank (utils/roles.ts mirrors the server).
+  const canDelete = canDeleteComment(user, comment.user)
   const hasReplies = comment.replies && comment.replies.length > 0
+  const saveRefused = !editBody.trim() || editBody.trim() === comment.body || !!editError
 
-  const handleReply = async (body: string) => {
-    await onReply(comment.id, body)
+  const closeReply = () => {
+    const form = replyFormRef.current?.getBoundingClientRect()
+    replyFormOnScreen.current = !form || (form.bottom > 0 && form.top < window.innerHeight)
+    replyClosed.current = true
     setShowReplyForm(false)
   }
+  const handleReply = async (body: string) => {
+    await onReply(comment.id, body)
+    closeReply()
+  }
 
+  const closeEdit = () => {
+    const editor = editorRef.current?.getBoundingClientRect()
+    editorOnScreen.current = !editor || (editor.bottom > 0 && editor.top < window.innerHeight)
+    editClosed.current = true
+    setIsEditing(false)
+    setEditError(null)
+  }
   const handleEdit = async () => {
     const trimmed = editBody.trim()
-    if (!trimmed || trimmed === comment.body) { setIsEditing(false); return }
+    if (!trimmed || trimmed === comment.body) { closeEdit(); return }
     setEditError(null)
     setIsSaving(true)
     try {
       await onEdit(comment.id, trimmed)
-      setIsEditing(false)
+      closeEdit()
     } catch (err) {
-      setEditError(errorMessage(err, 'Failed to edit comment'))
+      const message = errorMessage(err, 'Failed to edit comment')
+      // Collapsing the replies above, or leaving the page, can take the editor away while
+      // its save is out. The error then has nowhere to show but a toast, as a delete's
+      // does once the browser has closed its dialog.
+      if (editorRef.current) setEditError(message)
+      else showToast(message)
     } finally {
       setIsSaving(false)
     }
@@ -118,6 +181,7 @@ export default function Comment({
   const openDeleteModal = () => {
     deleteModalOpen.current = true
     deleted.current = false
+    refused.current = false
     dialogGone.current = false
     listUpdated.current = false
     setDeleteError(null)
@@ -126,7 +190,12 @@ export default function Comment({
   const handleDialogClosed = () => {
     dialogGone.current = true
     if (deleted.current) focusHeadingOnceDeleted()
-    else deleteButtonRef.current?.focus()
+    // The refusal showed the Delete button is out of date: its refresh or reload
+    // normally takes it away, before or after this close.
+    else if (refused.current) headingRef.current?.focus({ preventScroll: true })
+    else if (deleteButtonRef.current) deleteButtonRef.current.focus()
+    // Gone for good already: the session ended, or a refresh landed after a reopen.
+    else headingRef.current?.focus({ preventScroll: true })
   }
   const closeDeleteModal = () => {
     deleteModalOpen.current = false
@@ -142,10 +211,18 @@ export default function Comment({
       deleted.current = true
       closeDeleteModal()
     } catch (err) {
+      refused.current ||= err instanceof ApiError && err.status === 403
       const message = errorMessage(err, 'Failed to delete comment')
       // A dialog the browser closed mid-delete has nowhere to show the error.
       if (deleteModalOpen.current) setDeleteError(message)
-      else showToast(message)
+      else {
+        showToast(message)
+        // That close gave focus back to the Delete button, which the refusal shows is
+        // out of date: its refresh or reload normally takes it away.
+        if (refused.current && focusLeftNowhere(deleteButtonRef.current)) {
+          headingRef.current?.focus({ preventScroll: true })
+        }
+      }
     } finally {
       setIsDeleting(false)
     }
@@ -168,7 +245,9 @@ export default function Comment({
           <span className="text-sm font-medium text-gray-200">
             {comment.user?.username ?? '[deleted]'}
           </span>
-          {comment.user?.role && comment.user.role !== 'user' && (
+          {/* Moderators and admins only, as on the admin page: a role typed by hand
+              outside the three ranks as a user and gets none. */}
+          {comment.user && roleRank(comment.user.role) > roleRank('user') && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-400/10 text-cyan-400 border border-cyan-400/20">
               {comment.user.role}
             </span>
@@ -180,32 +259,47 @@ export default function Comment({
         {comment.is_deleted ? (
           <p className="text-gray-400 text-sm italic">[deleted]</p>
         ) : isEditing ? (
-          <div className="space-y-2">
+          <div ref={editorRef} className="space-y-2">
               <textarea
+                ref={editBoxRef}
                 value={editBody}
                 onChange={e => { setEditBody(e.target.value); setEditError(null) }}
+                // Held while a save is out: the editor closes when it lands, and
+                // anything typed meanwhile would be lost.
+                readOnly={isSaving}
                 rows={3}
                 maxLength={2000}
                 className="w-full px-3.5 py-3 rounded-xl bg-primary border border-gray-700 text-white focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm resize-none"
               />
               <div className="flex gap-2 justify-end">
                 {editError
-                  ? <p className="text-red-400 text-xs my-auto mr-auto">{editError}</p>
+                  ? <p role="alert" className="text-red-400 text-xs my-auto mr-auto">{editError}</p>
                   : <span className="text-xs text-gray-400 my-auto mr-auto">{editBody.length}/2000</span>
                 }
                 <button
-                  onClick={() => { setIsEditing(false); setEditError(null) }}
-                  className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
+                  // Refused while a save is out, as the delete dialog refuses its way
+                  // out mid-delete: the save would still land after the editor closed.
+                  onClick={() => { if (!isSaving) closeEdit() }}
+                  // aria-disabled, not disabled: a disabled button drops focus to <body>.
+                  aria-disabled={isSaving}
+                  className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors cursor-pointer aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => void handleEdit()}
-                  disabled={isSaving || !editBody.trim() || editBody.trim() === comment.body || !!editError}
-                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/30 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all cursor-pointer"
+                  // Busy rather than disabled while the save runs, so it keeps focus and
+                  // doesn't dim, as the delete dialog's Delete does. Refused, and dimmed
+                  // (grey in forced colours, through index.css), while there's nothing
+                  // new to save or an error stands.
+                  onClick={() => { if (!isSaving && !saveRefused) void handleEdit() }}
+                  aria-busy={isSaving}
+                  aria-disabled={!isSaving && saveRefused}
+                  className="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/30 aria-disabled:hover:bg-cyan-500/30 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all cursor-pointer"
                 >
-                  {isSaving ? 'Saving...' : 'Save'}
+                  <BusyLabel label="Save" busy={isSaving} />
                 </button>
+                {/* Save keeps its name while busy, so the busy text is read out from here. */}
+                <span className="sr-only" aria-live="polite">{isSaving ? 'Saving…' : ''}</span>
               </div>
           </div>
         ) : (
@@ -217,6 +311,7 @@ export default function Comment({
           <div className="flex items-center gap-3 mt-2">
             {depth === 0 && user && !showReplyForm && (
               <button
+                ref={replyButtonRef}
                 onClick={() => setShowReplyForm(true)}
                 title="Reply to comment"
                 className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer"
@@ -226,10 +321,11 @@ export default function Comment({
               </button>
             )}
 
-            {canModify && !showReplyForm && (
+            {canDelete && !showReplyForm && (
               <>
                 {isOwner && (
                   <button
+                    ref={editButtonRef}
                     onClick={() => { setIsEditing(true); setEditBody(comment.body) }}
                     title="Edit comment"
                     className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-100 transition-colors cursor-pointer"
@@ -247,14 +343,7 @@ export default function Comment({
                   title="Delete comment"
                   className="flex items-center text-xs text-gray-400 hover:text-red-400 transition-colors cursor-pointer aria-busy:cursor-progress"
                 >
-                  <BusyLabel
-                    label="Delete"
-                    busy={isDeleting ? 'Deleting…' : null}
-                    variants={['Deleting…']}
-                    icon={<Trash2 className="w-3.5 h-3.5" />}
-                    gap="gap-1"
-                    align="start"
-                  />
+                  <BusyLabel label="Delete" busy={isDeleting} icon={<Trash2 className="w-3.5 h-3.5" />} gap="gap-1" />
                 </button>
                 {/* The dialog's own announcement goes with it, so this reads out a
                     delete the browser closed the dialog on. */}
@@ -276,13 +365,13 @@ export default function Comment({
 
         {/* Reply form */}
         {showReplyForm && (
-          <div className="mt-3">
+          <div ref={replyFormRef} className="mt-3">
             <CommentForm
               onSubmit={handleReply}
               placeholder={`Reply to ${comment.user?.username ?? 'comment'}...`}
               buttonLabel="Reply"
               autoFocus
-              onCancel={() => setShowReplyForm(false)}
+              onCancel={closeReply}
             />
           </div>
         )}

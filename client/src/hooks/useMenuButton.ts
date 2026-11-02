@@ -219,12 +219,17 @@ export function useMenuButton({ disabled = false }: MenuButtonOptions = {}) {
     // clicks on a link still open it in a new tab. The cost: no text in the panel
     // can be selected with the mouse, a header's included.
     panelProps: { onMouseDown: (e: MouseEvent<HTMLElement>) => e.preventDefault() },
-    getItemProps: (onSelect?: (e: MouseEvent<HTMLElement>) => void) => ({
+    // keepOpen: an item whose action shows its progress in the item itself (the account
+    // menu's Sign out) leaves the menu open; it goes when its owner does, or on a close.
+    getItemProps: (onSelect?: (e: MouseEvent<HTMLElement>) => void, { keepOpen = false }: { keepOpen?: boolean } = {}) => ({
       role: 'menuitem' as const,
       // Out of the tab order: the arrows move between items.
       tabIndex: -1,
       onClick: (e: MouseEvent<HTMLElement>) => {
-        close(true)
+        // An item that keeps the menu open takes focus, as a press would have given it
+        // but for panelProps' mousedown handler, so the keys carry on from it.
+        if (keepOpen) e.currentTarget.focus()
+        else close(true)
         onSelect?.(e)
       },
     }),

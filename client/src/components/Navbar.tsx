@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3, Shield } from 'lucide-react'
+import BusyLabel from './BusyLabel'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useAuth } from '../hooks/useAuth'
 import { useSearch } from '../hooks/useSearch'
@@ -44,6 +45,11 @@ function Navbar() {
   // at nav time but must not re-run on every keystroke.
   const searchQueryRef = useRef(searchQuery);
   useEffect(() => { searchQueryRef.current = searchQuery }, [searchQuery]);
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { isOpenRef.current = isOpen }, [isOpen]);
+  // The address the drawer was last opened on. While a navigation is still rendering
+  // (React Router renders it as a transition), that is already the new page's.
+  const drawerOpenedFor = useRef<string | null>(null);
   // The account menu, on the WAI-ARIA menu button pattern (hooks/useMenuButton.ts):
   // the arrows, Home and End, Escape, Tab, and a press outside all work as in the
   // admin page's row menus.
@@ -67,10 +73,25 @@ function Navbar() {
   const ringFound = ringReady ? weightedFound(completedIds, userStats.quantity_overrides) : 0;
   const overallPct = ringReady ? Math.floor((ringFound / userStats.total.total) * 100) : 0;
   const { data: mobileSearchData, isPending: mobileSearchPending, isError: mobileSearchError, error: mobileSearchErrorObj } = useSearch(searchQuery);
+  // Sign out shows its progress where it was pressed, the account menu or the drawer,
+  // which stays open until it lands (it waits for a refresh in another tab of this
+  // browser, then the request), and ignores a second press meanwhile. The menu goes
+  // with the signed-in navbar; the drawer closes.
+  const [signingOut, setSigningOut] = useState(false)
+  const signingOutRef = useRef(false)
   const handleLogout = async () => {
-    closeAccountMenu()
-    await logout()
-    // navigate('/')
+    if (signingOutRef.current) return
+    signingOutRef.current = true
+    setSigningOut(true)
+    try {
+      await logout()
+    } catch {
+      // logout() has signed this tab out either way; only the request failed.
+    } finally {
+      signingOutRef.current = false
+      setSigningOut(false)
+      setIsOpen(false)
+    }
   }
 
   // Focus restore target when the drawer is dismissed via the backdrop —
@@ -143,14 +164,40 @@ function Navbar() {
   }, []);
 
   useEffect(() => {
+    // A drawer opened for the page now committing (reopened while that page was still
+    // rendering) already shows what it should: closing it, emptying its search or
+    // resetting its sections now would undo what the reader has done in it since.
+    if (isOpenRef.current && drawerOpenedFor.current === location.pathname + location.search + location.hash) return;
     setIsOpen(false);
-    // A page change underneath an open account menu (Back, say) closes it too.
-    closeAccountMenu();
     setSearchQuery('');
     if (!searchQueryRef.current) {
       setOpenSections(getActiveSectionFromPath(location.pathname));
     }
-  }, [location, closeAccountMenu]);
+  }, [location]);
+
+  const openDrawer = () => {
+    const opened = window.location.pathname + window.location.search + window.location.hash;
+    drawerOpenedFor.current = opened;
+    // Reopened while a page chosen from it is still rendering: the location effect
+    // will leave this drawer alone when that page commits, so it starts fresh for the
+    // page now, as it would have after the commit.
+    if (opened !== location.pathname + location.search + location.hash) {
+      setSearchQuery('');
+      setOpenSections(getActiveSectionFromPath(window.location.pathname));
+    }
+    setIsOpen(true);
+  };
+
+  // Back and Forward close the account menu at once, before the new page renders.
+  // Every other page change from the menu closes it already (choosing an item, a
+  // press outside, Tab), so the location effect above leaves it alone: that effect
+  // runs when a navigation commits, which React Router renders as a transition, so
+  // it came after any key pressed meanwhile and took down a menu reopened in that wait.
+  useEffect(() => {
+    const onPop = () => closeAccountMenu();
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [closeAccountMenu]);
 
   // The lock belongs to the drawer being open and nothing else. searchQuery used
   // to be in the deps, so a 12-character query unlocked and re-locked the
@@ -390,11 +437,11 @@ function Navbar() {
                       )}
                       <button
                         type="button"
-                        {...accountMenu.getItemProps(() => void handleLogout())}
-                        className={`w-full cursor-pointer ${accountItemClass(false)}`}
+                        {...accountMenu.getItemProps(() => void handleLogout(), { keepOpen: true })}
+                        aria-busy={signingOut}
+                        className={`w-full cursor-pointer aria-busy:cursor-progress ${accountItemClass(false)}`}
                       >
-                        <LogOut className="w-4 h-4" />
-                        Sign out
+                        <BusyLabel label="Sign out" busy={signingOut} icon={<LogOut className="w-4 h-4" />} gap="gap-2.5" />
                       </button>
                     </div>
                   </div>
@@ -413,7 +460,7 @@ function Navbar() {
               {/* Mobile menu button */}
               <button
                 ref={menuButtonRef}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => (isOpen ? setIsOpen(false) : openDrawer())}
                 className="lg:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
                 aria-label="Toggle menu"
                 aria-expanded={isOpen}
@@ -432,6 +479,9 @@ function Navbar() {
                   />
                 </div>
               </button>
+              {/* Sign out keeps its name while busy, so the busy text is read out from here,
+                  outside the account menu and the drawer, one of which is always hidden. */}
+              <span className="sr-only" aria-live="polite">{signingOut ? 'Signing out…' : ''}</span>
             </div>
           </div>
         </div>
@@ -491,7 +541,7 @@ function Navbar() {
               <input
                 name='text'
                 type="text"
-                placeholder="Search collectibles, walkthroughs, levels..."
+                placeholder="Search collectibles, walkthroughs, levels…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-11 pr-10 py-3 border border-gray-600 rounded-xl text-gray-200 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-all text-base"
@@ -513,8 +563,8 @@ function Navbar() {
                   ? `${mobileSearchData.total} result${mobileSearchData.total !== 1 ? 's' : ''} found`
                   // Trimmed, like the search itself (useSearch): "x " sends nothing.
                   : searchQuery.trim().length < 2
-                    ? 'Type at least 2 characters...'
-                    : 'Searching...'}
+                    ? 'Type at least 2 characters…'
+                    : 'Searching…'}
               </div>
             )}
           </div>
@@ -618,11 +668,11 @@ function Navbar() {
                         </Link>
                       )}
                       <button
-                        onClick={() => { setIsOpen(false); void handleLogout(); }}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium"
+                        onClick={() => void handleLogout()}
+                        aria-busy={signingOut}
+                        className="flex-1 flex items-center justify-center py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium aria-busy:cursor-progress"
                       >
-                        <LogOut className="w-4 h-4" />
-                        Sign out
+                        <BusyLabel label="Sign out" busy={signingOut} icon={<LogOut className="w-4 h-4" />} />
                       </button>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
@@ -31,6 +31,11 @@ import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
+
+// A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
+// 2px Highlight border, with a pixel less padding so its size doesn't change (the
+// Progress page's cycle pills do the same).
+const PILL_SELECTED = 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 forced-colors:border-2 forced-colors:border-[Highlight] forced-colors:px-2.75 forced-colors:py-1.25'
 
 // Display order AND allowlist: a subtype missing here (or spelled differently
 // than the DB value) silently never appears as a filter option.
@@ -247,11 +252,13 @@ function CollectibleTypeDetailPage() {
   );
   const resetActiveSection = () => setActiveSection('');
 
-  // Render-phase reset on type change; must sit below the useActiveSection
-  // call because it invokes setActiveSection during render.
-  const prevTypeName = useRef(typeName);
-  if (typeName !== prevTypeName.current) {
-    prevTypeName.current = typeName;
+  // A new type starts with its filters cleared, during render, so this sits below the
+  // useActiveSection call. The type they belong to is kept in state, not a ref: React
+  // can set aside a render it has started, and a ref written there would keep the new
+  // type while the cleared filters were thrown away.
+  const [filtersFor, setFiltersFor] = useState(typeName);
+  if (typeName !== filtersFor) {
+    setFiltersFor(typeName);
     setActiveSection('');
     setCycleFilter('All');
     setSubtypeFilter('All');
@@ -567,9 +574,11 @@ function CollectibleTypeDetailPage() {
                         <button
                           key={cycle}
                           onClick={() => setCycleFilter(cycle)}
+                          // Says which pill is selected, which the tint alone can't.
+                          aria-pressed={cycleFilter === cycle}
                           title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} ${displayTypeName}`}
                           className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
-                            ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                            ? PILL_SELECTED
                             : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                             }`}
                         >
@@ -582,9 +591,10 @@ function CollectibleTypeDetailPage() {
 
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
+                      aria-pressed={sortMode === 'alphabetical'}
                       title="Sort alphabetically"
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
-                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                        ? PILL_SELECTED
                         : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                         }`}
                     >
@@ -623,9 +633,10 @@ function CollectibleTypeDetailPage() {
                     )}
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
+                      aria-pressed={sortMode === 'alphabetical'}
                       title="Sort alphabetically"
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
-                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400'
+                        ? PILL_SELECTED
                         : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                         }`}
                     >

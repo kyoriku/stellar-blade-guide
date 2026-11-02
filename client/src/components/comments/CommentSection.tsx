@@ -14,7 +14,10 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
   const {
     data: comments = [],
     isLoading,
-    error,
+    // Only an error with no thread held (TanStack's isLoadingError): a first load that
+    // failed, with nothing posted meanwhile. A failed reload keeps the thread TanStack
+    // holds on screen, with any dialog open over it.
+    isLoadingError,
     postComment,
     postReply,
     editComment,
@@ -89,7 +92,7 @@ export default function CommentSection({ contentType, contentId }: CommentSectio
             </div>
           ))}
         </div>
-      ) : error ? (
+      ) : isLoadingError ? (
         <p className="text-gray-400 text-sm">Failed to load comments</p>
       ) : comments.length === 0 ? (
         <p className="text-gray-400 text-sm">No comments yet. Be the first!</p>

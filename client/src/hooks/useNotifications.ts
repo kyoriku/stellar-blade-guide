@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
-import { API_BASE_URL, ApiError } from '../services/api'
+import { API_BASE_URL, ApiError, readError } from '../services/api'
 
 export interface NotificationItem {
   id: number
@@ -57,7 +57,8 @@ export function useNotifications() {
 
   const markAllRead = useMutation({
     mutationFn: async () => {
-      await authFetch(`${API_BASE_URL}/notifications/read-all`, { method: 'POST' })
+      const res = await authFetch(`${API_BASE_URL}/notifications/read-all`, { method: 'POST' })
+      if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to mark notifications as read'))
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY }),
   })
@@ -68,5 +69,6 @@ export function useNotifications() {
     refetch: query.refetch,
     markRead: markRead.mutate,
     markAllRead: markAllRead.mutate,
+    markingAllRead: markAllRead.isPending,
   }
 }

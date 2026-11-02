@@ -147,7 +147,7 @@ test.describe('account switch', () => {
       (r) => r.url().endsWith('/api/users/me/stats') && r.status() === 200
     );
     await page.getByLabel('Email').fill(userB.email);
-    await page.getByLabel('Password').fill(userB.password);
+    await page.getByLabel('Password', { exact: true }).fill(userB.password);
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await statsLoaded;
     await expect(page.getByText(/^0 of [\d.,\s]+ collectibles found$/)).toBeVisible();

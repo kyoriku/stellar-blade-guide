@@ -15,6 +15,11 @@ import {
 import SEO from '../components/SEO'
 import seo from '../constants/seo.json'
 import { ADMIN_COPY } from '../constants/adminCopy'
+import BusyLabel from '../components/BusyLabel'
+
+// Shown, and read out by the section's live region, once each request lands.
+const PROFILE_SAVED = 'Profile updated successfully.'
+const PASSWORD_CHANGED = 'Password changed. Signing you out…'
 
 export default function SettingsPage() {
   const { user, authFetch, logout, refreshToken } = useAuth()
@@ -26,8 +31,11 @@ export default function SettingsPage() {
   const [username, setUsername] = useState(user?.username ?? '')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [profileLoading, setProfileLoading] = useState(false)
+  const [avatarRemoving, setAvatarRemoving] = useState(false)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [profileSuccess, setProfileSuccess] = useState(false)
+  const usernameId = useId()
+  const avatarUrlId = useId()
 
   // ── Password ───────────────────────────────────────────────────────────────
   const [currentPassword, setCurrentPassword] = useState('')
@@ -74,10 +82,15 @@ export default function SettingsPage() {
   const usernameValid = isValidUsername(username)
   const canSaveProfile = hasProfileChanges && (!usernameChanged || usernameValid)
 
+  // Every button here is busy rather than disabled while its request is out, so a
+  // second press comes to its handler, which turns it away, as it does a press while
+  // the button is refused.
   const handleRemoveAvatar = async () => {
+    // A save is the same PATCH, so a Remove waits for it.
+    if (avatarRemoving || profileLoading) return
     setProfileError(null)
     setProfileSuccess(false)
-    setProfileLoading(true)
+    setAvatarRemoving(true)
     try {
       const res = await authFetch(`${API_BASE_URL}/users/me`, {
         method: 'PATCH',
@@ -92,12 +105,13 @@ export default function SettingsPage() {
     } catch (err) {
       setProfileError(errorMessage(err, 'Failed to remove avatar'))
     } finally {
-      setProfileLoading(false)
+      setAvatarRemoving(false)
     }
   }
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (profileLoading || avatarRemoving || !canSaveProfile) return
     setProfileError(null)
     setProfileSuccess(false)
     setProfileLoading(true)
@@ -134,6 +148,7 @@ export default function SettingsPage() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (passwordLoading || !currentPassword || !newPassword) return
     setPasswordError(null)
     setPasswordSuccess(false)
     if (passwordTooLong(currentPassword, CURRENT_PASSWORD_MAX_LENGTH)) {
@@ -171,6 +186,7 @@ export default function SettingsPage() {
   }
 
   const handleLogoutAll = async () => {
+    if (logoutAllLoading) return
     setLogoutAllError(null)
     setLogoutAllLoading(true)
     try {
@@ -186,6 +202,7 @@ export default function SettingsPage() {
   }
 
   const handleDeleteAccount = async () => {
+    if (deleteLoading || deleteConfirm !== user.username) return
     setDeleteError(null)
     setDeleteLoading(true)
     try {
@@ -226,24 +243,28 @@ export default function SettingsPage() {
 
           <form onSubmit={(e) => void handleProfileSave(e)} className="space-y-4">
             {profileError && (
-              <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div role="alert" className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {profileError}
               </div>
             )}
             {profileSuccess && (
               <div className="px-4 py-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
-                Profile updated successfully.
+                {PROFILE_SAVED}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label htmlFor={usernameId} className="block text-sm font-medium text-gray-300 mb-1.5">
                 Username
               </label>
               <input
+                id={usernameId}
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
+                // Held while a save or a Remove is out, as the comment editor's box is:
+                // a save clears or replaces what's here, so typing meanwhile would be lost.
+                readOnly={profileLoading || avatarRemoving}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-500 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
                 placeholder="yourname"
               />
@@ -253,13 +274,17 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              <label htmlFor={avatarUrlId} className="block text-sm font-medium text-gray-300 mb-1.5">
                 Avatar URL
               </label>
               <input
+                id={avatarUrlId}
                 type="url"
                 value={avatarUrl}
                 onChange={e => setAvatarUrl(e.target.value)}
+                // Held while a save or a Remove is out, as the comment editor's box is:
+                // a save clears or replaces what's here, so typing meanwhile would be lost.
+                readOnly={profileLoading || avatarRemoving}
                 className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm"
                 placeholder="https://example.com/avatar.png"
               />
@@ -277,9 +302,12 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => void handleRemoveAvatar()}
-                  className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                  // Busy while its own request is out; refused, and dimmed, while a save is.
+                  aria-busy={avatarRemoving}
+                  aria-disabled={!avatarRemoving && profileLoading}
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer aria-busy:cursor-progress aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                 >
-                  Remove
+                  <BusyLabel label="Remove" busy={avatarRemoving} />
                 </button>
               </div>
             )}
@@ -287,12 +315,19 @@ export default function SettingsPage() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={profileLoading || !canSaveProfile}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
+                // Busy rather than disabled while it saves, so it keeps focus and doesn't
+                // dim. Refused, and dimmed, while nothing would change or a Remove is out.
+                aria-busy={profileLoading}
+                aria-disabled={!profileLoading && (avatarRemoving || !canSaveProfile)}
+                className="flex items-center px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
               >
-                <Save className="w-4 h-4" />
-                {profileLoading ? 'Saving...' : 'Save changes'}
+                <BusyLabel label="Save changes" busy={profileLoading} icon={<Save className="w-4 h-4" />} />
               </button>
+              {/* Save changes and Remove keep their names while busy, so their busy text,
+                  and then the result, are read out from here. */}
+              <span className="sr-only" aria-live="polite">
+                {avatarRemoving ? 'Removing…' : profileLoading ? 'Saving…' : profileSuccess ? PROFILE_SAVED : ''}
+              </span>
             </div>
           </form>
         </section>
@@ -318,13 +353,13 @@ export default function SettingsPage() {
           ) : (
             <form onSubmit={(e) => void handlePasswordChange(e)} className="space-y-4">
               {passwordError && (
-                <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                <div role="alert" className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                   {passwordError}
                 </div>
               )}
               {passwordSuccess && (
                 <div className="px-4 py-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
-                  Password changed. Signing you out...
+                  {PASSWORD_CHANGED}
                 </div>
               )}
 
@@ -338,6 +373,8 @@ export default function SettingsPage() {
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={e => setCurrentPassword(e.target.value)}
+                    // Held while the change is out: a success empties both fields.
+                    readOnly={passwordLoading}
                     autoComplete="current-password"
                     required
                     className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
@@ -346,8 +383,11 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
-                    tabIndex={-1}
+                    // The eye has no text, so the name is here; pressed while the password shows. The padding
+                    // makes a 28px target, and the right margin takes it back so the eye stays put.
+                    aria-label="Show current password"
+                    aria-pressed={showCurrentPassword}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 -mr-1.5 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
                   >
                     {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -364,6 +404,7 @@ export default function SettingsPage() {
                     type={showNewPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
+                    readOnly={passwordLoading}
                     autoComplete="new-password"
                     required
                     className="w-full px-3.5 py-2.5 rounded-lg bg-primary border border-gray-700 text-white placeholder-gray-400 focus:outline-hidden focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 transition-colors text-sm pr-10"
@@ -372,8 +413,11 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
-                    tabIndex={-1}
+                    // The eye has no text, so the name is here; pressed while the password shows. The padding
+                    // makes a 28px target, and the right margin takes it back so the eye stays put.
+                    aria-label="Show new password"
+                    aria-pressed={showNewPassword}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 -mr-1.5 text-gray-400 hover:text-gray-300 transition-colors cursor-pointer"
                   >
                     {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -384,11 +428,17 @@ export default function SettingsPage() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={passwordLoading || !currentPassword || !newPassword}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-500/50 disabled:cursor-not-allowed text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
+                  // Busy rather than disabled while it saves, so it keeps focus and doesn't
+                  // dim. Refused, and dimmed, while either field is empty.
+                  aria-busy={passwordLoading}
+                  aria-disabled={!passwordLoading && (!currentPassword || !newPassword)}
+                  className="flex items-center px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 aria-disabled:bg-cyan-500/50 aria-disabled:hover:bg-cyan-500/50 aria-disabled:cursor-not-allowed aria-busy:cursor-progress text-black font-semibold text-sm transition-all duration-200 cursor-pointer"
                 >
-                  {passwordLoading ? 'Updating...' : 'Update password'}
+                  <BusyLabel label="Update password" busy={passwordLoading} />
                 </button>
+                {/* The button keeps its name while busy, so its busy text, and then the
+                    result, are read out from here. */}
+                <span className="sr-only" aria-live="polite">{passwordLoading ? 'Updating…' : passwordSuccess ? PASSWORD_CHANGED : ''}</span>
               </div>
             </form>
           )}
@@ -401,14 +451,17 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => void handleLogoutAll()}
-                disabled={logoutAllLoading}
-                className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold transition-all duration-200 cursor-pointer"
+                // Busy rather than disabled while it signs out, so it keeps focus.
+                aria-busy={logoutAllLoading}
+                className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 aria-busy:cursor-progress text-white text-sm font-semibold transition-all duration-200 cursor-pointer"
               >
-                {logoutAllLoading ? 'Signing out...' : 'Sign out'}
+                <BusyLabel label="Sign out" busy={logoutAllLoading} />
               </button>
+              {/* The button keeps its name while busy, so the busy text is read out from here. */}
+              <span className="sr-only" aria-live="polite">{logoutAllLoading ? 'Signing out…' : ''}</span>
             </div>
             {logoutAllError && (
-              <p className="mt-2 text-xs text-red-400">{logoutAllError}</p>
+              <p role="alert" className="mt-2 text-xs text-red-400">{logoutAllError}</p>
             )}
           </div>
         </section>
@@ -434,7 +487,7 @@ export default function SettingsPage() {
               </p>
 
               {deleteError && (
-                <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
+                <div role="alert" className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
                   {deleteError}
                 </div>
               )}
@@ -450,6 +503,8 @@ export default function SettingsPage() {
                     type="text"
                     value={deleteConfirm}
                     onChange={e => setDeleteConfirm(e.target.value)}
+                    // Held while the delete is out, as the dialogs' typed words are.
+                    readOnly={deleteLoading}
                     // The match is exact, so a phone must not capitalize, correct or fill it.
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -461,14 +516,21 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <button
-                  onClick={() => void handleDeleteAccount()}
-                  disabled={deleteConfirm !== user.username || deleteLoading}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 disabled:opacity-40 disabled:cursor-not-allowed text-red-400 font-semibold text-sm transition-all duration-200 cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {deleteLoading ? 'Deleting...' : 'Delete my account'}
-                </button>
+                {/* One box, so the live region doesn't count as the last row. */}
+                <div>
+                  <button
+                    onClick={() => void handleDeleteAccount()}
+                    // Busy rather than disabled while it deletes, so it keeps focus. Refused,
+                    // and dimmed, until the username is typed exactly.
+                    aria-busy={deleteLoading}
+                    aria-disabled={!deleteLoading && deleteConfirm !== user.username}
+                    className="flex items-center px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 aria-disabled:opacity-40 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-red-500/10 aria-disabled:hover:border-red-500/30 aria-busy:cursor-progress text-red-400 font-semibold text-sm transition-all duration-200 cursor-pointer"
+                  >
+                    <BusyLabel label="Delete my account" busy={deleteLoading} icon={<Trash2 className="w-4 h-4" />} />
+                  </button>
+                  {/* The button keeps its name while busy, so the busy text is read out from here. */}
+                  <span className="sr-only" aria-live="polite">{deleteLoading ? 'Deleting…' : ''}</span>
+                </div>
               </div>
             </>
           )}
