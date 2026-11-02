@@ -572,6 +572,8 @@ function CollectibleTypeDetailPage() {
                         <button
                           key={cycle}
                           onClick={() => setCycleFilter(cycle)}
+                          // Says which pill is selected, which the tint alone can't.
+                          aria-pressed={cycleFilter === cycle}
                           title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} ${displayTypeName}`}
                           className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
                             ? PILL_SELECTED
@@ -587,6 +589,7 @@ function CollectibleTypeDetailPage() {
 
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
+                      aria-pressed={sortMode === 'alphabetical'}
                       title="Sort alphabetically"
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
                         ? PILL_SELECTED
@@ -628,6 +631,7 @@ function CollectibleTypeDetailPage() {
                     )}
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
+                      aria-pressed={sortMode === 'alphabetical'}
                       title="Sort alphabetically"
                       className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
                         ? PILL_SELECTED

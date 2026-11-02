@@ -366,6 +366,8 @@ function LevelDetailPage() {
                       <button
                         key={cycle}
                         onClick={() => setCycleFilter(cycle)}
+                        // Says which pill is selected, which the tint alone can't.
+                        aria-pressed={cycleFilter === cycle}
                         title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} collectibles`}
                         className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${cycleFilter === cycle
                           ? PILL_SELECTED
