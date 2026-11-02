@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
@@ -24,25 +24,48 @@ export default function NotificationBell() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const [open, setOpen] = useState(false)
+  // A Mark all read that landed, which the panel's live region reads out. Cleared when
+  // the panel closes, so a reopened panel doesn't read it again.
+  const [markedAll, setMarkedAll] = useState(false)
   const panelId = useId()
   const ref = useRef<HTMLDivElement>(null)
+  const headingRef = useRef<HTMLParagraphElement>(null)
+  const closePanel = () => {
+    setOpen(false)
+    setMarkedAll(false)
+  }
   // Read synchronously, so a second press before the busy state renders sends nothing.
   const markingAll = useRef(false)
   const onMarkAllRead = () => {
     if (markingAll.current) return
     markingAll.current = true
+    setMarkedAll(false)
     markAllRead(undefined, {
+      onSuccess: () => setMarkedAll(true),
       // The panel has no place for an error, so a refusal is a toast.
       onError: err => showToast(errorMessage(err, 'Failed to mark notifications as read')),
       onSettled: () => { markingAll.current = false },
     })
   }
+  // Mark all read leaves once nothing is unread. If it leaves with focus on it, focus
+  // moves to the panel's heading rather than dropping to the page. React runs a ref's
+  // cleanup before it removes the element, so focus can still be read off the button.
+  // Stable, so the cleanup runs only when the button leaves.
+  const markAllRef = useCallback((button: HTMLButtonElement | null) => {
+    if (!button) return
+    return () => {
+      if (document.activeElement === button) headingRef.current?.focus()
+    }
+  }, [])
 
   // Close on a mousedown anywhere outside the bell and its panel.
   useEffect(() => {
     if (!open) return
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+        setMarkedAll(false)
+      }
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
@@ -51,7 +74,7 @@ export default function NotificationBell() {
   return (
     <div className="relative hidden lg:flex h-10 items-center" ref={ref}>
       <button
-        onClick={() => setOpen(p => !p)}
+        onClick={() => (open ? closePanel() : setOpen(true))}
         // Says whether the panel is open, as the drawer's button does.
         aria-expanded={open}
         aria-controls={panelId}
@@ -68,21 +91,22 @@ export default function NotificationBell() {
 
       <div id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden transition-all duration-200 ${open ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible translate-y-2 pointer-events-none'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
-          <p className="text-sm font-medium text-white">Notifications</p>
+          {/* Focusable for Mark all read leaving with focus on it (markAllRef). */}
+          <p ref={headingRef} tabIndex={-1} className="text-sm font-medium text-white">Notifications</p>
           {unreadCount > 0 && (
-            <>
-              <button
-                onClick={onMarkAllRead}
-                // Busy while its request is out, and a second press sends nothing.
-                aria-busy={markingAllRead}
-                className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer aria-busy:cursor-progress"
-              >
-                <BusyLabel label="Mark all read" busy={markingAllRead} />
-              </button>
-              {/* The button keeps its name while busy, so the busy text is read out from here. */}
-              <span className="sr-only" aria-live="polite">{markingAllRead ? 'Marking all read…' : ''}</span>
-            </>
+            <button
+              ref={markAllRef}
+              onClick={onMarkAllRead}
+              // Busy while its request is out, and a second press sends nothing.
+              aria-busy={markingAllRead}
+              className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer aria-busy:cursor-progress"
+            >
+              <BusyLabel label="Mark all read" busy={markingAllRead} />
+            </button>
           )}
+          {/* The button keeps its name while busy, so the busy text is read out from here,
+              and then the result, which outlasts the button. */}
+          <span className="sr-only" aria-live="polite">{markingAllRead ? 'Marking all read…' : markedAll ? 'All marked read.' : ''}</span>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -97,7 +121,7 @@ export default function NotificationBell() {
                   // Refetch the thread so the linked reply is present (cache may be stale).
                   void queryClient.invalidateQueries({ queryKey: ['comments', n.content_type, n.content_id] })
                   markRead(n.id)
-                  setOpen(false)
+                  closePanel()
                 }}
                 className={`block px-4 py-3 text-sm border-l-2 transition-[color,background-color] duration-150 ${n.is_read
                   ? 'border-transparent text-gray-400 hover:bg-gray-800/50 hover:border-gray-400'

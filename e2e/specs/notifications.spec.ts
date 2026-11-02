@@ -2,10 +2,12 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, createCommentThread, deleteFixtureComments, insertReplyNotification, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { expectBusyPattern } from '../helpers/busy';
+import { holdRoute } from '../helpers/route';
 
 // The bell (components/NotificationBell.tsx) says whether its panel is open. Its Mark
 // all read shows the busy pattern (helpers/busy.ts) while its request is out, a second
-// press meanwhile sends nothing, and a refusal is shown rather than passing silently.
+// press meanwhile sends nothing, a refusal is shown rather than passing silently, and a
+// success is read out, with focus kept in the panel as the button goes.
 
 let fx: Fixtures;
 const REFUSED = 'e2e: Mark all read refused';
@@ -75,6 +77,53 @@ test.describe('notifications', () => {
     await expect(page.getByRole('button', { name: 'Notifications', exact: true })).toBeVisible();
     await expect(markAll).toHaveCount(0);
     expect(sent).toBe(1);
+  });
+
+  test('a Mark all read that lands reads out its result, and leaves focus in the panel', async ({ page }) => {
+    await page.goto('/');
+    const bell = page.getByRole('button', { name: 'Notifications (1 unread)', exact: true });
+    await bell.click();
+    const panel = page.locator(`[id="${await bell.getAttribute('aria-controls')}"]`);
+    const markAll = panel.getByRole('button', { name: 'Mark all read', exact: true });
+    const live = panel.locator('span[aria-live="polite"]');
+    const hold = await holdRoute(page, '**/api/notifications/read-all');
+
+    // Counts the heading's focus events. A ref cleanup that ran on every render would send
+    // focus there and back while the button stays (React puts focus back after a commit).
+    const heading = panel.getByText('Notifications', { exact: true });
+    await heading.evaluate(el => {
+      const w = window as unknown as { headingFocus: number };
+      w.headingFocus = 0;
+      el.addEventListener('focus', () => { w.headingFocus += 1; });
+    });
+    const headingFocus = () => page.evaluate(() => (window as unknown as { headingFocus: number }).headingFocus);
+
+    await markAll.focus();
+    await page.keyboard.press('Enter');
+    await hold.seen;
+    // Focus stays on the button while it is busy and re-rendering.
+    await expect(markAll).toHaveAttribute('aria-busy', 'true');
+    await expect(live).toHaveText('Marking all read…');
+    await expect(markAll).toBeFocused();
+    expect(await headingFocus(), 'the heading took no focus while the button stayed').toBe(0);
+
+    hold.release();
+    // Nothing is left unread, so the button goes, and focus moves to the panel's heading
+    // rather than dropping to the page.
+    await expect(markAll).toHaveCount(0);
+    await expect(heading).toBeFocused();
+    expect(await headingFocus()).toBe(1);
+    await expect(live).toHaveText('All marked read.');
+
+    // Closing the panel clears the result, so reopening it reads nothing again. The bell
+    // no longer counts anything unread.
+    const read = page.getByRole('button', { name: 'Notifications', exact: true });
+    await read.click();
+    await expect(read).toHaveAttribute('aria-expanded', 'false');
+    await expect(live).toHaveText('');
+    await read.click();
+    await expect(read).toHaveAttribute('aria-expanded', 'true');
+    await expect(live).toHaveText('');
   });
 
   test('the bell says whether its panel is open, and which panel it opens', async ({ page }) => {
