@@ -1,6 +1,6 @@
 # Stellar Blade Guide
 
-An unofficial game guide for *Stellar Blade*: 1,078 collectibles across 21 types and 95 walkthrough pages (main story, side quests, Bulletin Board requests, the NieR and NIKKE DLC, and fishing), with written directions and a screenshot for every collectible. Full-stack web application with 2,800+ original PS5 screenshots served as pre-generated WebP from Cloudflare R2.
+An unofficial game guide for *Stellar Blade*: 1,086 collectibles across 21 types and 95 walkthrough pages (main story, side quests, Bulletin Board requests, the NieR and NIKKE DLC, and fishing), with written directions and a screenshot for every collectible. Full-stack web application with 2,800+ original PS5 screenshots served as pre-generated WebP from Cloudflare R2.
 
 **[Live Site](https://stellarbladeguide.com)** | **Tech Stack:** TypeScript, React, Python, FastAPI, PostgreSQL, Redis
 
