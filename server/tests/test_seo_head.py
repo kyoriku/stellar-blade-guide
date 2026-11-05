@@ -177,7 +177,7 @@ async def test_other_walkthrough_lists_keep_the_generated_head(client, slug):
 
 async def test_escaping(client):
     r = await client.get('/cosmetics/nano-suits')
-    assert f'All 126 Nano Suits &amp; How to Unlock{SUFFIX}' in r.text
+    assert f'All 130 Nano Suits &amp; How to Unlock{SUFFIX}' in r.text
     assert 'sort A–Z' in r.text  # en dash survives as UTF-8
     r = await client.get('/levels/great-desert')
     assert 'Stellar Blade&#x27;s second open region' in r.text

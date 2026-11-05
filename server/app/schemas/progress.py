@@ -11,7 +11,7 @@ class ProgressWriteResponse(BaseModel):
 
 
 class SyncRequest(BaseModel):
-    # Twice the catalog (1,056 entries) leaves room to grow; past that a body can
+    # Twice the catalog (1,064 entries) leaves room to grow; past that a body can
     # only be junk, and every id is a bound parameter.
     collectible_ids: List[int] = Field(max_length=2000)
 
