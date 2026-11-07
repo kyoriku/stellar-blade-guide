@@ -18,6 +18,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { usePageLightbox, levelPageGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
 import SEO from '../components/SEO';
@@ -43,9 +44,6 @@ function LevelDetailPage() {
 
   const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!, !!levelName && isLevelSlug(levelName));
 
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeSection, setActiveSection] = useActiveSection('section[id]', [locationData]);
   const [cycleFilter, setCycleFilter] = useState<string>('All');
@@ -92,34 +90,6 @@ function LevelDetailPage() {
     }
   }, [locationData, location.hash]);
 
-  useEffect(() => {
-    if (locationData.length > 0) {
-      const images: Array<{ src: string; alt: string }> = [];
-      locationData.forEach(location => {
-        location.collectibles.forEach(collectible => {
-          collectible.images?.forEach(img => {
-            images.push({ src: img.url, alt: img.alt });
-          });
-        });
-      });
-      setAllImages(images);
-    }
-  }, [locationData]);
-
-  // Memoized so memo(CollectibleSection) can bail out — a plain declaration here
-  // was a fresh closure every render, which defeated the memo on this page the
-  // same way an unstable `toggle` did on both. The dep MUST stay [allImages]:
-  // with an empty list the findIndex below closes over the initial empty array,
-  // returns -1 for every image, and the lightbox silently stops opening. No e2e
-  // covers the lightbox, so that would ship unnoticed.
-  const handleImageClick = useCallback((imageUrl: string) => {
-    const index = allImages.findIndex(img => img.src === imageUrl);
-    if (index !== -1) {
-      setLightboxIndex(index);
-      setLightboxOpen(true);
-    }
-  }, [allImages]);
-
   const displayLevelName = levelName?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
 
   // Find current and next level
@@ -155,6 +125,9 @@ function LevelDetailPage() {
       }))
       .filter(loc => loc.collectibles.length > 0);
   }, [locationData, cycleFilter]);
+
+  // The lightbox holds the cards this page shows (after its cycle filter), in page order.
+  const { onImageClick, lightbox } = usePageLightbox(filteredLocationData, levelPageGalleries);
 
   // The first gallery on the page is above the fold, so it loads eagerly. Keyed
   // by id rather than index because the list is two levels deep and each
@@ -399,7 +372,7 @@ function LevelDetailPage() {
               <MobileBackToTop onScrollToTop={resetActiveSection} />
             </div>
 
-            {/* Collectible sections */}
+            {/* Collectible sections, in the order usePageLightbox walks them (levelPageGalleries) */}
             {filteredLocationData.map((location) => {
               const sectionId = location.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
 
@@ -410,7 +383,7 @@ function LevelDetailPage() {
                   title={location.location_name}
                   levelName={displayLevelName}
                   collectibles={location.collectibles}
-                  onImageClick={handleImageClick}
+                  onImageClick={onImageClick}
                   priorityId={priorityId}
                   isCompleted={isCompleted}
                   isToggling={isToggling}
@@ -497,10 +470,10 @@ function LevelDetailPage() {
 
       {/* Lightbox */}
       <Lightbox
-        open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
-        slides={allImages}
-        index={lightboxIndex}
+        open={lightbox.open}
+        close={lightbox.close}
+        slides={lightbox.slides}
+        index={lightbox.index}
         plugins={[Zoom]}
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}

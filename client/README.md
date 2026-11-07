@@ -53,7 +53,8 @@ src/
   hooks/             one data-domain hook per resource (collectibles, walkthroughs, progress,
                      user stats, comments, notifications, search, the admin page's
                      accounts) plus useAuth (with authFetch) and useAuthContext,
-                     useBulkProgress, useHandClearTip, usePrefetch, useFloatingControl,
+                     useBulkProgress, useHandClearTip, usePageLightbox (the image lightbox
+                     on level, type and walkthrough pages), usePrefetch, useFloatingControl,
                      useMenuButton (the menu button pattern, for any menu), and the
                      useActiveSection scroll-spy
   context/           AuthContext (session + token lifecycle), ToastContext

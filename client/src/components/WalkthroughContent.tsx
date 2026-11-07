@@ -3,15 +3,18 @@ import { Lightbulb, AlertTriangle, Skull } from 'lucide-react'
 import ImageGallery from './ImageGallery'
 import { parseDescription } from '../utils/parseDescription'
 import { textBlocks } from '../utils/textBlocks'
+import type { ImageClickHandler } from '../hooks/usePageLightbox'
 
 interface WalkthroughContentProps {
   content: WalkthroughContentType;
-  onImageClick: (imageUrl: string) => void;
+  /** This section's index in the walkthrough, which names its gallery to the lightbox. */
+  galleryKey: number;
+  onImageClick: ImageClickHandler;
   /** This section's gallery is above the fold — see ImageGallery's `priority`. */
   priority?: boolean;
 }
 
-function WalkthroughContent({ content, onImageClick, priority }: WalkthroughContentProps) {
+function WalkthroughContent({ content, galleryKey, onImageClick, priority }: WalkthroughContentProps) {
   const galleryImages = content.images.map(img => ({
     id: img.order,
     url: img.url,
@@ -141,6 +144,7 @@ function WalkthroughContent({ content, onImageClick, priority }: WalkthroughCont
         {galleryImages.length > 0 && (
           <ImageGallery
             images={galleryImages}
+            galleryKey={galleryKey}
             onImageClick={onImageClick}
             priority={priority}
           />

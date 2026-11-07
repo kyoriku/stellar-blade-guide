@@ -3,10 +3,14 @@ import { type CollectibleImage } from '../services/api'
 import { ZoomIn, Image as ImageIcon } from 'lucide-react'
 import { loadedUrlCache } from '../utils/imageCache'
 import { thumbnailUrl, buildSrcSet, predictRenderedWidth, gallerySizes, isValidGalleryImage } from '../utils/image'
+import type { ImageClickHandler } from '../hooks/usePageLightbox'
 
 interface ImageGalleryProps {
   images: CollectibleImage[];
-  onImageClick?: (imageUrl: string) => void;
+  /** Names this gallery to the page's lightbox: see GallerySource in hooks/usePageLightbox. */
+  galleryKey: number;
+  /** Called with galleryKey and the clicked thumbnail's position among the images shown. */
+  onImageClick?: ImageClickHandler;
   /**
    * This gallery is above the fold on arrival. Every image in it loads eagerly
    * and paints at full opacity over its own skeleton; the first also gets
@@ -16,7 +20,7 @@ interface ImageGalleryProps {
   priority?: boolean;
 }
 
-function ImageGallery({ images = [], onImageClick, priority = false }: ImageGalleryProps) {
+function ImageGallery({ images = [], galleryKey, onImageClick, priority = false }: ImageGalleryProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(() => {
     const validCount = images.filter(isValidGalleryImage).length;
     if (!validCount) return new Set<number>();
@@ -48,6 +52,8 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
     setLoadedImages(prev => (prev.has(imageId) ? prev : new Set(prev).add(imageId)));
   };
 
+  // The page's lightbox builds this gallery's slides with the same filter, so a
+  // thumbnail's index here is the position its click reports.
   const validImages = images.filter(isValidGalleryImage);
 
   if (!validImages.length) return null;
@@ -67,7 +73,7 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
           <div
             key={image.id}
             className="group relative aspect-video overflow-hidden rounded-lg cursor-pointer"
-            onClick={() => onImageClick?.(image.url)}
+            onClick={() => onImageClick?.(galleryKey, idx)}
             onMouseEnter={() => setHoveredImage(image.id)}
             onMouseLeave={() => setHoveredImage(null)}
           >
@@ -129,8 +135,10 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
 // Memoized because a progress toggle legitimately re-renders every section —
 // isCompleted/isToggling change identity to repaint one checkbox — and without
 // this each of those rebuilds all 429 galleries on Wasteland, 1,716 buildSrcSet
-// strings among them. All three props are already stable at the call sites once
-// the pages' handlers are memoized, so the default shallow compare is enough.
+// strings among them. All four props are stable at the collectible pages' call
+// sites (images is the query's own array, galleryKey a number, and
+// usePageLightbox's onImageClick keeps one identity), so the default shallow
+// compare is enough.
 // Note this is inert on walkthrough pages: WalkthroughContent rebuilds its
 // images array inline every render, so the boundary never bails there.
 export default memo(ImageGallery);

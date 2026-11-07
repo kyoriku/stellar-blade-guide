@@ -20,6 +20,7 @@ import { scrollToElement } from '../utils/scrollToElement'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { usePageLightbox, typePageGalleries } from '../hooks/usePageLightbox'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import { SECTION_LABELS } from '../constants/sections'
@@ -68,9 +69,6 @@ function CollectibleTypeDetailPage() {
   // Pass category to hook
   const { data: levelData = [], isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
 
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const [subtypeFilter, setSubtypeFilter] = useState<string>('All');
@@ -224,6 +222,10 @@ function CollectibleTypeDetailPage() {
     }];
   }, [filteredBySubtype, sortMode]);
 
+  // The lightbox holds the cards this page shows (after its cycle and subtype filters
+  // and A-Z sort), in page order.
+  const { onImageClick, lightbox } = usePageLightbox(sortedLevelData, typePageGalleries);
+
   // The first gallery on the page is above the fold, so it loads eagerly. Read
   // from the sorted, filtered data so it follows the cycle, subtype and A-Z
   // controls. Keyed by id rather than index because the list is two levels deep
@@ -281,31 +283,6 @@ function CollectibleTypeDetailPage() {
       }
     }
   }, [levelData, location.hash]);
-
-  // Collect all images when data loads
-  useEffect(() => {
-    if (sortedLevelData.length > 0) {
-      const images: Array<{ src: string; alt: string }> = [];
-      sortedLevelData.forEach(level => {
-        level.locations.forEach(location => {
-          location.collectibles.forEach(collectible => {
-            collectible.images?.forEach(img => {
-              images.push({ src: img.url, alt: img.alt });
-            });
-          });
-        });
-      });
-      setAllImages(images);
-    }
-  }, [sortedLevelData]);
-
-  const handleImageClick = useCallback((imageUrl: string) => {
-    const index = allImages.findIndex(img => img.src === imageUrl);
-    if (index !== -1) {
-      setLightboxIndex(index);
-      setLightboxOpen(true);
-    }
-  }, [allImages]);
 
   // Format type name for display
   const displayTypeName = typeName
@@ -661,7 +638,7 @@ function CollectibleTypeDetailPage() {
             />
             <MobileBackToTop onScrollToTop={resetActiveSection} />
 
-            {/* Collectibles grouped by level (or flat A-Z) */}
+            {/* Collectibles grouped by level (or flat A-Z), in the order usePageLightbox walks them (typePageGalleries) */}
             {sortedLevelData.map((level) => (
               <div key={level.level_id} id={level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')} className="space-y-8 scroll-anchor">
                 {level.locations.map((location) => {
@@ -674,7 +651,7 @@ function CollectibleTypeDetailPage() {
                       title={sortMode === 'alphabetical' ? '' : location.location_name}
                       levelName={sortMode === 'alphabetical' ? '' : level.level_name}
                       collectibles={location.collectibles}
-                      onImageClick={handleImageClick}
+                      onImageClick={onImageClick}
                       priorityId={priorityId}
                       hideTypeBadge
                       isCompleted={isCompleted}
@@ -765,10 +742,10 @@ function CollectibleTypeDetailPage() {
 
       {/* Lightbox */}
       <Lightbox
-        open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
-        slides={allImages}
-        index={lightboxIndex}
+        open={lightbox.open}
+        close={lightbox.close}
+        slides={lightbox.slides}
+        index={lightbox.index}
         plugins={[Zoom]}
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}

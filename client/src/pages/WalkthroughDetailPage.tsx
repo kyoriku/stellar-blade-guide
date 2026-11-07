@@ -15,6 +15,7 @@ import TableOfContents from '../components/TableOfContents'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { usePageLightbox, walkthroughGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
 import { walkthroughTypeName } from '../utils/walkthroughTypeName'
@@ -42,9 +43,8 @@ function WalkthroughDetailPage() {
   const { prefetchWalkthroughBySlug } = usePrefetch();
   const { showToast } = useToast();
   const [activeSection] = useActiveSection('.walkthrough-content', [walkthrough]);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
+  // The lightbox holds every section's images, in page order, keyed by section index.
+  const { onImageClick, lightbox } = usePageLightbox(walkthrough?.content, walkthroughGalleries);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -60,19 +60,6 @@ function WalkthroughDetailPage() {
     if (navError && !isError) showToast("Couldn't load previous/next walkthroughs.");
   }, [navError, isError, showToast]);
 
-  // Collect all images when walkthrough loads
-  useEffect(() => {
-    if (walkthrough) {
-      const images: Array<{ src: string; alt: string }> = [];
-      walkthrough.content.forEach(content => {
-        content.images?.forEach(img => {
-          images.push({ src: img.url, alt: img.alt });
-        });
-      });
-      setAllImages(images);
-    }
-  }, [walkthrough]);
-
   // Scroll to hash on load or hash change
   useLayoutEffect(() => {
     if (walkthrough && location.hash) {
@@ -80,14 +67,6 @@ function WalkthroughDetailPage() {
       if (el) scrollToElement(el);
     }
   }, [walkthrough, location.hash]);
-
-  const handleImageClick = (imageUrl: string) => {
-    const index = allImages.findIndex(img => img.src === imageUrl);
-    if (index !== -1) {
-      setLightboxIndex(index);
-      setLightboxOpen(true);
-    }
-  };
 
   // Find current, previous, and next walkthroughs
   const currentIndex = allWalkthroughs.findIndex(w => w.slug === slug);
@@ -306,7 +285,7 @@ function WalkthroughDetailPage() {
               <MobileBackToTop />
             </div>
 
-            {/* Content sections */}
+            {/* Content sections, in the order usePageLightbox walks them (walkthroughGalleries) */}
             <section className="mb-8 space-y-8">
               {walkthrough.content.map((content, index) => (
                 <div
@@ -316,8 +295,9 @@ function WalkthroughDetailPage() {
                 >
                   <WalkthroughContent
                     content={content}
+                    galleryKey={index}
                     priority={index === firstGalleryIdx}
-                    onImageClick={handleImageClick}
+                    onImageClick={onImageClick}
                   />
                 </div>
               ))}
@@ -413,10 +393,10 @@ function WalkthroughDetailPage() {
 
       {/* Lightbox */}
       <Lightbox
-        open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
-        slides={allImages}
-        index={lightboxIndex}
+        open={lightbox.open}
+        close={lightbox.close}
+        slides={lightbox.slides}
+        index={lightbox.index}
         plugins={[Zoom]}
         zoom={{ scrollToZoom: true }}
         controller={{ closeOnBackdropClick: true }}

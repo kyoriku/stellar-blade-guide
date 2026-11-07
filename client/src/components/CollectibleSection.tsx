@@ -6,6 +6,7 @@ import { FileText, List } from 'lucide-react'
 import { parseDescription } from '../utils/parseDescription'
 import { textBlocks } from '../utils/textBlocks'
 import { cycleLabel } from '../constants/cycleLabels'
+import type { ImageClickHandler } from '../hooks/usePageLightbox'
 
 // CollectibleTypeDetailPage augments collectibles with presentation-only
 // fields: a pre-deduped anchor slug, and (in A–Z sort) origin level/location.
@@ -20,7 +21,7 @@ interface CollectibleSectionProps {
   title: string;
   levelName?: string;
   collectibles: AnnotatedCollectible[];
-  onImageClick?: (imageUrl: string) => void;
+  onImageClick?: ImageClickHandler;
   hideTypeBadge?: boolean;
   /** Collectible whose gallery is above the fold — see ImageGallery's `priority`. */
   priorityId?: number;
@@ -80,6 +81,7 @@ function CollectibleSection({
       )}
 
       <div className="space-y-8">
+        {/* The page's lightbox (usePageLightbox) walks these cards in this order. */}
         {collectibles.map((collectible) => (
           <article
             key={collectible.id}
@@ -184,6 +186,7 @@ function CollectibleSection({
 
               <ImageGallery
                 images={collectible.images}
+                galleryKey={collectible.id}
                 onImageClick={onImageClick}
                 priority={collectible.id === priorityId}
               />
