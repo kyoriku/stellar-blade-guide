@@ -1,12 +1,10 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
 import QueryError from '../components/QueryError'
 import { useToast } from '../context/ToastContext'
-import { List, ArrowLeft, Clock, Gift, Loader2 } from 'lucide-react'
-import Lightbox from 'yet-another-react-lightbox'
-import Zoom from 'yet-another-react-lightbox/plugins/zoom'
-import 'yet-another-react-lightbox/styles.css'
+import { List, ArrowLeft, Clock, Gift } from 'lucide-react'
+import PageLightbox from '../components/PageLightbox'
 import WalkthroughContent from '../components/WalkthroughContent'
 import { parseDescription } from '../utils/parseDescription'
 import WalkthroughContentSkeleton from '../components/WalkthroughContentSkeleton'
@@ -45,13 +43,6 @@ function WalkthroughDetailPage() {
   const [activeSection] = useActiveSection('.walkthrough-content', [walkthrough]);
   // The lightbox holds every section's images, in page order, keyed by section index.
   const { onImageClick, lightbox } = usePageLightbox(walkthrough?.content, walkthroughGalleries);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Prev/next nav is secondary content — surface its load failure as a toast,
   // but only when the page itself loaded (a failed main query already shows the
@@ -392,32 +383,7 @@ function WalkthroughDetailPage() {
       </div>
 
       {/* Lightbox */}
-      <Lightbox
-        open={lightbox.open}
-        close={lightbox.close}
-        slides={lightbox.slides}
-        index={lightbox.index}
-        plugins={[Zoom]}
-        zoom={{ scrollToZoom: true }}
-        controller={{ closeOnBackdropClick: true }}
-        animation={{ fade: 150, swipe: 150 }}
-        // preload 1, not the library default of 2: slides are the full-size
-        // WebP files (3840x2160, ~33MB each once decoded), so the default's
-        // five-slide window costs ~166MB. These URLs are never shared with the
-        // gallery tiles, which load -w variants, so each preloaded slide is a
-        // cold fetch too. Keep padding in this same object: a bare
-        // carousel={{ preload: 1 }} would drop the override.
-        carousel={{ preload: 1, padding: isMobile ? "0%" : "4%" }}
-        styles={{
-          container: {
-            backgroundColor: "rgba(0, 0, 0, 0.75)",
-            backdropFilter: "blur(5px)"
-          }
-        }}
-        render={{
-          iconLoading: () => <Loader2 className="w-10 h-10 text-white animate-spin" />,
-        }}
-      />
+      <PageLightbox {...lightbox} />
     </div>
   );
 }

@@ -97,7 +97,7 @@ export function walkthroughGalleries(
 /**
  * A page's lightbox. Pass the value the page's JSX maps its galleries from (after
  * its filters and sort) and that page's walker above; hand `onImageClick` to the
- * galleries and the `lightbox` fields to <Lightbox>.
+ * galleries and the `lightbox` fields to <PageLightbox>.
  *
  * Both arguments must keep their identity between renders (the page's useMemo or
  * the query's data, and a module-level walker): a new slides array sends an open
