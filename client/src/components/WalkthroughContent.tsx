@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { type WalkthroughContent as WalkthroughContentType } from '../services/api'
 import { Lightbulb, AlertTriangle, Skull } from 'lucide-react'
 import ImageGallery from './ImageGallery'
@@ -15,12 +16,16 @@ interface WalkthroughContentProps {
 }
 
 function WalkthroughContent({ content, galleryKey, onImageClick, priority }: WalkthroughContentProps) {
-  const galleryImages = content.images.map(img => ({
-    id: img.order,
+  // Each image's id is its position in the section: ImageGallery keys its tiles,
+  // and their loaded and hover state, by id, and a hand-written order could
+  // repeat. Memoized on the section's images, so memo(ImageGallery) bails out
+  // when this section re-renders, as it does on every scroll-spy change.
+  const galleryImages = useMemo(() => content.images.map((img, index) => ({
+    id: index,
     url: img.url,
     alt: img.alt,
     order: img.order
-  }));
+  })), [content.images]);
 
   return (
     <article className="relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800">
