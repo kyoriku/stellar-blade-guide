@@ -138,7 +138,7 @@ async def seed_database():
                 Location(level_id=levels['Xion'].id, name='Xion City', display_order=1),
 
                 # Wasteland
-                Location(level_id=levels['Wasteland'].id, name='Barren Lands', display_order=1),
+                Location(level_id=levels['Wasteland'].id, name='Barren Land', display_order=1),
                 Location(level_id=levels['Wasteland'].id, name='Great Canyon', display_order=2),
                 Location(level_id=levels['Wasteland'].id, name='Scrap Plains', display_order=3),
                 Location(level_id=levels['Wasteland'].id, name='Oil Storage Facility', display_order=4),
@@ -165,7 +165,7 @@ async def seed_database():
                 Location(level_id=levels['Matrix 11'].id, name='Collapsed Rail Bridge', display_order=3),
                 Location(level_id=levels['Matrix 11'].id, name='Underground Sewer', display_order=4),
                 Location(level_id=levels['Matrix 11'].id, name='Rotten Labyrinth', display_order=5),
-                Location(level_id=levels['Matrix 11'].id, name='Temporary Armoury', display_order=6),
+                Location(level_id=levels['Matrix 11'].id, name='Temporary Armory', display_order=6),
                 Location(level_id=levels['Matrix 11'].id, name='Train Graveyard', display_order=7),
                 Location(level_id=levels['Matrix 11'].id, name='Contaminated Water Purification Plant', display_order=8),
 
@@ -194,7 +194,7 @@ async def seed_database():
                 Location(level_id=levels['Spire 4'].id, name='Orca Space Complex', display_order=1),
                 Location(level_id=levels['Spire 4'].id, name='Hypertube', display_order=2),
                 Location(level_id=levels['Spire 4'].id, name='Space Logistics Complex', display_order=3),
-                Location(level_id=levels['Spire 4'].id, name='Raphael Space Centre', display_order=4),
+                Location(level_id=levels['Spire 4'].id, name='Raphael Space Center', display_order=4),
                 Location(level_id=levels['Spire 4'].id, name='Cargo Lift 121', display_order=5),
                 Location(level_id=levels['Spire 4'].id, name='Maintenance Sector', display_order=6),
                 Location(level_id=levels['Spire 4'].id, name='Tower Outer Wall', display_order=7),
