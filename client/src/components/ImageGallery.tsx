@@ -3,10 +3,14 @@ import { type CollectibleImage } from '../services/api'
 import { ZoomIn, Image as ImageIcon } from 'lucide-react'
 import { loadedUrlCache } from '../utils/imageCache'
 import { thumbnailUrl, buildSrcSet, predictRenderedWidth, gallerySizes, isValidGalleryImage } from '../utils/image'
+import type { ImageClickHandler } from '../hooks/usePageLightbox'
 
 interface ImageGalleryProps {
   images: CollectibleImage[];
-  onImageClick?: (imageUrl: string) => void;
+  /** Names this gallery to the page's lightbox: see GallerySource in hooks/usePageLightbox. */
+  galleryKey: number;
+  /** Called with galleryKey and the clicked thumbnail's position among the images shown. */
+  onImageClick?: ImageClickHandler;
   /**
    * This gallery is above the fold on arrival. Every image in it loads eagerly
    * and paints at full opacity over its own skeleton; the first also gets
@@ -16,7 +20,7 @@ interface ImageGalleryProps {
   priority?: boolean;
 }
 
-function ImageGallery({ images = [], onImageClick, priority = false }: ImageGalleryProps) {
+function ImageGallery({ images = [], galleryKey, onImageClick, priority = false }: ImageGalleryProps) {
   const [loadedImages, setLoadedImages] = useState<Set<number>>(() => {
     const validCount = images.filter(isValidGalleryImage).length;
     if (!validCount) return new Set<number>();
@@ -48,6 +52,8 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
     setLoadedImages(prev => (prev.has(imageId) ? prev : new Set(prev).add(imageId)));
   };
 
+  // The page's lightbox builds this gallery's slides with the same filter, so a
+  // thumbnail's index here is the position its click reports.
   const validImages = images.filter(isValidGalleryImage);
 
   if (!validImages.length) return null;
@@ -64,10 +70,15 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
         const shown = isLoaded || eager;
 
         return (
-          <div
+          // A real button, so the tile takes focus and opens from the keyboard, named
+          // by its image's alt. w-full and text-left keep the div's width and the
+          // caption's alignment against a button's defaults. Focus is an outline, not
+          // a ring: forced colors drops box-shadows.
+          <button
+            type="button"
             key={image.id}
-            className="group relative aspect-video overflow-hidden rounded-lg cursor-pointer"
-            onClick={() => onImageClick?.(image.url)}
+            className="group relative aspect-video w-full overflow-hidden rounded-lg text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-500/60"
+            onClick={() => onImageClick?.(galleryKey, idx)}
             onMouseEnter={() => setHoveredImage(image.id)}
             onMouseLeave={() => setHoveredImage(null)}
           >
@@ -104,8 +115,9 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
               fetchPriority={highPriority ? 'high' : undefined}
             />
 
+            {/* Hidden from screen readers: the caption repeats the alt, the button's name. */}
             {isLoaded && (
-              <div>
+              <div aria-hidden="true">
                 <div className={`absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`}>
                   <div className="absolute top-3 right-3">
                     <ZoomIn className={`w-5 h-5 text-gray-100 drop-shadow-lg transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`} />
@@ -119,7 +131,7 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
                 <div className={`absolute inset-0 rounded-lg border transition-colors duration-200 ${hoveredImage === image.id ? 'border-gray-700' : 'border-transparent'}`} />
               </div>
             )}
-          </div>
+          </button>
         );
       })}
     </div>
@@ -128,9 +140,9 @@ function ImageGallery({ images = [], onImageClick, priority = false }: ImageGall
 
 // Memoized because a progress toggle legitimately re-renders every section —
 // isCompleted/isToggling change identity to repaint one checkbox — and without
-// this each of those rebuilds all 429 galleries on Wasteland, 1,716 buildSrcSet
-// strings among them. All three props are already stable at the call sites once
-// the pages' handlers are memoized, so the default shallow compare is enough.
-// Note this is inert on walkthrough pages: WalkthroughContent rebuilds its
-// images array inline every render, so the boundary never bails there.
+// this each of those rebuilds every gallery on the page, about 200 on Wasteland
+// with some 450 buildSrcSet strings among them. All four props are stable at
+// every call site (images is the query's own array, or WalkthroughContent's
+// memoized list; galleryKey a number; usePageLightbox's onImageClick keeps one
+// identity), so the default shallow compare is enough.
 export default memo(ImageGallery);

@@ -1,10 +1,8 @@
-import { useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react'
+import { useLayoutEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
-import Lightbox from 'yet-another-react-lightbox'
-import Zoom from 'yet-another-react-lightbox/plugins/zoom'
-import 'yet-another-react-lightbox/styles.css'
+import PageLightbox from '../components/PageLightbox'
 import TableOfContents from '../components/TableOfContents'
 import CollectibleSection from '../components/CollectibleSection'
 import ErrorPage from './ErrorPage'
@@ -12,7 +10,7 @@ import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import CollectibleSectionSkeleton from '../components/CollectibleSectionSkeleton'
 import { COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation'
 import { COLLECTIBLE_IMAGES, UPGRADE_IMAGES, COSMETIC_IMAGES } from '../constants/categoryImages'
-import { ArrowLeft, ChevronDown, Loader2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
@@ -20,6 +18,7 @@ import { scrollToElement } from '../utils/scrollToElement'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { usePageLightbox, typePageGalleries } from '../hooks/usePageLightbox'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import { SECTION_LABELS } from '../constants/sections'
@@ -68,10 +67,6 @@ function CollectibleTypeDetailPage() {
   // Pass category to hook
   const { data: levelData = [], isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
 
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [allImages, setAllImages] = useState<Array<{ src: string; alt: string }>>([]);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const [subtypeFilter, setSubtypeFilter] = useState<string>('All');
   const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
@@ -99,12 +94,6 @@ function CollectibleTypeDetailPage() {
     ? typeArray[currentIndex + 1]
     : null;
   const previousType = currentIndex > 0 ? typeArray[currentIndex - 1] : null;
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Get unique cycles from the data
   const availableCycles = useMemo(() => {
@@ -224,6 +213,10 @@ function CollectibleTypeDetailPage() {
     }];
   }, [filteredBySubtype, sortMode]);
 
+  // The lightbox holds the cards this page shows (after its cycle and subtype filters
+  // and A-Z sort), in page order.
+  const { onImageClick, lightbox } = usePageLightbox(sortedLevelData, typePageGalleries);
+
   // The first gallery on the page is above the fold, so it loads eagerly. Read
   // from the sorted, filtered data so it follows the cycle, subtype and A-Z
   // controls. Keyed by id rather than index because the list is two levels deep
@@ -281,31 +274,6 @@ function CollectibleTypeDetailPage() {
       }
     }
   }, [levelData, location.hash]);
-
-  // Collect all images when data loads
-  useEffect(() => {
-    if (sortedLevelData.length > 0) {
-      const images: Array<{ src: string; alt: string }> = [];
-      sortedLevelData.forEach(level => {
-        level.locations.forEach(location => {
-          location.collectibles.forEach(collectible => {
-            collectible.images?.forEach(img => {
-              images.push({ src: img.url, alt: img.alt });
-            });
-          });
-        });
-      });
-      setAllImages(images);
-    }
-  }, [sortedLevelData]);
-
-  const handleImageClick = useCallback((imageUrl: string) => {
-    const index = allImages.findIndex(img => img.src === imageUrl);
-    if (index !== -1) {
-      setLightboxIndex(index);
-      setLightboxOpen(true);
-    }
-  }, [allImages]);
 
   // Format type name for display
   const displayTypeName = typeName
@@ -661,7 +629,7 @@ function CollectibleTypeDetailPage() {
             />
             <MobileBackToTop onScrollToTop={resetActiveSection} />
 
-            {/* Collectibles grouped by level (or flat A-Z) */}
+            {/* Collectibles grouped by level (or flat A-Z), in the order usePageLightbox walks them (typePageGalleries) */}
             {sortedLevelData.map((level) => (
               <div key={level.level_id} id={level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')} className="space-y-8 scroll-anchor">
                 {level.locations.map((location) => {
@@ -674,7 +642,7 @@ function CollectibleTypeDetailPage() {
                       title={sortMode === 'alphabetical' ? '' : location.location_name}
                       levelName={sortMode === 'alphabetical' ? '' : level.level_name}
                       collectibles={location.collectibles}
-                      onImageClick={handleImageClick}
+                      onImageClick={onImageClick}
                       priorityId={priorityId}
                       hideTypeBadge
                       isCompleted={isCompleted}
@@ -764,32 +732,7 @@ function CollectibleTypeDetailPage() {
       </div>
 
       {/* Lightbox */}
-      <Lightbox
-        open={lightboxOpen}
-        close={() => setLightboxOpen(false)}
-        slides={allImages}
-        index={lightboxIndex}
-        plugins={[Zoom]}
-        zoom={{ scrollToZoom: true }}
-        controller={{ closeOnBackdropClick: true }}
-        animation={{ fade: 150, swipe: 150 }}
-        // preload 1, not the library default of 2: slides are the full-size
-        // WebP files (3840x2160, ~33MB each once decoded), so the default's
-        // five-slide window costs ~166MB. These URLs are never shared with the
-        // gallery tiles, which load -w variants, so each preloaded slide is a
-        // cold fetch too. Keep padding in this same object: a bare
-        // carousel={{ preload: 1 }} would drop the override.
-        carousel={{ preload: 1, padding: isMobile ? "0%" : "4%" }}
-        styles={{
-          container: {
-            backgroundColor: "rgba(0, 0, 0, 0.75)",
-            backdropFilter: "blur(5px)"
-          }
-        }}
-        render={{
-          iconLoading: () => <Loader2 className="w-10 h-10 text-white animate-spin" />,
-        }}
-      />
+      <PageLightbox {...lightbox} />
     </div>
   );
 }

@@ -46,14 +46,15 @@ src/
                      detail pages (walkthrough, level, collectible type), a Blood Rain news
                      page, plus auth/account (including Progress), the admin page, legal,
                      and error pages
-  components/        reusable UI: the shared index page and cards, image gallery, table of
-                     contents, SEO and structured data, search, comments, notifications,
-                     the Manage progress card, navbar, skeletons, modals, and admin/ (the
-                     admin page's rows, row menu and address)
+  components/        reusable UI: the shared index page and cards, image gallery and
+                     lightbox, table of contents, SEO and structured data, search,
+                     comments, notifications, the Manage progress card, navbar, skeletons,
+                     modals, and admin/ (the admin page's rows, row menu and address)
   hooks/             one data-domain hook per resource (collectibles, walkthroughs, progress,
                      user stats, comments, notifications, search, the admin page's
                      accounts) plus useAuth (with authFetch) and useAuthContext,
-                     useBulkProgress, useHandClearTip, usePrefetch, useFloatingControl,
+                     useBulkProgress, useHandClearTip, usePageLightbox (the image lightbox
+                     on level, type and walkthrough pages), usePrefetch, useFloatingControl,
                      useMenuButton (the menu button pattern, for any menu), and the
                      useActiveSection scroll-spy
   context/           AuthContext (session + token lifecycle), ToastContext
