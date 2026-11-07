@@ -40,10 +40,7 @@
   // plus the Python and JS dependencies. The object form runs each step in
   // parallel, so one failing doesn't skip the others.
   //
-  // The client step ends by reinstalling Playwright's Chromium and its system
-  // libraries for the e2e suite, since a rebuild drops both. It goes last in
-  // that step, after npm 11 and the client's packages, so a failed download
-  // can't block either of them.
+  // The client step ends by installing Playwright's Chromium.
   //
   // npm is pinned to 11 because min-release-age in .npmrc needs npm 11.10+,
   // and the npm 10 bundled with Node 22 silently ignores it. Not 12: it blocks
