@@ -40,6 +40,8 @@
   // plus the Python and JS dependencies. The object form runs each step in
   // parallel, so one failing doesn't skip the others.
   //
+  // The client step ends by installing Playwright's Chromium.
+  //
   // npm is pinned to 11 because min-release-age in .npmrc needs npm 11.10+,
   // and the npm 10 bundled with Node 22 silently ignores it. Not 12: it blocks
   // dependency install scripts by default, which Railway's build doesn't.
@@ -47,7 +49,7 @@
   "postCreateCommand": {
     "claude": "curl -fsSL https://claude.ai/install.sh | bash",
     "server": "cd server && uv sync",
-    "client": "npm install -g npm@11 && cd client && npm ci"
+    "client": "npm install -g npm@11 && cd client && npm ci && cd /workspaces/stellar-blade-guide/e2e && ./node_modules/.bin/playwright install --with-deps chromium"
   },
   // docker-compose.yml publishes the ports, so VS Code shouldn't auto-forward
   // its own copies on top of them.

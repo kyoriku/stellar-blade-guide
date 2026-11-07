@@ -50,6 +50,8 @@ services:
       # Claude Code login and chat history, kept across rebuilds.
       - claude-config:/home/vscode/.claude
 
+    # An init as PID 1 reaps the zombies that sleep infinity leaves behind.
+    init: true
     command: sleep infinity
 
     # 3000 is open to the network so a phone on the same wifi can load the dev
