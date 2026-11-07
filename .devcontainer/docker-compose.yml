@@ -50,6 +50,10 @@ services:
       # Claude Code login and chat history, kept across rebuilds.
       - claude-config:/home/vscode/.claude
 
+    # Docker's init runs as PID 1 in front of `sleep infinity`, which never
+    # reaps orphaned processes: without it, dead headless_shell and claude
+    # processes piled up as zombies.
+    init: true
     command: sleep infinity
 
     # 3000 is open to the network so a phone on the same wifi can load the dev
