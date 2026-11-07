@@ -140,9 +140,9 @@ function ImageGallery({ images = [], galleryKey, onImageClick, priority = false 
 
 // Memoized because a progress toggle legitimately re-renders every section —
 // isCompleted/isToggling change identity to repaint one checkbox — and without
-// this each of those rebuilds all 429 galleries on Wasteland, 1,716 buildSrcSet
-// strings among them. All four props are stable at every call site (images is
-// the query's own array, or WalkthroughContent's memoized list; galleryKey a
-// number; usePageLightbox's onImageClick keeps one identity), so the default
-// shallow compare is enough.
+// this each of those rebuilds every gallery on the page, about 200 on Wasteland
+// with some 450 buildSrcSet strings among them. All four props are stable at
+// every call site (images is the query's own array, or WalkthroughContent's
+// memoized list; galleryKey a number; usePageLightbox's onImageClick keeps one
+// identity), so the default shallow compare is enough.
 export default memo(ImageGallery);
