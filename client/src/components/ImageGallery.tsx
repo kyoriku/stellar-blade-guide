@@ -70,9 +70,14 @@ function ImageGallery({ images = [], galleryKey, onImageClick, priority = false 
         const shown = isLoaded || eager;
 
         return (
-          <div
+          // A real button, so the tile takes focus and opens from the keyboard, named
+          // by its image's alt. w-full and text-left keep the div's width and the
+          // caption's alignment against a button's defaults. Focus is an outline, not
+          // a ring: forced colors drops box-shadows.
+          <button
+            type="button"
             key={image.id}
-            className="group relative aspect-video overflow-hidden rounded-lg cursor-pointer"
+            className="group relative aspect-video w-full overflow-hidden rounded-lg text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-500/60"
             onClick={() => onImageClick?.(galleryKey, idx)}
             onMouseEnter={() => setHoveredImage(image.id)}
             onMouseLeave={() => setHoveredImage(null)}
@@ -110,8 +115,9 @@ function ImageGallery({ images = [], galleryKey, onImageClick, priority = false 
               fetchPriority={highPriority ? 'high' : undefined}
             />
 
+            {/* Hidden from screen readers: the caption repeats the alt, the button's name. */}
             {isLoaded && (
-              <div>
+              <div aria-hidden="true">
                 <div className={`absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`}>
                   <div className="absolute top-3 right-3">
                     <ZoomIn className={`w-5 h-5 text-gray-100 drop-shadow-lg transition-opacity duration-200 ${hoveredImage === image.id ? 'opacity-100' : 'opacity-0'}`} />
@@ -125,7 +131,7 @@ function ImageGallery({ images = [], galleryKey, onImageClick, priority = false 
                 <div className={`absolute inset-0 rounded-lg border transition-colors duration-200 ${hoveredImage === image.id ? 'border-gray-700' : 'border-transparent'}`} />
               </div>
             )}
-          </div>
+          </button>
         );
       })}
     </div>
