@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { slugifyTitle, buildSlugMap, slugifySection, sectionAnchor } from './slugify'
+import { slugifyTitle, buildSlugMap, slugifySection, sectionAnchor, slugifyPlace } from './slugify'
 
 // These cases mirror server/tests/test_slugify.py one-for-one: the server's
 // _slugify_title/_build_slug_map must stay byte-identical to these functions
@@ -136,5 +136,29 @@ describe('sectionAnchor', () => {
 
   it('is empty for a Greek-only title, where the server gives no anchor', () => {
     expect(sectionAnchor({ section_title: '\u03b1\u03b2\u03b3', order: 3 })).toBe('')
+  })
+})
+
+// Level and location section ids on the level and type pages.
+describe('slugifyPlace', () => {
+  it('hyphenates spaces and keeps digits', () => {
+    expect(slugifyPlace('Cargo Lift 121')).toBe('cargo-lift-121')
+  })
+
+  it('drops parentheses', () => {
+    expect(slugifyPlace('Eidos 7 (Revisited)')).toBe('eidos-7-revisited')
+  })
+
+  it('drops straight and curly apostrophes', () => {
+    expect(slugifyPlace("Lyle's General Store")).toBe('lyles-general-store')
+    expect(slugifyPlace('Sisters\u2019 Junk')).toBe('sisters-junk')
+  })
+
+  it('builds a type page id from level and location', () => {
+    expect(slugifyPlace("Xion-Lyle's General Store")).toBe('xion-lyles-general-store')
+  })
+
+  it('keeps an en dash, so the A-Z section id is unchanged', () => {
+    expect(slugifyPlace('All-A\u2013Z')).toBe('all-a\u2013z')
   })
 })
