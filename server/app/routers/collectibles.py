@@ -83,7 +83,7 @@ async def get_all_collectibles(request: Request, db: AsyncSession = Depends(get_
         joinedload(Collectible.types),
         joinedload(Collectible.location).joinedload(Location.level),
         joinedload(Collectible.images)
-    ).order_by(Collectible.display_order, Collectible.id)   # 64 entries share display_order 1
+    ).order_by(Collectible.display_order, Collectible.id)   # 76 entries share display_order 1
 
     result = await db.execute(stmt)
     collectibles = result.unique().scalars().all()
