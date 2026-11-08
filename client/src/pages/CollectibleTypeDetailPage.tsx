@@ -15,6 +15,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap, slugifyPlace } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
+import { hashTarget } from '../utils/hashTarget'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
@@ -260,8 +261,9 @@ function CollectibleTypeDetailPage() {
 
   // Scroll to hash on load once data is ready
   useLayoutEffect(() => {
-    if (levelData.length > 0 && location.hash) {
-      const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    const id = hashTarget(location.hash);
+    if (levelData.length > 0 && id !== null) {
+      const el = document.getElementById(id);
       if (el) {
         // Inline content links target a card, but its "Level · Location" header
         // sits 44px above, outside the card — landing the card puts that header

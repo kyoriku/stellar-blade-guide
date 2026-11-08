@@ -20,6 +20,7 @@ import { usePageLightbox, levelPageGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
 import { slugifyPlace } from '../utils/slugify'
+import { hashTarget } from '../utils/hashTarget'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import { SECTION_LABELS } from '../constants/sections'
@@ -56,8 +57,9 @@ function LevelDetailPage() {
   }, [toggle, noteToggle])
 
   useLayoutEffect(() => {
-    if (locationData.length > 0 && location.hash) {
-      const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    const id = hashTarget(location.hash);
+    if (locationData.length > 0 && id !== null) {
+      const el = document.getElementById(id);
       if (el) {
         // Inline content links target a card, but its "Level · Location" header
         // sits 44px above, outside the card — landing the card puts that header
