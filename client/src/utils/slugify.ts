@@ -43,3 +43,9 @@ export function slugifySection(title: string): string {
 export function sectionAnchor(section: { section_title?: string; order: number }): string {
   return section.section_title ? slugifySection(section.section_title) : `section-${section.order}`
 }
+
+// A level or location section's id (a type page passes "level-location"): spaces to
+// hyphens, parentheses and apostrophes dropped.
+export function slugifyPlace(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, '-').replace(/[()'\u2019]/g, '')
+}

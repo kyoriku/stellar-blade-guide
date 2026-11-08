@@ -12,7 +12,7 @@ import { COLLECTIBLES, UPGRADES, COSMETICS } from '../constants/navigation'
 import { COLLECTIBLE_IMAGES, UPGRADE_IMAGES, COSMETIC_IMAGES } from '../constants/categoryImages'
 import { ArrowLeft, ChevronDown } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
-import { slugifyTitle, buildSlugMap } from '../utils/slugify'
+import { slugifyTitle, buildSlugMap, slugifyPlace } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
 import { useProgress } from '../hooks/useProgress'
@@ -338,7 +338,7 @@ function CollectibleTypeDetailPage() {
   const activeLevelName = useMemo(() =>
     sortedLevelData.find(level =>
       level.locations.some(loc => {
-        const sectionId = `${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+        const sectionId = slugifyPlace(`${level.level_name}-${loc.location_name}`);
         return sectionId === activeSection;
       })
     )?.level_name || sortedLevelData[0]?.level_name,
@@ -360,13 +360,13 @@ function CollectibleTypeDetailPage() {
     }
 
     return sortedLevelData.map(level => {
-      const levelId = level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+      const levelId = slugifyPlace(level.level_name);
 
       return {
         mainLink: `#${levelId}`,
         title: level.level_name,
         subLinks: level.level_name === activeLevelName ? level.locations.map(loc => ({
-          href: `#${level.level_name}-${loc.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
+          href: `#${slugifyPlace(`${level.level_name}-${loc.location_name}`)}`,
           title: loc.location_name
         })) : undefined
       };
@@ -387,15 +387,14 @@ function CollectibleTypeDetailPage() {
 
     // Check if this is a level link (e.g. #wasteland) vs a section link (e.g. #wasteland-scrap-yard)
     const matchedLevel = sortedLevelData.find(level => {
-      const levelId = level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+      const levelId = slugifyPlace(level.level_name);
       return levelId === targetId;
     });
 
     if (matchedLevel && matchedLevel.locations.length > 0) {
       // Clicked a level — set activeSection to its first location so sublinks open immediately
       const firstLoc = matchedLevel.locations[0];
-      const sectionId = `${matchedLevel.level_name}-${firstLoc.location_name}`
-        .toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+      const sectionId = slugifyPlace(`${matchedLevel.level_name}-${firstLoc.location_name}`);
       setActiveSection(sectionId);
     } else {
       // Clicked a sublink — set directly
@@ -631,9 +630,9 @@ function CollectibleTypeDetailPage() {
 
             {/* Collectibles grouped by level (or flat A-Z), in the order usePageLightbox walks them (typePageGalleries) */}
             {sortedLevelData.map((level) => (
-              <div key={level.level_id} id={level.level_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')} className="space-y-8 scroll-anchor">
+              <div key={level.level_id} id={slugifyPlace(level.level_name)} className="space-y-8 scroll-anchor">
                 {level.locations.map((location) => {
-                  const sectionId = `${level.level_name}-${location.location_name}`.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+                  const sectionId = slugifyPlace(`${level.level_name}-${location.location_name}`);
 
                   return (
                     <CollectibleSection

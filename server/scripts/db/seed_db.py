@@ -135,7 +135,19 @@ async def seed_database():
                 Location(level_id=levels['Eidos 7'].id, name='Crater', display_order=8),
                 
                 # Xion
-                Location(level_id=levels['Xion'].id, name='Xion City', display_order=1),
+                Location(level_id=levels['Xion'].id, name='Safehouse', display_order=1),
+                Location(level_id=levels['Xion'].id, name='Main Gate', display_order=2),
+                Location(level_id=levels['Xion'].id, name="Lyle's General Store", display_order=3),
+                Location(level_id=levels['Xion'].id, name='Bookstore', display_order=4),
+                Location(level_id=levels['Xion'].id, name='Bulletin Board', display_order=5),
+                Location(level_id=levels['Xion'].id, name='Gwen Hair Salon', display_order=6),
+                Location(level_id=levels['Xion'].id, name="Sisters' Junk", display_order=7),
+                Location(level_id=levels['Xion'].id, name='Tree Plaza', display_order=8),
+                Location(level_id=levels['Xion'].id, name='The Last Gulp', display_order=9),
+                Location(level_id=levels['Xion'].id, name='Memory Square', display_order=10),
+                Location(level_id=levels['Xion'].id, name='Presence Chamber', display_order=11),
+                Location(level_id=levels['Xion'].id, name='The Ark', display_order=12),
+                Location(level_id=levels['Xion'].id, name='Burning Xion', display_order=13),
 
                 # Wasteland
                 Location(level_id=levels['Wasteland'].id, name='Barren Land', display_order=1),

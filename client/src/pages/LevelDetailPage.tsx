@@ -19,6 +19,7 @@ import { useActiveSection } from '../hooks/useActiveSection'
 import { usePageLightbox, levelPageGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
+import { slugifyPlace } from '../utils/slugify'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import { SECTION_LABELS } from '../constants/sections'
@@ -138,14 +139,14 @@ function LevelDetailPage() {
     [filteredLocationData]);
 
   const firstSectionId = filteredLocationData.length > 0
-    ? `#${filteredLocationData[0].location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`
+    ? `#${slugifyPlace(filteredLocationData[0].location_name)}`
     : '#';
 
   const tocLinks = [{
     mainLink: firstSectionId,
     title: displayLevelName,
     subLinks: filteredLocationData.map(loc => ({
-      href: `#${loc.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '')}`,
+      href: `#${slugifyPlace(loc.location_name)}`,
       title: loc.location_name
     }))
   }];
@@ -365,7 +366,7 @@ function LevelDetailPage() {
 
             {/* Collectible sections, in the order usePageLightbox walks them (levelPageGalleries) */}
             {filteredLocationData.map((location) => {
-              const sectionId = location.location_name.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+              const sectionId = slugifyPlace(location.location_name);
 
               return (
                 <CollectibleSection

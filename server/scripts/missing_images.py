@@ -68,7 +68,8 @@ def disambiguate(titles: list[str]) -> list[str]:
 
 
 def _slug(name: str) -> str:
-    return name.lower().replace(" ", "-")
+    # Apostrophes drop out, as in the seed file names (Sisters' Junk -> sisters-junk).
+    return name.lower().replace("'", "").replace("\N{RIGHT SINGLE QUOTATION MARK}", "").replace(" ", "-")
 
 
 def load_seed_order():
@@ -83,8 +84,9 @@ def load_seed_order():
     src = SEED_DB_SOURCE.read_text()
 
     levels = re.findall(r"Level\(name='([^']+)',\s*display_order=(\d+)\)", src)
+    # A name holding an apostrophe is double-quoted, so either quote opens it.
     locs = re.findall(
-        r"Location\(level_id=levels\['([^']+)'\]\.id,\s*name='([^']+)',\s*display_order=(\d+)\)", src
+        r"""Location\(level_id=levels\['([^']+)'\]\.id,\s*name=(['"])(.+?)\2,\s*display_order=(\d+)\)""", src
     )
     types = re.findall(
         r"CollectibleType\(name='([^']+)',\s*category_group='([^']+)',\s*display_order=(\d+)", src
@@ -96,7 +98,7 @@ def load_seed_order():
         )
 
     level_order = {_slug(name): int(order) for name, order in levels}
-    loc_order = {(_slug(lvl), _slug(name)): int(order) for lvl, name, order in locs}
+    loc_order = {(_slug(lvl), _slug(name)): int(order) for lvl, _quote, name, order in locs}
     group_rank = {}
     for _, group, _ in types:
         group_rank.setdefault(group, len(group_rank))
