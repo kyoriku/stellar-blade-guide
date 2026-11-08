@@ -31,9 +31,17 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
   const listRef = useRef<HTMLUListElement>(null)
   const [listScrolls, setListScrolls] = useState(false)
 
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const drawerRef = useRef<HTMLDivElement>(null)
+  // Set when the drawer closes with focus inside it: inert would drop that focus to <body>.
+  const returnFocus = useRef(false)
+
   const open = useCallback(() => setIsOpen(true), [])
 
-  const close = useCallback(() => setIsOpen(false), [])
+  const close = useCallback(() => {
+    returnFocus.current = drawerRef.current?.contains(document.activeElement) ?? false
+    setIsOpen(false)
+  }, [])
 
   // Close on Escape key
   useEffect(() => {
@@ -52,6 +60,13 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
     if (!href) return
     pendingJump.current = null
     scrollToSection(href)
+  }, [isOpen])
+
+  // The Contents button takes back the focus a closing drawer held.
+  useLayoutEffect(() => {
+    if (isOpen || !returnFocus.current) return
+    returnFocus.current = false
+    buttonRef.current?.focus({ preventScroll: true })
   }, [isOpen])
 
   // pan-y is only safe while the list has somewhere to scroll. overscroll-behavior
@@ -79,13 +94,14 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
   const handleLinkClick = (href: string) => {
     onNavigate?.(href)
     pendingJump.current = href
-    setIsOpen(false)
+    close()
   }
 
   return (
     <>
       {/* Floating button — only visible on mobile */}
       <button
+        ref={buttonRef}
         onClick={open}
         className="lg:hidden fixed bottom-6 right-4 z-40 flex items-center gap-2 px-4 py-2.5 bg-secondary border border-gray-700 hover:border-cyan-500/50 rounded-full shadow-lg shadow-black/40 text-sm font-medium text-gray-200 hover:text-white transition-all duration-200"
         aria-label="Open table of contents"
@@ -106,8 +122,11 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
         />
       )}
 
-      {/* Bottom drawer */}
+      {/* Bottom drawer — inert when closed: it only slides out of view, so without
+          inert its links stay in the tab order and the a11y tree while hidden */}
       <div
+        ref={drawerRef}
+        inert={!isOpen}
         className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-secondary border-t border-gray-700 rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'
           }`}
         // The shell and the backdrop together cover the viewport, so this is
@@ -123,6 +142,7 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
           <h4 className="text-base font-bold text-white flex-1">Contents</h4>
           <button
             onClick={close}
+            aria-label="Close table of contents"
             className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
