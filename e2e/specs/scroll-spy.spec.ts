@@ -20,12 +20,10 @@ const pill = (page: Page, name: string) => page.getByRole('button', { name, exac
 const ENTRIES = 'aside ul ul a[href^="#"]';
 const entry = (page: Page, id: string) => page.locator(`aside ul ul a[href="#${id}"]`);
 
-// Only the lit entry carries this background; hover adds a different one.
-const LIT = /(^|\s)bg-cyan-500\/10(\s|$)/;
-const lit = (page: Page) => page.evaluate(({ entries, pattern }) =>
-  [...document.querySelectorAll(entries)]
-    .filter((a) => new RegExp(pattern).test(a.className))
-    .map((a) => a.getAttribute('href')!.slice(1)), { entries: ENTRIES, pattern: LIT.source });
+// The lit entry is the one marked as the current location.
+const lit = (page: Page) => page.evaluate((entries) =>
+  [...document.querySelectorAll(`${entries}[aria-current="location"]`)]
+    .map((a) => a.getAttribute('href')!.slice(1)), ENTRIES);
 
 // An absence can't be polled for, so this gives the observer two frames to report first.
 const expectNothingLit = async (page: Page) => {
@@ -164,4 +162,16 @@ test.describe('scroll-spy', () => {
     await expect.poll(() => lit(page)).toEqual([]);
   });
 
+  test("the phone's floating Contents marks the lit section too", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(LEVEL);
+    await expect(sections(page).first()).toBeVisible();
+    await intoBand(page, '#parking-tower');
+
+    await page.getByRole('button', { name: 'Open table of contents' }).click();
+    // The sidebar's copy is hidden below lg.
+    const current = page.locator('a[aria-current="location"]').filter({ visible: true });
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveAttribute('href', '#parking-tower');
+  });
 });

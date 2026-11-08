@@ -169,6 +169,7 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
                           <li key={subIndex}>
                             <a
                               href={subLink.href}
+                              aria-current={isActive ? 'location' : undefined}
                               onClick={(e) => { e.preventDefault(); handleLinkClick(subLink.href) }}
                               className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg transition-all duration-200 ${isActive
                                   ? 'text-cyan-400 bg-cyan-500/10 font-medium'
