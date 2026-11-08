@@ -16,6 +16,7 @@ import { useActiveSection } from '../hooks/useActiveSection'
 import { usePageLightbox, walkthroughGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
+import { hashTarget } from '../utils/hashTarget'
 import { walkthroughTypeName } from '../utils/walkthroughTypeName'
 import { sectionAnchor, slugifySection } from '../utils/slugify'
 import { serverWalkthroughTitle } from '../utils/serverHead'
@@ -53,8 +54,9 @@ function WalkthroughDetailPage() {
 
   // Scroll to hash on load or hash change
   useLayoutEffect(() => {
-    if (walkthrough && location.hash) {
-      const el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    const id = hashTarget(location.hash);
+    if (walkthrough && id !== null) {
+      const el = document.getElementById(id);
       if (el) scrollToElement(el);
     }
   }, [walkthrough, location.hash]);
