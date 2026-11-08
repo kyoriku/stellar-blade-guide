@@ -43,7 +43,6 @@ function LevelDetailPage() {
 
   const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!, !!levelName && isLevelSlug(levelName));
 
-  const [activeSection, setActiveSection] = useActiveSection('section[id]', [locationData]);
   const [cycleFilter, setCycleFilter] = useState<string>('All');
   const { prefetchLevel } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
@@ -55,17 +54,6 @@ function LevelDetailPage() {
     const found = toggle(id)
     if (found !== undefined) noteToggle(id, found)
   }, [toggle, noteToggle])
-  const resetActiveSection = () => setActiveSection('');
-
-  // A new level starts with its filters cleared. The level they belong to is kept in
-  // state, not a ref: React can set aside a render it has started, and a ref written
-  // there would keep the new level while the cleared filters were thrown away.
-  const [filtersFor, setFiltersFor] = useState(levelName);
-  if (levelName !== filtersFor) {
-    setFiltersFor(levelName);
-    setActiveSection('');
-    setCycleFilter('All');
-  }
 
   useLayoutEffect(() => {
     if (locationData.length > 0 && location.hash) {
@@ -117,6 +105,21 @@ function LevelDetailPage() {
       }))
       .filter(loc => loc.collectibles.length > 0);
   }, [locationData, cycleFilter]);
+
+  // The filtered list: the sections a cycle filter brings back are new elements to observe.
+  const [activeSection, setActiveSection] = useActiveSection('section[id]', [filteredLocationData]);
+  const resetActiveSection = () => setActiveSection('');
+
+  // A new level starts with its filters cleared, during render, so this sits below the
+  // useActiveSection call. The level they belong to is kept in state, not a ref: React
+  // can set aside a render it has started, and a ref written there would keep the new
+  // level while the cleared filters were thrown away.
+  const [filtersFor, setFiltersFor] = useState(levelName);
+  if (levelName !== filtersFor) {
+    setFiltersFor(levelName);
+    setActiveSection('');
+    setCycleFilter('All');
+  }
 
   // The lightbox holds the cards this page shows (after its cycle filter), in page order.
   const { onImageClick, lightbox } = usePageLightbox(filteredLocationData, levelPageGalleries);

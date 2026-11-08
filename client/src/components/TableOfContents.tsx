@@ -65,6 +65,7 @@ function TableOfContents({ links, currentLevel, activeSection, onNavigate }: Tab
                       >
                         <a
                           href={subLink.href}
+                          aria-current={isActiveSubLink ? 'location' : undefined}
                           onClick={(e) => {
                             e.preventDefault();
                             handleSubLinkClick(subLink.href);
