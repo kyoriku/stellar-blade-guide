@@ -5,10 +5,11 @@ import seo from './seo.json';
 // by slug, feeding both the index-page card grids and the detail pages' og
 // images. Full-size R2 URLs; thumbnailUrl()/ogImageUrl() derive width variants
 // at render time.
+// No prototype, so a slug from the address such as `constructor` finds nothing.
 function imagesOf(section: Record<string, { image: string }>): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(section).map(([slug, entry]) => [slug, entry.image])
-  );
+  const images = Object.create(null) as Record<string, string>;
+  for (const [slug, entry] of Object.entries(section)) images[slug] = entry.image;
+  return images;
 }
 
 export const WALKTHROUGH_IMAGES: Record<string, string> = imagesOf(seo.walkthroughTypes);
