@@ -67,4 +67,14 @@ test.describe('collectible pages at 320px', () => {
       expect(sorted.by, `past the edge in A–Z: ${sorted.culprits}`).toBe(0);
     });
   }
+
+  test('the A–Z label stays on one line beside the cycle pills', async ({ page }) => {
+    await open(page, '/cosmetics/nano-suits');
+    const lines = await page.getByRole('button', { name: 'A–Z', exact: true }).evaluate((button) => {
+      const range = document.createRange();
+      range.selectNodeContents(button);
+      return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+    });
+    expect(lines).toBe(1);
+  });
 });

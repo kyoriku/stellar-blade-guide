@@ -556,11 +556,12 @@ function CollectibleTypeDetailPage() {
 
                     <div className="w-px h-6 bg-gray-700 mx-2" />
 
+                    {/* shrink-0: short of room, the pills wrap rather than the label. */}
                     <button
                       onClick={() => setSortMode(sortMode === 'alphabetical' ? 'default' : 'alphabetical')}
                       aria-pressed={sortMode === 'alphabetical'}
                       title="Sort alphabetically"
-                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
+                      className={`shrink-0 px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${sortMode === 'alphabetical'
                         ? PILL_SELECTED
                         : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-300'
                         }`}
