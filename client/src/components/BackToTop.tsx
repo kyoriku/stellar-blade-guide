@@ -12,7 +12,9 @@ export default function BackToTop({ onScrollToTop }: { onScrollToTop?: () => voi
   }, [])
 
   return (
+    // Inert while hidden: it only fades out, so without inert it stays in the tab order.
     <button
+      inert={!visible}
       onClick={() => {
         window.scrollTo({ top: 0, behavior: 'instant' })
         history.replaceState(null, '', window.location.pathname);
