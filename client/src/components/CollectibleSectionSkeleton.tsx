@@ -2,25 +2,19 @@ import { Image as ImageIcon } from 'lucide-react'
 
 interface CollectibleSectionSkeletonProps {
   id: string;
-  locationName?: string;
   cardCount?: number;
   hideTypeBadge?: boolean;
 }
 
 function CollectibleSectionSkeleton({
   id,
-  locationName,
   cardCount = 2,
   hideTypeBadge = false,
 }: CollectibleSectionSkeletonProps) {
   return (
     <section id={id} className="mb-8">
       <div className="flex items-center gap-3 mb-4">
-        {locationName ? (
-          <span className="text-lg text-gray-400 whitespace-nowrap">{locationName}</span>
-        ) : (
-          <div className="h-7 w-48 bg-gray-700 rounded animate-pulse" />
-        )}
+        <div className="h-7 w-48 bg-gray-700 rounded animate-pulse" />
         <div className="h-px flex-1 bg-gradient-to-r from-gray-700 to-transparent" />
       </div>
 
