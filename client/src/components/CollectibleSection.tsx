@@ -36,6 +36,28 @@ const CYCLE_STYLES: Record<string, string> = {
   'DLC': 'bg-green-500/20 text-green-400 border-green-500/50',
 };
 
+// "Level · Location": too wide for its line, it breaks after the dot and the divider follows the location.
+function LocationHeading({ levelName, title, empty = false }: { levelName?: string; title: string; empty?: boolean }) {
+  const level = levelName && levelName !== title ? levelName : null;
+  return (
+    <div className={`flex flex-wrap items-center text-lg ${empty ? 'mb-5 text-gray-400' : 'mb-4 text-gray-300'}`}>
+      {level && (
+        <span>
+          {empty ? level : <span className="text-gray-200">{level}</span>}{' '}
+          <span className={empty ? 'text-gray-600' : 'text-cyan-600'}>·</span>{' '}
+        </span>
+      )}
+      <span className="flex flex-auto items-center min-w-0">
+        <span className={level || empty ? 'min-w-0 text-balance' : 'min-w-0 text-balance text-gray-200'}>{title}</span>
+        {/* Absolute, so the line and its gap add nothing to the width the wrap is decided on. */}
+        <span className="relative flex-1 self-stretch">
+          <span className={`absolute left-3 right-0 top-[calc(50%-0.5px)] h-px ${empty ? 'bg-gray-700' : 'bg-linear-to-r from-gray-700 to-transparent'}`} />
+        </span>
+      </span>
+    </div>
+  );
+}
+
 function CollectibleSection({
   id,
   title,
@@ -51,16 +73,7 @@ function CollectibleSection({
   if (!collectibles || collectibles.length === 0) {
     return (
       <section id={id} className="mb-8 scroll-anchor">
-        {title && (
-          <div className="flex items-center gap-3 mb-5">
-            <span className="text-lg text-gray-400 whitespace-nowrap">
-              {levelName && levelName !== title ? (
-                <>{levelName} <span className="text-gray-600">·</span> {title}</>
-              ) : title}
-            </span>
-            <div className="h-px flex-1 bg-gray-700" />
-          </div>
-        )}
+        {title && <LocationHeading levelName={levelName} title={title} empty />}
         <div className="bg-secondary rounded-lg p-8 border border-zinc-800">
           <p className="text-gray-400 text-center">No collectibles found for this location.</p>
         </div>
@@ -70,15 +83,7 @@ function CollectibleSection({
 
   return (
     <section id={id} className="mb-8 scroll-anchor">
-      {title && (
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-lg text-gray-300 whitespace-nowrap">
-            {levelName && levelName !== title ? (
-              <><span className="text-gray-200">{levelName}</span> <span className="text-cyan-600">·</span> {title}</>
-            ) : <span className="text-gray-200">{title}</span>}
-          </span>
-          <div className="h-px flex-1 bg-linear-to-r from-gray-700 to-transparent" />        </div>
-      )}
+      {title && <LocationHeading levelName={levelName} title={title} />}
 
       <div className="space-y-8">
         {/* The page's lightbox (usePageLightbox) walks these cards in this order. */}
