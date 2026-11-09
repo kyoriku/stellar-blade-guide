@@ -163,16 +163,14 @@ function CollectibleTypeDetailPage() {
       .filter(level => level.locations.length > 0);
   }, [filteredLevelData, subtypeFilter, showSubtypeFilter]);
 
+  // Duplicate titles are numbered over the whole page, as search and usePrefetch number
+  // them, so a card keeps its id under every filter.
+  const slugMap = useMemo(() => buildSlugMap(
+    levelData.flatMap(level => level.locations.flatMap(loc => loc.collectibles))
+  ), [levelData]);
+
   // Sort data alphabetically (wraps filtered data in a fake single-level structure)
   const sortedLevelData = useMemo(() => {
-    // Generate unique slugs for ALL collectibles (both modes)
-    const allCollectibles = filteredBySubtype.flatMap(level =>
-      level.locations.flatMap(loc => loc.collectibles)
-    );
-
-    const slugMap = buildSlugMap(allCollectibles);
-
-    // Apply slugs to all collectibles
     const dataWithSlugs = filteredBySubtype.map(level => ({
       ...level,
       locations: level.locations.map(loc => ({
@@ -212,7 +210,7 @@ function CollectibleTypeDetailPage() {
         collectibles: sorted
       }]
     }];
-  }, [filteredBySubtype, sortMode]);
+  }, [filteredBySubtype, sortMode, slugMap]);
 
   // The lightbox holds the cards this page shows (after its cycle and subtype filters
   // and A-Z sort), in page order.
