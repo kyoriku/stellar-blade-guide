@@ -4,8 +4,9 @@ import { Home, AlertCircle, Clock, ServerCrash, RefreshCw, WifiOff } from 'lucid
 import SEO from '../components/SEO'
 import { NETWORK_ERROR_MESSAGE } from '../services/api'
 
-// Shared by the two home-link variants below so they cannot drift apart.
-const HOME_LINK_CLASSES = 'inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200';
+// Shared by the two home-link variants below so they cannot drift apart. The transparent
+// border matches Try Again's, so the two line up.
+const HOME_LINK_CLASSES = 'inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-transparent bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200';
 
 interface ErrorPageProps {
   // null: nothing to number, a crash in the browser rather than an HTTP answer.

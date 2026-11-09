@@ -73,6 +73,16 @@ test.describe('a page that crashes', () => {
     await expectCrashInLayout(page);
   });
 
+  test('its two buttons line up', async ({ page }) => {
+    await breakLevelPage(page);
+    await page.goto(LEVEL);
+    await expectCrashInLayout(page);
+    const retry = (await page.getByRole('button', { name: 'Try Again' }).boundingBox())!;
+    const home = (await page.getByRole('link', { name: 'Back to Home' }).boundingBox())!;
+    expect(home.y).toBe(retry.y);
+    expect(home.height).toBe(retry.height);
+  });
+
   test('Try Again reloads, so the page renders once the cause is gone', async ({ page }) => {
     await breakLevelPage(page);
     await page.goto(LEVEL);
