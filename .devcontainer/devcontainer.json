@@ -1,62 +1,33 @@
-// .devcontainer/devcontainer.json
-//
-// VS Code reads this file when you run "Dev Containers: Reopen in Container".
-// It also configures the dev environment when accessed via pure terminal —
-// the `features` and `postCreateCommand` run regardless of which editor you use.
-//
-// Schema reference: https://containers.dev/implementors/json_reference/
 {
   "name": "stellar-blade-guide-dev",
-  // Use docker-compose to orchestrate dev + postgres + redis.
   "dockerComposeFile": "docker-compose.yml",
   "service": "dev",
   "workspaceFolder": "/workspaces/stellar-blade-guide",
-  // The workspace is bind-mounted from the Mac and the uv cache lives in the
-  // container, so hardlinks can't cross between them. uv falls back to
-  // copying anyway; setting it explicitly silences the warning.
+  // .venv's volume and uv's cache sit on different filesystems; copy mode skips the hardlink warning
   "containerEnv": {
     "UV_LINK_MODE": "copy"
   },
-  // Layer additional tooling onto the base Python image. Features are
-  // pre-built scriptlets maintained by the devcontainers community.
   "features": {
-    // Node.js for the React frontend.
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"
     },
-    // Astral's uv (Python package manager) per your project conventions.
-    // Pinned with the uv in the Dockerfile's COPY --from line and setup-uv's version and
-    // checksum in .github/workflows/ci.yml; bump all three together.
+    // Same uv as the Dockerfile and ci.yml; bump all three together
     "ghcr.io/va-h/devcontainers-features/uv:1": {
       "version": "0.12.21"
-    },
-    // Common shell utilities (zsh, oh-my-zsh, etc.) — quality of life inside the container.
-    // "ghcr.io/devcontainers/features/common-utils:2": {
-    //   "configureZshAsDefaultShell": true,
-    //   "username": "vscode"
-    // }
+    }
   },
-  // Runs once, after the container is created: Claude Code (native installer)
-  // plus the Python and JS dependencies. The object form runs each step in
-  // parallel, so one failing doesn't skip the others.
-  //
-  // The client step ends by installing Playwright's Chromium.
-  //
-  // npm is pinned to 11 because min-release-age in .npmrc needs npm 11.10+,
-  // and the npm 10 bundled with Node 22 silently ignores it. Not 12: it blocks
-  // dependency install scripts by default, which Railway's build doesn't.
-  // The Dockerfile's client stage and .github/workflows/ci.yml install the same npm 11.
+  // Object form: steps run in parallel, so one failing doesn't skip the others.
+  // npm 11 for min-release-age (Node 22's npm 10 ignores it; 12 blocks install scripts, unlike Railway's build).
+  // Exact because npm 10 runs this install. Same version in the Dockerfile and ci.yml
   "postCreateCommand": {
     "claude": "curl -fsSL https://claude.ai/install.sh | bash",
     "server": "cd server && uv sync",
-    "client": "npm install -g npm@11 && cd client && npm ci && cd /workspaces/stellar-blade-guide/e2e && ./node_modules/.bin/playwright install --with-deps chromium"
+    "client": "npm install -g npm@11.21.1 && cd client && npm ci && cd /workspaces/stellar-blade-guide/e2e && npm ci && ./node_modules/.bin/playwright install --with-deps chromium"
   },
-  // docker-compose.yml publishes the ports, so VS Code shouldn't auto-forward
-  // its own copies on top of them.
+  // compose publishes the ports, so VS Code shouldn't forward its own copies
   "otherPortsAttributes": {
     "onAutoForward": "ignore"
   },
-  // VS Code-specific settings. Ignored when using pure terminal workflow.
   "customizations": {
     "vscode": {
       "extensions": [
@@ -69,12 +40,9 @@
         "anthropic.claude-code"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/workspaces/stellar-blade-guide/server/.venv/bin/python",
-        // "terminal.integrated.defaultProfile.linux": "zsh"
+        "python.defaultInterpreterPath": "/workspaces/stellar-blade-guide/server/.venv/bin/python"
       }
     }
   },
-  // Run as the non-root `vscode` user that the base image provides.
-  // Avoids file ownership headaches when the bind-mount writes back to your Mac.
   "remoteUser": "vscode"
 }
