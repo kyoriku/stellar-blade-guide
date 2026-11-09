@@ -69,3 +69,11 @@ export function offeredFilters(view: PageFilters, cycles: readonly string[], sub
   const subtype = view.subtype === 'All' || (subtypes?.includes(view.subtype) ?? false) ? view.subtype : 'All'
   return cycle === view.cycle && subtype === view.subtype ? view : { ...view, cycle, subtype }
 }
+
+// What shows `card`: each filter that hides it goes back to All, A-Z staying as it is. The
+// subtype counts only where the page applies it. Returns `view` itself when nothing hides it.
+export function revealFilters(view: PageFilters, card: { cycle: string; subtype?: string | null }, subtypeApplies: boolean): PageFilters {
+  const cycle = view.cycle !== 'All' && card.cycle !== view.cycle ? 'All' : view.cycle
+  const subtype = subtypeApplies && view.subtype !== 'All' && card.subtype !== view.subtype ? 'All' : view.subtype
+  return cycle === view.cycle && subtype === view.subtype ? view : { ...view, cycle, subtype }
+}

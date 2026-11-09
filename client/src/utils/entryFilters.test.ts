@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_FILTERS, offeredFilters, readFilters, rememberFilters, sameFilters, type PageFilters } from './entryFilters'
+import { DEFAULT_FILTERS, offeredFilters, readFilters, rememberFilters, revealFilters, sameFilters, type PageFilters } from './entryFilters'
 
 const PATH = '/cosmetics/nano-suits'
 const NG_PLUS: PageFilters = { cycle: 'NG+', subtype: 'All', sort: 'alphabetical' }
@@ -118,5 +118,24 @@ describe('sameFilters', () => {
     expect(sameFilters(NG_PLUS, { ...NG_PLUS, sort: 'default' })).toBe(false)
     expect(sameFilters(NG_PLUS, { ...NG_PLUS, subtype: 'Books' })).toBe(false)
     expect(sameFilters(NG_PLUS, { ...NG_PLUS, cycle: 'All' })).toBe(false)
+  })
+})
+
+describe('revealFilters', () => {
+  const view: PageFilters = { cycle: 'NG+', subtype: 'Books', sort: 'alphabetical' }
+
+  it('puts back to All each filter that hides the card, and keeps A-Z', () => {
+    expect(revealFilters(view, { cycle: 'Base', subtype: 'Books' }, true)).toEqual({ cycle: 'All', subtype: 'Books', sort: 'alphabetical' })
+    expect(revealFilters(view, { cycle: 'NG+', subtype: 'Promotions' }, true)).toEqual({ cycle: 'NG+', subtype: 'All', sort: 'alphabetical' })
+    expect(revealFilters(view, { cycle: 'Base', subtype: null }, true)).toEqual({ cycle: 'All', subtype: 'All', sort: 'alphabetical' })
+  })
+
+  it('leaves a card the filters show, as the same object', () => {
+    expect(revealFilters(view, { cycle: 'NG+', subtype: 'Books' }, true)).toBe(view)
+    expect(revealFilters(DEFAULT_FILTERS, { cycle: 'DLC' }, false)).toBe(DEFAULT_FILTERS)
+  })
+
+  it('ignores the subtype where the page applies none', () => {
+    expect(revealFilters(view, { cycle: 'NG+', subtype: null }, false)).toBe(view)
   })
 })

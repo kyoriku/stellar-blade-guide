@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useParams, Link, NavigationType, useLocation, useNavigationType } from 'react-router-dom'
+import { useParams, Link, NavigationType, useLocation, useNavigationType, type Location } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
 import PageLightbox from '../components/PageLightbox'
@@ -15,6 +15,7 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap, slugifyPlace } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
 import { scrollToCard } from '../utils/scrollToElement'
+import { hashTarget } from '../utils/hashTarget'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
@@ -31,7 +32,8 @@ import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
-import { offeredFilters, readFilters, rememberFilters, type PageFilters } from '../utils/entryFilters'
+import { offeredFilters, readFilters, rememberFilters, revealFilters, type PageFilters } from '../utils/entryFilters'
+import { REVEAL_COPY } from '../constants/revealCopy'
 
 // A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
 // 2px Highlight border, with a pixel less padding so its size doesn't change (the
@@ -177,6 +179,9 @@ function CollectibleTypeDetailPage() {
   const slugMap = useMemo(() => buildSlugMap(
     levelData.flatMap(level => level.locations.flatMap(loc => loc.collectibles))
   ), [levelData]);
+  const cardsBySlug = useMemo(() => new Map(
+    levelData.flatMap(level => level.locations.flatMap(loc => loc.collectibles)).map(c => [slugMap.get(c.id)!, c])
+  ), [levelData, slugMap]);
 
   // Sort data alphabetically (wraps filtered data in a fake single-level structure)
   const sortedLevelData = useMemo(() => {
@@ -264,6 +269,9 @@ function CollectibleTypeDetailPage() {
   // and in state, not refs: React may set a render aside. A new type, Back or Forward takes the
   // entry's filters. Chained, so each pass sees what the last one set.
   const [navFor, setNavFor] = useState(location);
+  // The link or search result whose card waits for the data before it can be shown.
+  const [revealFor, setRevealFor] = useState<Location | null>(null);
+  const [revealNote, setRevealNote] = useState('');
   const [filtersFor, setFiltersFor] = useState(typeName);
   if (location !== navFor) {
     setNavFor(location);
@@ -273,6 +281,20 @@ function CollectibleTypeDetailPage() {
     }
     if (typeName !== filtersFor || navigationType === NavigationType.Pop) {
       setFilters(readFilters(location.state, location.pathname));
+    }
+    // A link or search result shows the card it names, though a filter hides it; Back and
+    // Forward put back what the entry showed instead.
+    const reveal = navigationType !== NavigationType.Pop && location.hash ? location : null;
+    if (reveal !== revealFor) setRevealFor(reveal);
+    if (revealNote) setRevealNote('');
+  } else if (revealFor === location && levelData.length > 0) {
+    setRevealFor(null);
+    const id = hashTarget(location.hash);
+    const card = id === null ? undefined : cardsBySlug.get(id);
+    const shown = card ? revealFilters(view, card, showSubtypeFilter) : view;
+    if (card && shown !== view) {
+      setFilters(shown);
+      setRevealNote(REVEAL_COPY.shown(card.title));
     }
   } else if (levelData.length > 0) {
     // A filter the loaded page doesn't offer goes back to All: one kept from before a content
@@ -284,9 +306,11 @@ function CollectibleTypeDetailPage() {
   // The entry keeps what it shows, for Back, Forward and a reload. The router's copy of the
   // entry's state goes stale here: never pass location.state on.
   useEffect(() => {
+    // Not while a reveal waits for the data, or the entry keeps the filter hiding its card.
+    if (revealFor === location) return;
     rememberFilters(window.history, location, window.location.pathname,
       { cycle: cycleFilter, subtype: subtypeFilter, sort: sortMode });
-  }, [location, cycleFilter, subtypeFilter, sortMode]);
+  }, [location, cycleFilter, subtypeFilter, sortMode, revealFor]);
 
   // Once per navigation, when the cards are on screen.
   useHashJump(levelData.length > 0 && !isError, scrollToCard);
@@ -438,10 +462,15 @@ function CollectibleTypeDetailPage() {
     />
   );
 
+  // Says when a link or search result put a filter back to All. First in the page in its
+  // loading and loaded forms alike, so it is in place before a reveal that waited for the data.
+  const revealRegion = <span className="sr-only" aria-live="polite">{revealNote}</span>;
+
   // Loading state
   if (isLoading) {
     return (
       <div className="flex-1 bg-primary">
+        {revealRegion}
         {seo}
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
@@ -493,6 +522,7 @@ function CollectibleTypeDetailPage() {
 
   return (
     <div className="flex-1 bg-primary">
+      {revealRegion}
       {seo}
       <StructuredData
         type="CollectionPage"
@@ -557,7 +587,7 @@ function CollectibleTypeDetailPage() {
                       {['All', ...availableCycles].map(cycle => (
                         <button
                           key={cycle}
-                          onClick={() => setCycleFilter(cycle)}
+                          onClick={() => { setCycleFilter(cycle); setRevealNote(''); }}
                           // Says which pill is selected, which the tint alone can't.
                           aria-pressed={cycleFilter === cycle}
                           title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} ${displayTypeName}`}
@@ -597,7 +627,7 @@ function CollectibleTypeDetailPage() {
                         <div className="relative">
                           <select
                             value={subtypeFilter}
-                            onChange={(e) => setSubtypeFilter(e.target.value)}
+                            onChange={(e) => { setSubtypeFilter(e.target.value); setRevealNote(''); }}
                             title={`Show ${displayTypeName} of a specific subtype`}
                             className="appearance-none bg-gray-800/50 border border-gray-700 text-gray-300 text-sm rounded-lg pl-3 pr-10 py-1.5 cursor-pointer scheme-dark focus:outline-hidden focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50"
                           >
