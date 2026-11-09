@@ -1,5 +1,5 @@
-import { useLayoutEffect, useState, useMemo, useCallback } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useState, useMemo, useCallback } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
 import PageLightbox from '../components/PageLightbox'
@@ -16,11 +16,11 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { useHashJump } from '../hooks/useHashJump'
 import { usePageLightbox, levelPageGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
-import { scrollToElement } from '../utils/scrollToElement'
+import { scrollToCard } from '../utils/scrollToElement'
 import { slugifyPlace } from '../utils/slugify'
-import { hashTarget } from '../utils/hashTarget'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import { SECTION_LABELS } from '../constants/sections'
@@ -38,7 +38,6 @@ const PILL_SELECTED = 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 forced-co
 
 function LevelDetailPage() {
   const { levelName } = useParams<{ levelName: string }>();
-  const location = useLocation();
 
   const allLevels = LEVELS.map(level => level.name);
 
@@ -56,21 +55,8 @@ function LevelDetailPage() {
     if (found !== undefined) noteToggle(id, found)
   }, [toggle, noteToggle])
 
-  useLayoutEffect(() => {
-    const id = hashTarget(location.hash);
-    if (locationData.length > 0 && id !== null) {
-      const el = document.getElementById(id);
-      if (el) {
-        // Inline content links target a card, but its "Level · Location" header
-        // sits 44px above, outside the card — landing the card puts that header
-        // behind the navbar. For the first card in a section, scroll the section
-        // instead. Later cards are unaffected (their header is far above).
-        const section = el.closest('section[id]');
-        const target = section?.querySelector('article') === el ? section : el;
-        scrollToElement(target);
-      }
-    }
-  }, [locationData, location.hash]);
+  // Once per navigation, when the cards are on screen.
+  useHashJump(locationData.length > 0 && !isError, scrollToCard);
 
   const displayLevelName = levelName?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
 

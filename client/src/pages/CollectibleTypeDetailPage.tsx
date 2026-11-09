@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
@@ -14,11 +14,11 @@ import { ArrowLeft, ChevronDown } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap, slugifyPlace } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
-import { scrollToElement } from '../utils/scrollToElement'
-import { hashTarget } from '../utils/hashTarget'
+import { scrollToCard } from '../utils/scrollToElement'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { useHashJump } from '../hooks/useHashJump'
 import { usePageLightbox, typePageGalleries } from '../hooks/usePageLightbox'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -257,23 +257,8 @@ function CollectibleTypeDetailPage() {
     setSortMode('default');
   }
 
-  // Scroll to hash on load once data is ready
-  useLayoutEffect(() => {
-    const id = hashTarget(location.hash);
-    if (levelData.length > 0 && id !== null) {
-      const el = document.getElementById(id);
-      if (el) {
-        // Inline content links target a card, but its "Level · Location" header
-        // sits 44px above, outside the card — landing the card puts that header
-        // behind the navbar. For the first card in a section, scroll the section
-        // instead. Later cards are unaffected (their header is far above), and
-        // A-Z mode renders one headerless section, where this is a 0px no-op.
-        const section = el.closest('section[id]');
-        const target = section?.querySelector('article') === el ? section : el;
-        scrollToElement(target);
-      }
-    }
-  }, [levelData, location.hash]);
+  // Once per navigation, when the cards are on screen.
+  useHashJump(levelData.length > 0 && !isError, scrollToCard);
 
   // Format type name for display
   const displayTypeName = typeName
