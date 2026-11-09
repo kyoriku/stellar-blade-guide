@@ -13,11 +13,13 @@ FROM python:3.14-slim
 WORKDIR /server
 
 # uv: the version that writes uv.lock, same as devcontainer.json and ci.yml. Bump tag and digest
-# together; the digest wins (get it from docker buildx imagetools inspect)
+# together; the digest wins (get it from docker buildx imagetools inspect). Copied, not mounted:
+# Railway's builder only accepts cache mounts
+COPY --from=ghcr.io/astral-sh/uv:0.12.21@sha256:a7aed3216253ee804de3e2d8afa5073baa1a177335345d43845cd4165e43b711 /uv /usr/local/bin/uv
+
 # Python downloads off: they'd land in /root, out of appuser's reach. FROM follows .python-version
 COPY server/pyproject.toml server/uv.lock server/.python-version ./
-RUN --mount=from=ghcr.io/astral-sh/uv:0.12.21@sha256:a7aed3216253ee804de3e2d8afa5073baa1a177335345d43845cd4165e43b711,source=/uv,target=/bin/uv \
-    UV_PYTHON_DOWNLOADS=never uv sync --locked --no-dev --no-editable --no-cache --compile-bytecode
+RUN UV_PYTHON_DOWNLOADS=never uv sync --locked --no-dev --no-editable --no-cache --compile-bytecode
 
 COPY server/ ./
 
