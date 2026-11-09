@@ -15,7 +15,8 @@ export interface TocLink {
 
 /**
  * Scroll to an in-page anchor, replacing (not pushing) the URL hash so
- * back-button behavior is unchanged. The landing offset is the target's
+ * back-button behaviour is unchanged, and keeping the history entry's state, which
+ * React Router owns (its key and index). The landing offset is the target's
  * `scroll-anchor` margin, applied by scrollToElement.
  *
  * A caller that pins the body with `position: fixed` must unpin before calling
@@ -33,6 +34,6 @@ export function scrollToSection(href: string) {
   const element = document.getElementById(href.substring(1));
   if (element) {
     scrollToElement(element);
-    history.replaceState(null, '', href);
+    history.replaceState(history.state, '', href);
   }
 }

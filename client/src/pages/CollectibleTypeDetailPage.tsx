@@ -1,5 +1,5 @@
-import { useLayoutEffect, useState, useMemo, useCallback } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useParams, Link, NavigationType, useLocation, useNavigationType, type Location } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
 import PageLightbox from '../components/PageLightbox'
@@ -14,11 +14,12 @@ import { ArrowLeft, ChevronDown } from 'lucide-react'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { slugifyTitle, buildSlugMap, slugifyPlace } from '../utils/slugify'
 import { ogImageUrl } from '../utils/image'
-import { scrollToElement } from '../utils/scrollToElement'
+import { scrollToCard } from '../utils/scrollToElement'
 import { hashTarget } from '../utils/hashTarget'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { useHashJump } from '../hooks/useHashJump'
 import { usePageLightbox, typePageGalleries } from '../hooks/usePageLightbox'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
@@ -31,6 +32,8 @@ import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
+import { offeredFilters, readFilters, rememberFilters, revealFilters, type PageFilters } from '../utils/entryFilters'
+import { REVEAL_COPY } from '../constants/revealCopy'
 
 // A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
 // 2px Highlight border, with a pixel less padding so its size doesn't change (the
@@ -46,6 +49,7 @@ const SUBTYPE_ORDER = [
 function CollectibleTypeDetailPage() {
   const { typeName } = useParams<{ typeName: string }>();
   const location = useLocation();
+  const navigationType = useNavigationType();
 
   // Detect category from URL
   const category = location.pathname.startsWith('/upgrades') ? 'upgrades'
@@ -68,9 +72,10 @@ function CollectibleTypeDetailPage() {
   // Pass category to hook
   const { data: levelData = [], isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
 
-  const [cycleFilter, setCycleFilter] = useState<string>('All');
-  const [subtypeFilter, setSubtypeFilter] = useState<string>('All');
-  const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
+  // A reload, or Back or Forward from another page, opens on the filters this entry showed.
+  const [cycleFilter, setCycleFilter] = useState(() => readFilters(location.state, location.pathname).cycle);
+  const [subtypeFilter, setSubtypeFilter] = useState(() => readFilters(location.state, location.pathname).subtype);
+  const [sortMode, setSortMode] = useState(() => readFilters(location.state, location.pathname).sort);
   const { prefetchCollectiblesByType } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
   // Manage progress names a type by its slug, which this page's URL already is.
@@ -110,6 +115,12 @@ function CollectibleTypeDetailPage() {
 
   const showCycleFilter = availableCycles.length > 1;
   const showSubtypeFilter = typeName === 'documents';
+
+  // The subtypes the page holds, whatever its filters show.
+  const pageSubtypes = useMemo(() => {
+    const held = new Set(levelData.flatMap(level => level.locations.flatMap(loc => loc.collectibles.map(c => c.subtype))));
+    return SUBTYPE_ORDER.filter(s => held.has(s));
+  }, [levelData]);
 
   // Filter data by cycle
   const filteredLevelData = useMemo(() => {
@@ -163,16 +174,17 @@ function CollectibleTypeDetailPage() {
       .filter(level => level.locations.length > 0);
   }, [filteredLevelData, subtypeFilter, showSubtypeFilter]);
 
+  // Duplicate titles are numbered over the whole page, as search and usePrefetch number
+  // them, so a card keeps its id under every filter.
+  const slugMap = useMemo(() => buildSlugMap(
+    levelData.flatMap(level => level.locations.flatMap(loc => loc.collectibles))
+  ), [levelData]);
+  const cardsBySlug = useMemo(() => new Map(
+    levelData.flatMap(level => level.locations.flatMap(loc => loc.collectibles)).map(c => [slugMap.get(c.id)!, c])
+  ), [levelData, slugMap]);
+
   // Sort data alphabetically (wraps filtered data in a fake single-level structure)
   const sortedLevelData = useMemo(() => {
-    // Generate unique slugs for ALL collectibles (both modes)
-    const allCollectibles = filteredBySubtype.flatMap(level =>
-      level.locations.flatMap(loc => loc.collectibles)
-    );
-
-    const slugMap = buildSlugMap(allCollectibles);
-
-    // Apply slugs to all collectibles
     const dataWithSlugs = filteredBySubtype.map(level => ({
       ...level,
       locations: level.locations.map(loc => ({
@@ -212,7 +224,7 @@ function CollectibleTypeDetailPage() {
         collectibles: sorted
       }]
     }];
-  }, [filteredBySubtype, sortMode]);
+  }, [filteredBySubtype, sortMode, slugMap]);
 
   // The lightbox holds the cards this page shows (after its cycle and subtype filters
   // and A-Z sort), in page order.
@@ -246,36 +258,62 @@ function CollectibleTypeDetailPage() {
   );
   const resetActiveSection = () => setActiveSection('');
 
-  // A new type starts with its filters cleared, during render, so this sits below the
-  // useActiveSection call. The type they belong to is kept in state, not a ref: React
-  // can set aside a render it has started, and a ref written there would keep the new
-  // type while the cleared filters were thrown away.
+  const view: PageFilters = { cycle: cycleFilter, subtype: subtypeFilter, sort: sortMode };
+  const setFilters = (next: PageFilters) => {
+    if (next.cycle !== cycleFilter) setCycleFilter(next.cycle);
+    if (next.subtype !== subtypeFilter) setSubtypeFilter(next.subtype);
+    if (next.sort !== sortMode) setSortMode(next.sort);
+  };
+
+  // Once per navigation, in render so its own commit (the jump included) shows the right list,
+  // and in state, not refs: React may set a render aside. A new type, Back or Forward takes the
+  // entry's filters. Chained, so each pass sees what the last one set.
+  const [navFor, setNavFor] = useState(location);
+  // The link or search result whose card waits for the data before it can be shown.
+  const [revealFor, setRevealFor] = useState<Location | null>(null);
+  const [revealNote, setRevealNote] = useState('');
   const [filtersFor, setFiltersFor] = useState(typeName);
-  if (typeName !== filtersFor) {
-    setFiltersFor(typeName);
-    setActiveSection('');
-    setCycleFilter('All');
-    setSubtypeFilter('All');
-    setSortMode('default');
+  if (location !== navFor) {
+    setNavFor(location);
+    if (typeName !== filtersFor) {
+      setFiltersFor(typeName);
+      setActiveSection('');
+    }
+    if (typeName !== filtersFor || navigationType === NavigationType.Pop) {
+      setFilters(readFilters(location.state, location.pathname));
+    }
+    // A link or search result shows the card it names, though a filter hides it; Back and
+    // Forward put back what the entry showed instead.
+    const reveal = navigationType !== NavigationType.Pop && location.hash ? location : null;
+    if (reveal !== revealFor) setRevealFor(reveal);
+    if (revealNote) setRevealNote('');
+  } else if (revealFor === location && levelData.length > 0) {
+    setRevealFor(null);
+    const id = hashTarget(location.hash);
+    const card = id === null ? undefined : cardsBySlug.get(id);
+    const shown = card ? revealFilters(view, card, showSubtypeFilter) : view;
+    if (card && shown !== view) {
+      setFilters(shown);
+      setRevealNote(REVEAL_COPY.shown(card.title));
+    }
+  } else if (levelData.length > 0) {
+    // A filter the loaded page doesn't offer goes back to All: one kept from before a content
+    // change, or a subtype whose select the cycle pills have taken the place of.
+    setFilters(offeredFilters(view, showCycleFilter ? availableCycles : [],
+      showSubtypeFilter && !showCycleFilter ? pageSubtypes : null));
   }
 
-  // Scroll to hash on load once data is ready
-  useLayoutEffect(() => {
-    const id = hashTarget(location.hash);
-    if (levelData.length > 0 && id !== null) {
-      const el = document.getElementById(id);
-      if (el) {
-        // Inline content links target a card, but its "Level · Location" header
-        // sits 44px above, outside the card — landing the card puts that header
-        // behind the navbar. For the first card in a section, scroll the section
-        // instead. Later cards are unaffected (their header is far above), and
-        // A-Z mode renders one headerless section, where this is a 0px no-op.
-        const section = el.closest('section[id]');
-        const target = section?.querySelector('article') === el ? section : el;
-        scrollToElement(target);
-      }
-    }
-  }, [levelData, location.hash]);
+  // The entry keeps what it shows, for Back, Forward and a reload. The router's copy of the
+  // entry's state goes stale here: never pass location.state on.
+  useEffect(() => {
+    // Not while a reveal waits for the data, or the entry keeps the filter hiding its card.
+    if (revealFor === location) return;
+    rememberFilters(window.history, location, window.location.pathname,
+      { cycle: cycleFilter, subtype: subtypeFilter, sort: sortMode });
+  }, [location, cycleFilter, subtypeFilter, sortMode, revealFor]);
+
+  // Once per navigation, when the cards are on screen.
+  useHashJump(levelData.length > 0 && !isError, scrollToCard);
 
   // Format type name for display
   const displayTypeName = typeName
@@ -424,10 +462,15 @@ function CollectibleTypeDetailPage() {
     />
   );
 
+  // Says when a link or search result put a filter back to All. First in the page in its
+  // loading and loaded forms alike, so it is in place before a reveal that waited for the data.
+  const revealRegion = <span className="sr-only" aria-live="polite">{revealNote}</span>;
+
   // Loading state
   if (isLoading) {
     return (
       <div className="flex-1 bg-primary">
+        {revealRegion}
         {seo}
         <div className="container mx-auto px-3 py-8">
           <div className="flex gap-8">
@@ -444,7 +487,8 @@ function CollectibleTypeDetailPage() {
                   </div>
 
                   <div className="flex justify-end sm:justify-start order-3 sm:order-none">
-                    <div className="px-3 py-1.5 text-sm rounded-lg border bg-gray-800/50 border-gray-700 text-gray-400">
+                    {/* On when the entry kept A-Z, as the real button will be. */}
+                    <div className={`px-3 py-1.5 text-sm rounded-lg border ${sortMode === 'alphabetical' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' : 'bg-gray-800/50 border-gray-700 text-gray-400'}`}>
                       A–Z
                     </div>
                   </div>
@@ -478,6 +522,7 @@ function CollectibleTypeDetailPage() {
 
   return (
     <div className="flex-1 bg-primary">
+      {revealRegion}
       {seo}
       <StructuredData
         type="CollectionPage"
@@ -542,7 +587,7 @@ function CollectibleTypeDetailPage() {
                       {['All', ...availableCycles].map(cycle => (
                         <button
                           key={cycle}
-                          onClick={() => setCycleFilter(cycle)}
+                          onClick={() => { setCycleFilter(cycle); setRevealNote(''); }}
                           // Says which pill is selected, which the tint alone can't.
                           aria-pressed={cycleFilter === cycle}
                           title={`Show ${cycle === 'All' ? 'all' : cycleLabel(cycle)} ${displayTypeName}`}
@@ -582,7 +627,7 @@ function CollectibleTypeDetailPage() {
                         <div className="relative">
                           <select
                             value={subtypeFilter}
-                            onChange={(e) => setSubtypeFilter(e.target.value)}
+                            onChange={(e) => { setSubtypeFilter(e.target.value); setRevealNote(''); }}
                             title={`Show ${displayTypeName} of a specific subtype`}
                             className="appearance-none bg-gray-800/50 border border-gray-700 text-gray-300 text-sm rounded-lg pl-3 pr-10 py-1.5 cursor-pointer scheme-dark focus:outline-hidden focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50"
                           >

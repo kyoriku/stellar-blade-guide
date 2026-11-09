@@ -32,7 +32,8 @@ function WalkthroughContent({ content, galleryKey, onImageClick, priority }: Wal
       <div className="relative">
         {content.section_title && (
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <h3 className="text-xl font-semibold text-gray-100 leading-tight flex items-center gap-2">
+            {/* Focusable, so a link that lands on this section can hand focus here (useHashJump). */}
+            <h3 tabIndex={-1} className="text-xl font-semibold text-gray-100 leading-tight flex items-center gap-2">
               {content.is_boss && <Skull className="w-5 h-5 text-red-400" />}
               {content.section_title}
             </h3>

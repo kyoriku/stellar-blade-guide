@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect } from 'react'
+import { useEffect } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useWalkthrough, useWalkthroughsByType } from '../hooks/useWalkthroughs'
 import QueryError from '../components/QueryError'
@@ -13,10 +13,10 @@ import TableOfContents from '../components/TableOfContents'
 import TableOfContentsSkeleton from '../components/TableOfContentsSkeleton'
 import { usePrefetch } from '../hooks/usePrefetch'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { useHashJump } from '../hooks/useHashJump'
 import { usePageLightbox, walkthroughGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
 import { scrollToElement } from '../utils/scrollToElement'
-import { hashTarget } from '../utils/hashTarget'
 import { walkthroughTypeName } from '../utils/walkthroughTypeName'
 import { sectionAnchor, slugifySection } from '../utils/slugify'
 import { serverWalkthroughTitle } from '../utils/serverHead'
@@ -52,14 +52,8 @@ function WalkthroughDetailPage() {
     if (navError && !isError) showToast("Couldn't load previous/next walkthroughs.");
   }, [navError, isError, showToast]);
 
-  // Scroll to hash on load or hash change
-  useLayoutEffect(() => {
-    const id = hashTarget(location.hash);
-    if (walkthrough && id !== null) {
-      const el = document.getElementById(id);
-      if (el) scrollToElement(el);
-    }
-  }, [walkthrough, location.hash]);
+  // Once per navigation, when the walkthrough is on screen.
+  useHashJump(!!walkthrough && !isError, scrollToElement);
 
   // Find current, previous, and next walkthroughs
   const currentIndex = allWalkthroughs.findIndex(w => w.slug === slug);

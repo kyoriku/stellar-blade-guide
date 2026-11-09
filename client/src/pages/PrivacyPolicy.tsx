@@ -103,6 +103,7 @@ export default function PrivacyPolicy() {
             <SectionHeader icon={Cookie} id="cookies">Cookies & Local Storage</SectionHeader>
             <p>We set two cookies, both for signing in. One keeps you signed in: your session ends when you sign out, after 7 days without a visit, or 90 days after you signed in, whichever comes first. Changing or resetting your password, signing out of all devices, or deleting your account ends all of your sessions. The other protects a Google or Discord sign-in from forgery while it happens, and lasts at most 10 minutes. Cloudflare may also set cookies of its own, depending on our settings with it.</p>
             <p className="mt-2">We also keep a few small things in your browser's local storage: your progress while you're signed out; a note that you're signed in, with display details such as your username and avatar so pages can show them right away; the page to return to after a Google or Discord sign-in; and whether a one-time tip about clearing progress still needs to show.</p>
+            <p className="mt-2">Level and type pages also keep their filters in the tab's history, so Back, Forward and a reload show them again; they never leave your browser.</p>
             <p className="mt-2">Our two cookies and these items are strictly functional.{/* AdSense is off:  Separately, this site loads Google AdSense, and Google may set or read its own advertising cookies and device identifiers as a third party — see <a href="#advertising" className={linkClass}>Advertising</a> below. */} You can clear cookies and local storage in your browser settings, which signs you out and deletes any progress that isn't on an account yet.</p>
           </section>
 
@@ -164,7 +165,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: October 31, 2026
+            Last Updated: November 9, 2026
           </div>
         </div>
       </div>

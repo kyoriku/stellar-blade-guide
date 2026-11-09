@@ -105,7 +105,8 @@ function CollectibleSection({
                         {cycleLabel(collectible.cycle)}
                       </span>
                     )}
-                    <h2 className="text-xl font-semibold text-gray-100 leading-tight">
+                    {/* Focusable, so a link that lands on this card can hand focus here (useHashJump). */}
+                    <h2 tabIndex={-1} className="text-xl font-semibold text-gray-100 leading-tight">
                       {collectible.title.includes(' / ') ? (
                         collectible.title.split(' / ').map((part, i, arr) => (
                           <span key={i}>

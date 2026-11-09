@@ -1,5 +1,5 @@
-import { useLayoutEffect, useState, useMemo, useCallback } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useParams, Link, NavigationType, useLocation, useNavigationType } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
 import PageLightbox from '../components/PageLightbox'
@@ -16,11 +16,11 @@ import { usePrefetch } from '../hooks/usePrefetch'
 import { useProgress } from '../hooks/useProgress'
 import { useHandClearTip } from '../hooks/useHandClearTip'
 import { useActiveSection } from '../hooks/useActiveSection'
+import { useHashJump } from '../hooks/useHashJump'
 import { usePageLightbox, levelPageGalleries } from '../hooks/usePageLightbox'
 import { ogImageUrl } from '../utils/image'
-import { scrollToElement } from '../utils/scrollToElement'
+import { scrollToCard } from '../utils/scrollToElement'
 import { slugifyPlace } from '../utils/slugify'
-import { hashTarget } from '../utils/hashTarget'
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import { SECTION_LABELS } from '../constants/sections'
@@ -30,6 +30,7 @@ import BackToTop from '../components/BackToTop'
 import MobileBackToTop from '../components/MobileBackToTop'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
+import { DEFAULT_FILTERS, offeredFilters, readFilters, rememberFilters } from '../utils/entryFilters'
 
 // A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
 // 2px Highlight border, with a pixel less padding so its size doesn't change (the
@@ -39,12 +40,14 @@ const PILL_SELECTED = 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400 forced-co
 function LevelDetailPage() {
   const { levelName } = useParams<{ levelName: string }>();
   const location = useLocation();
+  const navigationType = useNavigationType();
 
   const allLevels = LEVELS.map(level => level.name);
 
   const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!, !!levelName && isLevelSlug(levelName));
 
-  const [cycleFilter, setCycleFilter] = useState<string>('All');
+  // A reload, or Back or Forward from another page, opens on the filter this entry showed.
+  const [cycleFilter, setCycleFilter] = useState(() => readFilters(location.state, location.pathname).cycle);
   const { prefetchLevel } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
   // Manage progress names a level by its exact name, which only the nav holds.
@@ -56,21 +59,8 @@ function LevelDetailPage() {
     if (found !== undefined) noteToggle(id, found)
   }, [toggle, noteToggle])
 
-  useLayoutEffect(() => {
-    const id = hashTarget(location.hash);
-    if (locationData.length > 0 && id !== null) {
-      const el = document.getElementById(id);
-      if (el) {
-        // Inline content links target a card, but its "Level · Location" header
-        // sits 44px above, outside the card — landing the card puts that header
-        // behind the navbar. For the first card in a section, scroll the section
-        // instead. Later cards are unaffected (their header is far above).
-        const section = el.closest('section[id]');
-        const target = section?.querySelector('article') === el ? section : el;
-        scrollToElement(target);
-      }
-    }
-  }, [locationData, location.hash]);
+  // Once per navigation, when the cards are on screen.
+  useHashJump(locationData.length > 0 && !isError, scrollToCard);
 
   const displayLevelName = levelName?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
 
@@ -112,16 +102,33 @@ function LevelDetailPage() {
   const [activeSection, setActiveSection] = useActiveSection('section[id]', [filteredLocationData]);
   const resetActiveSection = () => setActiveSection('');
 
-  // A new level starts with its filters cleared, during render, so this sits below the
-  // useActiveSection call. The level they belong to is kept in state, not a ref: React
-  // can set aside a render it has started, and a ref written there would keep the new
-  // level while the cleared filters were thrown away.
+  // Once per navigation, in render so its own commit (the jump included) shows the right list,
+  // and in state, not refs: React may set a render aside. A new level, Back or Forward takes
+  // the entry's filter. Chained, so each pass sees what the last one set.
+  const [navFor, setNavFor] = useState(location);
   const [filtersFor, setFiltersFor] = useState(levelName);
-  if (levelName !== filtersFor) {
-    setFiltersFor(levelName);
-    setActiveSection('');
-    setCycleFilter('All');
+  if (location !== navFor) {
+    setNavFor(location);
+    if (levelName !== filtersFor) {
+      setFiltersFor(levelName);
+      setActiveSection('');
+    }
+    if (levelName !== filtersFor || navigationType === NavigationType.Pop) {
+      const { cycle } = readFilters(location.state, location.pathname);
+      if (cycle !== cycleFilter) setCycleFilter(cycle);
+    }
+  } else if (locationData.length > 0) {
+    // A cycle the loaded level doesn't offer goes back to All: one kept from before a
+    // content change.
+    const { cycle } = offeredFilters({ ...DEFAULT_FILTERS, cycle: cycleFilter }, showCycleFilter ? availableCycles : [], null);
+    if (cycle !== cycleFilter) setCycleFilter(cycle);
   }
+
+  // The entry keeps what it shows, for Back, Forward and a reload. The router's copy of the
+  // entry's state goes stale here: never pass location.state on.
+  useEffect(() => {
+    rememberFilters(window.history, location, window.location.pathname, { ...DEFAULT_FILTERS, cycle: cycleFilter });
+  }, [location, cycleFilter]);
 
   // The lightbox holds the cards this page shows (after its cycle filter), in page order.
   const { onImageClick, lightbox } = usePageLightbox(filteredLocationData, levelPageGalleries);
@@ -229,14 +236,15 @@ function LevelDetailPage() {
                   </div>
 
                   {/* Reserves the cycle-filter row so sections don't shift when
-                      the filter mounts; styled as the active "All" button so it
-                      reads unchanged once the real row replaces it. Altess
+                      the filter mounts; styled as the real "All" button will be (on,
+                      unless the entry kept another cycle) so it reads unchanged
+                      once the real row replaces it. Altess
                       Levoire and Nest hold Base-cycle items only — no filter
                       appears on load, so reserving the row there would shift
                       content the other way. */}
                   {levelName !== 'altess-levoire' && levelName !== 'nest' && (
                     <div className="flex flex-wrap items-center gap-2 order-3 sm:order-none">
-                      <div className="px-3 py-1.5 text-sm rounded-lg border bg-cyan-500/20 border-cyan-500/50 text-cyan-400">
+                      <div className={`px-3 py-1.5 text-sm rounded-lg border ${cycleFilter === 'All' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' : 'bg-gray-800/50 border-gray-700 text-gray-400'}`}>
                         All
                       </div>
                     </div>
