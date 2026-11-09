@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, NavigationType, useLocation, useNavigationType } from 'react-router-dom'
 import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3, Shield } from 'lucide-react'
 import BusyLabel from './BusyLabel'
 import { usePrefetch } from '../hooks/usePrefetch'
@@ -30,6 +30,14 @@ const accountItemClass = (current: boolean) =>
     : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400 focus-visible:outline-hidden forced-colors:focus-visible:-outline-offset-4 focus-visible:text-white focus-visible:bg-gray-800/50 focus-visible:border-gray-400'
   }`
 
+// React Router's key for the history entry the browser is on: once a navigation starts, the
+// new page's, before the router has rendered it. Contents and Back to top rewrite the address
+// but keep the entry's state, so they leave it alone.
+function browserEntryKey(): string {
+  const key = (window.history.state as { key?: unknown } | null)?.key
+  return typeof key === 'string' ? key : 'default'
+}
+
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -47,8 +55,8 @@ function Navbar() {
   useEffect(() => { searchQueryRef.current = searchQuery }, [searchQuery]);
   const isOpenRef = useRef(isOpen);
   useEffect(() => { isOpenRef.current = isOpen }, [isOpen]);
-  // The address the drawer was last opened on. While a navigation is still rendering
-  // (React Router renders it as a transition), that is already the new page's.
+  // The history entry the drawer was last opened on, by its key. While a navigation is still
+  // rendering (React Router renders it as a transition), that is already the new page's.
   const drawerOpenedFor = useRef<string | null>(null);
   // The account menu, on the WAI-ARIA menu button pattern (hooks/useMenuButton.ts):
   // the arrows, Home and End, Escape, Tab, and a press outside all work as in the
@@ -56,6 +64,7 @@ function Navbar() {
   const accountMenu = useMenuButton();
   const closeAccountMenu = accountMenu.close;
   const location = useLocation();
+  const navigationType = useNavigationType();
   // const navigate = useNavigate();
   const { user, isAuthenticated, isRestoring, logout } = useAuth();
   // The Admin link shows for admins only; the page's route guard and the server
@@ -166,22 +175,23 @@ function Navbar() {
   useEffect(() => {
     // A drawer opened for the page now committing (reopened while that page was still
     // rendering) already shows what it should: closing it, emptying its search or
-    // resetting its sections now would undo what the reader has done in it since.
-    if (isOpenRef.current && drawerOpenedFor.current === location.pathname + location.search + location.hash) return;
+    // resetting its sections now would undo what the reader has done in it since. A POP is
+    // never late, and two entries can share the key 'default', so a POP always closes.
+    if (isOpenRef.current && navigationType !== NavigationType.Pop && drawerOpenedFor.current === location.key) return;
     setIsOpen(false);
     setSearchQuery('');
     if (!searchQueryRef.current) {
       setOpenSections(getActiveSectionFromPath(location.pathname));
     }
-  }, [location]);
+  }, [location, navigationType]);
 
   const openDrawer = () => {
-    const opened = window.location.pathname + window.location.search + window.location.hash;
+    const opened = browserEntryKey();
     drawerOpenedFor.current = opened;
     // Reopened while a page chosen from it is still rendering: the location effect
     // will leave this drawer alone when that page commits, so it starts fresh for the
     // page now, as it would have after the commit.
-    if (opened !== location.pathname + location.search + location.hash) {
+    if (opened !== location.key) {
       setSearchQuery('');
       setOpenSections(getActiveSectionFromPath(window.location.pathname));
     }

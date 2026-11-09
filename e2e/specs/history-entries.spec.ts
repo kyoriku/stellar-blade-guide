@@ -62,4 +62,49 @@ test.describe('history entries, phone', () => {
     expect(await page.evaluate(() => location.search)).toBe('?ref=e2e');
     expect(await entryState(page)).toEqual(before);
   });
+
+  // The drawer tells a navigation still rendering by the entry's key, which Contents and Back
+  // to top leave alone, so neither looks like one and the search survives.
+  test('the drawer keeps its search across a Contents jump and Back to top', async ({ page }) => {
+    // The drawer's search answers nothing here, and leaves no Redis key behind.
+    await page.route('**/api/search/**', route => route.fulfill({ json: { query: 'ca', total: 0, results: [] } }));
+    // A pushed entry, which carries a key: a load's first entry reads 'default' with its state
+    // wiped or not, so it couldn't tell the difference.
+    await page.goto('/levels');
+    await page.locator('a[href="/levels/eidos-7"]:not(#mobile-menu a):visible').first().click();
+    await page.locator('section[id] article[id]').first().waitFor();
+    expect((await entryState(page))?.key, 'a pushed entry').toBeTruthy();
+    const toggle = page.getByRole('button', { name: 'Toggle menu' });
+    const input = page.locator('#mobile-menu input[name="text"]');
+    await toggle.click();
+    await input.fill('ca');
+    await toggle.click();
+
+    await page.getByRole('button', { name: 'Open table of contents' }).click();
+    await page.locator('a[href="#parking-tower"]:not(aside a)').click();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('#parking-tower');
+    await toggle.click();
+    await expect(input).toHaveValue('ca');
+    await toggle.click();
+
+    await page.getByRole('button', { name: 'Back to top' }).filter({ visible: true }).click();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
+    await toggle.click();
+    await expect(input).toHaveValue('ca');
+  });
+
+  // The entry a visit starts on and a typed fragment both read 'default', and a Back, Forward
+  // or typed address is never a navigation still rendering, so the drawer closes on one.
+  test('a fragment typed while the drawer is open closes it', async ({ page }) => {
+    await page.route('**/api/search/**', route => route.fulfill({ json: { query: 'ca', total: 0, results: [] } }));
+    await page.goto('/levels/eidos-7');
+    await page.locator('section[id] article[id]').first().waitFor();
+    const toggle = page.getByRole('button', { name: 'Toggle menu' });
+    await toggle.click();
+    await page.locator('#mobile-menu input[name="text"]').fill('ca');
+    await page.goto('/levels/eidos-7#parking-tower');
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('#parking-tower');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#mobile-menu input[name="text"]')).toHaveValue('');
+  });
 });
