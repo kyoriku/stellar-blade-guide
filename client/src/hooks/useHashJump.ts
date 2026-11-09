@@ -1,6 +1,19 @@
 import { useLayoutEffect, useRef } from 'react'
-import { useLocation, type Location } from 'react-router-dom'
+import { NavigationType, useLocation, useNavigationType, type Location } from 'react-router-dom'
 import { hashTarget } from '../utils/hashTarget'
+import { focusLeftNowhere } from '../utils/focus'
+
+// The heading a link's target is named by: a card's title, or a walkthrough section's.
+function landedHeading(el: HTMLElement): HTMLElement | null {
+  return el.matches('article, .walkthrough-content') ? el.querySelector<HTMLElement>('h2, h3') : null
+}
+
+// A link to the address the router now holds, as the link just used is.
+function isLinkTo(el: Element | null, location: Location): boolean {
+  return el instanceof HTMLAnchorElement && el.origin === window.location.origin
+    && el.pathname === location.pathname && el.search === location.search
+    && hashTarget(el.hash) === hashTarget(location.hash)
+}
 
 /**
  * Scrolls to what the address's hash names, once per navigation (a link, the same link
@@ -10,6 +23,7 @@ import { hashTarget } from '../utils/hashTarget'
  */
 export function useHashJump(ready: boolean, jump: (el: HTMLElement) => void) {
   const location = useLocation()
+  const navigationType = useNavigationType()
   // The navigation handled: its location object, since a key can repeat ('default').
   const jumpedFor = useRef<Location | null>(null)
 
@@ -26,5 +40,10 @@ export function useHashJump(ready: boolean, jump: (el: HTMLElement) => void) {
       return
     }
     jump(el)
-  }, [ready, location, jump])
+    // A link or search result hands focus to what it landed on, as a fragment link does, when
+    // focus is on that link or nowhere. Back, Forward and a typed address leave focus alone.
+    if (navigationType !== NavigationType.Pop && (focusLeftNowhere() || isLinkTo(document.activeElement, location))) {
+      landedHeading(el)?.focus({ preventScroll: true })
+    }
+  }, [ready, location, navigationType, jump])
 }

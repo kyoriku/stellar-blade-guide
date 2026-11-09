@@ -57,7 +57,8 @@ src/
                      on level, type and walkthrough pages), usePrefetch, useFloatingControl,
                      useMenuButton (the menu button pattern, for any menu), useHashJump
                      (the jump to an address's hash on the three detail pages, once per
-                     navigation), and the useActiveSection scroll-spy
+                     navigation, with the focus it hands to the heading it lands on), and
+                     the useActiveSection scroll-spy
   context/           AuthContext (session + token lifecycle), ToastContext
   layouts/           RootLayout (scroll reset + navbar + outlet + footer)
   services/          api.ts: typed fetch wrappers for content and search + most TypeScript
