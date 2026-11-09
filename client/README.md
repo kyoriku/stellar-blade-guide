@@ -60,7 +60,9 @@ src/
                      navigation, with the focus it hands to the heading it lands on), and
                      the useActiveSection scroll-spy
   context/           AuthContext (session + token lifecycle), ToastContext
-  layouts/           RootLayout (scroll reset + navbar + outlet + footer)
+  layouts/           RootLayout (scroll reset + navbar + outlet + footer); a page that
+                     crashes shows the error page between the navbar and footer until
+                     the next navigation
   services/          api.ts: typed fetch wrappers for content and search + most TypeScript
                      interfaces (comment, notification, and auth types live in their hooks)
   constants/         navigation structure, section names, type intros, cycle labels, Manage

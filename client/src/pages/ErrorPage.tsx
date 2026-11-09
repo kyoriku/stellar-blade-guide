@@ -1,10 +1,12 @@
+import { useEffect } from 'react'
 import { Link, useInRouterContext } from 'react-router-dom'
 import { Home, AlertCircle, Clock, ServerCrash, RefreshCw, WifiOff } from 'lucide-react'
 import SEO from '../components/SEO'
 import { NETWORK_ERROR_MESSAGE } from '../services/api'
 
-// Shared by the two home-link variants below so they cannot drift apart.
-const HOME_LINK_CLASSES = 'inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200';
+// Shared by the two home-link variants below so they cannot drift apart. The transparent
+// border matches Try Again's, so the two line up.
+const HOME_LINK_CLASSES = 'inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-transparent bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200';
 
 interface ErrorPageProps {
   // null: nothing to number, a crash in the browser rather than an HTTP answer.
@@ -67,6 +69,14 @@ function ErrorPage({
   // and the page fills the viewport itself: flex-1 is sized for the space
   // between a navbar and footer that are not rendered there.
   const inRouter = useInRouterContext();
+
+  // Outside the router nothing answers Back or Forward, so reload the address they land on.
+  useEffect(() => {
+    if (inRouter) return;
+    const reload = () => window.location.reload();
+    window.addEventListener('popstate', reload);
+    return () => window.removeEventListener('popstate', reload);
+  }, [inRouter]);
 
   return (
     <div className={`${inRouter ? 'flex-1' : 'min-h-dvh'} bg-primary flex items-center justify-center px-4`}>
