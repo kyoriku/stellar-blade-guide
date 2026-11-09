@@ -1,27 +1,5 @@
-# .devcontainer/docker-compose.yml
-#
-# Orchestrates four services for local development:
-#   - volume-init: Runs once at startup, fixes ownership on the named volumes
-#                  so the non-root vscode user can write to them. Exits when done.
-#   - dev:        The container Claude Code runs in (Python + Node + uv + claude CLI)
-#   - postgres:   Database, isolated to this project, data persisted in a named volume
-#   - redis:      Cache, persisted in a named volume
-#
-# Why volume-init exists:
-#   Docker creates named volumes with root:root ownership by default. The dev
-#   container runs as `vscode` (UID 1000) and can't write into them. The init
-#   service mounts the volumes as root, chowns them to vscode (UID 1000), and
-#   exits. The dev service waits for it via depends_on, so by the time dev
-#   starts, the volumes are owned correctly.
-#
-# Why named volumes for .venv and node_modules (instead of letting them live
-# on the bind-mount):
-#   Keeping container-managed artifacts (Linux binaries, native modules) in
-#   isolated volumes prevents them from being written back to your Mac's
-#   filesystem through the bind-mount. Cleaner host/container separation.
-
 services:
-  # Init service. Runs once, fixes permissions on named volumes, exits.
+  # Named volumes start root-owned; this chowns them for vscode (UID 1000) before dev starts
   volume-init:
     image: alpine:3.20
     command: >
@@ -32,31 +10,25 @@ services:
       - claude-config:/init/claude
 
   dev:
-    # Python 3.14, as server/.python-version and prod's python:3.14-slim. The 3- pins the
-    # image's own major as 1- did; major 1 never had a 3.14 build. Unlike 1-3.12, it ships
-    # no Yarn apt repo.
+    # Python 3.14 to match .python-version and prod; image major 3, since major 1 never had a 3.14 build
     image: mcr.microsoft.com/devcontainers/python:3-3.14-bookworm
 
     volumes:
-      # Bind-mount the entire repo. On macOS the speed comes from the named
-      # volumes below, which keep .venv and node_modules off the file share.
       - ..:/workspaces/stellar-blade-guide
 
-      # Named volumes for container-managed artifacts. Permissions fixed by
-      # the volume-init service before this container starts.
+      # .venv and node_modules live in volumes: Linux builds stay off the Mac and the file share stays fast
       - server-venv:/workspaces/stellar-blade-guide/server/.venv
       - client-node-modules:/workspaces/stellar-blade-guide/client/node_modules
 
-      # Claude Code login and chat history, kept across rebuilds.
+      # Claude Code login and history survive rebuilds
       - claude-config:/home/vscode/.claude
 
-    # An init as PID 1 reaps the zombies that sleep infinity leaves behind.
+    # init as PID 1 reaps the zombies sleep infinity would leave behind
     init: true
     command: sleep infinity
 
-    # 3000 is open to the network so a phone on the same wifi can load the dev
-    # site. The phone reaches the API through Vite's /api proxy, so 8000 stays
-    # on 127.0.0.1. The servers inside have to listen on 0.0.0.0 for these to work.
+    # 3000 is open so a phone on the wifi can load the dev site; it reaches the API through
+    # Vite's proxy, so 8000 stays local. Both servers must listen on 0.0.0.0
     ports:
       - "3000:3000"
       - "127.0.0.1:8000:8000"
@@ -65,9 +37,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/stellarblade
       REDIS_URL: redis://redis:6379
       DEBUG: "true"
-      # Moves .claude.json (the OAuth account + per-project trust) into the
-      # volume too. Without it that file stays in bare $HOME and a rebuild
-      # still logs you out, even with the volume above.
+      # Puts .claude.json in the volume too; without it a rebuild logs you out
       CLAUDE_CONFIG_DIR: /home/vscode/.claude
 
     depends_on:
@@ -78,12 +48,10 @@ services:
       redis:
         condition: service_healthy
 
-  # postgres and redis publish no ports: the dev container reaches them over the
-  # compose network. If a Mac tool ever needs one, publish it on 127.0.0.1 with a
-  # spare host port, since the Mac's own Postgres and Redis hold 5432 and 6379.
+  # postgres and redis publish no ports: dev reaches them over the compose network,
+  # and the Mac's own Postgres and Redis already hold 5432 and 6379
   postgres:
-    # Same major and Debian base as Railway's Postgres. Alpine's Postgres sorts
-    # text differently from Debian's, so ORDER BY on names wouldn't match prod.
+    # Debian, like Railway's: Alpine's Postgres sorts text differently, so ORDER BY wouldn't match prod
     image: postgres:17
     restart: unless-stopped
     environment:
@@ -91,8 +59,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: stellarblade
     volumes:
-      # Named for the major: a data directory only starts under the Postgres
-      # major that created it.
+      # Named for the major: a data directory only starts under the major that created it
       - postgres17-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d stellarblade"]
@@ -101,13 +68,11 @@ services:
       retries: 10
 
   redis:
-    # Matches Railway's Redis down to the minor version: newer minors add
-    # commands that prod wouldn't accept.
+    # Railway's exact minor: newer minors add commands prod wouldn't accept
     image: redis:8.4
     restart: unless-stopped
     volumes:
-      # Named for the major, like postgres17-data: an older Redis can refuse to
-      # load data saved by a newer one.
+      # Named for the major: an older Redis can refuse data saved by a newer one
       - redis8-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

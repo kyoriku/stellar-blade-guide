@@ -1,8 +1,5 @@
-# Fast, deterministic test gate: the backend suite needs no services (it runs
-# on aiosqlite + fakeredis by design) and the client job carries lint, unit
-# tests, and the type-checking build. The Playwright e2e suite (e2e/) is
-# deliberately NOT run here — it needs live Postgres/Redis and real app
-# servers; run `npm run e2e` in the dev container before merging.
+# Backend tests need no services (aiosqlite + fakeredis). e2e needs live Postgres and Redis,
+# so it stays out of CI: run `npm run e2e` in the dev container before merging
 name: tests
 
 on:
@@ -10,6 +7,11 @@ on:
     branches: [main]
   pull_request:
 
+# Read-only token, kept out of .git/config, since npm ci runs dependency install scripts
+permissions:
+  contents: read
+
+# Actions are pinned to commit SHAs because tags can be moved; the trailing comment names the release
 jobs:
   server:
     runs-on: ubuntu-latest
@@ -17,17 +19,18 @@ jobs:
       run:
         working-directory: server
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # The uv that writes uv.lock. Pinned with the Dockerfile's COPY --from line and
-          # the uv feature in .devcontainer/devcontainer.json; bump all three together.
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          # Same uv as the Dockerfile and devcontainer.json; bump all three together
           version: "0.12.21"
-          # sha256 of that version's uv-x86_64-unknown-linux-gnu.tar.gz, from its release's
-          # .sha256 asset. It moves with the version: v5 knows no checksum for a uv newer
-          # than itself, so without this the download would go unverified.
+          # sha256 of the release's uv-x86_64-unknown-linux-gnu.tar.gz; bump with the version,
+          # since setup-uv can't verify a uv newer than itself
           checksum: "23f02075b652bb1df64178cfae41b5caf160822e720e2663568f3f5d63bc52c0"
-      - run: uv sync --frozen
+      # --locked like the Dockerfile, so a stale uv.lock fails here before it fails a deploy
+      - run: uv sync --locked
       - run: uv run pytest
 
   client:
@@ -36,16 +39,16 @@ jobs:
       run:
         working-directory: client
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: client/package-lock.json
-      # Node 22 bundles npm 10, which ignores .npmrc's min-release-age (it needs 11.10+).
-      # Pinned with the Dockerfile's client stage and devcontainer.json's postCreateCommand;
-      # move all three together (not 12: see devcontainer.json).
-      - run: npm install -g npm@11 && npm --version
+      # npm 11, exact: Node 22's npm 10 ignores min-release-age. Same in the Dockerfile and devcontainer.json
+      - run: npm install -g npm@11.21.1 && npm --version
       - run: npm ci
       - run: npm run lint
       - run: npm test
