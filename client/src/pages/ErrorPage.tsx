@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useInRouterContext } from 'react-router-dom'
 import { Home, AlertCircle, Clock, ServerCrash, RefreshCw, WifiOff } from 'lucide-react'
 import SEO from '../components/SEO'
@@ -67,6 +68,14 @@ function ErrorPage({
   // and the page fills the viewport itself: flex-1 is sized for the space
   // between a navbar and footer that are not rendered there.
   const inRouter = useInRouterContext();
+
+  // Outside the router nothing answers Back or Forward, so reload the address they land on.
+  useEffect(() => {
+    if (inRouter) return;
+    const reload = () => window.location.reload();
+    window.addEventListener('popstate', reload);
+    return () => window.removeEventListener('popstate', reload);
+  }, [inRouter]);
 
   return (
     <div className={`${inRouter ? 'flex-1' : 'min-h-dvh'} bg-primary flex items-center justify-center px-4`}>
