@@ -43,6 +43,7 @@ document.querySelectorAll('head [data-seo="server"]').forEach(el => el.remove())
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    {/* The last resort, above the router; a page's crash stops at its error boundary in RootLayout. */}
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import Navbar from '../components/Navbar'
 import ScrollToTop from '../components/ScrollToTop'
 import Footer from '../components/Footer'
+import ErrorBoundary from '../components/ErrorBoundary'
 import { useAuth } from '../hooks/useAuth'
 import { useNotifications, NOTIFICATIONS_KEY } from '../hooks/useNotifications'
 
@@ -45,7 +46,10 @@ function RootLayout() {
           navbar spacer and the footer gap are both inside this border box, so
           100svh needs no arithmetic. */}
       <div className="flex flex-1 flex-col max-lg:min-h-svh print:min-h-0 pt-(--nav-height) pb-16">
-        <Outlet />
+        {/* A page that crashes keeps the navbar and footer; the next navigation clears it. */}
+        <ErrorBoundary resetKey={location}>
+          <Outlet />
+        </ErrorBoundary>
       </div>
       <Footer />
     </div>

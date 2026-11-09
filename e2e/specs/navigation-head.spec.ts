@@ -6,7 +6,8 @@ import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 // meanwhile still re-renders the page on screen. Read from window.location, the
 // canonical link (SEO.tsx, for a page that passes none) and the JSON-LD page URL
 // (StructuredData.tsx) named the next page in that window; they take the router's
-// location instead. Outside the router, the root error page still names its address.
+// location instead. A page's error page names its address through the router, and the
+// root error page, outside it, through window.location.
 
 const SITE = 'https://stellarbladeguide.com';
 
@@ -82,13 +83,29 @@ test.describe('the head during a navigation', () => {
     await expect.poll(() => page.evaluate(schemaUrl)).toBe(`${SITE}/levels/xion`);
   });
 
-  test('the root error page, outside the router, names its own address', async ({ page }) => {
+  test("a page's error page, inside the router, names its own address", async ({ page }) => {
     // Locations with no collectibles list make the level page throw while it renders,
-    // which only the root error boundary, above the router, catches.
+    // which the page's error boundary in RootLayout catches.
     await page.route('**/api/levels/eidos-7', route =>
       route.fulfill({ json: [{ location_name: 'Broken', collectibles: null }] }));
     await page.goto('/levels/eidos-7');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Something went wrong');
+    await expect(page.getByRole('navigation', { name: 'Footer' })).toBeVisible();
+    await expect(page.locator('head link[rel="canonical"]')).toHaveAttribute('href', `${SITE}/levels/eidos-7`);
+    await expect(page.locator('head meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+  });
+
+  test('the root error page, outside the router, names its own address', async ({ page }) => {
+    // Results with no list make the navbar's search throw while it renders, outside the
+    // page's error boundary, which only the root error boundary, above the router, catches.
+    await page.route('**/api/search/**', route =>
+      route.fulfill({ json: { query: 'e2e', total: 1, results: null } }));
+    await page.goto('/levels/eidos-7');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Eidos 7');
+    await page.getByRole('button', { name: 'Search (Ctrl+K)' }).click();
+    await page.getByPlaceholder('Search…').fill('e2e');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Something went wrong');
+    await expect(page.locator('nav')).toHaveCount(0);
     await expect(page.locator('head link[rel="canonical"]')).toHaveAttribute('href', `${SITE}/levels/eidos-7`);
     await expect(page.locator('head meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   });
