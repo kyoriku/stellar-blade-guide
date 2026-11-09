@@ -87,6 +87,9 @@ test.describe('found count under the cycle filter', () => {
     expect(double, 'Eidos 7 must hold a Base entry worth more than 1').toBeTruthy();
     await tick(page, [double!]);
     await page.reload();
+    // A reload keeps the filter the entry showed, NG++ here, so All goes back on first.
+    await expect(pill(page, 'NG++')).toHaveAttribute('aria-pressed', 'true');
+    await pill(page, 'All').click();
     await expect(foundNote(page)).toHaveText(`· ${2 + double!.quantity} found`);
     await pill(page, 'NG').click();
     await expect(foundNote(page)).toHaveText(`· ${1 + double!.quantity} found`);

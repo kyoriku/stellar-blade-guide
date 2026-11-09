@@ -72,9 +72,10 @@ src/
                      text layout, username and password validation, role ranks
                      (whose comments a viewer may delete), breadcrumbs, auth
                      helpers (refresh lock, return path, OAuth errors), the
-                     typed confirmation's match, and the pure logic behind the
-                     Progress page, its Manage progress card, the tip that points
-                     to it, and the admin page
+                     typed confirmation's match, each history entry's remembered
+                     filters, and the pure logic behind the Progress page, its
+                     Manage progress card, the tip that points to it, and the
+                     admin page
 public/              robots.txt, static sitemap.xml, favicons, README screenshots;
                      assets/images/ is gitignored local source imagery (production serves
                      from Cloudflare R2 at img.stellarbladeguide.com)

@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useParams, Link, NavigationType, useLocation, useNavigationType } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
 import PageLightbox from '../components/PageLightbox'
@@ -31,6 +31,7 @@ import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
+import { offeredFilters, readFilters, rememberFilters, type PageFilters } from '../utils/entryFilters'
 
 // A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
 // 2px Highlight border, with a pixel less padding so its size doesn't change (the
@@ -46,6 +47,7 @@ const SUBTYPE_ORDER = [
 function CollectibleTypeDetailPage() {
   const { typeName } = useParams<{ typeName: string }>();
   const location = useLocation();
+  const navigationType = useNavigationType();
 
   // Detect category from URL
   const category = location.pathname.startsWith('/upgrades') ? 'upgrades'
@@ -68,9 +70,10 @@ function CollectibleTypeDetailPage() {
   // Pass category to hook
   const { data: levelData = [], isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
 
-  const [cycleFilter, setCycleFilter] = useState<string>('All');
-  const [subtypeFilter, setSubtypeFilter] = useState<string>('All');
-  const [sortMode, setSortMode] = useState<'default' | 'alphabetical'>('default');
+  // A reload, or Back or Forward from another page, opens on the filters this entry showed.
+  const [cycleFilter, setCycleFilter] = useState(() => readFilters(location.state, location.pathname).cycle);
+  const [subtypeFilter, setSubtypeFilter] = useState(() => readFilters(location.state, location.pathname).subtype);
+  const [sortMode, setSortMode] = useState(() => readFilters(location.state, location.pathname).sort);
   const { prefetchCollectiblesByType } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
   // Manage progress names a type by its slug, which this page's URL already is.
@@ -110,6 +113,12 @@ function CollectibleTypeDetailPage() {
 
   const showCycleFilter = availableCycles.length > 1;
   const showSubtypeFilter = typeName === 'documents';
+
+  // The subtypes the page holds, whatever its filters show.
+  const pageSubtypes = useMemo(() => {
+    const held = new Set(levelData.flatMap(level => level.locations.flatMap(loc => loc.collectibles.map(c => c.subtype))));
+    return SUBTYPE_ORDER.filter(s => held.has(s));
+  }, [levelData]);
 
   // Filter data by cycle
   const filteredLevelData = useMemo(() => {
@@ -244,18 +253,40 @@ function CollectibleTypeDetailPage() {
   );
   const resetActiveSection = () => setActiveSection('');
 
-  // A new type starts with its filters cleared, during render, so this sits below the
-  // useActiveSection call. The type they belong to is kept in state, not a ref: React
-  // can set aside a render it has started, and a ref written there would keep the new
-  // type while the cleared filters were thrown away.
+  const view: PageFilters = { cycle: cycleFilter, subtype: subtypeFilter, sort: sortMode };
+  const setFilters = (next: PageFilters) => {
+    if (next.cycle !== cycleFilter) setCycleFilter(next.cycle);
+    if (next.subtype !== subtypeFilter) setSubtypeFilter(next.subtype);
+    if (next.sort !== sortMode) setSortMode(next.sort);
+  };
+
+  // Once per navigation, in render so its own commit (the jump included) shows the right list,
+  // and in state, not refs: React may set a render aside. A new type, Back or Forward takes the
+  // entry's filters. Chained, so each pass sees what the last one set.
+  const [navFor, setNavFor] = useState(location);
   const [filtersFor, setFiltersFor] = useState(typeName);
-  if (typeName !== filtersFor) {
-    setFiltersFor(typeName);
-    setActiveSection('');
-    setCycleFilter('All');
-    setSubtypeFilter('All');
-    setSortMode('default');
+  if (location !== navFor) {
+    setNavFor(location);
+    if (typeName !== filtersFor) {
+      setFiltersFor(typeName);
+      setActiveSection('');
+    }
+    if (typeName !== filtersFor || navigationType === NavigationType.Pop) {
+      setFilters(readFilters(location.state, location.pathname));
+    }
+  } else if (levelData.length > 0) {
+    // A filter the loaded page doesn't offer goes back to All: one kept from before a content
+    // change, or a subtype whose select the cycle pills have taken the place of.
+    setFilters(offeredFilters(view, showCycleFilter ? availableCycles : [],
+      showSubtypeFilter && !showCycleFilter ? pageSubtypes : null));
   }
+
+  // The entry keeps what it shows, for Back, Forward and a reload. The router's copy of the
+  // entry's state goes stale here: never pass location.state on.
+  useEffect(() => {
+    rememberFilters(window.history, location, window.location.pathname,
+      { cycle: cycleFilter, subtype: subtypeFilter, sort: sortMode });
+  }, [location, cycleFilter, subtypeFilter, sortMode]);
 
   // Once per navigation, when the cards are on screen.
   useHashJump(levelData.length > 0 && !isError, scrollToCard);
@@ -427,7 +458,8 @@ function CollectibleTypeDetailPage() {
                   </div>
 
                   <div className="flex justify-end sm:justify-start order-3 sm:order-none">
-                    <div className="px-3 py-1.5 text-sm rounded-lg border bg-gray-800/50 border-gray-700 text-gray-400">
+                    {/* On when the entry kept A-Z, as the real button will be. */}
+                    <div className={`px-3 py-1.5 text-sm rounded-lg border ${sortMode === 'alphabetical' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-400' : 'bg-gray-800/50 border-gray-700 text-gray-400'}`}>
                       A–Z
                     </div>
                   </div>

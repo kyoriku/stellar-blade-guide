@@ -108,15 +108,12 @@ export function usePageLightbox<T>(rendered: T, galleriesOf: (rendered: T) => re
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
 
-  // A Back or Forward between two pages of one kind keeps the page mounted (its
-  // route has no key), so the lightbox closes when the path changes, during the
-  // render that brings the next page's slides. The path lives in state, not a
-  // ref, as the pages' filtersFor does: React may set aside a render it has
-  // started. It closes at once, without the library's fade.
-  const { pathname } = useLocation();
-  const [pathFor, setPathFor] = useState(pathname);
-  if (pathname !== pathFor) {
-    setPathFor(pathname);
+  // Closes at once, without the fade, on any navigation, which can bring other slides (Back
+  // or Forward keeps the page mounted). In state, not a ref, as the pages' navFor is.
+  const location = useLocation();
+  const [locationFor, setLocationFor] = useState(location);
+  if (location !== locationFor) {
+    setLocationFor(location);
     setOpen(false);
   }
 
