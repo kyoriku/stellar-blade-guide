@@ -53,9 +53,9 @@ function readCachedUser(): AuthUser | null {
   }
 }
 
-// Read in the provider's first render, above any boundary whose fallback can
-// render, so a browser that refuses site storage (Safari "Block all cookies", a
-// per-site cookie block) must read as signed out rather than blank the page.
+// Read in the provider's first render, outside the page's error boundary, so a
+// browser that refuses site storage (Safari "Block all cookies", a per-site
+// cookie block) must read as signed out rather than crash the whole site.
 function hasSessionHint(): boolean {
   try {
     return !!localStorage.getItem(SESSION_FLAG)
