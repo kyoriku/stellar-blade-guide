@@ -7,6 +7,7 @@ import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
 import { NOTIFICATIONS_KEY } from '../hooks/useNotifications'
 import { STORAGE_KEY, dropFromLocalProgress } from '../hooks/useProgress'
 import { withRefreshLock } from '../utils/refreshLock'
+import { removeItem, writeItem } from '../utils/storage'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
 // for unauthenticated visitors. Worst case: cleared localStorage causes one
@@ -145,8 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const expiredHere = hasSessionHint()
             setUser(null)
             confirmedRef.current = false // this session is over — the next optimistic restore is unconfirmed again
-            localStorage.removeItem(SESSION_FLAG)
-            localStorage.removeItem(USER_CACHE)
+            removeItem(SESSION_FLAG)
+            removeItem(USER_CACHE)
             // Before React renders the signed-out state, so the next account on
             // this tab starts from an empty cache and a per-user fetch this 401
             // interrupted is cancelled instead of erroring under the toast.
@@ -238,8 +239,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState !== 'visible') return
       if (!hasSessionHint()) {
         // No session to recover. A tab that missed another tab's storage event
-        // (one restored from the back-forward cache, say) may still render one;
-        // end it here.
+        // (one restored from the back-forward cache, say), or whose sign-in couldn't
+        // store the hint, may still render one; end it here.
         if (user) endSessionFromElsewhere()
         return
       }
@@ -342,7 +343,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(data.access_token)
     lastRefreshRef.current = Date.now()
     confirmedRef.current = true
-    localStorage.setItem(SESSION_FLAG, '1')
+    writeItem(SESSION_FLAG, '1')
   }, [])
 
   const register = useCallback(async (email: string, username: string, password: string) => {
@@ -360,7 +361,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(data.access_token)
     lastRefreshRef.current = Date.now()
     confirmedRef.current = true
-    localStorage.setItem(SESSION_FLAG, '1')
+    writeItem(SESSION_FLAG, '1')
   }, [])
 
   // Identity-change guard: whenever the signed-in id changes to a DIFFERENT
@@ -395,8 +396,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       setAccessToken(null)
       confirmedRef.current = false // a later restore in this tab must re-arm the bound
-      localStorage.removeItem(SESSION_FLAG)
-      localStorage.removeItem(USER_CACHE)
+      removeItem(SESSION_FLAG)
+      removeItem(USER_CACHE)
       // Per-user query data must not survive into a different account's
       // session on this tab: a second sign-in would inherit the previous
       // account's completion set (navbar ring, stats hero, checkboxes) and

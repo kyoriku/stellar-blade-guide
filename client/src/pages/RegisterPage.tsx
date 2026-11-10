@@ -4,6 +4,7 @@ import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
 import { returnPath } from '../utils/returnPath'
+import { removeItem, writeItem } from '../utils/storage'
 import { NEW_PASSWORD_MAX_LENGTH, NEW_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
 import SEO from '../components/SEO'
 import BusyLabel from '../components/BusyLabel'
@@ -48,9 +49,9 @@ export default function RegisterPage() {
 
   // The provider flow leaves the SPA, so the return path rides in localStorage,
   // written on every press so a value left by an abandoned press elsewhere can
-  // never steer this one.
+  // never steer this one; a press that can't write it clears the old one instead.
   const handleOAuthLogin = (provider: 'google' | 'discord') => {
-    localStorage.setItem('oauth_redirect', from)
+    if (!writeItem('oauth_redirect', from)) removeItem('oauth_redirect')
     window.location.href = `${API_BASE_URL}/auth/${provider}`
   }
 

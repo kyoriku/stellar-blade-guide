@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthContext } from '../hooks/useAuthContext'
 import { SESSION_FLAG } from '../context/AuthContext'
+import { readItem, removeItem, writeItem } from '../utils/storage'
 import SEO from '../components/SEO';
 import seo from '../constants/seo.json';
 
@@ -26,22 +27,22 @@ export default function OAuthCallbackPage() {
 
     // Read once, up front: under StrictMode both effect runs share the one
     // refresh, and a read after the first run's removal sent every dev sign-in home.
-    const redirect = localStorage.getItem('oauth_redirect') || '/'
+    const redirect = readItem('oauth_redirect') || '/'
     // The redirect that landed here is the response that set the cookie, so the
     // hint goes on before the refresh: a 401 removes it again, while a transient
     // failure leaves it for focus recovery and the next load to finish the sign-in.
-    localStorage.setItem(SESSION_FLAG, '1')
+    writeItem(SESSION_FLAG, '1')
 
     void refreshToken().then((accessToken) => {
       if (accessToken) {
-        localStorage.removeItem('oauth_redirect')
+        removeItem('oauth_redirect')
         void navigate(redirect, { replace: true })
         return
       }
       // A 401 has already cleared the hint and shown its toast; anything else was
       // transient with a live cookie, so say so in the login form's notice slot and
       // leave oauth_redirect for the retry to return the user.
-      const transient = !!localStorage.getItem(SESSION_FLAG)
+      const transient = !!readItem(SESSION_FLAG)
       void navigate(transient ? '/login?oauth_error=failed' : '/login', { replace: true })
     })
   }, [navigate, refreshToken, searchParams])

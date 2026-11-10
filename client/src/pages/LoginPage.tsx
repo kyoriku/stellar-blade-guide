@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { API_BASE_URL, errorMessage } from '../services/api'
 import { oauthErrorNotice, type OAuthNotice } from '../utils/oauthError'
 import { returnPath } from '../utils/returnPath'
+import { readItem, removeItem, writeItem } from '../utils/storage'
 import { CURRENT_PASSWORD_MAX_LENGTH, CURRENT_PASSWORD_TOO_LONG, passwordTooLong } from '../utils/validatePassword'
 import SEO from '../components/SEO'
 import BusyLabel from '../components/BusyLabel'
@@ -37,7 +38,7 @@ export default function LoginPage() {
   // provider login consumes it. A refusal reloads the page, so location.state is
   // gone and a password sign-in would otherwise land on the home page.
   const [returnAfterRefusal] = useState<string | null>(() =>
-    searchParams.has('oauth_error') ? localStorage.getItem('oauth_redirect') : null,
+    searchParams.has('oauth_error') ? readItem('oauth_redirect') : null,
   )
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export default function LoginPage() {
     setIsSubmitting(true)
     try {
       await login(email, password)
-      localStorage.removeItem('oauth_redirect')
+      removeItem('oauth_redirect')
       void navigate(from, { replace: true })
     } catch (err) {
       setError(errorMessage(err, 'Login failed'))
@@ -76,7 +77,9 @@ export default function LoginPage() {
   }
 
   const handleOAuthLogin = (provider: 'google' | 'discord') => {
-    localStorage.setItem('oauth_redirect', from)
+    // A press that can't store the return path clears an older one, so the callback
+    // can't land on a page from an earlier press.
+    if (!writeItem('oauth_redirect', from)) removeItem('oauth_redirect')
     window.location.href = `${API_BASE_URL}/auth/${provider}`
   }
 
