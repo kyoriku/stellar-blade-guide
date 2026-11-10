@@ -10,8 +10,9 @@ import { withRefreshLock } from '../utils/refreshLock'
 import { readItem, removeItem, writeItem } from '../utils/storage'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
-// for unauthenticated visitors. Worst case: cleared localStorage causes one
-// 401 on next load, which then clears the flag and never happens again.
+// for unauthenticated visitors. Worst case: a flag that outlives its cookie costs
+// one 401 on the next load, which clears it; a cookie whose flag was cleared isn't
+// restored, so the visitor signs in again.
 export const SESSION_FLAG = 'sb_has_session'
 
 // Refresh on tab focus only if the token is at least this stale, so rapid
