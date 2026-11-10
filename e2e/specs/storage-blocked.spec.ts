@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { oauthErrorNotice } from '../../client/src/utils/oauthError';
+import { STORAGE_COPY } from '../../client/src/constants/storageCopy';
 
 let fx: Fixtures;
 let ip: string;
@@ -68,6 +69,45 @@ async function stopProviderTrips(page: Page): Promise<string[]> {
   return trips;
 }
 
+// The sign-in content block: the heading, the card and the line under it.
+const signInBlock = (page: Page) =>
+  page.locator('div.max-w-md', { has: page.getByRole('heading', { level: 1 }) });
+
+// With storage refused or switched off, the sign-in pages say so in place of their
+// controls: the notice, and nothing to press, type in or follow.
+async function expectNotice(page: Page, heading: string, sentence: string) {
+  const block = signInBlock(page);
+  await expect(block.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+  await expect(block.getByText(sentence, { exact: true })).toBeVisible();
+  await expect(block.getByText(STORAGE_COPY.guide, { exact: true })).toBeVisible();
+  await expect(block.getByRole('button')).toHaveCount(0);
+  await expect(block.locator('input')).toHaveCount(0);
+  await expect(block.getByRole('link')).toHaveCount(0);
+}
+
+// Every sign-in request the page sends.
+function recordAuthRequests(page: Page): string[] {
+  const paths: string[] = [];
+  page.on('request', (r) => {
+    const path = new URL(r.url()).pathname;
+    if (path.startsWith('/api/auth/')) paths.push(path);
+  });
+  return paths;
+}
+
+// A guest's tick holds for the page's life, with nowhere to store it.
+async function expectGuestTickHolds(page: Page) {
+  await page.goto('/levels/eidos-7');
+  await expect(
+    page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true })
+  ).toBeVisible();
+  const article = page.locator(`article#collectible-${fx.collectibleId}`);
+  await expect(article).toBeVisible();
+  const toggle = article.getByRole('button', { name: /Mark as/ });
+  await toggle.click();
+  await expect(toggle).toHaveAccessibleName('Mark as not found');
+}
+
 test.beforeAll(() => {
   fx = readFixtures();
 });
@@ -95,7 +135,7 @@ test.afterEach(async ({ page }) => {
  * out, keep a guest's ticks in memory for the page's life, and never blank the
  * root: the provider's first render reads the session hint, and the root error
  * boundary's fallback used to render a router Link outside the router. The
- * sign-in pages must not crash either.
+ * sign-in pages say so in place of their controls.
  */
 test.describe('storage refused', () => {
   test.beforeEach(async ({ page }) => {
@@ -117,16 +157,7 @@ test.describe('storage refused', () => {
   });
 
   test('a guide page renders signed out and a guest toggle holds in memory', async ({ page }) => {
-    await page.goto('/levels/eidos-7');
-    await expect(
-      page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true })
-    ).toBeVisible();
-
-    const article = page.locator(`article#collectible-${fx.collectibleId}`);
-    await expect(article).toBeVisible();
-    const toggle = article.getByRole('button', { name: /Mark as/ });
-    await toggle.click();
-    await expect(toggle).toHaveAccessibleName('Mark as not found');
+    await expectGuestTickHolds(page);
   });
 
   test('a protected route still redirects to login', async ({ page }) => {
@@ -134,11 +165,20 @@ test.describe('storage refused', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('a refused provider sign-in shows its sentence and cleans the address', async ({ page }) => {
+  test('sign-in says it needs storage, in place of its controls and of a refused provider sign-in', async ({ page }) => {
+    const auth = recordAuthRequests(page);
     await page.goto('/login?oauth_error=expired&provider=google');
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
-    await expect(page.getByText(oauthErrorNotice('expired', 'google')!.text, { exact: true })).toBeVisible();
+    await expectNotice(page, 'Welcome back', STORAGE_COPY.blocked.login);
+    await expect(page.getByText(oauthErrorNotice('expired', 'google')!.text)).toHaveCount(0);
     await expect(page).toHaveURL(/\/login$/);
+    expect(auth).toEqual([]);
+  });
+
+  test('sign-up says it needs storage, in place of its controls', async ({ page }) => {
+    const auth = recordAuthRequests(page);
+    await page.goto('/register');
+    await expectNotice(page, 'Create account', STORAGE_COPY.blocked.register);
+    expect(auth).toEqual([]);
   });
 
   test('the provider callback ends on the sign-in page', async ({ page }) => {
@@ -146,7 +186,7 @@ test.describe('storage refused', () => {
     // No refresh cookie, so the refresh is a definitive 401.
     await page.goto('/oauth/callback?token=x');
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+    await expect(page.getByText(STORAGE_COPY.blocked.login, { exact: true })).toBeVisible();
     expect(navigations.some((url) => url.includes('/login'))).toBe(true);
     expect(navigations.filter((url) => url.includes('oauth_error'))).toEqual([]);
   });
@@ -161,22 +201,46 @@ test.describe('storage refused', () => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
   });
+});
 
-  test('a provider press starts its trip, from sign-in and from sign-up', async ({ page }) => {
-    const trips = await stopProviderTrips(page);
+/**
+ * An app's built-in browser with storage switched off (Android's WebView default)
+ * has window.localStorage === null, while cookies still work.
+ */
+test.describe('storage switched off', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'localStorage', { configurable: true, get: () => null });
+    });
+  });
+
+  test('a guide page renders signed out and a guest toggle holds in memory', async ({ page }) => {
+    await expectGuestTickHolds(page);
+  });
+
+  test('sign-in and sign-up say this browser keeps no site data, in place of their controls', async ({ page }) => {
+    const auth = recordAuthRequests(page);
     await page.goto('/login');
-    await page.getByRole('button', { name: 'Continue with Google' }).click();
-    await expect.poll(() => trips).toEqual(['/api/auth/google']);
-
+    await expectNotice(page, 'Welcome back', STORAGE_COPY.off.login);
     await page.goto('/register');
-    await page.getByRole('button', { name: 'Continue with Discord' }).click();
-    await expect.poll(() => trips).toEqual(['/api/auth/google', '/api/auth/discord']);
+    await expectNotice(page, 'Create account', STORAGE_COPY.off.register);
+    expect(auth).toEqual([]);
+  });
+
+  test('the provider callback ends on the sign-in page', async ({ page }) => {
+    const navigations = await recordNavigations(page);
+    await page.goto('/oauth/callback?token=x');
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByText(STORAGE_COPY.off.login, { exact: true })).toBeVisible();
+    expect(navigations.some((url) => url.includes('/login'))).toBe(true);
+    expect(navigations.filter((url) => url.includes('oauth_error'))).toEqual([]);
   });
 });
 
 /**
- * Storage that reads but refuses writes (a full quota). The provider press and the
- * callback both write, and must carry on without the write. A return path left by an
+ * Storage that reads but refuses writes (a full quota). The sign-in pages keep their
+ * controls, since storage still reads. The provider press and the callback both
+ * write, and must carry on without the write. A return path left by an
  * earlier press must not steer this one, so a press that can't store its own clears
  * the old one.
  */
