@@ -537,11 +537,11 @@ function Navbar() {
               match the accordion section dividers below it — see the note in
               MobileAccordionSection for why those are solid rather than /50.
               Nothing here changes any more, so there is no transition: the
-              background is static and the shadow is gone. (The dropped
-              `bg-primary/95` was doubly dead — `.bg-primary` is a hand-written
-              rule in index.css, not a theme colour, so Tailwind never generated
-              the /95 variant at all. The nav above hits the same thing and works
-              around it with an arbitrary value, `bg-[rgba(1,4,9,0.97)]`.)
+              background is static and the shadow is gone. (Its dropped 95%
+              opacity variant never rendered anyway: bg-primary was a
+              hand-written rule in index.css then, and those take no opacity
+              modifier. bg-nav still is one, so the nav above uses an arbitrary
+              value, `bg-[rgba(1,4,9,0.97)]`.)
               `sticky top-0` is also inert — the scroller is this element's
               sibling, not its ancestor, so nothing ever passes underneath it —
               but it is left alone here deliberately. */}

@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* The page background, as a theme colour so a hover: background or an opacity
+   modifier beside it works. */
+@theme {
+  --color-primary: #0d1117;
+}
+
 /* The navbar's height: h-16 (64px) plus its unconditional 1px border-b. The
    navbar is `fixed`, so this is also the size of the spacer that stands in for
    it in flow — RootLayout's top padding, the mobile drawer's offset and every
@@ -82,10 +88,8 @@
   background: rgb(75, 85, 99);
 }
 
-.bg-primary {
-  background-color: #0d1117;
-}
-
+/* Hand-written and unlayered, so they take no opacity modifier and beat every
+   background utility on their element, hover: included. */
 .bg-secondary {
   background-color: #151b23;
 }
