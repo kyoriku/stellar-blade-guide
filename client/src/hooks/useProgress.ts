@@ -5,6 +5,7 @@ import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
 import { API_BASE_URL, ApiError, readError, errorMessage } from '../services/api'
 import type { ProgressWriteResponse } from '../services/api'
+import { readItem, removeItem, storageProblem, writeItem } from '../utils/storage'
 
 // AuthContext's sign-in sync imports it.
 export const STORAGE_KEY = 'sb_progress'
@@ -38,9 +39,10 @@ function maybeFlushDrift(queryClient: ReturnType<typeof useQueryClient>) {
 }
 
 function getLocalProgress(fallback: Set<number> = new Set()): Set<number> {
+  const stored = readItem(STORAGE_KEY)
+  // Refused storage keeps the in-memory set; storage holding none is an empty set.
+  if (!stored) return storageProblem() ? new Set(fallback) : new Set()
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) return new Set()
     const ids: unknown = JSON.parse(stored)
     // Anything but an id array is corrupt (a JSON string would otherwise become a
     // set of characters, written back on the next tick and rejected by every sync).
@@ -50,31 +52,22 @@ function getLocalProgress(fallback: Set<number> = new Set()): Set<number> {
   }
 }
 
+// Runs inside the setGuestIds updater, which React replays during render, so it
+// must not throw: refused or full storage would crash the page rather than lose
+// one save. The toggle still holds in memory for this page's life.
 function setLocalProgress(ids: Set<number>): boolean {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]))
-    return true
-  } catch {
-    // Runs inside the setGuestIds updater, which React replays during render,
-    // so refused or full storage would crash the page rather than lose one
-    // save; the toggle still holds in memory for this page's life.
-    return false
-  }
+  return writeItem(STORAGE_KEY, JSON.stringify([...ids]))
 }
 
 // Removes ids from the guest copy. While signed in, that copy holds ids a failed
 // sign-in sync left behind, or ids a signed-out tab ticked while a sync was out;
 // the next sync would add either back.
 export function dropFromLocalProgress(ids: number[]): void {
-  try {
-    if (!localStorage.getItem(STORAGE_KEY)) return
-    const drop = new Set(ids)
-    const kept = [...getLocalProgress()].filter(id => !drop.has(id))
-    if (kept.length > 0) localStorage.setItem(STORAGE_KEY, JSON.stringify(kept))
-    else localStorage.removeItem(STORAGE_KEY)
-  } catch {
-    // Refused storage holds nothing a sync could read either.
-  }
+  if (!readItem(STORAGE_KEY)) return
+  const drop = new Set(ids)
+  const kept = [...getLocalProgress()].filter(id => !drop.has(id))
+  if (kept.length > 0) writeItem(STORAGE_KEY, JSON.stringify(kept))
+  else removeItem(STORAGE_KEY)
 }
 
 // For a write outside this hook (the bulk route): re-sync now if no per-item write

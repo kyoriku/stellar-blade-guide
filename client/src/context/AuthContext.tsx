@@ -7,10 +7,12 @@ import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
 import { NOTIFICATIONS_KEY } from '../hooks/useNotifications'
 import { STORAGE_KEY, dropFromLocalProgress } from '../hooks/useProgress'
 import { withRefreshLock } from '../utils/refreshLock'
+import { readItem, removeItem, writeItem } from '../utils/storage'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
-// for unauthenticated visitors. Worst case: cleared localStorage causes one
-// 401 on next load, which then clears the flag and never happens again.
+// for unauthenticated visitors. Worst case: a flag that outlives its cookie costs
+// one 401 on the next load, which clears it; a cookie whose flag was cleared isn't
+// restored, so the visitor signs in again.
 export const SESSION_FLAG = 'sb_has_session'
 
 // Refresh on tab focus only if the token is at least this stale, so rapid
@@ -42,9 +44,9 @@ const USER_CACHE = 'sb_user'
 type CachedUser = Pick<AuthUser, 'id' | 'username' | 'avatar_url' | 'role' | 'has_password'>
 
 function readCachedUser(): AuthUser | null {
+  const raw = readItem(USER_CACHE)
+  if (!raw) return null
   try {
-    const raw = localStorage.getItem(USER_CACHE)
-    if (!raw) return null
     const d = JSON.parse(raw) as CachedUser
     // email/created_at aren't cached; the refresh overwrites the whole user.
     return { ...d, email: '', created_at: '' }
@@ -57,11 +59,7 @@ function readCachedUser(): AuthUser | null {
 // browser that refuses site storage (Safari "Block all cookies", a per-site
 // cookie block) must read as signed out rather than crash the whole site.
 function hasSessionHint(): boolean {
-  try {
-    return !!localStorage.getItem(SESSION_FLAG)
-  } catch {
-    return false
-  }
+  return !!readItem(SESSION_FLAG)
 }
 
 // Provider
@@ -145,8 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const expiredHere = hasSessionHint()
             setUser(null)
             confirmedRef.current = false // this session is over — the next optimistic restore is unconfirmed again
-            localStorage.removeItem(SESSION_FLAG)
-            localStorage.removeItem(USER_CACHE)
+            removeItem(SESSION_FLAG)
+            removeItem(USER_CACHE)
             // Before React renders the signed-out state, so the next account on
             // this tab starts from an empty cache and a per-user fetch this 401
             // interrupted is cancelled instead of erroring under the toast.
@@ -186,12 +184,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // cache the optimistic render depends on.
   useEffect(() => {
     if (!user) return
-    try {
-      // has_password is cached so a provider-only account's Settings is right on
-      // first paint instead of flashing a change-password form it cannot use.
-      const { id, username, avatar_url, role, has_password } = user
-      localStorage.setItem(USER_CACHE, JSON.stringify({ id, username, avatar_url, role, has_password }))
-    } catch { /* localStorage unavailable / quota — non-fatal */ }
+    // has_password is cached so a provider-only account's Settings is right on
+    // first paint instead of flashing a change-password form it cannot use.
+    const { id, username, avatar_url, role, has_password } = user
+    writeItem(USER_CACHE, JSON.stringify({ id, username, avatar_url, role, has_password }))
   }, [user])
 
   // Silent refresh on mount — skip entirely if no session flag is set,
@@ -238,8 +234,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (document.visibilityState !== 'visible') return
       if (!hasSessionHint()) {
         // No session to recover. A tab that missed another tab's storage event
-        // (one restored from the back-forward cache, say) may still render one;
-        // end it here.
+        // (one restored from the back-forward cache, say), or whose sign-in couldn't
+        // store the hint, may still render one; end it here.
         if (user) endSessionFromElsewhere()
         return
       }
@@ -283,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const canSync = !!user && accessToken !== null
     if (canSync && !prevSyncedRef.current) {
       try {
-        const local = localStorage.getItem(STORAGE_KEY)
+        const local = readItem(STORAGE_KEY)
         if (local) {
           const ids = JSON.parse(local) as number[]
           if (ids.length > 0) {
@@ -320,7 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             guestSyncRef.current = tracked
           }
         }
-      } catch { /* storage refused or corrupt sb_progress JSON: nothing to sync */ }
+      } catch { /* corrupt sb_progress JSON: nothing to sync */ }
     }
     prevSyncedRef.current = canSync
   }, [user, accessToken, showToast, queryClient])
@@ -342,7 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(data.access_token)
     lastRefreshRef.current = Date.now()
     confirmedRef.current = true
-    localStorage.setItem(SESSION_FLAG, '1')
+    writeItem(SESSION_FLAG, '1')
   }, [])
 
   const register = useCallback(async (email: string, username: string, password: string) => {
@@ -360,7 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(data.access_token)
     lastRefreshRef.current = Date.now()
     confirmedRef.current = true
-    localStorage.setItem(SESSION_FLAG, '1')
+    writeItem(SESSION_FLAG, '1')
   }, [])
 
   // Identity-change guard: whenever the signed-in id changes to a DIFFERENT
@@ -395,8 +391,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null)
       setAccessToken(null)
       confirmedRef.current = false // a later restore in this tab must re-arm the bound
-      localStorage.removeItem(SESSION_FLAG)
-      localStorage.removeItem(USER_CACHE)
+      removeItem(SESSION_FLAG)
+      removeItem(USER_CACHE)
       // Per-user query data must not survive into a different account's
       // session on this tab: a second sign-in would inherit the previous
       // account's completion set (navbar ring, stats hero, checkboxes) and

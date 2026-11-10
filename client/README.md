@@ -73,8 +73,9 @@ src/
                      generation and dedup, TOC builders, description parser,
                      text layout, username and password validation, role ranks
                      (whose comments a viewer may delete), breadcrumbs, auth
-                     helpers (refresh lock, return path, OAuth errors), the
-                     typed confirmation's match, each history entry's remembered
+                     helpers (refresh lock, return path, OAuth errors), site
+                     storage reads and writes that never throw, the typed
+                     confirmation's match, each history entry's remembered
                      filters, and the pure logic behind the Progress page, its
                      Manage progress card, the tip that points to it, and the
                      admin page
