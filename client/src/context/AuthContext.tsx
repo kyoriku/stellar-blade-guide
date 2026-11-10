@@ -7,7 +7,7 @@ import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
 import { NOTIFICATIONS_KEY } from '../hooks/useNotifications'
 import { STORAGE_KEY, dropFromLocalProgress } from '../hooks/useProgress'
 import { withRefreshLock } from '../utils/refreshLock'
-import { removeItem, writeItem } from '../utils/storage'
+import { readItem, removeItem, writeItem } from '../utils/storage'
 
 // Hint flag — not a security mechanism, just avoids a pointless refresh call
 // for unauthenticated visitors. Worst case: cleared localStorage causes one
@@ -43,9 +43,9 @@ const USER_CACHE = 'sb_user'
 type CachedUser = Pick<AuthUser, 'id' | 'username' | 'avatar_url' | 'role' | 'has_password'>
 
 function readCachedUser(): AuthUser | null {
+  const raw = readItem(USER_CACHE)
+  if (!raw) return null
   try {
-    const raw = localStorage.getItem(USER_CACHE)
-    if (!raw) return null
     const d = JSON.parse(raw) as CachedUser
     // email/created_at aren't cached; the refresh overwrites the whole user.
     return { ...d, email: '', created_at: '' }
@@ -58,11 +58,7 @@ function readCachedUser(): AuthUser | null {
 // browser that refuses site storage (Safari "Block all cookies", a per-site
 // cookie block) must read as signed out rather than crash the whole site.
 function hasSessionHint(): boolean {
-  try {
-    return !!localStorage.getItem(SESSION_FLAG)
-  } catch {
-    return false
-  }
+  return !!readItem(SESSION_FLAG)
 }
 
 // Provider
@@ -187,12 +183,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // cache the optimistic render depends on.
   useEffect(() => {
     if (!user) return
-    try {
-      // has_password is cached so a provider-only account's Settings is right on
-      // first paint instead of flashing a change-password form it cannot use.
-      const { id, username, avatar_url, role, has_password } = user
-      localStorage.setItem(USER_CACHE, JSON.stringify({ id, username, avatar_url, role, has_password }))
-    } catch { /* localStorage unavailable / quota — non-fatal */ }
+    // has_password is cached so a provider-only account's Settings is right on
+    // first paint instead of flashing a change-password form it cannot use.
+    const { id, username, avatar_url, role, has_password } = user
+    writeItem(USER_CACHE, JSON.stringify({ id, username, avatar_url, role, has_password }))
   }, [user])
 
   // Silent refresh on mount — skip entirely if no session flag is set,
@@ -284,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const canSync = !!user && accessToken !== null
     if (canSync && !prevSyncedRef.current) {
       try {
-        const local = localStorage.getItem(STORAGE_KEY)
+        const local = readItem(STORAGE_KEY)
         if (local) {
           const ids = JSON.parse(local) as number[]
           if (ids.length > 0) {
@@ -321,7 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             guestSyncRef.current = tracked
           }
         }
-      } catch { /* storage refused or corrupt sb_progress JSON: nothing to sync */ }
+      } catch { /* corrupt sb_progress JSON: nothing to sync */ }
     }
     prevSyncedRef.current = canSync
   }, [user, accessToken, showToast, queryClient])

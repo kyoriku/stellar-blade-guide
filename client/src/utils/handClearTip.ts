@@ -1,7 +1,9 @@
+import { readItem, writeItem } from './storage'
+
 // The one-time tip for someone clearing their progress one checkmark at a time: it
 // points them at Manage progress, which clears a whole level or type at once. Pure
-// logic, with storage and the clock passed in; hooks/useHandClearTip.ts wires it to
-// the toast and the router.
+// logic, with the clock passed in and storage through utils/storage.ts (tests pass a
+// stand-in); hooks/useHandClearTip.ts wires it to the toast and the router.
 
 // Ten different items unticked within two minutes. A hand-clear runs far past both
 // (one reset took 128 unticks in five minutes), and fixing a few mistakes never
@@ -60,27 +62,18 @@ export function noteToggle(w: UntickWindow, scope: string, id: number, found: bo
 
 /**
  * Whether the tip may show now, recording that it has. Fails closed: storage that
- * cannot be read, written, or read back means no tip. The storage is a getter
- * because a browser that refuses site storage throws from `window.localStorage`
- * itself.
+ * cannot be read, written, or read back means no tip. Tests pass a stand-in for
+ * the browser's storage.
  */
-export function claimTip(storage: () => TipStorage): boolean {
-  try {
-    const s = storage()
-    if (s.getItem(BULK_DONE_KEY) !== null || s.getItem(TIP_SHOWN_KEY) !== null) return false
-    s.setItem(TIP_SHOWN_KEY, '1')
-    return s.getItem(TIP_SHOWN_KEY) === '1'
-  } catch {
-    return false
-  }
+export function claimTip(storage?: () => TipStorage | null): boolean {
+  if (readItem(BULK_DONE_KEY, storage) !== null || readItem(TIP_SHOWN_KEY, storage) !== null) return false
+  return writeItem(TIP_SHOWN_KEY, '1', storage) && readItem(TIP_SHOWN_KEY, storage) === '1'
 }
 
-/** Records a completed bulk action. Never throws: it runs inside the write's success. */
-export function markBulkDone(storage: () => TipStorage): void {
-  try {
-    storage().setItem(BULK_DONE_KEY, '1')
-  } catch {
-    // A lost flag at worst lets the tip show once, which beats turning a
-    // committed write into an error.
-  }
+/**
+ * Records a completed bulk action. Never throws, since it runs inside the write's
+ * success: a lost flag at worst lets the tip show once.
+ */
+export function markBulkDone(storage?: () => TipStorage | null): void {
+  writeItem(BULK_DONE_KEY, '1', storage)
 }

@@ -90,7 +90,7 @@ export function useBulkProgress() {
     // account's progress for the next.
     // Config-level, so it runs even if the card unmounted mid-write. A browser
     // that has used the tool never needs the hand-clear tip.
-    onSuccess: () => markBulkDone(() => window.localStorage),
+    onSuccess: () => markBulkDone(),
     onSettled: async (_data, error, { req, scopeIds }) => {
       // On failure too, unless the server refused outright: a request that timed
       // out or lost its response may still have committed.

@@ -22,7 +22,7 @@ export function useHandClearTip(scope: string | null, label: string) {
 
   return useCallback((id: number, found: boolean) => {
     if (scope === null || !noteToggle(untickWindow, scope, id, found, Date.now())) return
-    if (!claimTip(() => window.localStorage)) return
+    if (!claimTip()) return
     showToast(BULK_COPY.handClearTip(label), {
       variant: 'info',
       // No timer: it shows once, to someone whose eyes are on the list.
