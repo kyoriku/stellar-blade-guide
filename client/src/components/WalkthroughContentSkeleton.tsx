@@ -5,13 +5,14 @@ function WalkthroughContentSkeleton() {
     <article className="relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800">
       <div className="relative">
         <div className="mb-3">
-          <div className="h-7 w-64 bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-[25px] w-64 bg-gray-700 rounded animate-pulse"></div>
         </div>
 
-        <div className="mb-4 space-y-2">
-          <div className="h-6 bg-gray-700 rounded animate-pulse"></div>
-          <div className="h-6 bg-gray-700 rounded animate-pulse" style={{ width: '95%' }}></div>
-          <div className="h-6 bg-gray-700 rounded animate-pulse" style={{ width: '80%' }}></div>
+        {/* Three bars and their gaps make three 26px lines of text. */}
+        <div className="mb-4 space-y-1.5">
+          <div className="h-[22px] bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-[22px] bg-gray-700 rounded animate-pulse" style={{ width: '95%' }}></div>
+          <div className="h-[22px] bg-gray-700 rounded animate-pulse" style={{ width: '80%' }}></div>
         </div>
 
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
