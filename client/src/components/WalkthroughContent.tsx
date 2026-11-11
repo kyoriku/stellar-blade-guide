@@ -39,7 +39,7 @@ function WalkthroughContent({ content, galleryKey, onImageClick, priority }: Wal
             </h3>
             {content.level && (
               <p className="w-full sm:w-auto text-sm text-gray-300 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
-                <span className="text-gray-200">{content.level}</span>
+                {content.level}
                 {content.location && content.location !== content.level && (
                   <> <span className="text-cyan-600">·</span> {content.location}</>
                 )}

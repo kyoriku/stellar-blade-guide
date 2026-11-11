@@ -677,9 +677,9 @@ function CollectibleTypeDetailPage() {
             <MobileBackToTop onScrollToTop={resetActiveSection} />
 
             {/* Collectibles grouped by level (or flat A-Z), in the order usePageLightbox walks them (typePageGalleries) */}
-            {sortedLevelData.map((level) => (
+            {sortedLevelData.map((level, levelIndex) => (
               <div key={level.level_id} id={slugifyPlace(level.level_name)} className="space-y-8 scroll-anchor">
-                {level.locations.map((location) => {
+                {level.locations.map((location, locationIndex) => {
                   const sectionId = slugifyPlace(`${level.level_name}-${location.location_name}`);
 
                   return (
@@ -695,6 +695,7 @@ function CollectibleTypeDetailPage() {
                       isCompleted={isCompleted}
                       isToggling={isToggling}
                       onToggleProgress={toggleProgress}
+                      isLast={levelIndex === sortedLevelData.length - 1 && locationIndex === level.locations.length - 1}
                     />
                   );
                 })}

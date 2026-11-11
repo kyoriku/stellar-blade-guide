@@ -12,7 +12,7 @@ function CollectibleSectionSkeleton({
   hideTypeBadge = false,
 }: CollectibleSectionSkeletonProps) {
   return (
-    <section id={id} className="mb-8">
+    <section id={id} className="mb-12">
       <div className="flex items-center gap-3 mb-4">
         <div className="h-7 w-48 bg-gray-700 rounded animate-pulse" />
         <div className="h-px flex-1 bg-gradient-to-r from-gray-700 to-transparent" />
@@ -25,15 +25,21 @@ function CollectibleSectionSkeleton({
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800"
           >
             <div className="relative">
-              <div className="flex flex-col mb-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  {!hideTypeBadge && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 h-7.5 rounded-lg border border-cyan-500/50 bg-cyan-500/20">
-                      <div className="w-3 h-3 bg-cyan-300/50 rounded animate-pulse" />
-                      <div className="h-4 w-16 bg-cyan-300/50 rounded animate-pulse" />
-                    </div>
-                  )}
-                  <div className="h-[25px] w-2/3 bg-gray-700 rounded animate-pulse" />
+              <div className="flex flex-col mb-2 md:mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+                    {!hideTypeBadge && (
+                      // Inline inside a wrapper, as TypeBadge sits in its link, with an icon box of the icon's size: the row takes the same height in any font.
+                      <span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 h-7.5 rounded-lg border border-cyan-500/50 bg-cyan-500/20">
+                          <span className="size-4.5 bg-cyan-300/50 rounded animate-pulse" />
+                          <span className="h-4 w-16 bg-cyan-300/50 rounded animate-pulse" />
+                        </span>
+                      </span>
+                    )}
+                    <div className="h-[22.5px] flex-1 max-w-2/3 bg-gray-700 rounded animate-pulse" />
+                  </div>
+                  <div className="w-5 h-5 flex-shrink-0 bg-gray-700 rounded animate-pulse" />
                 </div>
               </div>
 

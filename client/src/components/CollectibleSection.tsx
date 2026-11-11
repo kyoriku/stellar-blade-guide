@@ -28,6 +28,8 @@ interface CollectibleSectionProps {
   isCompleted?: (id: number) => boolean;
   isToggling?: (id: number) => boolean;
   onToggleProgress?: (id: number) => void;
+  /** The page's last section, which keeps the Previous/Next navigation 32px below instead of 48px. */
+  isLast?: boolean;
 }
 
 const CYCLE_STYLES: Record<string, string> = {
@@ -40,15 +42,15 @@ const CYCLE_STYLES: Record<string, string> = {
 function LocationHeading({ levelName, title, empty = false }: { levelName?: string; title: string; empty?: boolean }) {
   const level = levelName && levelName !== title ? levelName : null;
   return (
-    <div className={`flex flex-wrap items-center text-lg ${empty ? 'mb-5 text-gray-400' : 'mb-4 text-gray-300'}`}>
+    <div className={`flex flex-wrap items-center text-xl font-semibold ${empty ? 'mb-5 text-gray-400' : 'mb-4 text-gray-100'}`}>
       {level && (
         <span>
-          {empty ? level : <span className="text-gray-200">{level}</span>}{' '}
+          {level}{' '}
           <span className={empty ? 'text-gray-600' : 'text-cyan-600'}>·</span>{' '}
         </span>
       )}
       <span className="flex flex-auto items-center min-w-0">
-        <span className={level || empty ? 'min-w-0 text-balance' : 'min-w-0 text-balance text-gray-200'}>{title}</span>
+        <span className="min-w-0 text-balance">{title}</span>
         {/* Absolute, so the line and its gap add nothing to the width the wrap is decided on. */}
         <span className="relative flex-1 self-stretch">
           <span className={`absolute left-3 right-0 top-[calc(50%-0.5px)] h-px ${empty ? 'bg-gray-700' : 'bg-linear-to-r from-gray-700 to-transparent'}`} />
@@ -69,10 +71,13 @@ function CollectibleSection({
   isCompleted,
   isToggling,
   onToggleProgress,
+  isLast = false,
 }: CollectibleSectionProps) {
+  const sectionClass = `${isLast ? 'mb-8' : 'mb-12'} scroll-anchor`;
+
   if (!collectibles || collectibles.length === 0) {
     return (
-      <section id={id} className="mb-8 scroll-anchor">
+      <section id={id} className={sectionClass}>
         {title && <LocationHeading levelName={levelName} title={title} empty />}
         <div className="bg-secondary rounded-lg p-8 border border-zinc-800">
           <p className="text-gray-400 text-center">No collectibles found for this location.</p>
@@ -82,7 +87,7 @@ function CollectibleSection({
   }
 
   return (
-    <section id={id} className="mb-8 scroll-anchor">
+    <section id={id} className={sectionClass}>
       {title && <LocationHeading levelName={levelName} title={title} />}
 
       <div className="space-y-8">
@@ -94,7 +99,7 @@ function CollectibleSection({
             className="group relative bg-secondary rounded-lg p-3 md:p-6 border border-gray-800 scroll-anchor"
           >
             <div className="relative">
-              <div className="flex flex-col mb-4">
+              <div className="flex flex-col mb-2 md:mb-4">
                 <div className="flex items-center gap-2">
                   <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                     {!hideTypeBadge && [...collectible.types].sort().map((type, idx) => (
@@ -106,7 +111,7 @@ function CollectibleSection({
                       </span>
                     )}
                     {/* Focusable, so a link that lands on this card can hand focus here (useHashJump). */}
-                    <h2 tabIndex={-1} className="text-xl font-semibold text-gray-100 leading-tight">
+                    <h2 tabIndex={-1} className="text-lg font-semibold text-gray-200 leading-tight">
                       {collectible.title.includes(' / ') ? (
                         collectible.title.split(' / ').map((part, i, arr) => (
                           <span key={i}>
@@ -116,12 +121,12 @@ function CollectibleSection({
                         ))
                       ) : collectible.title}
                       {collectible.quantity > 1 && (
-                        <span className="ml-2 text-base font-medium text-gray-100">x{collectible.quantity}</span>
+                        <span className="ml-2 text-base font-medium text-gray-200">x{collectible.quantity}</span>
                       )}
                     </h2>
                     {collectible._levelName && (
                       <p className="w-full sm:w-auto text-sm text-gray-300 mt-1 sm:mt-0 pl-2 border-l border-gray-600">
-                        <span className="text-gray-200">{collectible._levelName}</span>
+                        {collectible._levelName}
                         {collectible._locationName !== collectible._levelName && (
                           <> <span className="text-cyan-600">·</span> {collectible._locationName}</>
                         )}
