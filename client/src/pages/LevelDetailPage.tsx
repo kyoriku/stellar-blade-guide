@@ -378,7 +378,7 @@ function LevelDetailPage() {
             </div>
 
             {/* Collectible sections, in the order usePageLightbox walks them (levelPageGalleries) */}
-            {filteredLocationData.map((location) => {
+            {filteredLocationData.map((location, index) => {
               const sectionId = slugifyPlace(location.location_name);
 
               return (
@@ -393,6 +393,7 @@ function LevelDetailPage() {
                   isCompleted={isCompleted}
                   isToggling={isToggling}
                   onToggleProgress={toggleProgress}
+                  isLast={index === filteredLocationData.length - 1}
                 />
               );
             })}
