@@ -46,15 +46,11 @@ const SUBTYPE_ORDER = [
   'Log Data', 'Journal', 'Messages', 'Announcements', 'Series', 'Books', 'Information', 'Promotions', 'Prayers', 
 ] as const;
 
-function CollectibleTypeDetailPage() {
+// The category comes from the route (App.tsx), never the address, whose spelling can differ.
+function CollectibleTypeDetailPage({ category }: { category: 'collectibles' | 'upgrades' | 'cosmetics' }) {
   const { typeName } = useParams<{ typeName: string }>();
   const location = useLocation();
   const navigationType = useNavigationType();
-
-  // Detect category from URL
-  const category = location.pathname.startsWith('/upgrades') ? 'upgrades'
-    : location.pathname.startsWith('/cosmetics') ? 'cosmetics'
-      : 'collectibles';
 
   // Validate type exists
   const collectibleTypes = COLLECTIBLES.map(c => c.slug);
