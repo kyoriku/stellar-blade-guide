@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import Navbar from '../components/Navbar'
 import ScrollToTop from '../components/ScrollToTop'
@@ -7,6 +7,7 @@ import Footer from '../components/Footer'
 import ErrorBoundary from '../components/ErrorBoundary'
 import { useAuth } from '../hooks/useAuth'
 import { useNotifications, NOTIFICATIONS_KEY } from '../hooks/useNotifications'
+import { lowercasePagePath } from '../utils/lowercasePath'
 
 const NOTIF_STALE_MS = 30 * 1000
 
@@ -15,6 +16,8 @@ function RootLayout() {
   const { refetch } = useNotifications()
   const queryClient = useQueryClient()
   const location = useLocation()
+  // A link inside the app to an address with capitals goes to its lowercase spelling first.
+  const lowercase = lowercasePagePath(location.pathname)
 
   // Keep the bell fresh on route changes (pairs with refetchOnWindowFocus +
   // refetchOnMount in the hook), staleness-guarded so rapid nav within the window
@@ -48,7 +51,9 @@ function RootLayout() {
       <div className="flex flex-1 flex-col max-lg:min-h-svh print:min-h-0 pt-(--nav-height) pb-16">
         {/* A page that crashes keeps the navbar and footer; the next navigation clears it. */}
         <ErrorBoundary resetKey={location}>
-          <Outlet />
+          {lowercase
+            ? <Navigate replace to={{ pathname: lowercase, search: location.search, hash: location.hash }} state={location.state as unknown} />
+            : <Outlet />}
         </ErrorBoundary>
       </div>
       <Footer />

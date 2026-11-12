@@ -76,15 +76,17 @@ src/
                      helpers (refresh lock, return path, OAuth errors), site
                      storage reads and writes that never throw, the typed
                      confirmation's match, each history entry's remembered
-                     filters, and the pure logic behind the Progress page, its
-                     Manage progress card, the tip that points to it, and the
-                     admin page
+                     filters, a page path's lowercase spelling, and the pure
+                     logic behind the Progress page, its Manage progress card,
+                     the tip that points to it, and the admin page
 public/              robots.txt, static sitemap.xml, favicons, README screenshots;
                      assets/images/ is gitignored local source imagery (production serves
                      from Cloudflare R2 at img.stellarbladeguide.com)
 ```
 
 Route shape: `/walkthroughs/:type` (a category's list), `/walkthroughs/:type/:slug`, `/levels/:levelName`, and `/collectibles|upgrades|cosmetics/:typeName`. The three collectible categories share one detail page (`CollectibleTypeDetailPage`), and `useActiveSection` drives the scroll-spy table of contents on all three detail pages.
+
+Every page path is lowercase, while the query and hash keep their spelling: `main.tsx` gives an address typed or shared with capitals its lowercase path before the router reads it (`utils/lowercasePath.ts`), `RootLayout` does the same for a link inside the app, and in production the server's 301 comes first.
 
 ## Data fetching
 

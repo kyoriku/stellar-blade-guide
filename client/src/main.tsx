@@ -9,6 +9,7 @@ import { ApiError } from './services/api'
 import { AuthProvider } from './context/AuthContext.tsx'
 import { ToastProvider } from './context/ToastContext.tsx'
 import { captureServerHead } from './utils/serverHead'
+import { lowercasePagePath } from './utils/lowercasePath'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,17 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+// A first visit with capitals takes its lowercase path before the router reads it, as the
+// server's 301 gives it, so it still opens as the typed visit it is.
+const lowercase = lowercasePagePath(window.location.pathname);
+if (lowercase) {
+  try {
+    window.history.replaceState(window.history.state, '', lowercase + window.location.search + window.location.hash);
+  } catch {
+    // The router starts on the address as typed; RootLayout's redirect tries again.
+  }
+}
 
 // Read the injected values before the strip below discards them — the
 // walkthrough detail skeleton reuses the real title instead of a placeholder.

@@ -10,6 +10,7 @@ import html
 import json
 import logging
 import os
+from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -414,6 +415,18 @@ KELVIN = '\u212a'
 ])
 def test_lowercase_page_path_matches_the_client(path, expected):
     assert seo_head.lowercase_page_path(path) == expected
+
+
+CLIENT_RULE = Path(__file__).resolve().parents[2] / 'client' / 'src' / 'utils' / 'lowercasePath.ts'
+
+
+def test_the_client_mirrors_the_page_path_rule():
+    # A missing file or a changed line fails here; nothing is skipped.
+    lines = CLIENT_RULE.read_text(encoding='utf-8').splitlines()
+    assert 'const PAGE_PATH = /^' + seo_head._PAGE_PATH.pattern.replace('/', '\\/') + '$/' in lines
+    assert "    path = decodeURIComponent(pathname).replace(/\\/+$/, '')" in lines
+    assert f"  if (!PAGE_PATH.test(path) || !/{seo_head._CAPITAL.pattern}/.test(path)) return null" in lines
+    assert "  return lower === '/api' || lower.startsWith('/api/') ? null : lower" in lines
 
 
 @pytest.mark.parametrize('path, location', [
