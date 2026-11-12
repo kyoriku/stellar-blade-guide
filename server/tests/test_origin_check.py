@@ -155,3 +155,16 @@ async def test_railway_host_does_not_bypass_check_on_other_paths(origin_client):
     assert r.status_code == 404
     r = await origin_client.get("/api/health/", headers={"host": "healthcheck.railway.app"})
     assert r.status_code == 404
+
+
+@pytest.mark.parametrize("path", ["/api/health%3Fx", "/api/health%23x", "/api/health%0A"])
+async def test_railway_host_is_pinned_to_the_path_as_routed(origin_client, path):
+    # request.url.path ends at a decoded ? or # and drops a line break, so all three read as /api/health.
+    r = await origin_client.get(path, headers={"host": "healthcheck.railway.app"})
+    assert (r.status_code, r.json()) == (404, {"error": "Not Found"})
+
+
+async def test_railway_health_check_keeps_its_exemption_with_a_query(origin_client):
+    # A query string is never part of the path as routed.
+    r = await origin_client.get("/api/health?probe=1", headers={"host": "healthcheck.railway.app"})
+    assert r.status_code == 200

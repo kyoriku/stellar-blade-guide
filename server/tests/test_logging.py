@@ -516,6 +516,14 @@ async def test_the_alarm_stays_quiet_when_nothing_is_wrong(api_log, prod_mode, p
     assert _cf_warnings(api_log) == []
 
 
+@pytest.mark.parametrize("path", ["/api/health%0A", "/api/health%3Fx"])
+async def test_the_alarm_exempts_only_the_health_path_as_routed(api_log, prod_mode, path):
+    # request.url.path drops a line break and ends at a decoded ?, so both read as /api/health.
+    async with _client(_app_with()) as c:
+        await c.get(path)
+    assert len(_cf_warnings(api_log)) == 1
+
+
 async def test_the_alarm_is_off_under_debug(api_log, monkeypatch):
     monkeypatch.setattr(settings, "DEBUG", True)
     async with _client(_app_with()) as c:

@@ -179,8 +179,9 @@ async def log_requests_middleware(request: Request, call_next):
     # without a valid one means a Cloudflare setting stopped sending it (keys would fall
     # back to Railway's proxy address, one bucket shared by every visitor) or the origin
     # secret was used to skip Cloudflare.
-    # Railway's health checks never carry one. A colo means it came through Cloudflare.
-    if not settings.DEBUG and request.url.path != "/api/health" and cf_connecting_ip(request) is None:
+    # Railway's health checks never carry one, and are exempt by the path as routed, as in
+    # origin_check. A colo means it came through Cloudflare.
+    if not settings.DEBUG and request.scope["path"] != "/api/health" and cf_connecting_ip(request) is None:
         logger.warning(
             f"{YELLOW}No valid CF-Connecting-IP{RESET}: {request.method} {path} "
             f"| client {client_ip} | colo {colo or '-'}"
