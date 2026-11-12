@@ -13,13 +13,16 @@ seeded row is sufficient for correct head tags with no code or JSON change.
 
 No tag value is ever built from the raw request path: canonicals come from the
 matched JSON key or the DB row's slug, and unmatched paths get the client
-ErrorPage's 404 head (noindex, no canonical).
+ErrorPage's 404 head (noindex, no canonical). A page path spelt another way (capitals,
+or another spelling of a walkthrough type) is a 301 to its one URL before any head is
+chosen.
 """
 import hashlib
 import html
 import json
 import logging
 import os
+import re
 from urllib.parse import quote
 
 from fastapi import FastAPI, HTTPException, Request
@@ -41,6 +44,9 @@ SEO_JSON_PATH = os.path.join(os.path.dirname(__file__), '../../client/src/consta
 MARKER = '<!--seo-->'
 R2_BASE = 'https://img.stellarbladeguide.com/'
 MISS_TTL = 60  # seconds; negative cache for successful lookups that find no row
+# A page path: ASCII letters, digits and hyphens between single slashes.
+_PAGE_PATH = re.compile(r'(?:/[A-Za-z0-9-]+)+')
+_CAPITAL = re.compile(r'[A-Z]')
 
 with open(SEO_JSON_PATH, encoding='utf-8') as _f:
     _SEO = json.load(_f)
@@ -98,8 +104,11 @@ def _loading_variant_head(type_slug: str, slug: str) -> dict:
 
 def resolve_static_head(path: str):
     """Resolve a request path to head data, a walkthrough sentinel, or the
-    404 head. Canonicals are built from matched JSON keys only."""
-    p = path.lower().rstrip('/') or '/'
+    404 head. Canonicals are built from matched JSON keys only. A page path with
+    capitals is redirected before this (canonical_page_path), so the match can be
+    exact: anything else with capitals matches no key, though a walkthrough detail
+    path still goes to its lookup."""
+    p = path.rstrip('/') or '/'
 
     if p == '/':
         h = _SEO['home']
@@ -238,26 +247,41 @@ def render_head(head: dict) -> str:
     return '\n  '.join(lines)
 
 
-def walkthrough_page_redirect(full_path: str, query: str = '') -> str | None:
-    """The canonical path for a walkthrough page reached by another spelling of its
-    type (/walkthroughs/side-quest/<slug> for side-quests), or None.
+def lowercase_page_path(path: str) -> str | None:
+    """The lowercase spelling of a decoded page path holding a capital, without a trailing
+    slash; None for one already lowercase, for the API's, and for anything that isn't a page
+    path. Twin of client/src/utils/lowercasePath.ts; their test tables match row for row."""
+    trimmed = path.rstrip('/')
+    if not _PAGE_PATH.fullmatch(trimmed) or not _CAPITAL.search(trimmed):
+        return None
+    lowered = trimmed.lower()
+    if lowered == '/api' or lowered.startswith('/api/'):
+        return None
+    return lowered
 
-    Spelling only, no DB access. The 'walkthroughs' segment matches in any case, as the
-    client router does; the type matches case-sensitively, as the API does. The slug is
-    quoted whole, so nothing from the request can leave the path.
+
+def canonical_page_path(full_path: str, query: str = '') -> str | None:
+    """The one URL for a page reached by another spelling of its path, or None.
+
+    One hop, on spelling alone: capitals go to the lowercase spelling, and a walkthrough
+    page reached by another spelling of its type (side-quest for side-quests) goes to the
+    navigation's. A slug that isn't a page path is quoted whole, so nothing from the
+    request can leave the path.
     """
-    if full_path.endswith('/'):
-        full_path = full_path[:-1]
-    parts = full_path.split('/')
-    if len(parts) not in (2, 3) or parts[0].lower() != 'walkthroughs':
+    path = '/' + full_path.rstrip('/')
+    lowered = lowercase_page_path(path)
+    parts = (lowered or path).split('/')[1:]
+    # isascii: lower() turns the Kelvin sign into k, which would give a second hop.
+    if len(parts) in (2, 3) and parts[0].isascii() and parts[0].lower() == 'walkthroughs':
+        canonical = canonical_url_type(parts[1])
+        if canonical:
+            location = f'/walkthroughs/{canonical}'
+            if len(parts) == 3:
+                location += f"/{quote(parts[2], safe='')}"
+            return f'{location}?{query}' if query else location
+    if lowered is None:
         return None
-    canonical = canonical_url_type(parts[1])
-    if not canonical:
-        return None
-    path = f'/walkthroughs/{canonical}'
-    if len(parts) == 3:
-        path += f"/{quote(parts[2], safe='')}"
-    return f'{path}?{query}' if query else path
+    return f'{lowered}?{query}' if query else lowered
 
 
 def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = None) -> None:
@@ -300,12 +324,11 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         if full_path == 'api' or full_path.startswith('api/'):
             request.state.reject_reason = "no-route"
             raise HTTPException(status_code=404)
-        # A walkthrough page reached by another spelling of its type goes to the one
-        # URL, so bookmarks, shares and anything indexed land on the canonical page.
-        # Like every non-200 here it is no-store, so no cache keeps the old spelling.
+        # Another spelling of a page path (capitals, or a walkthrough type's spelling) gets
+        # one 301 to its URL, no-store (security_headers) so no cache keeps the old spelling.
         # The query as sent: request.url re-splits the decoded path, so an escaped ? in a slug
         # would move part of it into the query, and an escaped # would drop the query.
-        redirect = walkthrough_page_redirect(full_path, request.scope.get('query_string', b'').decode())
+        redirect = canonical_page_path(full_path, request.scope.get('query_string', b'').decode())
         if redirect:
             return RedirectResponse(redirect, status_code=301)
         # No page or file is named with a control character, and realpath raises on a

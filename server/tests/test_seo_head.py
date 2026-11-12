@@ -20,6 +20,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 import app.seo_head as seo_head
 from app.core.cache import get_cache, set_cache
+from app.middleware.bot_filter import add_bot_filter_middleware
+from app.middleware.security_headers import add_security_headers_middleware
 from app.models.walkthroughs import Walkthrough as WalkthroughModel
 from app.routers.walkthroughs import _serialize_full
 from app.seo_head import MARKER, register_spa
@@ -231,12 +233,12 @@ async def test_noindex_routes(client):
     assert 'content="noindex, nofollow"' not in r.text
 
 
-async def test_case_and_trailing_slash_normalized(client):
-    r = await client.get('/Levels/Great-Desert/')
+async def test_a_trailing_slash_alone_keeps_the_page_and_its_head(client):
+    # Never redirected: a trailing slash alone isn't another spelling of a page path.
+    r = await client.get('/levels/great-desert/')
+    assert r.status_code == 200
     assert f'<title data-seo="server">All 188 Great Desert Collectibles{SUFFIX}</title>' in r.text
-    # Canonical comes from the matched key, never the raw path casing.
     assert 'href="https://stellarbladeguide.com/levels/great-desert"' in r.text
-    assert 'Great-Desert' not in r.text
 
 
 # --- walkthrough detail heads ------------------------------------------------
@@ -377,9 +379,102 @@ async def test_a_failed_head_lookup_logs_its_segments_cleaned_and_the_error_by_n
     assert 'jane' not in record.getMessage()
 
 
-# --- one spelling per walkthrough page -----------------------------------------
-# A walkthrough page reached by another spelling of its type (side-quest for
-# side-quests) is a permanent redirect to the one URL, decided on spelling alone.
+# --- one spelling per page -----------------------------------------------------
+# Every page path is lowercase, so a page path with capitals is a permanent redirect to its
+# lowercase spelling, and a walkthrough page reached by another spelling of its type
+# (side-quest for side-quests) goes to the navigation's: one hop, on spelling alone.
+
+# The Kelvin sign, which lower() turns into k.
+KELVIN = '\u212a'
+
+
+# Row for row with client/src/utils/lowercasePath.test.ts. Paths come decoded here, as uvicorn
+# hands them over, so the client's /levels/%45idos-7 and /LEVELS%2Feidos-7 are rows 7 and 8.
+@pytest.mark.parametrize('path, expected', [
+    ('/UPGRADES/weapon-cores', '/upgrades/weapon-cores'),
+    ('/upgrades/WEAPON-CORES', '/upgrades/weapon-cores'),
+    ('/Levels/Eidos-7', '/levels/eidos-7'),
+    ('/LEVELS/', '/levels'),
+    ('/LEVELS//', '/levels'),
+    ('/APIS/x', '/apis/x'),
+    ('/levels/Eidos-7', '/levels/eidos-7'),
+    ('/LEVELS/eidos-7', '/levels/eidos-7'),
+    ('/levels/eidos-7', None),
+    ('/levels/eidos-7/', None),
+    ('/', None),
+    ('/API/levels', None),
+    ('/Api', None),
+    ('/ROBOTS.TXT', None),
+    ('/Levels/Eidos_7', None),
+    ('//LEVELS', None),
+    ('/LEVELS//eidos-7', None),
+    (f'/walkthroughs/ni{KELVIN}{KELVIN}e-dlc', None),
+    (f'/Walkthroughs/ni{KELVIN}{KELVIN}e-dlc', None),
+    ('/Levels/%', None),
+])
+def test_lowercase_page_path_matches_the_client(path, expected):
+    assert seo_head.lowercase_page_path(path) == expected
+
+
+@pytest.mark.parametrize('path, location', [
+    ('/UPGRADES/weapon-cores', '/upgrades/weapon-cores'),
+    ('/upgrades/WEAPON-CORES', '/upgrades/weapon-cores'),
+    ('/Levels/Great-Desert/', '/levels/great-desert'),
+    ('/LEVELS', '/levels'),
+    ('/PRIVACY', '/privacy'),
+    ('/levels/%45idos-7', '/levels/eidos-7'),
+    ('/RESET-PASSWORD?token=AbC', '/reset-password?token=AbC'),
+    # Spelling, not knowledge: a cross-category or unknown page lowercases to its own 404.
+    ('/UPGRADES/passcodes', '/upgrades/passcodes'),
+    ('/NOT-A-PAGE', '/not-a-page'),
+    ('/WALKTHROUGHS/MAIN-STORY/THE-MISSION', '/walkthroughs/main-story/the-mission'),
+])
+async def test_a_page_path_with_capitals_redirects_to_its_lowercase_spelling(client, monkeypatch, path, location):
+    monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
+    r = await client.get(path)
+    assert (r.status_code, r.headers['location']) == (301, location)
+    assert 'data-seo' not in r.text
+    r = await client.head(path)
+    assert (r.status_code, r.headers['location']) == (301, location)
+
+
+@pytest.mark.parametrize('path', [
+    '/API/levels',                                    # never into the API
+    '/ROBOTS.TXT',                                    # a file name keeps its exact case
+    '/Levels/Eidos_7',                                # not letters, digits and hyphens
+    '/walkthroughs/ni%E2%84%AA%E2%84%AAe-dlc',        # the Kelvin sign, which lower() turns into k
+    '/Walkthroughs/ni%E2%84%AA%E2%84%AAe-dlc',        # and beside a capital
+    '/wal%E2%84%AAthroughs/main-storys/the-mission',  # and in the first segment
+])
+async def test_a_path_that_is_not_a_page_path_keeps_its_spelling(client, path):
+    r = await client.get(path)
+    assert r.status_code == 200
+    assert f'<title data-seo="server">404 Page Not Found{SUFFIX}</title>' in r.text
+
+
+async def test_a_redirect_is_no_store(tmp_path):
+    # Through the real headers middleware: no cache may keep a spelling's redirect.
+    app = make_app(make_dist(tmp_path))
+    add_security_headers_middleware(app)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        for path in ('/UPGRADES/weapon-cores', '/walkthroughs/side-quest'):
+            r = await c.get(path)
+            assert (r.status_code, r.headers['cache-control']) == (301, 'no-store'), path
+
+
+async def test_a_page_path_with_capitals_gets_through_the_bot_filter(tmp_path, monkeypatch):
+    # Production runs the bot filter first; it must let a page path with capitals reach the 301.
+    monkeypatch.setattr(seo_head.settings, 'DEBUG', False)
+    app = make_app(make_dist(tmp_path))
+    add_bot_filter_middleware(app)
+    add_security_headers_middleware(app)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get('/UPGRADES/Weapon-Cores')
+        assert (r.status_code, r.headers.get('location'), r.headers['cache-control']) == (
+            301, '/upgrades/weapon-cores', 'no-store')
+        r = await c.get('/ROBOTS.TXT')
+        assert (r.status_code, r.json()) == (404, {"error": "Not Found"})
+
 
 async def test_other_type_spellings_redirect_to_the_navigation_spelling(client, monkeypatch):
     monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
@@ -393,9 +488,16 @@ async def test_other_type_spellings_redirect_to_the_navigation_spelling(client, 
         # The query as sent, even when the slug holds an escaped ? or #.
         ('/walkthroughs/side-quest/a%3Fb?ref=1', '/walkthroughs/side-quests/a%3Fb?ref=1'),
         ('/walkthroughs/side-quest/a%23b?ref=1', '/walkthroughs/side-quests/a%23b?ref=1'),
+        # Capitals and the type's spelling in the same hop, the slug included.
+        ('/WALKTHROUGHS/SIDE-QUEST/CALM-QUEST', '/walkthroughs/side-quests/calm-quest'),
+        ('/walkthroughs/Side-Quest/calm-quest', '/walkthroughs/side-quests/calm-quest'),
+        ('/walkthroughs/side-quest/CALM-QUEST', '/walkthroughs/side-quests/calm-quest'),
     ]:
         r = await client.get(path)
         assert (r.status_code, r.headers['location']) == (301, location), path
+        # Never a second hop.
+        target, _, query = location.partition('?')
+        assert seo_head.canonical_page_path(target[1:], query) is None, location
     r = await client.head('/walkthroughs/side-quest/calm-quest')
     assert (r.status_code, r.headers['location']) == (301, '/walkthroughs/side-quests/calm-quest')
 
@@ -405,9 +507,6 @@ async def test_navigation_spelling_and_other_types_are_not_redirected(client, mo
     monkeypatch.setattr(seo_head, 'AsyncSessionLocal', _RaisingSession())
     r = await client.get('/walkthroughs/side-quests')
     assert r.status_code == 200
-    # A mixed-case type is not a spelling of anything: the 404 head, as before.
-    r = await client.get('/walkthroughs/Side-Quest/calm-quest')
-    assert r.status_code == 200 and f'404 Page Not Found{SUFFIX}' in r.text
     r = await client.get('/walkthroughs/bogus-type/foo')
     assert r.status_code == 200
 

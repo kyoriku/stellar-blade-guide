@@ -134,7 +134,7 @@ Every API route is mounted under `/api`, and every one but `/api/health` has its
 | `/api/progress` | per-user collectible completion (PUT to mark, DELETE to clear), guest-progress sync on login, and bulk clear or mark found for everything, a level, or a type, optionally narrowed to one cycle |
 | `/api/notifications` | reply notifications |
 
-In production the app also serves the built SPA (`app/seo_head.py`): unknown `/api/*` paths return a JSON 404 (a 405 for methods other than GET and HEAD), a file in `client/dist` is served as it is, and any other path gets `index.html` with that route's title, description, canonical, Open Graph, and Twitter card tags spliced into its head, so client-side routes work on direct navigation, and link previews and non-JS crawlers get real heads without SSR.
+In production the app also serves the built SPA (`app/seo_head.py`): unknown `/api/*` paths return a JSON 404 (a 405 for methods other than GET and HEAD), a page path with capitals or another spelling of a walkthrough type (`side-quest` for `side-quests`) gets one `no-store` 301 to its one URL, a file in `client/dist` is served as it is, and any other path gets `index.html` with that route's title, description, canonical, Open Graph, and Twitter card tags spliced into its head, so client-side routes work on direct navigation, and link previews and non-JS crawlers get real heads without SSR.
 
 ## Redis
 
