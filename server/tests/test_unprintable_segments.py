@@ -1,5 +1,5 @@
-"""A URL segment that isn't printable text gets the same 404 as an unknown one,
-before any lookup (app/core/segments.py).
+"""A URL segment that isn't printable text gets a 404 before any lookup
+(app/core/segments.py).
 
 Postgres refuses a NUL in a text parameter, so a NUL in a level, type or walkthrough
 segment was a 500, and on a page path os.path.realpath raised before the head was
@@ -129,9 +129,12 @@ async def spa_client(tmp_path, monkeypatch):
     "/collectibles/%00",
     "/walkthroughs/main-story/%00",
     "/walkthroughs/main-story/some%1bmission",
+    "/levels/eidos-7%0A",  # the catch-all leaves a trailing newline out of full_path
+    "/LEVELS%0A",          # no 301 to /levels
 ])
-async def test_page_path_gets_the_404_head(spa_client, path):
+async def test_page_path_gets_the_404_page(spa_client, path):
+    # The path guard answers these first (test_path_guard.py); the catch-all gives the same page.
     r = await spa_client.get(path)
-    assert r.status_code == 200
+    assert r.status_code == 404
     assert '<title data-seo="server">404 Page Not Found | Stellar Blade Guide</title>' in r.text
     assert 'content="noindex, nofollow"' in r.text

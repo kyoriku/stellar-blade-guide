@@ -30,7 +30,7 @@ app/
     roles.py         the roles by rank (admin, moderator, user), and whose comments each may delete
     navigation.py    walkthrough URL spellings, levels with a page, and search's page titles, from seo.json
     ids.py           the int4 check run on every client-supplied id before any query
-    segments.py      the printable-text check every level, type, and walkthrough lookup runs first
+    segments.py      the printable-text check the path guard and every level, type, and walkthrough lookup run first
     http_cache.py    weak ETag comparison, shared by the ETag middleware and seo_head.py
   db/
     database.py      async engine + session factory (bounded query timeouts), get_db() dependency
@@ -134,7 +134,7 @@ Every API route is mounted under `/api`, and every one but `/api/health` has its
 | `/api/progress` | per-user collectible completion (PUT to mark, DELETE to clear), guest-progress sync on login, and bulk clear or mark found for everything, a level, or a type, optionally narrowed to one cycle |
 | `/api/notifications` | reply notifications |
 
-In production the app also serves the built SPA (`app/seo_head.py`): unknown `/api/*` paths return a JSON 404 (a 405 for methods other than GET and HEAD), a page path with capitals or another spelling of a walkthrough type (`side-quest` for `side-quests`) gets one `no-store` 301 to its one URL, a file in `client/dist` is served as it is, and any other path gets `index.html` with that route's title, description, canonical, Open Graph, and Twitter card tags spliced into its head, so client-side routes work on direct navigation, and link previews and non-JS crawlers get real heads without SSR.
+In production the app also serves the built SPA (`app/seo_head.py`): unknown `/api/*` paths return a JSON 404 (a 405 for methods other than GET and HEAD), a page path with capitals or another spelling of a walkthrough type (`side-quest` for `side-quests`) gets one `no-store` 301 to its one URL, a file in `client/dist` is served as it is, and any other path gets `index.html` with that route's title, description, canonical, Open Graph, and Twitter card tags spliced into its head, so client-side routes work on direct navigation, and link previews and non-JS crawlers get real heads without SSR. A path that isn't printable text never gets that far: the path guard answers it first with a 404, the client's 404 page for a page request (a GET or HEAD outside `/api/`) and the JSON 404 for the API or any other method.
 
 ## Redis
 
@@ -171,7 +171,8 @@ Starlette prepends middleware, so registration order in `app/main.py` is the rev
 5. `GZip`: compresses responses of 1000 bytes or more.
 6. `ETag`: conditional GET for JSON API responses (304 on `If-None-Match`).
 7. `origin_check`: production requests must carry the shared origin-secret header, compared in constant time; Railway's health check on `/api/health` is the one exception.
-8. `bot_filter`: answers with a 404 an API request whose Referer is off the site (`/api/health` and `/api/auth/` excepted) and, outside `/api/`, `/assets/`, `/.well-known/`, and a few listed files, a bot-signature path or any path over 512 characters or not shaped like a site route (matched in linear time).
+8. `path_guard`: answers a path that isn't printable text (one holding a character Python's `str.isprintable()` refuses, such as a control or format character or a separator other than the space; read decoded, as the router reads it) with a 404, in DEBUG too: the client's 404 page for a page request, and the JSON 404 for the API or any other method. It sits before the bot filter, which reads a path Starlette rebuilds without tab, CR or LF.
+9. `bot_filter`: answers with a 404 an API request whose Referer is off the site (`/api/health` and `/api/auth/` excepted) and, outside `/api/`, `/assets/`, `/.well-known/`, and a few listed files, a bot-signature path or any path over 512 characters or not shaped like a site route (matched in linear time).
 
 Rate limiting is not a middleware layer: the slowapi limiter is attached to the app and applied per route with decorators.
 

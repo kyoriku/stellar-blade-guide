@@ -16,6 +16,7 @@ from app.middleware.security_headers import add_security_headers_middleware, add
 from app.middleware.bot_filter import add_bot_filter_middleware
 from app.middleware.etag import ETagMiddleware
 from app.middleware.origin_check import add_origin_check_middleware
+from app.middleware.path_guard import add_path_guard_middleware
 from app.routers import collectibles, walkthroughs, auth, users, comments, health, progress, search, notifications, admin
 setup_logging()
 
@@ -60,13 +61,14 @@ add_exception_handlers(app)
 # Middleware — registered inner→outer. Starlette PREPENDS each layer, so the
 # LAST registered runs FIRST on a request. Resulting request order (outer→inner):
 #   logging → security_headers → TrustedHost → error_handler
-#     → GZip → ETag → origin_check → bot_filter → route
+#     → GZip → ETag → origin_check → path_guard → bot_filter → route
 # logging outermost: times + logs everything, including rejections.
 # security_headers + TrustedHost outer to error_handler: even 500s/400s get
 # security headers + Cache-Control: no-store.
 setup_rate_limiter(app)              # not a request-chain layer: limiter + exception handler only
 
 add_bot_filter_middleware(app)       # innermost (closest to route)
+add_path_guard_middleware(app)       # before the bot filter, which reads a cleaned path
 add_origin_check_middleware(app)
 app.add_middleware(ETagMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
