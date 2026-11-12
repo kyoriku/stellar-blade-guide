@@ -24,7 +24,7 @@ describe('resolveServerTitle', () => {
     expect(resolveServerTitle(TITLE, PATH, navigated, TYPE)).toBeNull()
   })
 
-  it('refuses a mixed-case path, which the client 404s but the server resolves', () => {
+  it('refuses a mixed-case path, which no page has once page paths are lowercased', () => {
     const mixed = '/walkthroughs/Main-Story/Alpha-Signal'
     expect(resolveServerTitle(TITLE, mixed, mixed, TYPE)).toBeNull()
   })

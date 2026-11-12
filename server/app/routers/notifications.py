@@ -53,7 +53,8 @@ async def _build_label_urls(db: AsyncSession, notifications: list[Notification])
                 # "documents" -> "Documents") rather than the singular DB `name`,
                 # so the toast/bell label matches the page the link goes to.
                 label = r.slug.replace("-", " ").title()
-                out[("collectible", r.id)] = (label, f"/{r.category_group}/{r.slug}")
+                # A type with no group is a collectible's, as search reads it.
+                out[("collectible", r.id)] = (label, f"/{r.category_group or 'collectibles'}/{r.slug}")
         except Exception as e:
             logger.warning(f"notification collectible label lookup failed: {exc_text(e)}")
 

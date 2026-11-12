@@ -46,8 +46,8 @@ export function resolveServerTitle(
 ): string | null {
   // Stale after any client-side navigation away from the booted document.
   if (!bootPath || bootPath !== pathname) return null;
-  // A mixed-case detail URL 404s on the client but still resolves a real head
-  // on the server, so lifting it would flash a real <h1> before ErrorPage.
+  // Belt and braces: a page path with capitals is lowercased before this runs, and
+  // lifting such a path's title would flash a real <h1> before ErrorPage.
   if (bootPath !== bootPath.toLowerCase()) return null;
   return peelServerTitle(bootTitle, typeDisplay);
 }

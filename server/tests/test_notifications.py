@@ -256,6 +256,23 @@ async def test_collectible_label_uses_plural_slug_not_singular_name(db_session, 
     assert item["url"] == "/collectibles/documents"
 
 
+async def test_collectible_type_with_no_group_links_its_collectibles_page(db_session, user_a, user_b):
+    # A NULL category_group reads as collectibles (CLAUDE.md), so the link must not say /None/.
+    ct = CollectibleType(name="Can", category_group=None, slug="cans", display_order=1)
+    db_session.add(ct)
+    await db_session.commit()
+    await db_session.refresh(ct)
+    db_session.add(Notification(
+        user_id=user_a.id, actor_id=user_b.id, type="comment_reply",
+        comment_id=None, content_type="collectible", content_id=ct.id,
+    ))
+    await db_session.commit()
+    async with _client(db_session, user_a) as c:
+        r = await c.get("/api/notifications")
+    assert r.status_code == 200
+    assert r.json()["items"][0]["url"] == "/collectibles/cans"
+
+
 async def test_null_actor_renders_null_username(db_session, user_a):
     db_session.add(Notification(
         user_id=user_a.id, actor_id=None, type="comment_reply",

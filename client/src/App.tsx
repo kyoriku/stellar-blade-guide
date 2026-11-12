@@ -55,11 +55,11 @@ function App() {
 
           {/* Collectibles */}
           <Route path="collectibles" element={<CollectiblesIndexPage />} />
-          <Route path="collectibles/:typeName" element={<CollectibleTypeDetailPage />} />
+          <Route path="collectibles/:typeName" element={<CollectibleTypeDetailPage category="collectibles" />} />
           <Route path="upgrades" element={<UpgradesIndexPage />} />
-          <Route path="upgrades/:typeName" element={<CollectibleTypeDetailPage />} />
+          <Route path="upgrades/:typeName" element={<CollectibleTypeDetailPage category="upgrades" />} />
           <Route path="cosmetics" element={<CosmeticsIndexPage />} />
-          <Route path="cosmetics/:typeName" element={<CollectibleTypeDetailPage />} />
+          <Route path="cosmetics/:typeName" element={<CollectibleTypeDetailPage category="cosmetics" />} />
 
           {/* Auth Pages */}
           <Route path="/login" element={<LoginPage />} />

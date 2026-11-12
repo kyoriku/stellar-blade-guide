@@ -41,7 +41,8 @@ def url_type(mission_type: str) -> str:
 def canonical_url_type(segment: str) -> str | None:
     """The canonical segment when `segment` is another spelling of a known type
     (side-quest, side-questes, main-storys), else None. Case-sensitive like the routes,
-    so a mixed-case segment is not a spelling of anything and keeps its 404."""
+    so a mixed-case segment is not a spelling of anything and the API keeps its 404;
+    seo_head lowercases a page path before asking."""
     canonical = URL_TYPE.get(normalize_type(segment))
     return canonical if canonical and canonical != segment else None
 

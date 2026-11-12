@@ -52,6 +52,19 @@ test.describe('server-injected head tags', () => {
     expect(body).not.toContain('rel="canonical"');
   });
 
+  test('a page path with capitals is one no-store 301 to its lowercase spelling', async ({ request }) => {
+    for (const [path, location] of [
+      ['/UPGRADES/Weapon-Cores', '/upgrades/weapon-cores'],
+      // Capitals and another spelling of the type, in one hop.
+      ['/WALKTHROUGHS/SIDE-QUEST/Reboot?ref=QR', '/walkthroughs/side-quests/reboot?ref=QR'],
+    ]) {
+      const res = await request.get(`http://localhost:8000${path}`, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(301);
+      expect(res.headers()['location'], path).toBe(location);
+      expect(res.headers()['cache-control'], path).toBe('no-store');
+    }
+  });
+
   test('etag revalidation returns 304', async ({ request }) => {
     const first = await request.get('http://localhost:8000/levels/nest');
     const etag = first.headers()['etag'];

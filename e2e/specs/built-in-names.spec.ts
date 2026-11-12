@@ -7,6 +7,8 @@ import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
 const ADDRESSES = [
   '/cosmetics/constructor',
   '/collectibles/__proto__',
+  // Lowercased to /upgrades/tostring before the page reads it (lowercase-addresses.spec.ts);
+  // categoryImages.test.ts covers toString as a key.
   '/upgrades/toString',
   // The walkthrough page reads its image while loading, before it knows the page is missing.
   '/walkthroughs/constructor/x',
