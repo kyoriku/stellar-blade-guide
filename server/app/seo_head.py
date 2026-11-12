@@ -13,9 +13,9 @@ seeded row is sufficient for correct head tags with no code or JSON change.
 
 No tag value is ever built from the raw request path: canonicals come from the
 matched JSON key or the DB row's slug, and unmatched paths get the client
-ErrorPage's 404 head (noindex, no canonical). A page path spelt another way (capitals,
-or another spelling of a walkthrough type) is a 301 to its one URL before any head is
-chosen.
+ErrorPage's 404 head (noindex, no canonical), with a 404 status when the path isn't
+printable text. A page path spelt another way (capitals, or another spelling of a
+walkthrough type) is a 301 to its one URL before any head is chosen.
 """
 import hashlib
 import html
@@ -316,6 +316,22 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
             logger.warning('%s missing from %s; serving the shell without injected head tags',
                            MARKER, index_path)
 
+    async def not_found_page(request: Request) -> Response:
+        """The client's 404 page with a 404 status, for a path that isn't printable text."""
+        shell = read_shell() if reload_shell else cached_shell
+        if shell is None:
+            # Read whole, never a FileResponse, which answers a Range header with a 206.
+            with open(index_path, 'rb') as f:
+                response = HTMLResponse(f.read(), status_code=404)
+        else:
+            response = HTMLResponse(f'{shell[0]}{render_head(_not_found_head())}{shell[1]}', status_code=404)
+        if request.method == 'HEAD':
+            response.body = b''
+        return response
+
+    # The path guard (app/middleware/path_guard.py) serves it before any route runs.
+    app.state.not_found_page = not_found_page
+
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(request: Request, full_path: str):
         # Unknown API paths should 404 instead of falling through to the SPA.
@@ -324,6 +340,12 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         if full_path == 'api' or full_path.startswith('api/'):
             request.state.reject_reason = "no-route"
             raise HTTPException(status_code=404)
+        # No page or file is named with a character that isn't printable text, and realpath
+        # raises on a NUL. The path guard answers these first; this keeps the catch-all safe
+        # on its own. The path as routed, since the catch-all leaves a trailing newline out
+        # of full_path.
+        if not is_text_segment(request.scope['path']):
+            return await not_found_page(request)
         # Another spelling of a page path (capitals, or a walkthrough type's spelling) gets
         # one 301 to its URL, no-store (security_headers) so no cache keeps the old spelling.
         # The query as sent: request.url re-splits the decoded path, so an escaped ? in a slug
@@ -331,19 +353,15 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         redirect = canonical_page_path(full_path, request.scope.get('query_string', b'').decode())
         if redirect:
             return RedirectResponse(redirect, status_code=301)
-        # No page or file is named with a control character, and realpath raises on a
-        # NUL, so such a path gets the unknown-page head before any lookup.
-        printable = is_text_segment(full_path)
-        if printable:
-            file_path = os.path.realpath(os.path.join(client_dist, full_path))
-            if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
-                return FileResponse(file_path)
+        file_path = os.path.realpath(os.path.join(client_dist, full_path))
+        if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
+            return FileResponse(file_path)
 
         shell = read_shell() if reload_shell else cached_shell
         if shell is None:
             return FileResponse(index_path)
 
-        head = resolve_static_head('/' + full_path) if printable else _not_found_head()
+        head = resolve_static_head('/' + full_path)
         if isinstance(head, tuple):
             head = await fetch_walkthrough_head(head[1], head[2])
 

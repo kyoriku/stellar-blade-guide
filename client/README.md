@@ -38,7 +38,8 @@ The dev server proxies `/api` to the backend on `:8000` (see `vite.config.ts`), 
 ```
 src/
   main.tsx           entry: provider stack (ErrorBoundary > QueryClientProvider > Toast > Auth)
-  App.tsx            all routes (BrowserRouter), nested under RootLayout
+  App.tsx            all routes (BrowserRouter), inside RootLayout; an address whose path
+                     isn't printable text gets the 404 page there instead
   index.css          Tailwind import, the navbar height and jump offset (scroll-anchor),
                      brand colours, scrollbars, 16px form text on touch screens, print styles
   pages/             route components: the home page, five thin index pages over the shared
@@ -60,9 +61,9 @@ src/
                      navigation, with the focus it hands to the heading it lands on), and
                      the useActiveSection scroll-spy
   context/           AuthContext (session + token lifecycle), ToastContext
-  layouts/           RootLayout (scroll reset + navbar + outlet + footer); a page that
-                     crashes shows the error page between the navbar and footer until
-                     the next navigation
+  layouts/           RootLayout (scroll reset + navbar + the page App hands it + footer),
+                     mounted through every navigation; a page that crashes shows the
+                     error page between the navbar and footer until the next navigation
   services/          api.ts: typed fetch wrappers for content and search + most TypeScript
                      interfaces (comment, notification, and auth types live in their hooks)
   constants/         navigation structure, section names, type intros, cycle labels, Manage
@@ -76,9 +77,10 @@ src/
                      helpers (refresh lock, return path, OAuth errors), site
                      storage reads and writes that never throw, the typed
                      confirmation's match, each history entry's remembered
-                     filters, a page path's lowercase spelling, and the pure
-                     logic behind the Progress page, its Manage progress card,
-                     the tip that points to it, and the admin page
+                     filters, a page path's lowercase spelling, whether an
+                     address's path is printable text, and the pure logic
+                     behind the Progress page, its Manage progress card, the
+                     tip that points to it, and the admin page
 public/              robots.txt, static sitemap.xml, favicons, README screenshots;
                      assets/images/ is gitignored local source imagery (production serves
                      from Cloudflare R2 at img.stellarbladeguide.com)
@@ -87,6 +89,8 @@ public/              robots.txt, static sitemap.xml, favicons, README screenshot
 Route shape: `/walkthroughs/:type` (a category's list), `/walkthroughs/:type/:slug`, `/levels/:levelName`, and `/collectibles|upgrades|cosmetics/:typeName`. The three collectible categories share one detail page (`CollectibleTypeDetailPage`), and `useActiveSection` drives the scroll-spy table of contents on all three detail pages.
 
 Every page path is lowercase, while the query and hash keep their spelling: `main.tsx` gives an address typed or shared with capitals its lowercase path before the router reads it (`utils/lowercasePath.ts`), `RootLayout` does the same for a link inside the app, and in production the server's 301 comes first.
+
+An address whose path isn't printable text, such as one holding an encoded line break, is the 404 page (the query and hash aren't checked): `App.tsx` shows it inside the layout in place of the router's routes (`utils/textPath.ts`, the twin of the server's `is_text_segment`, decoding the path as the server does), since the router matches no route at all for an LF, CR, LS or PS outside a parameter. In production the server's path guard sends the same page first, with a 404 status.
 
 ## Data fetching
 

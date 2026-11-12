@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, type ReactNode } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import Navbar from '../components/Navbar'
 import ScrollToTop from '../components/ScrollToTop'
@@ -11,7 +11,9 @@ import { lowercasePagePath } from '../utils/lowercasePath'
 
 const NOTIF_STALE_MS = 30 * 1000
 
-function RootLayout() {
+// children: the page, which App picks (its routes, or the 404 page for an address whose path
+// isn't printable text), so the layout stays mounted through every navigation.
+function RootLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, accessToken } = useAuth()
   const { refetch } = useNotifications()
   const queryClient = useQueryClient()
@@ -53,7 +55,7 @@ function RootLayout() {
         <ErrorBoundary resetKey={location}>
           {lowercase
             ? <Navigate replace to={{ pathname: lowercase, search: location.search, hash: location.hash }} state={location.state as unknown} />
-            : <Outlet />}
+            : children}
         </ErrorBoundary>
       </div>
       <Footer />

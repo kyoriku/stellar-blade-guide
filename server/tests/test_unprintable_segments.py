@@ -1,5 +1,5 @@
-"""A URL segment that isn't printable text gets the same 404 as an unknown one,
-before any lookup (app/core/segments.py).
+"""A URL segment that isn't printable text gets a 404 before any lookup
+(app/core/segments.py).
 
 Postgres refuses a NUL in a text parameter, so a NUL in a level, type or walkthrough
 segment was a 500, and on a page path os.path.realpath raised before the head was
@@ -9,6 +9,10 @@ Control characters are built with chr() so none sits in this file as a literal.
 """
 
 from __future__ import annotations
+
+import sys
+import unicodedata
+from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -54,6 +58,57 @@ API_PATHS = [
 ])
 def test_is_text_segment(value, printable):
     assert is_text_segment(value) is printable
+
+
+# Row for row with client/src/utils/textPath.test.ts, decoded as uvicorn hands them over.
+CONTROL_CHARACTERS = [chr(0x0A), chr(0x0D), chr(0x0D) + chr(0x0A), chr(0x09), chr(0x0B), chr(0x0C), chr(0x1C),
+                      chr(0x1D), chr(0x1E), chr(0x1F), NUL, DEL, chr(0x85), chr(0x2028), chr(0x2029)]
+
+
+@pytest.mark.parametrize("path", ["/levels/eidos-7", "/", "/Jos" + chr(0xE9), "/" + chr(0x4F60) + chr(0x597D),
+                                  "/a b", "/" + chr(0xFFFD)])
+def test_a_printable_path_as_the_client_reads_it(path):
+    assert is_text_segment(path)
+
+
+@pytest.mark.parametrize("control", CONTROL_CHARACTERS)
+@pytest.mark.parametrize("shape", ["/levels{}", "/lev{}els", "/{}", "/levels/eidos-7{}"])
+def test_a_control_character_anywhere_in_the_path(shape, control):
+    assert not is_text_segment(shape.format(control))
+
+
+@pytest.mark.parametrize("path", ["/a" + chr(0xA0) + "b", "/a" + chr(0x200B) + "b", "/a" + chr(0xAD) + "b",
+                                  "/a" + chr(0xFEFF) + "b", "/" + chr(0xFEFF)])
+def test_an_invisible_character_in_the_path(path):
+    assert not is_text_segment(path)
+
+
+@pytest.mark.parametrize("path", ["/levels/" + chr(0xFFFD), "/100%", "/%", "/levels/" + chr(0xFFFD) + "%A"])
+def test_an_escape_that_does_not_decode(path):
+    # uvicorn decodes a run of escapes as UTF-8, with U+FFFD where the bytes don't form a
+    # character, and leaves a % that starts no escape as it is, as the client does:
+    # /levels/%E2%80 and /levels/%E0%A4%A arrive as the first and last here.
+    assert is_text_segment(path)
+
+
+def test_a_line_break_beside_an_escape_that_does_not_decode():
+    # /lev%0Aels%: a stray % doesn't stop the %0A decoding, on either side.
+    assert not is_text_segment("/lev" + chr(0x0A) + "els%")
+
+
+CLIENT_RULE = Path(__file__).resolve().parents[2] / "client" / "src" / "utils" / "textPath.ts"
+
+
+def test_the_client_mirrors_the_text_rule():
+    # A missing file or a changed line fails here; nothing is skipped.
+    lines = CLIENT_RULE.read_text(encoding="utf-8").splitlines()
+    assert r"const UNPRINTABLE = /(?! )[\p{C}\p{Z}]/u" in lines
+    # Bytes that don't form UTF-8 read as U+FFFD (not fatal), and a BOM stays, as unquote does.
+    assert "const UTF8_DECODER = new TextDecoder('utf-8', { ignoreBOM: true })" in lines
+    assert "  return !UNPRINTABLE.test(decodePath(pathname))" in lines
+    # That class is the server's rule: nothing in the categories Other or Separator but the space.
+    assert all(is_text_segment(chr(cp)) == (cp == 0x20 or unicodedata.category(chr(cp))[0] not in "CZ")
+               for cp in range(sys.maxunicode + 1))
 
 
 class _UntouchableSession:
@@ -129,9 +184,12 @@ async def spa_client(tmp_path, monkeypatch):
     "/collectibles/%00",
     "/walkthroughs/main-story/%00",
     "/walkthroughs/main-story/some%1bmission",
+    "/levels/eidos-7%0A",  # the catch-all leaves a trailing newline out of full_path
+    "/LEVELS%0A",          # no 301 to /levels
 ])
-async def test_page_path_gets_the_404_head(spa_client, path):
+async def test_page_path_gets_the_404_page(spa_client, path):
+    # The path guard answers these first (test_path_guard.py); the catch-all gives the same page.
     r = await spa_client.get(path)
-    assert r.status_code == 200
+    assert r.status_code == 404
     assert '<title data-seo="server">404 Page Not Found | Stellar Blade Guide</title>' in r.text
     assert 'content="noindex, nofollow"' in r.text

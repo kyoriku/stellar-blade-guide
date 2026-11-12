@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import RootLayout from './layouts/RootLayout'
 import HomePage from './pages/HomePage'
 
@@ -36,13 +36,18 @@ import BloodRainPage from './pages/BloodRainPage'
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute'
+import { isTextPath } from './utils/textPath'
 
-function App() {
+function AppRoutes() {
+  const { pathname } = useLocation()
+  // RootLayout stays mounted through every navigation; only its page changes. No page is named
+  // with a character that isn't printable text, and the router matches no route at all for an
+  // LF, CR, LS or PS outside a parameter, which would leave the page empty.
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<RootLayout />}>
-          <Route index element={<HomePage />} />
+    <RootLayout>
+      {isTextPath(pathname) ? (
+        <Routes>
+          <Route path="/" element={<HomePage />} />
 
           {/* Walkthroughs */}
           <Route path="walkthroughs" element={<WalkthroughsIndexPage />} />
@@ -94,8 +99,16 @@ function App() {
 
           {/* Fallback for unmatched routes */}
           <Route path="*" element={<ErrorPage />} />
-        </Route>
-      </Routes>
+        </Routes>
+      ) : <ErrorPage />}
+    </RootLayout>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   )
 }

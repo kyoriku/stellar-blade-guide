@@ -6,6 +6,6 @@ def is_text_segment(value: str) -> bool:
 
     Postgres refuses a NUL in a text parameter, so a lookup that binds one fails,
     and os.path.realpath raises on one. No stored name holds a control character
-    either, so callers answer such a segment with the same 404 as an unknown one,
-    before any lookup."""
+    either, so callers answer such a segment with a 404 before any lookup. The path
+    guard (app/middleware/path_guard.py) checks the whole path before any route."""
     return value.isprintable()

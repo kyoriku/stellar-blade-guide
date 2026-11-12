@@ -141,10 +141,12 @@ async def log_requests_middleware(request: Request, call_next):
         log_line += f' | {GRAY}UA: {sanitize_log_field(parse_ua(user_agent), LOG_UA_MAX)}{RESET}'
         # auth_fail_reason: set by /refresh on 401 (no-cookie vs revoked-or-expired).
         # reject_reason: set by whichever layer turned the request away: a 404 from
-        # origin_check, bot_filter or the SPA catch-all's unknown-/api/ branch, an
-        # OAuth callback's 303 to /login, forgot-password's cooldown (a 204 that
-        # sends nothing), or error_handler's database backstop (a 400). Either way
-        # the access log alone says who answered and why.
+        # origin_check, path_guard (a path that isn't printable text), bot_filter or the
+        # SPA catch-all's unknown-/api/ branch, a 403 from the admin router's _target or
+        # delete_comment's rank check, an OAuth callback's 303 to /login,
+        # forgot-password's cooldown (a 204 that sends nothing), or error_handler's
+        # database backstop (a 400). Either way the access log alone says who answered
+        # and why.
         reason = (
             getattr(request.state, "auth_fail_reason", None)
             or getattr(request.state, "reject_reason", None)
@@ -178,8 +180,9 @@ async def log_requests_middleware(request: Request, call_next):
     # without a valid one means a Cloudflare setting stopped sending it (keys would fall
     # back to Railway's proxy address, one bucket shared by every visitor) or the origin
     # secret was used to skip Cloudflare.
-    # Railway's health checks never carry one. A colo means it came through Cloudflare.
-    if not settings.DEBUG and request.url.path != "/api/health" and cf_connecting_ip(request) is None:
+    # Railway's health checks never carry one, and are exempt by the path as routed, as in
+    # origin_check. A colo means it came through Cloudflare.
+    if not settings.DEBUG and request.scope["path"] != "/api/health" and cf_connecting_ip(request) is None:
         logger.warning(
             f"{YELLOW}No valid CF-Connecting-IP{RESET}: {request.method} {path} "
             f"| client {client_ip} | colo {colo or '-'}"

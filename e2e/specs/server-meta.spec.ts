@@ -65,6 +65,22 @@ test.describe('server-injected head tags', () => {
     }
   });
 
+  test('a path that is not printable text gets a 404 before any route', async ({ request }) => {
+    // The path guard runs with DEBUG on too. A page path gets the 404 page, never a second
+    // spelling of a page or FastAPI's JSON.
+    for (const path of ['/lev%0Aels', '/levels/eidos-7%0A', '/levels/eidos-7%E2%80%A8']) {
+      const res = await request.get(`http://localhost:8000${path}`, { maxRedirects: 0 });
+      expect(res.status(), path).toBe(404);
+      expect(res.headers()['cache-control'], path).toBe('no-store');
+      expect(await res.text(), path).toContain('<title data-seo="server">404 Page Not Found | Stellar Blade Guide</title>');
+    }
+    for (const path of ['/api/health%0A', '/api/collectibles/%0A']) {
+      const res = await request.get(`http://localhost:8000${path}`);
+      expect(res.status(), path).toBe(404);
+      expect(await res.json(), path).toEqual({ detail: 'Not Found' });
+    }
+  });
+
   test('etag revalidation returns 304', async ({ request }) => {
     const first = await request.get('http://localhost:8000/levels/nest');
     const etag = first.headers()['etag'];

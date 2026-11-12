@@ -15,10 +15,11 @@ async def origin_check_middleware(request: Request, call_next):
     # Allow Railway's internal health checks, which arrive over its private network
     # with this Host. The path pin keeps the exemption to the health endpoint, so a
     # request that forges the Host reaches nothing else. It must match the
-    # health-check path configured in Railway.
+    # health-check path configured in Railway. The path as routed: request.url.path
+    # ends at a decoded ? or # and drops a tab or line break.
     if (
         request.headers.get("host", "").startswith("healthcheck.railway.app")
-        and request.url.path == "/api/health"
+        and request.scope["path"] == "/api/health"
     ):
         return await call_next(request)
 

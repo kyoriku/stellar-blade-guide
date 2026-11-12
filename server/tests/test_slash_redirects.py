@@ -16,13 +16,13 @@ SERVER = Path(__file__).resolve().parents[1]
 
 # An encoded newline: Python's "." stops at a newline, so the SPA catch-all misses this
 # path while a path parameter ([^/]+) takes it. That made it the one request that
-# reached the slash redirect.
+# reached the slash redirect. The path guard now answers it first, so this asks the router.
 PROBE = """
 import asyncio, json, httpx
 from app.main import app
 
 async def probe():
-    transport = httpx.ASGITransport(app=app)
+    transport = httpx.ASGITransport(app=app.router)
     async with httpx.AsyncClient(transport=transport, base_url="http://localhost") as client:
         response = await client.get("/api/walkthroughs/a%0Ab/")
     print("RESULT", json.dumps([response.status_code, response.headers.get("location")]))
@@ -36,7 +36,8 @@ def test_the_app_never_redirects_a_trailing_slash(tmp_path):
         "PATH": os.environ["PATH"],
         "PYTHONPATH": str(SERVER),
         "PYTHON_DOTENV_DISABLED": "1",
-        # DEBUG steps the origin and bot checks aside, and development allows it.
+        # DEBUG: register_spa then reads index.html per request, not at import, so a dist
+        # mid-build can't break the import; development allows it.
         "ENVIRONMENT": "development",
         "DEBUG": "true",
         # Read at import; nothing connects.
