@@ -718,6 +718,7 @@ test.describe('the actions', () => {
     await page.getByRole('button', { name: 'Account menu' }).click();
     await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
     await expect(page).toHaveURL('/settings');
+    await expect(page.getByRole('heading', { level: 1, name: 'Account Settings' })).toBeVisible();
     await page.goBack();
     await expect(row).toContainText('e***@s***.dev');
     expect(await page.content()).not.toContain(target.email);
