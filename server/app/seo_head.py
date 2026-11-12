@@ -303,7 +303,9 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         # A walkthrough page reached by another spelling of its type goes to the one
         # URL, so bookmarks, shares and anything indexed land on the canonical page.
         # Like every non-200 here it is no-store, so no cache keeps the old spelling.
-        redirect = walkthrough_page_redirect(full_path, request.url.query)
+        # The query as sent: request.url re-splits the decoded path, so an escaped ? in a slug
+        # would move part of it into the query, and an escaped # would drop the query.
+        redirect = walkthrough_page_redirect(full_path, request.scope.get('query_string', b'').decode())
         if redirect:
             return RedirectResponse(redirect, status_code=301)
         # No page or file is named with a control character, and realpath raises on a

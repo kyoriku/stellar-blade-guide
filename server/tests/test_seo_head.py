@@ -390,6 +390,9 @@ async def test_other_type_spellings_redirect_to_the_navigation_spelling(client, 
         ('/walkthroughs/side-quest', '/walkthroughs/side-quests'),
         ('/walkthroughs/main-storys/the-mission', '/walkthroughs/main-story/the-mission'),
         ('/walkthroughs/side-quest/calm-quest?ref=share', '/walkthroughs/side-quests/calm-quest?ref=share'),
+        # The query as sent, even when the slug holds an escaped ? or #.
+        ('/walkthroughs/side-quest/a%3Fb?ref=1', '/walkthroughs/side-quests/a%3Fb?ref=1'),
+        ('/walkthroughs/side-quest/a%23b?ref=1', '/walkthroughs/side-quests/a%23b?ref=1'),
     ]:
         r = await client.get(path)
         assert (r.status_code, r.headers['location']) == (301, location), path
