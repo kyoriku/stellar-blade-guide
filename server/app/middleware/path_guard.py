@@ -7,13 +7,9 @@ and a trailing one is ignored by the catch-all and by every route ending in lite
 that isn't printable text, so the request is refused here, as the router would see it.
 """
 from fastapi import Request
-from fastapi.responses import JSONResponse
 
 from app.core.segments import is_text_segment
-
-
-def _under_api(path: str) -> bool:
-    return path == "/api" or path.startswith("/api/")
+from app.middleware.not_found import refusal
 
 
 async def path_guard_middleware(request: Request, call_next):
@@ -22,11 +18,7 @@ async def path_guard_middleware(request: Request, call_next):
     if is_text_segment(path):
         return await call_next(request)
     request.state.reject_reason = "unprintable-path"
-    # The cleaned spelling decides the access line and X-Robots-Tag, so it counts too.
-    page = getattr(request.app.state, "not_found_page", None)
-    if page and request.method in ("GET", "HEAD") and not (_under_api(path) or _under_api(request.url.path)):
-        return await page(request)
-    return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    return await refusal(request, {"detail": "Not Found"})
 
 
 def add_path_guard_middleware(app):

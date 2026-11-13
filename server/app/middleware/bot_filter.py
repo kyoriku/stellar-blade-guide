@@ -2,10 +2,11 @@ import logging
 import re
 from urllib.parse import urlparse
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from app.config.settings import settings
 from app.core.colours import RED, RESET
 from app.core.logging import LOG_HOST_MAX, LOG_PATH_MAX, sanitize_log_field
+from app.middleware.not_found import refusal, under_api
 
 logger = logging.getLogger("api")
 
@@ -124,13 +125,30 @@ BOT_SIGNATURES = (
 # by uvicorn's health-check.
 SPA_SAFE_PATH = re.compile(r'^/([a-z0-9\-]+(?:/[a-z0-9\-]+)*/?)?$')
 
+# Punctuation a link picks up from the sentence around it, as in "(see .../levels/eidos-7.)".
+TRAILING_MARKS = '.,)!'
+# A . or .. segment: path syntax a browser resolves before sending, so no browser sends one.
+DOT_SEGMENT = re.compile(r'/\.\.?(?=/|$)')
 
-def _reject(request: Request, reason: str) -> JSONResponse:
-    # reject_reason is printed by the logging middleware. Only /api/ paths are
-    # logged, so in practice this surfaces the referer rule; the rest are set too,
-    # so a blank reason never has to be read as "reached the router".
+
+def _ends_in_punctuation(path: str) -> bool:
+    """Whether the path as routed is a page path (ASCII, any case, never the API's) with a run of
+    TRAILING_MARKS on its end, slashes among them: what a redirect to the page would serve."""
+    trimmed = path.rstrip('/')
+    if not trimmed.endswith(tuple(TRAILING_MARKS)) or not trimmed.isascii() or DOT_SEGMENT.search(trimmed):
+        return False
+    core = trimmed.rstrip('/' + TRAILING_MARKS).lower() or '/'
+    return not under_api(core) and bool(SPA_SAFE_PATH.match(core))
+
+
+async def _reject(request: Request, reason: str) -> Response:
+    # reject_reason is printed by the logging middleware. It logs /api/ paths (so the referer
+    # rule's reason shows) and, of page paths, only a GET or HEAD refused under
+    # trailing-punctuation; the rest are set too, so a blank reason never has to be read as
+    # "reached the router". A page request gets the client's 404 page, so someone who
+    # mistypes an address still sees the site.
     request.state.reject_reason = reason
-    return JSONResponse(status_code=404, content={"error": "Not Found"})
+    return await refusal(request, {"error": "Not Found"})
 
 
 async def bot_filter_middleware(request: Request, call_next):
@@ -161,7 +179,7 @@ async def bot_filter_middleware(request: Request, call_next):
                 logger.warning("%sBlocked referer %s on %s%s", RED,
                                sanitize_log_field(hostname or "-", LOG_HOST_MAX),
                                sanitize_log_field(original_path, LOG_PATH_MAX), RESET)
-                return _reject(request, "referer")
+                return await _reject(request, "referer")
 
     # Allow API, static assets, and SEO files (case-sensitive)
     if original_path.startswith(ALLOWED_PREFIXES) or original_path in ALLOWED_EXACT:
@@ -169,7 +187,7 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
-        return _reject(request, "bot-signature")
+        return await _reject(request, "bot-signature")
 
     # Length-guard backstop before the regex (the linear pattern above already prevents
     # ReDoS). The deepest SPA route is `walkthroughs/:type/:slug`; the longest real path
@@ -177,14 +195,19 @@ async def bot_filter_middleware(request: Request, call_next):
     # keep such a path to about 215, so 512 only ever rejects absurd probe paths and
     # never clips a legitimate route.
     if len(normalized) > 512:
-        return _reject(request, "path-length")
+        return await _reject(request, "path-length")
 
     # Allow normal-shaped URLs through to React Router
     if SPA_SAFE_PATH.match(normalized):
         return await call_next(request)
 
+    # A GET or HEAD of a page path a pasted link left punctuation on gets its own reason, which
+    # the access log writes, so it shows whether real visitors arrive that way.
+    if request.method in ("GET", "HEAD") and _ends_in_punctuation(request.scope["path"]):
+        return await _reject(request, "trailing-punctuation")
+
     # Everything else (file extensions, weird chars) = probe
-    return _reject(request, "path-shape")
+    return await _reject(request, "path-shape")
 
 
 def add_bot_filter_middleware(app):

@@ -13,8 +13,8 @@ seeded row is sufficient for correct head tags with no code or JSON change.
 
 No tag value is ever built from the raw request path: canonicals come from the
 matched JSON key or the DB row's slug, and unmatched paths get the client
-ErrorPage's 404 head (noindex, no canonical), with a 404 status when the path isn't
-printable text. A page path spelt another way (capitals, or another spelling of a
+ErrorPage's 404 head (noindex, no canonical), with a 404 status for a path refused before
+any lookup. A page path spelt another way (capitals, or another spelling of a
 walkthrough type) is a 301 to its one URL before any head is chosen.
 """
 import hashlib
@@ -317,7 +317,7 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
                            MARKER, index_path)
 
     async def not_found_page(request: Request) -> Response:
-        """The client's 404 page with a 404 status, for a path that isn't printable text."""
+        """The client's 404 page with a 404 status, for a page address refused before any lookup."""
         shell = read_shell() if reload_shell else cached_shell
         if shell is None:
             # Read whole, never a FileResponse, which answers a Range header with a 206.
@@ -329,7 +329,8 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
             response.body = b''
         return response
 
-    # The path guard (app/middleware/path_guard.py) serves it before any route runs.
+    # The path guard and the bot filter serve it before any route runs (app/middleware/not_found.py),
+    # and serve_spa as its own backstop.
     app.state.not_found_page = not_found_page
 
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
