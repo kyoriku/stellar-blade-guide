@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
-import { API_BASE_URL, ApiError, readError } from '../services/api'
+import { API_BASE_URL, apiError } from '../services/api'
 
 export interface CommentData {
   id: number
@@ -27,7 +27,7 @@ export function useComments(contentType: string, contentId: number) {
       const res = await fetch(`${API_BASE_URL}/comments/${contentType}/${contentId}`, {
         cache: 'no-store',
       })
-      if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to load comments'))
+      if (!res.ok) throw await apiError(res, 'Failed to load comments')
       return res.json() as Promise<CommentData[]>
     },
     enabled: !!contentType && !!contentId,
@@ -52,7 +52,7 @@ export function useComments(contentType: string, contentId: number) {
       body: JSON.stringify({ content_type: contentType, content_id: contentId, body }),
     })
     if (!res.ok) {
-      throw new Error(await readError(res, 'Failed to post comment'))
+      throw await apiError(res, 'Failed to post comment')
     }
     const newComment = (await res.json()) as CommentData
     setComments(prev => [...prev, { ...newComment, replies: [] }])
@@ -67,7 +67,7 @@ export function useComments(contentType: string, contentId: number) {
       body: JSON.stringify({ content_type: contentType, content_id: contentId, parent_id: parentId, body }),
     })
     if (!res.ok) {
-      throw new Error(await readError(res, 'Failed to post reply'))
+      throw await apiError(res, 'Failed to post reply')
     }
     const reply = (await res.json()) as CommentData
     setComments(prev =>
@@ -85,7 +85,7 @@ export function useComments(contentType: string, contentId: number) {
       body: JSON.stringify({ body }),
     })
     if (!res.ok) {
-      throw new Error(await readError(res, 'Failed to edit comment'))
+      throw await apiError(res, 'Failed to edit comment')
     }
     const updated = (await res.json()) as CommentData
     setComments(prev =>
@@ -109,11 +109,13 @@ export function useComments(contentType: string, contentId: number) {
       // since sign-in, or the author's, changed since the thread loaded. Both are asked
       // for again, so the Delete buttons follow the server. (A 404 reloads nothing: the
       // comment is gone, and its dialog lives inside it.)
-      if (res.status === 403) {
+      const err = await apiError(res, 'Failed to delete comment')
+      // Only the API's own 403: a Cloudflare block or challenge says nothing about roles.
+      if (err.status === 403 && err.fromServer) {
         void queryClient.invalidateQueries({ queryKey })
         void refreshToken()
       }
-      throw new ApiError(res.status, await readError(res, 'Failed to delete comment'))
+      throw err
     }
     setComments(prev => processDeleted(prev, commentId))
   }

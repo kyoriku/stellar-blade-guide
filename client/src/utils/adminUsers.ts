@@ -96,11 +96,13 @@ export function adminErrorMessage(err: unknown, step: AdminStep): string {
   // Every admin call has a deadline (hooks/useAdminUsers.ts).
   if (err instanceof DOMException && err.name === 'TimeoutError') return ADMIN_COPY.timeout
   if (err instanceof ApiError) {
+    // A challenge, whatever its status: only a page load passes it.
+    if (err.challenged) return err.message
     // The server's own words: "Admin accounts can't be changed here.", or a lost role's
     // "Insufficient permissions", which the session refresh then turns into the 404.
     if (err.status === 403) return err.message || FALLBACK[step]
-    // A row action's account is gone. The list itself has no "gone".
-    if (err.status === 404 && step !== 'load') return ADMIN_COPY.gone
+    // A row action's account is gone, when the API says so. The list itself has no "gone".
+    if (err.status === 404 && err.fromServer && step !== 'load') return ADMIN_COPY.gone
     // The rate limit keeps the site's sentence (readError's), as the bulk card does.
     if (err.status === 429) return err.message
     return FALLBACK[step]

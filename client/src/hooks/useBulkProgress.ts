@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { dropFromLocalProgress, requestProgressResync } from './useProgress'
-import { API_BASE_URL, ApiError, readError } from '../services/api'
+import { API_BASE_URL, apiError } from '../services/api'
 import type { BulkPreviewResponse, BulkProgressRequest, BulkProgressResponse } from '../services/api'
 import { BULK_COPY } from '../constants/bulkProgressCopy'
 import { GuestSyncPendingError, wasRefused } from '../utils/bulkProgress'
@@ -65,7 +65,7 @@ export function useBulkProgress() {
       body: JSON.stringify(req),
       signal: deadline,
     }), deadline)
-    if (!res.ok) throw new ApiError(res.status, await readError(res, BULK_COPY.previewError))
+    if (!res.ok) throw await apiError(res, BULK_COPY.previewError)
     return (await res.json()) as BulkPreviewResponse
   }, [authFetch, waitForGuestSync])
 
@@ -82,7 +82,7 @@ export function useBulkProgress() {
         body: JSON.stringify(req),
         signal: deadline,
       }), deadline)
-      if (!res.ok) throw new ApiError(res.status, await readError(res, BULK_COPY.applyError))
+      if (!res.ok) throw await apiError(res, BULK_COPY.applyError)
       return (await res.json()) as BulkProgressResponse
     },
     // These callbacks never set query data: a setQueryData(['progress']) here

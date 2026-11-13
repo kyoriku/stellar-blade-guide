@@ -4,6 +4,7 @@ import { MessageSquare, Pencil, Trash2, User, ChevronDown, ChevronUp } from 'luc
 import { useAuth } from '../../hooks/useAuth'
 import type { CommentData } from '../../hooks/useComments'
 import { ApiError, errorMessage } from '../../services/api'
+import { COMMENT_CHALLENGE_MESSAGE } from '../../constants/errorCopy'
 import { useToast } from '../../context/ToastContext'
 import { canDeleteComment, roleRank } from '../../utils/roles'
 import { focusLeftNowhere } from '../../utils/focus'
@@ -168,12 +169,11 @@ export default function Comment({
       await onEdit(comment.id, trimmed)
       closeEdit()
     } catch (err) {
-      const message = errorMessage(err, 'Failed to edit comment')
       // Collapsing the replies above, or leaving the page, can take the editor away while
       // its save is out. The error then has nowhere to show but a toast, as a delete's
-      // does once the browser has closed its dialog.
-      if (editorRef.current) setEditError(message)
-      else showToast(message)
+      // does once the browser has closed its dialog, with no text left to copy.
+      if (editorRef.current) setEditError(errorMessage(err, 'Failed to edit comment', COMMENT_CHALLENGE_MESSAGE))
+      else showToast(errorMessage(err, 'Failed to edit comment'))
     } finally {
       setIsSaving(false)
     }
@@ -211,7 +211,7 @@ export default function Comment({
       deleted.current = true
       closeDeleteModal()
     } catch (err) {
-      refused.current ||= err instanceof ApiError && err.status === 403
+      refused.current ||= err instanceof ApiError && err.status === 403 && err.fromServer
       const message = errorMessage(err, 'Failed to delete comment')
       // A dialog the browser closed mid-delete has nowhere to show the error.
       if (deleteModalOpen.current) setDeleteError(message)

@@ -1,19 +1,24 @@
+import { CHALLENGE_MESSAGE, NETWORK_ERROR_MESSAGE, RATE_LIMIT_MESSAGE, SERVER_ERROR_MESSAGE } from '../constants/errorCopy';
+
+export { NETWORK_ERROR_MESSAGE };
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export class ApiError extends Error {
   status: number;
+  // False unless the body was the API's own error JSON.
+  fromServer: boolean;
+  // A Cloudflare challenge, which only a page load passes.
+  challenged: boolean;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, { fromServer = false, challenged = false } = {}) {
     super(message);
     this.status = status;
+    this.fromServer = fromServer;
+    this.challenged = challenged;
     this.name = 'ApiError';
   }
 }
-
-/** Shown for failures the server can't describe specifically. */
-export const NETWORK_ERROR_MESSAGE = 'You appear to be offline. Check your connection and try again.';
-const RATE_LIMIT_MESSAGE = "You're doing that too fast. Please wait a moment and try again.";
-const SERVER_ERROR_MESSAGE = 'Something went wrong on our end. Please try again later.';
 
 /**
  * Normalize a backend error body to a single display string. This API uses two
@@ -46,10 +51,13 @@ function getApiErrorMessage(body: unknown, fallback: string): string {
  * Best display string for any caught client error: a server-provided ApiError
  * message, an offline notice for network (fetch) failures, a plain Error
  * message, or the fallback. Use in catch blocks that show errors to users.
+ * `challenge` replaces a challenge's sentence where a reload would lose typed text.
  */
-export function errorMessage(err: unknown, fallback: string): string {
-  if (err instanceof ApiError) return err.message;
+export function errorMessage(err: unknown, fallback: string, challenge?: string): string {
+  if (err instanceof ApiError) return err.challenged && challenge ? challenge : err.message;
   if (err instanceof TypeError) return NETWORK_ERROR_MESSAGE; // fetch rejects (offline/DNS/CORS)
+  // A body res.json() couldn't read: a SyntaxError that quotes it, or WebKit's DOMException of that name.
+  if (err instanceof SyntaxError || (err instanceof DOMException && err.name === 'SyntaxError')) return fallback;
   if (err instanceof Error && err.message) return err.message;
   return fallback;
 }
@@ -239,21 +247,40 @@ export interface UserStatsResponse {
 }
 
 /**
- * Read a non-OK Response into a friendly display message: fixed copy for 429 and
- * 5xx (never leak internals or rate-limit jargon), otherwise the server's own
- * message. Use wherever you fetch() directly instead of the api.* methods.
+ * Read a non-OK Response into a friendly display message: a challenge's sentence,
+ * fixed copy for 429 and 5xx (never leak internals or rate-limit jargon), otherwise
+ * the API's own message, or the fallback for a body that isn't the API's. Use
+ * wherever you fetch() directly instead of the api.* methods.
  */
 export async function readError(response: Response, fallback: string): Promise<string> {
-  if (response.status === 429) return RATE_LIMIT_MESSAGE;
-  if (response.status >= 500) return SERVER_ERROR_MESSAGE; // never surface raw internals
+  return (await apiError(response, fallback)).message;
+}
+
+// The API's own error JSON (a detail or an error key), never Cloudflare's (cloudflare_error).
+function isApiBody(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  const b = body as { detail?: unknown; error?: unknown; cloudflare_error?: unknown };
+  if (b.cloudflare_error === true) return false;
+  return typeof b.detail === 'string' || Array.isArray(b.detail) || typeof b.error === 'string';
+}
+
+/** A non-OK Response as an ApiError: readError's message, plus who answered. */
+export async function apiError(response: Response, fallback: string): Promise<ApiError> {
+  if (response.headers.get('cf-mitigated') === 'challenge') {
+    return new ApiError(response.status, CHALLENGE_MESSAGE, { challenged: true });
+  }
+  // Fixed copy, with no body read: nothing needs it, and a stalled body can't hang the caller.
+  if (response.status === 429) return new ApiError(429, RATE_LIMIT_MESSAGE);
+  if (response.status >= 500) return new ApiError(response.status, SERVER_ERROR_MESSAGE);
   const body: unknown = await response.json().catch(() => null);
-  return getApiErrorMessage(body, fallback);
+  const fromServer = isApiBody(body);
+  return new ApiError(response.status, getApiErrorMessage(fromServer ? body : null, fallback), { fromServer });
 }
 
 const handleResponse = async <T>(response: Response, context: string): Promise<T> => {
   if (!response.ok) {
     if (import.meta.env.DEV && response.status === 429) console.warn(`Rate limit hit on ${context}`);
-    throw new ApiError(response.status, await readError(response, `Failed to load ${context}`));
+    throw await apiError(response, `Failed to load ${context}`);
   }
   return response.json() as Promise<T>;
 };

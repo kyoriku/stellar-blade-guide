@@ -5,6 +5,8 @@ import {
 } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { holdRoute } from '../helpers/route';
+import { EDGE, type Answer } from '../helpers/edge';
+import { CHALLENGE_MESSAGE, SERVER_ERROR_MESSAGE as SERVER_ERROR } from '../../client/src/constants/errorCopy';
 
 // Comment deletion by rank (server/app/core/roles.py, mirrored by client/src/utils/roles.ts):
 // you can delete your own comment, or one whose author's current role ranks below yours,
@@ -78,8 +80,6 @@ const heading = (page: Page) => page.getByRole('heading', { name: /^Comments/ })
 // Results are toasts; the toast container is the page's only role="status".
 const toast = (page: Page, text: string) => page.getByRole('status').getByText(text, { exact: true });
 const REFUSED = 'Cannot delete this comment';
-// What the client shows for any 5xx (readError in client/src/services/api.ts).
-const SERVER_ERROR = 'Something went wrong on our end. Please try again later.';
 
 // The viewer signs in on the page from its own address. Their own Edit shows once the
 // session and the thread have both loaded, so a missing Delete after it is a decision.
@@ -355,7 +355,7 @@ test("a moderator deletes a user's comment", async ({ page, request }) => {
   expect([row.isDeleted, row.body]).toEqual([true, '[deleted]']);
 });
 
-test('a delete that fails another way keeps focus on Delete and asks for nothing again', async ({ page, request }) => {
+test("a delete that fails another way, Cloudflare's 403s included, keeps focus on Delete and asks for nothing again", async ({ page, request }) => {
   const author = await account(request, 'rku', 'user');
   const viewer = await account(page.request, 'rkm', 'moderator');
   await openAs(page, viewer);
@@ -365,15 +365,23 @@ test('a delete that fails another way keeps focus on Delete and asks for nothing
     if (path === '/api/auth/refresh' || path.startsWith('/api/comments/walkthrough/')) asked.push(`${r.method()} ${path}`);
   });
 
-  // A server error, then a comment someone else deleted meanwhile.
-  for (const [status, shown] of [[500, SERVER_ERROR], [404, 'Comment not found']] as const) {
-    await page.route(`**/api/comments/${author.commentId}`, route => route.fulfill({ status, json: { detail: 'Comment not found' } }), { times: 1 });
+  // A server error, a comment someone else deleted meanwhile, and Cloudflare's pages: a 403
+  // that isn't the API's says nothing about roles.
+  const failures: [string, () => Answer, string][] = [
+    ['500', () => ({ status: 500, json: { detail: 'Comment not found' } }), SERVER_ERROR],
+    ['404', () => ({ status: 404, json: { detail: 'Comment not found' } }), 'Comment not found'],
+    ["Cloudflare's block", EDGE.block403, 'Failed to delete comment'],
+    ["Cloudflare's challenge", EDGE.challenge403, CHALLENGE_MESSAGE],
+    ["Cloudflare's 522", EDGE.cf522, SERVER_ERROR],
+  ];
+  for (const [what, answer, shown] of failures) {
+    await page.route(`**/api/comments/${author.commentId}`, route => route.fulfill(answer()), { times: 1 });
     await action(page, author, 'Delete').click();
     await confirmDelete(page).click();
-    await expect(dialog(page).getByRole('alert'), String(status)).toHaveText(shown);
+    await expect(dialog(page).getByRole('alert'), what).toHaveText(shown);
     await dialog(page).getByRole('button', { name: 'Cancel' }).click();
     await expect(dialog(page)).toHaveCount(0);
-    await expect(action(page, author, 'Delete'), String(status)).toBeFocused();
+    await expect(action(page, author, 'Delete'), what).toBeFocused();
   }
   // A refusal asks for the session and the thread again before its error shows.
   expect(asked).toEqual([]);

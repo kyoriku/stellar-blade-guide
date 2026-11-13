@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useAdminUsers } from '../hooks/useAdminUsers'
 import type { AdminUser } from '../hooks/useAdminUsers'
 import { useToast } from '../context/ToastContext'
+import { ApiError } from '../services/api'
 import { ADMIN_COPY } from '../constants/adminCopy'
 import seo from '../constants/seo.json'
 import { adminErrorMessage, listStatus } from '../utils/adminUsers'
@@ -268,6 +269,11 @@ export default function AdminPage() {
   // the alert itself). One that loads the list takes the box away, and focus goes to
   // the Users heading, as after a delete.
   const retryList = async () => {
+    // Only a page load passes a challenge.
+    if (list.error instanceof ApiError && list.error.challenged) {
+      window.location.reload()
+      return
+    }
     // A second press mid-retry would copy the error TanStack holds while pending,
     // null, and take the box away with the focused button in it.
     if (retrying.current) return

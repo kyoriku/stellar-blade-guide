@@ -4,6 +4,7 @@ import { Send } from 'lucide-react'
 import BusyLabel from '../BusyLabel'
 import { useAuth } from '../../hooks/useAuth'
 import { errorMessage } from '../../services/api'
+import { COMMENT_CHALLENGE_MESSAGE } from '../../constants/errorCopy'
 import { useToast } from '../../context/ToastContext'
 
 interface CommentFormProps {
@@ -61,12 +62,11 @@ export default function CommentForm({
       await onSubmit(trimmed)
       setBody('')
     } catch (err) {
-      const message = errorMessage(err, 'Failed to post comment')
       // Leaving the page, or a sign-out that swaps the form for its sign-in links, can
       // take the form away while its post is out. The error then has nowhere to show but
-      // a toast, as a refused edit's does.
-      if (formRef.current) setError(message)
-      else showToast(message)
+      // a toast, as a refused edit's does, with no text left to copy.
+      if (formRef.current) setError(errorMessage(err, 'Failed to post comment', COMMENT_CHALLENGE_MESSAGE))
+      else showToast(errorMessage(err, 'Failed to post comment'))
     } finally {
       setIsSubmitting(false)
     }

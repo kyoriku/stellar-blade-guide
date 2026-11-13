@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
-import { API_BASE_URL, ApiError, readError } from '../services/api'
+import { API_BASE_URL, apiError } from '../services/api'
 import type { UserStatsResponse } from '../services/api'
 
 /**
@@ -42,7 +42,7 @@ export function useUserStats(options?: { refetchOnMount?: 'always' }) {
     queryKey: ['user-stats', user?.id],
     queryFn: async () => {
       const res = await authFetch(`${API_BASE_URL}/users/me/stats`)
-      if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to load your stats'))
+      if (!res.ok) throw await apiError(res, 'Failed to load your stats')
       return (await res.json()) as UserStatsResponse
     },
     // Token presence, not just identity (the useProgress idiom): the cached

@@ -138,8 +138,8 @@ export function bulkErrorMessage(err: unknown, step: 'preview' | 'apply'): strin
   if (err instanceof DOMException && err.name === 'TimeoutError') {
     return step === 'preview' ? BULK_COPY.previewTimeout : BULK_COPY.applyTimeout
   }
-  // The rate limit keeps its existing sentence.
-  if (err instanceof ApiError && err.status === 429) return errorMessage(err, fallback)
+  // The rate limit and a Cloudflare challenge keep their sentences.
+  if (err instanceof ApiError && (err.status === 429 || err.challenged)) return errorMessage(err, fallback)
   // The UI never builds a request the server would refuse, so a refusal's text
   // ("Unknown level", a validator message) is not for the page.
   if (wasRefused(err)) return fallback

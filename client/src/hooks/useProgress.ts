@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
-import { API_BASE_URL, ApiError, readError, errorMessage } from '../services/api'
+import { API_BASE_URL, apiError, errorMessage } from '../services/api'
 import type { ProgressWriteResponse } from '../services/api'
 import { readItem, removeItem, storageProblem, writeItem } from '../utils/storage'
 
@@ -98,7 +98,7 @@ export function useProgress() {
     queryKey: ['progress'],
     queryFn: async () => {
       const res = await authFetch(`${API_BASE_URL}/progress`)
-      if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to load progress'))
+      if (!res.ok) throw await apiError(res, "Couldn't load your saved progress.")
       const ids = (await res.json()) as number[]
       return ids
     },
@@ -148,7 +148,7 @@ export function useProgress() {
       const res = await authFetch(`${API_BASE_URL}/progress/${collectibleId}`, {
         method: desired ? 'PUT' : 'DELETE',
       })
-      if (!res.ok) throw new ApiError(res.status, await readError(res, 'Failed to save progress'))
+      if (!res.ok) throw await apiError(res, "Couldn't save your progress. Please try again.")
       return res.json() as Promise<ProgressWriteResponse>
     },
     onMutate: async ({ collectibleId, desired }) => {
