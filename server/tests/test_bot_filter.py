@@ -19,10 +19,13 @@ the match in a SUBPROCESS that subprocess.run kills after a 5 s timeout: a regre
 pattern fails cleanly instead of hanging the suite. In-process tests below only ever
 feed SHORT or MATCHING inputs, which resolve instantly even against the nested form
 (backtracking only explodes on long NON-matching runs).
+
+The tests after those cover the filter's other checks and what each refusal answers.
 """
 import subprocess
 import sys
 
+import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -30,6 +33,8 @@ from httpx import AsyncClient, ASGITransport
 
 from app.config.settings import settings
 from app.middleware.bot_filter import SPA_SAFE_PATH, add_bot_filter_middleware
+from app.middleware.security_headers import add_security_headers_middleware
+from app.seo_head import MARKER, register_spa
 
 # The ReDoS shape: a long slash-free run, then a file extension, as in a hashed file name.
 REDOS_PATH = "/" + ("a" * 64) + ".webp"
@@ -165,3 +170,73 @@ async def test_the_admin_page_and_its_api_pass_through(bot_client):
     assert r.status_code == 200
     for path in ("/administrator", "/admin/controller"):
         assert (await bot_client.get(path)).status_code == 404, path
+
+
+# ── A page address it refuses gets the client's 404 page ───────────────────────
+
+NOT_FOUND_TITLE = '<title data-seo="server">404 Page Not Found | Stellar Blade Guide</title>'
+SHELL = ('<!doctype html>\n<html>\n<head>\n  <meta charset="UTF-8" />\n'
+         f'  {MARKER}\n</head>\n<body><main id="root"></main></body>\n</html>\n')
+
+
+@pytest_asyncio.fixture
+async def spa_client(tmp_path, monkeypatch):
+    # The built client registered, as in production, so the 404 page is there to serve.
+    monkeypatch.setattr(settings, "DEBUG", False)
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text(SHELL, encoding="utf-8")
+    app = FastAPI()
+
+    @app.get("/api/probe")
+    async def probe():
+        return {"ok": True}
+
+    add_bot_filter_middleware(app)
+    add_security_headers_middleware(app)
+    register_spa(app, str(dist), reload_shell=False)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        yield c
+
+
+@pytest.mark.parametrize("path", [
+    "/levels/eidos_7",                                                    # an underscore
+    "/levels/eidos-7.", "/levels/eidos-7)", "/levels/eidos-7%E2%80%A6",   # what a pasted link picks up
+    "/levels/%C3%A9idos-7",                                               # a letter outside ASCII
+    "/Levels/Eidos_7",                                                    # refused before the 301
+    "/levels/eidos_7%3Fx",                                                # an escaped ? still gets the page
+    "/index.html", "/favicon.ico",                                        # a file the site doesn't have
+    "/levels//eidos-7",                                                   # an empty segment
+    "/wp-login.php", "/docs",                                             # a bot signature
+    "/" + "a" * 600,                                                      # past the length guard
+])
+async def test_a_page_address_it_refuses_gets_the_404_page(spa_client, path):
+    r = await spa_client.get(path)
+    assert (r.status_code, r.headers["content-type"], r.headers["cache-control"]) == (
+        404, "text/html; charset=utf-8", "no-store")
+    assert NOT_FOUND_TITLE in r.text
+    assert 'content="noindex, nofollow"' in r.text
+    assert 'rel="canonical"' not in r.text
+
+
+async def test_head_gets_the_404_page_without_its_body(spa_client):
+    get, head = await spa_client.get("/levels/eidos_7"), await spa_client.head("/levels/eidos_7")
+    assert (head.status_code, head.content) == (404, b"")
+    assert head.headers["content-length"] == get.headers["content-length"]
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "DELETE", "OPTIONS"])
+async def test_any_other_method_keeps_the_json_404(spa_client, method):
+    r = await spa_client.request(method, "/levels/eidos_7")
+    assert (r.status_code, r.json()) == (404, {"error": "Not Found"})
+
+
+async def test_an_api_refusal_keeps_the_json_404(spa_client):
+    r = await spa_client.get("/api/probe", headers={"referer": "https://evil.example/"})
+    assert (r.status_code, r.json()) == (404, {"error": "Not Found"})
+
+
+async def test_with_no_built_client_it_answers_json(bot_client):
+    # No register_spa, as in CI, which has no client/dist: there's no page to serve.
+    r = await bot_client.get("/levels/eidos_7")
+    assert (r.status_code, r.json()) == (404, {"error": "Not Found"})

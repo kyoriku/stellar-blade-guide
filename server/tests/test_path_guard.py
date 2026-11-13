@@ -184,7 +184,7 @@ async def test_a_printable_path_is_left_to_the_layers_below(client):
     assert 'rel="canonical" href="https://stellarbladeguide.com/levels/eidos-7"' in r.text
     r = await client.get("/api/probe")
     assert (r.status_code, r.json()) == (200, {"ok": True})
-    r = await client.get("/levels/eidos_7")  # the bot filter's own answer
+    r = await client.post("/levels/eidos_7")  # the bot filter's own answer
     assert (r.status_code, r.json()) == (404, {"error": "Not Found"})
     r = await client.get("/UPGRADES/weapon-cores")
     assert (r.status_code, r.headers["location"]) == (301, "/upgrades/weapon-cores")
@@ -230,16 +230,24 @@ from app.main import app
 
 async def probe():
     secret = {"x-origin-secret": "probe-origin-secret"}
-    transport = httpx.ASGITransport(app=app)
+    reasons = []
+
+    async def recording(scope, receive, send):
+        # Which layer answered: with a built client, the guard and the bot filter serve one page.
+        await app(scope, receive, send)
+        reasons.append((scope.get("state") or {}).get("reject_reason"))
+
+    transport = httpx.ASGITransport(app=recording)
     async with httpx.AsyncClient(transport=transport, base_url="http://stellarbladeguide.com",
                                  headers={"cf-connecting-ip": "203.0.113.7"}) as client:
         out = []
         for path, headers in (("/levels/eidos-7%0B", secret), ("/api/health%0A", secret),
                               ("/api/collectibles/%0A", secret), ("/.well-known/traffic-advice%0A", secret),
-                              ("/levels/eidos-7%0B", {})):
+                              ("/levels/eidos-7%0B", {}), ("/levels/eidos_7", secret)):
             response = await client.get(path, headers=headers)
             out.append([response.status_code, response.headers.get("content-type", ""), response.text])
     print("RESULT", json.dumps(out))
+    print("REASONS", json.dumps(reasons))
 
 asyncio.run(probe())
 """
@@ -261,9 +269,12 @@ def test_the_app_refuses_one_between_the_origin_check_and_the_bot_filter(tmp_pat
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
     (line,) = [out for out in result.stdout.splitlines() if out.startswith("RESULT ")]
-    page, health, collectibles, advice, no_secret = json.loads(line.removeprefix("RESULT "))
-    # The bot filter would answer {"error": "Not Found"}. With no built client (CI), the guard
-    # answers a page path as it answers the API.
+    page, health, collectibles, advice, no_secret, refused = json.loads(line.removeprefix("RESULT "))
+    (line,) = [out for out in result.stdout.splitlines() if out.startswith("REASONS ")]
+    # The guard answers before the bot filter, which reads a cleaned path.
+    assert json.loads(line.removeprefix("REASONS ")) == [
+        "unprintable-path", "unprintable-path", "unprintable-path", "unprintable-path", "origin-secret", "path-shape"]
+    # With no built client (CI), the guard answers a page path as it answers the API.
     assert page[0] == 404
     if (SERVER.parent / "client" / "dist" / "index.html").is_file():
         assert NOT_FOUND_TITLE in page[2]
@@ -274,3 +285,9 @@ def test_the_app_refuses_one_between_the_origin_check_and_the_bot_filter(tmp_pat
     assert advice[0] == 404  # a trailing newline gave the route a second spelling
     # Inside the origin check: a request without the secret gets its refusal first.
     assert no_secret == [404, "application/json", '{"error":"Not Found"}']
+    # A page path the bot filter refuses gets the same page.
+    assert refused[0] == 404
+    if (SERVER.parent / "client" / "dist" / "index.html").is_file():
+        assert NOT_FOUND_TITLE in refused[2]
+    else:
+        assert refused[2] == '{"error":"Not Found"}'

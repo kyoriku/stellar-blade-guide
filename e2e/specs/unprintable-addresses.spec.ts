@@ -77,7 +77,8 @@ test.describe('unprintable addresses', () => {
   test("an address with an escape that doesn't decode gets the 404 page, never a crash", async ({ page }) => {
     const errors = watchErrors(page);
     // Vite answers these with an empty 404, so the test serves the shell there, as uvicorn does
-    // with DEBUG on. With DEBUG off, the bot filter refuses the first three before the client runs.
+    // with DEBUG on. With DEBUG off the server sends the 404 page with a 404 status, from the bot
+    // filter for the first three and the path guard for the last.
     const shell = await (await page.request.get('/')).text();
     await page.route((url) => MALFORMED.includes(url.pathname),
       (route) => route.fulfill({ status: 200, contentType: 'text/html', body: shell }));

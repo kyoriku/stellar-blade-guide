@@ -485,8 +485,9 @@ async def test_a_page_path_with_capitals_gets_through_the_bot_filter(tmp_path, m
         r = await c.get('/UPGRADES/Weapon-Cores')
         assert (r.status_code, r.headers.get('location'), r.headers['cache-control']) == (
             301, '/upgrades/weapon-cores', 'no-store')
-        r = await c.get('/ROBOTS.TXT')
-        assert (r.status_code, r.json()) == (404, {"error": "Not Found"})
+        r = await c.get('/ROBOTS.TXT')  # a file name keeps its case: the bot filter's 404 page
+        assert (r.status_code, r.headers.get('location'), r.headers['cache-control']) == (404, None, 'no-store')
+        assert f'<title data-seo="server">404 Page Not Found{SUFFIX}</title>' in r.text
 
 
 async def test_other_type_spellings_redirect_to_the_navigation_spelling(client, monkeypatch):

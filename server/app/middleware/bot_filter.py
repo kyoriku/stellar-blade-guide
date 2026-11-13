@@ -2,10 +2,11 @@ import logging
 import re
 from urllib.parse import urlparse
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from app.config.settings import settings
 from app.core.colours import RED, RESET
 from app.core.logging import LOG_HOST_MAX, LOG_PATH_MAX, sanitize_log_field
+from app.middleware.not_found import refusal
 
 logger = logging.getLogger("api")
 
@@ -125,12 +126,13 @@ BOT_SIGNATURES = (
 SPA_SAFE_PATH = re.compile(r'^/([a-z0-9\-]+(?:/[a-z0-9\-]+)*/?)?$')
 
 
-def _reject(request: Request, reason: str) -> JSONResponse:
+async def _reject(request: Request, reason: str) -> Response:
     # reject_reason is printed by the logging middleware. Only /api/ paths are
     # logged, so in practice this surfaces the referer rule; the rest are set too,
-    # so a blank reason never has to be read as "reached the router".
+    # so a blank reason never has to be read as "reached the router". A page request
+    # gets the client's 404 page, so someone who mistypes an address still sees the site.
     request.state.reject_reason = reason
-    return JSONResponse(status_code=404, content={"error": "Not Found"})
+    return await refusal(request, {"error": "Not Found"})
 
 
 async def bot_filter_middleware(request: Request, call_next):
@@ -161,7 +163,7 @@ async def bot_filter_middleware(request: Request, call_next):
                 logger.warning("%sBlocked referer %s on %s%s", RED,
                                sanitize_log_field(hostname or "-", LOG_HOST_MAX),
                                sanitize_log_field(original_path, LOG_PATH_MAX), RESET)
-                return _reject(request, "referer")
+                return await _reject(request, "referer")
 
     # Allow API, static assets, and SEO files (case-sensitive)
     if original_path.startswith(ALLOWED_PREFIXES) or original_path in ALLOWED_EXACT:
@@ -169,7 +171,7 @@ async def bot_filter_middleware(request: Request, call_next):
 
     # Block known bot-signature paths (checked before regex since they'd otherwise pass)
     if any(normalized.startswith(sig) for sig in BOT_SIGNATURES):
-        return _reject(request, "bot-signature")
+        return await _reject(request, "bot-signature")
 
     # Length-guard backstop before the regex (the linear pattern above already prevents
     # ReDoS). The deepest SPA route is `walkthroughs/:type/:slug`; the longest real path
@@ -177,14 +179,14 @@ async def bot_filter_middleware(request: Request, call_next):
     # keep such a path to about 215, so 512 only ever rejects absurd probe paths and
     # never clips a legitimate route.
     if len(normalized) > 512:
-        return _reject(request, "path-length")
+        return await _reject(request, "path-length")
 
     # Allow normal-shaped URLs through to React Router
     if SPA_SAFE_PATH.match(normalized):
         return await call_next(request)
 
     # Everything else (file extensions, weird chars) = probe
-    return _reject(request, "path-shape")
+    return await _reject(request, "path-shape")
 
 
 def add_bot_filter_middleware(app):
