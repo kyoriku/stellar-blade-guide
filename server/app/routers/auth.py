@@ -295,8 +295,9 @@ async def change_password(
         )
 
     if not verify_password(body.current_password, current_user.password_hash):
+        # 400, not 401: authFetch answers a 401 by refreshing and sending it again.
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect"
         )
 

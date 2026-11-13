@@ -476,6 +476,29 @@ test.describe('auth', () => {
     await expectShowPassword(page, 'Show current password', page.getByLabel('Current password', { exact: true }), 'current');
     await expectShowPassword(page, 'Show new password', page.getByLabel('New password', { exact: true }), 'new');
   });
+
+  test("a wrong current password in Settings is refused once, in the server's words, with no session refresh", async ({ page }) => {
+    await uiLogin(page, user!);
+    await expect(accountMenu(page)).toBeVisible();
+    // Through the menu, so the page keeps the token it signed in with.
+    await accountMenu(page).click();
+    await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Account Settings' })).toBeVisible();
+    const sent: string[] = [];
+    page.on('request', r => {
+      const path = new URL(r.url()).pathname;
+      if (path === '/api/auth/change-password' || path === '/api/auth/refresh') sent.push(path);
+    });
+    await page.getByLabel('Current password', { exact: true }).fill('e2e-Wrong-Password-1');
+    await page.getByLabel('New password', { exact: true }).fill('e2e-Password-456');
+    const update = page.getByRole('button', { name: 'Update password', exact: true });
+    await update.click();
+    await expect(page.locator('form').filter({ has: update }).getByRole('alert')).toHaveText('Current password is incorrect');
+    await expect(update).toHaveAttribute('aria-busy', 'false');
+    // A 401 would make authFetch refresh the session and send the password again.
+    expect(sent).toEqual(['/api/auth/change-password']);
+    await expect(accountMenu(page)).toBeVisible();
+  });
 });
 
 // ── Return paths ─────────────────────────────────────────────────────────────

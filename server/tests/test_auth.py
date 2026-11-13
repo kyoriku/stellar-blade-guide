@@ -1023,6 +1023,32 @@ async def test_logout_all_sweeps_demoted_grace_token(auth_client, test_user, fak
     assert r2.json()["detail"] == "Refresh token invalid or expired"
 
 
+# ── Change password ───────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("current, new, detail", [
+    ("wrong-password-1", "a-new-password-1", "Current password is incorrect"),
+    ("password123", "password123", "New password must be different from current password"),
+], ids=["wrong-current-password", "same-password"])
+async def test_change_password_refusals_are_400s_that_change_nothing(
+    authenticated_client, auth_db_session, test_user, fake_redis, current, new, detail,
+):
+    """Never a 401: authFetch answers one by refreshing and sending the request again."""
+    hash_before = test_user.password_hash
+    sessions = sorted(await fake_redis.keys(f"refresh:{test_user.id}:*"))
+    assert sessions  # the fixture's sign-in
+
+    r = await authenticated_client.post(
+        "/api/auth/change-password", json={"current_password": current, "new_password": new},
+    )
+
+    assert (r.status_code, r.json()) == (400, {"detail": detail})
+    assert "set-cookie" not in r.headers
+    assert sorted(await fake_redis.keys(f"refresh:{test_user.id}:*")) == sessions
+    # Read from the table: an UPDATE that bypasses the ORM wouldn't show on test_user, which the app shares.
+    stored = (await auth_db_session.execute(select(User.password_hash).where(User.id == test_user.id))).scalar_one()
+    assert stored == hash_before
+
+
 # ── Protected route ───────────────────────────────────────────────────────────
 
 async def test_protected_valid_token_returns_200(authenticated_client):
