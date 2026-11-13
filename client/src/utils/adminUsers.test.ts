@@ -15,6 +15,7 @@ import {
 } from './adminUsers'
 import { ADMIN_COPY } from '../constants/adminCopy'
 import { ApiError, NETWORK_ERROR_MESSAGE } from '../services/api'
+import { CHALLENGE_MESSAGE } from '../constants/errorCopy'
 
 const row = (id: number, extra: Partial<{ role: string; is_active: boolean; username: string }> = {}) => ({
   id,
@@ -173,11 +174,28 @@ describe('adminErrorMessage', () => {
   })
 
   it("says a row action's account is gone on a 404, but not the list's", () => {
-    const missing = new ApiError(404, 'User not found')
+    const missing = new ApiError(404, 'User not found', { fromServer: true })
     for (const step of ['reveal', 'role', 'status', 'delete'] as const) {
       expect(adminErrorMessage(missing, step)).toBe(ADMIN_COPY.gone)
     }
     expect(adminErrorMessage(missing, 'load')).toBe(ADMIN_COPY.loadError)
+  })
+
+  it("keeps a challenge's sentence whatever its status", () => {
+    for (const status of [403, 429, 503]) {
+      const challenged = new ApiError(status, CHALLENGE_MESSAGE, { challenged: true })
+      for (const step of ['load', 'reveal', 'role', 'status', 'delete'] as const) {
+        expect(adminErrorMessage(challenged, step), `${status} ${step}`).toBe(CHALLENGE_MESSAGE)
+      }
+    }
+  })
+
+  it("doesn't call an account gone on a 404 the API didn't send", () => {
+    const misrouted = new ApiError(404, 'fallback', { fromServer: false })
+    expect(adminErrorMessage(misrouted, 'reveal')).toBe(ADMIN_COPY.revealError)
+    expect(adminErrorMessage(misrouted, 'role')).toBe(ADMIN_COPY.roleError)
+    expect(adminErrorMessage(misrouted, 'status')).toBe(ADMIN_COPY.statusError)
+    expect(adminErrorMessage(misrouted, 'delete')).toBe(ADMIN_COPY.deleteError)
   })
 
   it("keeps the site's rate-limit and offline sentences", () => {

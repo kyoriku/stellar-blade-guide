@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { NOTIFICATIONS_KEY } from './useNotifications'
-import { API_BASE_URL, ApiError, readError } from '../services/api'
+import { API_BASE_URL, ApiError, apiError } from '../services/api'
 import { ADMIN_COPY } from '../constants/adminCopy'
 import { removeRow, replaceRow, searchTooLong } from '../utils/adminUsers'
 
@@ -72,7 +72,7 @@ function eitherSignal(a: AbortSignal, b: AbortSignal): AbortSignal {
  * The admin page's accounts: the list (every account, or a search), and each action
  * on one. `search` is the box as typed; the list follows it 300 ms later, trimmed.
  * Enabled only for an admin. Every call is no-store and has a deadline,
- * and a 403 from any of them refreshes the session once, so a role lost since sign-in
+ * and the API's own 403 from any of them refreshes the session once, so a role lost since sign-in
  * ends at the 404 the route guard (ProtectedRoute's adminOnly) shows non-admins.
  */
 export function useAdminUsers(search: string) {
@@ -96,8 +96,9 @@ export function useAdminUsers(search: string) {
         if (!res.ok) {
           // A role lost since sign-in: the refreshed session carries the new one. Also
           // sent for "Admin accounts can't be changed here.", where it changes nothing.
-          if (res.status === 403) void refreshToken()
-          throw new ApiError(res.status, await readError(res, fallback))
+          const err = await apiError(res, fallback)
+          if (err.status === 403 && err.fromServer) void refreshToken()
+          throw err
         }
         return res.status === 204 ? null : (res.json() as Promise<unknown>)
       })(), signal)
@@ -199,7 +200,7 @@ export function useAdminUsers(search: string) {
       const body = await requestRef.current(`/users/${id}/email`, { method: 'POST' }, REVEAL_TIMEOUT_MS, ADMIN_COPY.revealError)
       return (body as RevealedEmail).email
     } catch (err) {
-      if (err instanceof ApiError && (err.status === 403 || err.status === 404)) refreshList()
+      if (err instanceof ApiError && err.fromServer && (err.status === 403 || err.status === 404)) refreshList()
       throw err
     }
   }, [refreshList])

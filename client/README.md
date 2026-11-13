@@ -66,10 +66,11 @@ src/
                      error page between the navbar and footer until the next navigation
   services/          api.ts: typed fetch wrappers for content and search + most TypeScript
                      interfaces (comment, notification, and auth types live in their hooks)
-  constants/         navigation structure, section names, type intros, cycle labels, Manage
-                     progress, admin page and hidden-card reveal copy, and seo.json (the
-                     site's static head text and images, also read by the server) with
-                     typed views over it (category images, level, type, and walkthrough SEO)
+  constants/         navigation structure, section names, type intros, cycle labels, error
+                     sentences, Manage progress, admin page and hidden-card reveal copy, and
+                     seo.json (the site's static head text and images, also read by the
+                     server) with typed views over it (category images, level, type, and
+                     walkthrough SEO)
   utils/             image URL/srcset helpers (image.ts), image cache, slug
                      generation and dedup, TOC builders, description parser,
                      text layout, username and password validation, role ranks
@@ -94,7 +95,7 @@ An address whose path isn't printable text, such as one holding an encoded line 
 
 ## Data fetching
 
-`services/api.ts` wraps `fetch` with typed helpers for the content reads and search, and holds most of the API's TypeScript interfaces (the comment, notification, and auth types live in their hooks), maintained by hand to mirror the server's Pydantic schemas. Most signed-in requests go through `authFetch` (`hooks/useAuth.ts`), which attaches the access token (refreshing first when none is held) and, on a 401, refreshes it and retries once. One hook module per domain wraps TanStack Query. Content queries default to a 30-minute `staleTime` (1-hour `gcTime`); user data (progress, comments, notifications) uses shorter windows, and the admin page's account list none at all.
+`services/api.ts` wraps `fetch` with typed helpers for the content reads and search, and holds most of the API's TypeScript interfaces (the comment, notification, and auth types live in their hooks), maintained by hand to mirror the server's Pydantic schemas. Most signed-in requests go through `authFetch` (`hooks/useAuth.ts`), which attaches the access token (refreshing first when none is held) and, on a 401, refreshes it and retries once. A failed response is read once, by `apiError` (`services/api.ts`), which tells the API's own error answers from Cloudflare's: only the API's own drives a status branch, a Cloudflare challenge gets one sentence telling the reader to reload, and a body that isn't JSON never shows the parser's text. One hook module per domain wraps TanStack Query. Content queries default to a 30-minute `staleTime` (1-hour `gcTime`); user data (progress, comments, notifications) uses shorter windows, and the admin page's account list none at all.
 
 ## Images
 

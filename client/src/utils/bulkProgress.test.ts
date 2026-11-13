@@ -15,6 +15,7 @@ import {
 import { BULK_COPY } from '../constants/bulkProgressCopy'
 import { LEVELS, COLLECTIBLES, COSMETICS } from '../constants/navigation'
 import { ApiError, NETWORK_ERROR_MESSAGE } from '../services/api'
+import { CHALLENGE_MESSAGE } from '../constants/errorCopy'
 import type { CycleStat, LevelStat, TypeStat } from '../services/api'
 
 const level = (name: string, cycles = ['Base']): LevelStat => ({ name, order: 0, completed: 0, total: 1, cycles })
@@ -163,6 +164,22 @@ describe('errors', () => {
     expect(bulkErrorMessage(new DOMException('signal timed out', 'TimeoutError'), 'preview')).toBe(BULK_COPY.previewTimeout)
     expect(bulkErrorMessage(new TypeError('Failed to fetch'), 'apply')).toBe(NETWORK_ERROR_MESSAGE)
     expect(bulkErrorMessage(new ApiError(429, 'rate sentence'), 'apply')).toBe('rate sentence')
+  })
+
+  it("keeps a challenge's sentence, and never shows a parser's text", async () => {
+    const challenged = new ApiError(403, CHALLENGE_MESSAGE, { fromServer: false, challenged: true })
+    expect(bulkErrorMessage(challenged, 'preview')).toBe(CHALLENGE_MESSAGE)
+    expect(bulkErrorMessage(challenged, 'apply')).toBe(CHALLENGE_MESSAGE)
+    // Answered at the edge: nothing written.
+    expect(wasRefused(challenged)).toBe(true)
+    // A 2xx whose body couldn't be read: the write may have landed.
+    const unreadable: unknown = await new Response('<!DOCTYPE html>').json().catch((e: unknown) => e)
+    expect(bulkErrorMessage(unreadable, 'apply')).toBe(BULK_COPY.applyError)
+    expect(wasRefused(unreadable)).toBe(false)
+    // WebKit's version of the same failure.
+    const webkit = new DOMException('The string did not match the expected pattern.', 'SyntaxError')
+    expect(bulkErrorMessage(webkit, 'apply')).toBe(BULK_COPY.applyError)
+    expect(wasRefused(webkit)).toBe(false)
   })
 })
 

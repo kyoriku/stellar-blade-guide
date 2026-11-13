@@ -3,8 +3,10 @@ import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { holdRoute } from '../helpers/route';
 import { expectBusyNow, expectBusyPattern, idleBox } from '../helpers/busy';
+import { EDGE } from '../helpers/edge';
 import { BULK_COPY } from '../../client/src/constants/bulkProgressCopy';
 import { cycleLabel } from '../../client/src/constants/cycleLabels';
+import { CHALLENGE_MESSAGE } from '../../client/src/constants/errorCopy';
 
 // Counts in the copy are formatted by the page; pin the locale the spec formats with.
 test.use({ locale: 'en-US' });
@@ -562,6 +564,23 @@ test.describe('bulk progress, signed in', () => {
     release();
     await expect(dialog.getByRole('alert')).toBeVisible();
     await expect(word).toBeEditable();
+  });
+
+  test("a challenged count says to reload, and a block keeps the card's own sentence", async ({ page }) => {
+    await gotoProgress(page);
+    await openManage(page);
+    await page.getByLabel(BULK_COPY.scopeLabel).selectOption('level:Eidos 7');
+    const clear = page.getByRole('button', { name: BULK_COPY.clearButton });
+    for (const [what, answer, shown] of [
+      ['a challenge', EDGE.challenge403, CHALLENGE_MESSAGE],
+      ["Cloudflare's block", EDGE.block403, BULK_COPY.previewError],
+    ] as const) {
+      await page.route('**/api/progress/bulk/preview', route => route.fulfill(answer()), { times: 1 });
+      await clear.click();
+      await expect(toast(page, shown), what).toBeVisible();
+      await expect(clear, what).toHaveAttribute('aria-busy', 'false');
+    }
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
   });
 });
 

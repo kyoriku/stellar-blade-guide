@@ -6,7 +6,9 @@ import {
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { holdRoute } from '../helpers/route';
 import { expectBusyNow, expectBusyPattern, idleBox } from '../helpers/busy';
+import { EDGE } from '../helpers/edge';
 import { ADMIN_COPY } from '../../client/src/constants/adminCopy';
+import { CHALLENGE_MESSAGE } from '../../client/src/constants/errorCopy';
 
 // The admin page (/admin): every account, newest first and searchable, with each
 // address masked until it is revealed on its own, and roles, deactivation and
@@ -668,6 +670,38 @@ test.describe('the actions', () => {
     await expect(announcement(page)).toHaveText('');
   });
 
+  test("Cloudflare's 403 on a reveal asks for nothing again, while the API's own still asks for the session", async ({ page }) => {
+    const target = await register(page, 'edge403');
+    const admin = await registerAdmin(page);
+    await gotoAdmin(page);
+    const asked: string[] = [];
+    page.on('request', r => {
+      const path = new URL(r.url()).pathname;
+      if (path === '/api/auth/refresh' || path === '/api/admin/users') asked.push(`${r.method()} ${path}`);
+    });
+    const reveal = revealButton(page, target);
+    // A block or a challenge says nothing about the admin's role: no session refresh, and
+    // no list reload, which the API's own 403 brings.
+    for (const [what, answer, shown] of [
+      ["Cloudflare's block", EDGE.block403, ADMIN_COPY.revealError],
+      ["Cloudflare's challenge", EDGE.challenge403, CHALLENGE_MESSAGE],
+    ] as const) {
+      await page.route(`**/api/admin/users/${target.id}/email`, route => route.fulfill(answer()), { times: 1 });
+      await reveal.click();
+      await expect(toast(page, shown), what).toBeVisible();
+      await expect(reveal, what).toHaveAttribute('aria-busy', 'false');
+    }
+    await settle(page);
+    expect(asked, 'no session refresh, no list reload').toEqual([]);
+
+    // A role lost since sign-in: the API's own 403 asks for the session again, which ends
+    // at the 404 page the route guard shows anyone but an admin.
+    expect(await setUserRole(admin.username, 'user')).toBe(true);
+    await reveal.click();
+    await expect(pageNotFound(page)).toBeVisible();
+    expect(asked).toContain('POST /api/auth/refresh');
+  });
+
   test('Reveal shows one whole address, answered no-store, until Hide, and each Reveal asks again', async ({ page }) => {
     const target = await register(page, 'reveal');
     const other = await register(page, 'revealother');
@@ -1170,6 +1204,22 @@ test.describe('the actions', () => {
     await expect(alert).toHaveCount(0);
     await expect(usersHeading(page)).toBeFocused();
     await expect(announcement(page)).toHaveText('');
+  });
+
+  test('a list the edge challenges says to reload, and Try again reloads the page', async ({ page }) => {
+    await register(page, 'challenged');
+    await registerAdmin(page);
+    let pass = false;
+    await page.route('**/api/admin/users', route => (pass ? route.fallback() : route.fulfill(EDGE.challenge403())));
+    await page.goto('/admin');
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText(CHALLENGE_MESSAGE);
+    // Only a page load passes a challenge, so Try again makes one.
+    pass = true;
+    await markNoReload(page);
+    await alert.getByRole('button', { name: ADMIN_COPY.tryAgain, exact: true }).click();
+    await expect(usersTable(page)).toBeVisible();
+    expect(await stillNoReload(page), 'a new document').toBe(false);
   });
 
   test('a search still runs after a refresh that failed for a moment dropped the session token', async ({ page }) => {
