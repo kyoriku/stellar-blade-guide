@@ -22,8 +22,10 @@ feed SHORT or MATCHING inputs, which resolve instantly even against the nested f
 
 The tests after those cover the filter's other checks and what each refusal answers.
 """
+import re
 import subprocess
 import sys
+from pathlib import Path
 from urllib.parse import unquote
 
 import pytest
@@ -36,6 +38,8 @@ from app.config.settings import settings
 from app.middleware.bot_filter import SPA_SAFE_PATH, add_bot_filter_middleware
 from app.middleware.security_headers import add_security_headers_middleware
 from app.seo_head import MARKER, register_spa
+
+APP_ROUTES = Path(__file__).resolve().parents[2] / "client" / "src" / "App.tsx"
 
 # The ReDoS shape: a long slash-free run, then a file extension, as in a hashed file name.
 REDOS_PATH = "/" + ("a" * 64) + ".webp"
@@ -171,6 +175,23 @@ async def test_the_admin_page_and_its_api_pass_through(bot_client):
     assert r.status_code == 200
     for path in ("/administrator", "/admin/controller"):
         assert (await bot_client.get(path)).status_code == 404, path
+
+
+async def test_every_route_the_client_defines_gets_through(bot_client):
+    # The filter runs in production only, so a route it refused (one starting /manage, /content,
+    # /files or /docs, say) would work in dev and the e2e suite and be a 404 on the site. Every
+    # <Route> tag, whatever its layout or attribute order, must give up its path.
+    text = APP_ROUTES.read_text(encoding="utf-8")
+    # Flat routes only: a nested route's path joins its parent's, which this doesn't do.
+    assert not re.search(r"</Route\s*>", text)
+    tags = re.split(r'<Route\b(?!s)', text)[1:]
+    routes = [m.group(1) for tag in tags if (m := re.search(r'\bpath="([^"]*)"', tag))]
+    assert len(routes) == len(tags) > 20
+    for route in routes:
+        # A parameter or a splat stands in as a plain word.
+        path = "/" + "/".join("x" if part.startswith(":") or part == "*" else part
+                              for part in route.strip("/").split("/"))
+        assert (await bot_client.get(path)).status_code == 200, route
 
 
 # ── A page address it refuses gets the client's 404 page ───────────────────────
