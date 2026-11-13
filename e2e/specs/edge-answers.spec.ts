@@ -5,14 +5,18 @@ import { EDGE, type Answer } from '../helpers/edge';
 import { CHALLENGE_MESSAGE, COMMENT_CHALLENGE_MESSAGE } from '../../client/src/constants/errorCopy';
 
 // Answers the API never sends, read for what they are (apiError in client/src/services/api.ts):
-// a Cloudflare challenge says to reload, and a body that isn't JSON gets the call's own sentence,
-// never the parser's, which quotes the body.
+// a Cloudflare challenge says to reload, and only Try Again reloads; a body that isn't JSON gets
+// the call's own sentence, never the parser's, which quotes the body; and a 404 the API didn't
+// send offers Try Again instead of calling the page gone.
 
 let fx: Fixtures;
 
 const LEVEL = '/levels/eidos-7';
 const SAVE_FAILED = "Couldn't save your progress. Please try again.";
 
+const cards = (page: Page) => page.locator('section[id] article[id]');
+const heading = (page: Page, name: string) => page.getByRole('heading', { level: 1, name, exact: true });
+const tryAgain = (page: Page) => page.getByRole('button', { name: 'Try Again' });
 // Results are toasts; the toast container is the page's only role="status".
 const toast = (page: Page, text: string) => page.getByRole('status').getByText(text, { exact: true });
 // The parser's own words, which quote the body.
@@ -20,9 +24,30 @@ const parserText = (page: Page) => page.getByText(/not valid JSON|Unexpected tok
 const toggle = (page: Page) =>
   page.locator(`article#collectible-${fx.collectibleId}`).getByRole('button', { name: /Mark as/ });
 
+// React runs what a press set off, its effects included, within two message turns.
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise(resolve => {
+    const ch = new MessageChannel();
+    let turns = 0;
+    ch.port1.onmessage = () => (++turns === 2 ? resolve(null) : ch.port2.postMessage(null));
+    ch.port2.postMessage(null);
+  }));
+}
+
 // A reload clears window properties; a refetch keeps them.
 const mark = (page: Page) => page.evaluate(() => { (window as unknown as { __kept: boolean }).__kept = true; });
 const sameDocument = (page: Page) => page.evaluate(() => '__kept' in window);
+
+// Answers the level page's call with `answer` until `pass` is set, then lets the server
+// answer it. `asked` counts the calls.
+async function stubLevel(page: Page, answer: () => Answer) {
+  const level = { pass: false, asked: 0 };
+  await page.route(`**/api${LEVEL}`, route => {
+    level.asked += 1;
+    return level.pass ? route.fallback() : route.fulfill(answer());
+  });
+  return level;
+}
 
 test.beforeAll(() => {
   fx = readFixtures();
@@ -30,6 +55,84 @@ test.beforeAll(() => {
 
 test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+});
+
+test.describe("a page whose data the API didn't answer", () => {
+  test('a challenge is the Security Check page, and only Try Again reloads', async ({ page }) => {
+    const level = await stubLevel(page, EDGE.challenge403);
+    let documents = 0;
+    page.on('request', r => {
+      if (r.isNavigationRequest() && r.frame() === page.mainFrame()) documents += 1;
+    });
+    await page.goto(LEVEL);
+    await expect(heading(page, 'Security Check')).toBeVisible();
+    await expect(page.getByText(CHALLENGE_MESSAGE, { exact: true })).toBeVisible();
+    // A reader isn't refused, so no "403".
+    await expect(page.getByText('403', { exact: true })).toHaveCount(0);
+    await expect(page).toHaveTitle('Security Check | Stellar Blade Guide');
+    // Never by itself: with only the API challenged, every reload would meet it again.
+    await settle(page);
+    expect({ documents, asked: level.asked }).toEqual({ documents: 1, asked: 1 });
+
+    // The challenge passed; only a page load would know.
+    level.pass = true;
+    await mark(page);
+    await tryAgain(page).click();
+    await expect(cards(page).first()).toBeVisible();
+    expect(await sameDocument(page), 'a new document').toBe(false);
+    expect(documents).toBe(2);
+  });
+
+  test("a body that isn't JSON shows the error page with Try Again, not the offline notice", async ({ page }) => {
+    // Retried as a network failure is, three times, 1, 2, and 4 seconds apart (main.tsx).
+    // The page's clock jumps those waits; it runs on its own otherwise.
+    await page.clock.install();
+    const level = await stubLevel(page, EDGE.html200);
+    await page.goto(LEVEL);
+    await expect.poll(async () => {
+      await page.clock.fastForward(1000);
+      return heading(page, 'Something Went Wrong').count();
+    }, { intervals: [100], timeout: 15_000 }).toBe(1);
+    await expect(heading(page, 'Connection problem')).toHaveCount(0);
+    await expect(parserText(page)).toHaveCount(0);
+    expect(level.asked, 'three retries, then it stops').toBe(4);
+
+    level.pass = true;
+    await tryAgain(page).click();
+    await expect(cards(page).first()).toBeVisible();
+  });
+
+  test('a call that never reaches the API is the offline page, with Try Again', async ({ page }) => {
+    await page.clock.install();
+    let asked = 0;
+    await page.route(`**/api${LEVEL}`, route => {
+      asked += 1;
+      return route.abort('failed');
+    });
+    await page.goto(LEVEL);
+    await expect.poll(async () => {
+      await page.clock.fastForward(1000);
+      return heading(page, 'Connection problem').count();
+    }, { intervals: [100], timeout: 15_000 }).toBe(1);
+    await expect(tryAgain(page)).toBeVisible();
+    expect(asked, 'three retries, then it stops').toBe(4);
+  });
+
+  test("a 404 the API didn't send offers Try Again, and the API's own 404 is still the 404 page", async ({ page }) => {
+    const level = await stubLevel(page, EDGE.html404);
+    await page.goto(LEVEL);
+    await expect(heading(page, 'Something Went Wrong')).toBeVisible();
+    await expect(heading(page, 'Page Not Found')).toHaveCount(0);
+    expect(level.asked, 'a 4xx, so not retried').toBe(1);
+    level.pass = true;
+    await tryAgain(page).click();
+    await expect(cards(page).first()).toBeVisible();
+
+    // A walkthrough no row holds: the API's own 404, and no Try Again.
+    await page.goto(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}-missing`);
+    await expect(heading(page, 'Page Not Found')).toBeVisible();
+    await expect(tryAgain(page)).toHaveCount(0);
+  });
 });
 
 test("a sign-in answered by a challenge, or by a page that isn't JSON, says so in the site's words", async ({ page }) => {
@@ -172,5 +275,12 @@ test.describe('signed in', () => {
     await page.route('**/api/progress', route => route.fulfill(EDGE.block403()), { times: 1 });
     await page.goto(LEVEL);
     await expect(toast(page, "Couldn't load your saved progress.")).toBeVisible();
+  });
+
+  test('a Progress page whose stats are challenged is the Security Check page', async ({ page }) => {
+    await page.route('**/api/users/me/stats', route => route.fulfill(EDGE.challenge403()));
+    await page.goto('/progress');
+    await expect(heading(page, 'Security Check')).toBeVisible();
+    await expect(page.getByText(CHALLENGE_MESSAGE, { exact: true })).toBeVisible();
   });
 });

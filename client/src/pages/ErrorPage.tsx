@@ -9,7 +9,7 @@ import { NETWORK_ERROR_MESSAGE } from '../services/api'
 const HOME_LINK_CLASSES = 'inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-transparent bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-sm transition-all duration-200';
 
 interface ErrorPageProps {
-  // null: nothing to number, a crash in the browser rather than an HTTP answer.
+  // null: nothing to number (a crash in the browser, or an answer that isn't the API's).
   code?: number | null;
   title?: string;
   message?: string;
