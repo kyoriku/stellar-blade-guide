@@ -175,6 +175,29 @@ test('a search answered by a challenge says to reload, in the bar and in the dra
     // useSearch doesn't retry.
     expect(asked, where).toBe(1);
   }
+  // The drawer's status line above the results says the search failed, not that it's searching.
+  const status = page.locator('#mobile-menu').getByText(/^(Searching…|Search failed)$/);
+  await expect(status).toHaveText('Search failed');
+});
+
+test("the drawer's status line says a search failed only while that search is the one shown", async ({ page }) => {
+  // The page's clock holds the next search's 300 ms wait.
+  await page.clock.install();
+  await page.route('**/api/search/**', route => route.fulfill(EDGE.challenge403()));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/levels');
+  await page.getByRole('button', { name: 'Toggle menu' }).click();
+  const input = page.getByPlaceholder('Search collectibles, walkthroughs, levels…');
+  const status = page.locator('#mobile-menu').getByText(/^(Searching…|Search failed)$/);
+  await input.fill('nano');
+  await page.clock.runFor(300);
+  await expect(page.getByText(CHALLENGE_MESSAGE, { exact: true })).toBeVisible();
+  await expect(status).toHaveText('Search failed');
+  // Typing on: the next search waits under the skeleton, and the failure was the last one's.
+  await page.clock.pauseAt(Date.now() + 5_000);
+  await input.pressSequentially('s');
+  await expect(page.locator('#mobile-menu .animate-pulse').first()).toBeVisible();
+  await expect(status).toHaveText('Searching…');
 });
 
 test.describe('signed in', () => {
