@@ -6,7 +6,7 @@ from fastapi.responses import Response
 from app.config.settings import settings
 from app.core.colours import RED, RESET
 from app.core.logging import LOG_HOST_MAX, LOG_PATH_MAX, sanitize_log_field
-from app.middleware.not_found import refusal
+from app.middleware.not_found import refusal, under_api
 
 logger = logging.getLogger("api")
 
@@ -125,12 +125,28 @@ BOT_SIGNATURES = (
 # by uvicorn's health-check.
 SPA_SAFE_PATH = re.compile(r'^/([a-z0-9\-]+(?:/[a-z0-9\-]+)*/?)?$')
 
+# Punctuation a link picks up from the sentence around it, as in "(see .../levels/eidos-7.)".
+TRAILING_MARKS = '.,)!'
+# A . or .. segment: path syntax a browser resolves before sending, so no browser sends one.
+DOT_SEGMENT = re.compile(r'/\.\.?(?=/|$)')
+
+
+def _ends_in_punctuation(path: str) -> bool:
+    """Whether the path as routed is a page path (ASCII, any case, never the API's) with a run of
+    TRAILING_MARKS on its end, slashes among them: what a redirect to the page would serve."""
+    trimmed = path.rstrip('/')
+    if not trimmed.endswith(tuple(TRAILING_MARKS)) or not trimmed.isascii() or DOT_SEGMENT.search(trimmed):
+        return False
+    core = trimmed.rstrip('/' + TRAILING_MARKS).lower() or '/'
+    return not under_api(core) and bool(SPA_SAFE_PATH.match(core))
+
 
 async def _reject(request: Request, reason: str) -> Response:
-    # reject_reason is printed by the logging middleware. Only /api/ paths are
-    # logged, so in practice this surfaces the referer rule; the rest are set too,
-    # so a blank reason never has to be read as "reached the router". A page request
-    # gets the client's 404 page, so someone who mistypes an address still sees the site.
+    # reject_reason is printed by the logging middleware. It logs /api/ paths (so the referer
+    # rule's reason shows) and, of page paths, only a GET or HEAD refused under
+    # trailing-punctuation; the rest are set too, so a blank reason never has to be read as
+    # "reached the router". A page request gets the client's 404 page, so someone who
+    # mistypes an address still sees the site.
     request.state.reject_reason = reason
     return await refusal(request, {"error": "Not Found"})
 
@@ -184,6 +200,11 @@ async def bot_filter_middleware(request: Request, call_next):
     # Allow normal-shaped URLs through to React Router
     if SPA_SAFE_PATH.match(normalized):
         return await call_next(request)
+
+    # A GET or HEAD of a page path a pasted link left punctuation on gets its own reason, which
+    # the access log writes, so it shows whether real visitors arrive that way.
+    if request.method in ("GET", "HEAD") and _ends_in_punctuation(request.scope["path"]):
+        return await _reject(request, "trailing-punctuation")
 
     # Everything else (file extensions, weird chars) = probe
     return await _reject(request, "path-shape")

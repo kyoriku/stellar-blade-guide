@@ -164,7 +164,7 @@ An outage degrades the service rather than breaking it:
 
 Starlette prepends middleware, so registration order in `app/main.py` is the reverse of execution order. The request-processing order below (outer to inner) is load-bearing and documented in the code:
 
-1. `logging`: times every request, including rejected ones, and sets `X-Process-Time`.
+1. `logging`: times every request, including rejected ones, sets `X-Process-Time`, and writes an access line for each `/api/` request and, outside `/api/`, only for a page path refused under `trailing-punctuation` (below); OPTIONS requests skip it entirely.
 2. `security_headers`: CSP, HSTS, nosniff, frame denial, and per-path Cache-Control policy.
 3. `TrustedHost`: validates the Host header against `ALLOWED_HOSTS`.
 4. `error_handler`: uniform JSON error responses; maps `RedisError` to 503 + Retry-After, and a request value the database refuses (most of SQLSTATE class 22) to a 400.
@@ -172,7 +172,7 @@ Starlette prepends middleware, so registration order in `app/main.py` is the rev
 6. `ETag`: conditional GET for JSON API responses (304 on `If-None-Match`).
 7. `origin_check`: production requests must carry the shared origin-secret header, compared in constant time; Railway's health check on `/api/health` is the one exception.
 8. `path_guard`: answers a path that isn't printable text (one holding a character Python's `str.isprintable()` refuses, such as a control or format character or a separator other than the space; read decoded, as the router reads it) with a 404, in DEBUG too: the client's 404 page for a page request, and the JSON 404 for the API or any other method. It sits before the bot filter, which reads a path Starlette rebuilds without tab, CR or LF.
-9. `bot_filter`: answers with a 404 an API request whose Referer is off the site (`/api/health` and `/api/auth/` excepted) and, outside `/api/`, `/assets/`, `/.well-known/`, and a few listed files, a bot-signature path or any path over 512 characters or not shaped like a site route (matched in linear time): the client's 404 page for a page request, and the JSON 404 for the API or any other method.
+9. `bot_filter`: answers with a 404 an API request whose Referer is off the site (`/api/health` and `/api/auth/` excepted) and, outside `/api/`, `/assets/`, `/.well-known/`, and a few listed files, a bot-signature path or any path over 512 characters or not shaped like a site route (matched in linear time): the client's 404 page for a page request, and the JSON 404 for the API or any other method. A GET or HEAD of a page path with a run of `.`, `,`, `)` or `!` after it (`/levels/eidos-7.`, punctuation a pasted link can pick up) is refused under its own reason, `trailing-punctuation`, so a search of the access log shows whether visitors arrive that way; `/levels/eidos_7.` stays `path-shape`, and a bot signature or an over-long path keeps its own reason.
 
 Rate limiting is not a middleware layer: the slowapi limiter is attached to the app and applied per route with decorators.
 

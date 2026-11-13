@@ -16,6 +16,10 @@ logger = logging.getLogger("api")
 
 LOG_TZ = ZoneInfo("America/New_York")
 
+# The access log covers /api/ paths, and page paths only when refused under one of these
+# reasons: a page path ending in punctuation a pasted link picked up (bot_filter).
+LOGGED_PAGE_REASONS = frozenset({"trailing-punctuation"})
+
 
 def parse_ua(ua: str) -> str:
     """Extract short browser identifier from User-Agent string."""
@@ -110,8 +114,9 @@ async def log_requests_middleware(request: Request, call_next):
 
     duration_ms = (time.perf_counter() - start_time) * 1000
 
-    # Only log API routes
-    if not request.url.path.startswith("/api/"):
+    # Only log API routes, and the page addresses refused under a reason worth searching for.
+    api = request.url.path.startswith("/api/")
+    if not api and getattr(request.state, "reject_reason", None) not in LOGGED_PAGE_REASONS:
         response.headers["X-Process-Time"] = str(duration_ms / 1000)
         return response
 
@@ -176,13 +181,13 @@ async def log_requests_middleware(request: Request, call_next):
     else:
         logger.info(log_line)
 
-    # Every request through Cloudflare carries CF-Connecting-IP, the limiter's key. One
-    # without a valid one means a Cloudflare setting stopped sending it (keys would fall
+    # Every request through Cloudflare carries CF-Connecting-IP, the limiter's key. An /api/
+    # request without a valid one means a Cloudflare setting stopped sending it (keys would fall
     # back to Railway's proxy address, one bucket shared by every visitor) or the origin
     # secret was used to skip Cloudflare.
     # Railway's health checks never carry one, and are exempt by the path as routed, as in
     # origin_check. A colo means it came through Cloudflare.
-    if not settings.DEBUG and request.scope["path"] != "/api/health" and cf_connecting_ip(request) is None:
+    if not settings.DEBUG and api and request.scope["path"] != "/api/health" and cf_connecting_ip(request) is None:
         logger.warning(
             f"{YELLOW}No valid CF-Connecting-IP{RESET}: {request.method} {path} "
             f"| client {client_ip} | colo {colo or '-'}"

@@ -24,6 +24,7 @@ The tests after those cover the filter's other checks and what each refusal answ
 """
 import subprocess
 import sys
+from urllib.parse import unquote
 
 import pytest
 import pytest_asyncio
@@ -240,3 +241,89 @@ async def test_with_no_built_client_it_answers_json(bot_client):
     # No register_spa, as in CI, which has no client/dist: there's no page to serve.
     r = await bot_client.get("/levels/eidos_7")
     assert (r.status_code, r.json()) == (404, {"error": "Not Found"})
+
+
+# ── A page path ending in punctuation is refused under its own reason ──────────
+
+@pytest_asyncio.fixture
+async def reason_of(monkeypatch):
+    # The reason the bot filter leaves for the logging middleware, recorded outside it. The scope
+    # is built by hand, decoded as uvicorn decodes it, since an HTTP client resolves dot segments.
+    monkeypatch.setattr(settings, "DEBUG", False)
+    seen = []
+    app = FastAPI()
+    add_bot_filter_middleware(app)
+
+    @app.middleware("http")
+    async def record(request, call_next):
+        response = await call_next(request)
+        seen.append(getattr(request.state, "reject_reason", None))
+        return response
+
+    async def reason(path, method="GET"):
+        seen.clear()
+        sent = []
+        scope = {
+            "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+            "method": method, "scheme": "http", "path": unquote(path), "raw_path": path.encode(),
+            "query_string": b"", "root_path": "", "headers": [(b"host", b"test")],
+            "client": ("127.0.0.1", 1234), "server": ("test", 80),
+        }
+
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(message):
+            sent.append(message)
+
+        await app(scope, receive, send)
+        return sent[0]["status"], seen[0]
+
+    return reason
+
+
+@pytest.mark.parametrize("path", [
+    "/levels/eidos-7.", "/levels/eidos-7)", "/levels/eidos-7,", "/levels/eidos-7!",
+    "/levels/eidos-7...", "/levels/eidos-7.)", "/levels/eidos-7/).",  # a run, slashes among it
+    "/levels/eidos-7%2E", "/levels/eidos-7%29",                        # escaped, read decoded
+    "/Levels/Eidos-7!", "/privacy.", "/)", "/levels/eidos-7./!",
+])
+async def test_a_page_path_ending_in_punctuation_gets_its_own_reason(reason_of, path):
+    assert await reason_of(path) == (404, "trailing-punctuation")
+
+
+@pytest.mark.parametrize("path, reason", [
+    ("/levels/eidos-7:", "path-shape"),               # not one of the marks
+    ("/levels/eidos-7;", "path-shape"),
+    ("/levels/eidos-7%E2%80%A6", "path-shape"),
+    ("/levels/eidos_7.", "path-shape"),               # no page path before the mark
+    ("/sitemap.xml.", "path-shape"),
+    ("/levels//eidos-7.", "path-shape"),
+    ("/levels/..", "path-shape"),                     # dot segments are path syntax, not debris
+    ("/levels/eidos-7/..", "path-shape"),
+    ("/levels/../!", "path-shape"),
+    ("/.", "path-shape"),
+    ("/levels/eidos-7.%3Fx", "path-shape"),           # judged on the path as routed, never cut short
+    ("/levels/eidos-7!%23x", "path-shape"),
+    ("/levels/eidos-7)%3F", "path-shape"),
+    ("/api.", "path-shape"),                          # never the API's path, in any case
+    ("/API!", "path-shape"),
+    ("/api...", "path-shape"),
+    ("/API/levels/eidos-7.", "path-shape"),
+    ("/Api/collectibles/cans!", "path-shape"),
+    ("/levels/eidos-%E2%84%AA.", "path-shape"),       # the Kelvin sign: ASCII page paths only
+    ("/wp-admin.", "bot-signature"),                  # the earlier checks come first
+    ("/" + "a/" * 300 + "a.", "path-length"),         # one-letter segments, so a regressed pattern can't hang
+])
+async def test_other_refusals_keep_their_reason(reason_of, path, reason):
+    assert await reason_of(path) == (404, reason)
+
+
+async def test_head_gets_the_reason_as_get_does(reason_of):
+    assert await reason_of("/levels/eidos-7.", "HEAD") == (404, "trailing-punctuation")
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+async def test_another_method_keeps_the_shape_reason(reason_of, method):
+    # Only a GET or HEAD is what a redirect to the page would serve.
+    assert await reason_of("/levels/eidos-7.", method) == (404, "path-shape")

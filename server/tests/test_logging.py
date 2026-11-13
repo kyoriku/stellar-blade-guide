@@ -263,6 +263,49 @@ async def test_bot_filter_referer_rejection_names_itself(api_log, monkeypatch):
     assert "(referer)" in line
 
 
+async def test_a_page_path_ending_in_punctuation_is_logged_under_its_reason(api_log, prod_mode, tmp_path):
+    # The one page refusal the access log writes, so a search shows whether visitors arrive that
+    # way. A built client is registered, so the answer is the 404 page production sends.
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text(f"<!doctype html><html><head>{MARKER}</head><body></body></html>",
+                                     encoding="utf-8")
+    app = FastAPI()
+    add_bot_filter_middleware(app)
+    add_logging_middleware(app)
+    register_spa(app, str(dist), reload_shell=False)
+    async with _client(app) as c:
+        r = await c.get("/levels/eidos-7).?from=chat", headers={"cf-connecting-ip": "203.0.113.7"})
+    assert r.status_code == 404
+    assert '<title data-seo="server">404 Page Not Found | Stellar Blade Guide</title>' in r.text
+    (line,) = _access_lines(api_log)
+    assert "| /levels/eidos-7)." in line
+    assert "(trailing-punctuation)" in line
+    assert "from=chat" not in line
+
+
+@pytest.mark.parametrize("path", ["/levels/eidos_7", "/index.html", "/wp-admin.", "/levels/eidos-7"])
+async def test_other_page_addresses_stay_unlogged(api_log, prod_mode, path):
+    async with _client(_app_with(add_bot_filter_middleware)) as c:
+        await c.get(path, headers={"cf-connecting-ip": "203.0.113.7"})
+    assert _access_lines(api_log) == []
+
+
+@pytest.mark.parametrize("method", ["POST", "PUT", "PATCH", "DELETE"])
+async def test_another_method_on_a_page_path_ending_in_punctuation_stays_unlogged(api_log, prod_mode, method):
+    async with _client(_app_with(add_bot_filter_middleware)) as c:
+        await c.request(method, "/levels/eidos-7.", headers={"cf-connecting-ip": "203.0.113.7"})
+    assert _access_lines(api_log) == []
+
+
+async def test_a_logged_page_line_raises_no_alarm(api_log, prod_mode):
+    # The CF-Connecting-IP alarm covers /api/ requests.
+    async with _client(_app_with(add_bot_filter_middleware)) as c:
+        await c.get("/levels/eidos-7.")
+    assert len(_access_lines(api_log)) == 1
+    assert _cf_warnings(api_log) == []
+
+
 async def test_spa_catch_all_unknown_api_path_names_itself(api_log, tmp_path):
     # The catch-all's unknown-/api/ branch is a route-level 404 that would
     # otherwise be indistinguishable from origin_check's in the log.
@@ -508,7 +551,7 @@ async def test_an_invalid_cf_connecting_ip_raises_the_alarm(api_log, prod_mode):
 @pytest.mark.parametrize("path, headers", [
     ("/api/levels/x", {"cf-connecting-ip": "203.0.113.7"}),
     ("/api/health", {}),  # Railway's health checks never carry the header
-    ("/levels/x", {}),  # only /api/ requests reach the access log
+    ("/levels/x", {}),  # a page path that reaches its route isn't logged, so it can't raise the alarm
 ])
 async def test_the_alarm_stays_quiet_when_nothing_is_wrong(api_log, prod_mode, path, headers):
     async with _client(_app_with()) as c:
