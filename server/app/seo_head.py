@@ -28,6 +28,7 @@ from urllib.parse import quote
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config.settings import settings
 from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
@@ -47,6 +48,19 @@ MISS_TTL = 60  # seconds; negative cache for successful lookups that find no row
 # A page path: ASCII letters, digits and hyphens between single slashes.
 _PAGE_PATH = re.compile(r'(?:/[A-Za-z0-9-]+)+')
 _CAPITAL = re.compile(r'[A-Z]')
+# Vite's entry script and stylesheet: index-<8-character hash>.js and .css.
+_ENTRY_FILE = re.compile(r'index-[A-Za-z0-9_-]{8}\.(js|css)')
+_SHELL_ENTRY = {
+    'js': re.compile(r'<script\b[^>]*\ssrc="/assets/(index-[A-Za-z0-9_-]{8}\.js)"'),
+    'css': re.compile(r'<link\b[^>]*\shref="/assets/(index-[A-Za-z0-9_-]{8}\.css)"'),
+}
+# An older build's page asks for its entry script: this reloads the page, which brings this build's.
+# A load that is itself a reload stops there, so a page that comes back old twice can't loop.
+RELOAD_SCRIPT = (
+    '// A page from an older build of this site: reloading it brings the current one.\n'
+    'var p = performance, n = p.getEntriesByType && p.getEntriesByType("navigation")[0];\n'
+    'if ((n ? n.type : p.navigation && p.navigation.type === 1 ? "reload" : "") !== "reload") location.reload();\n'
+)
 
 with open(SEO_JSON_PATH, encoding='utf-8') as _f:
     _SEO = json.load(_f)
@@ -284,6 +298,40 @@ def canonical_page_path(full_path: str, query: str = '') -> str | None:
     return f'{lowered}?{query}' if query else lowered
 
 
+def entry_files(shell_html: str, assets_dir: str) -> dict[str, str]:
+    """The entry script and stylesheet the shell names, each only while it is the build's one file of
+    its kind: with code splitting, a running page's missing chunk could have an entry file's name."""
+    names = os.listdir(assets_dir)
+    found = {}
+    for ext, pattern in _SHELL_ENTRY.items():
+        match = pattern.search(shell_html)
+        if match and [n for n in names if n.endswith(f'.{ext}')] == [match.group(1)]:
+            found[ext] = match.group(1)
+    return found
+
+
+class BuildAssets(StaticFiles):
+    """The build's files, plus answers for the entry files an older build's page asks for."""
+
+    def __init__(self, directory: str, entries):
+        super().__init__(directory=directory)
+        self.entries = entries
+
+    async def get_response(self, path: str, scope) -> Response:
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            match = _ENTRY_FILE.fullmatch(path) if exc.status_code == 404 else None
+            current = match and self.entries().get(match.group(1))
+            if not current or current == path:
+                raise
+            if match.group(1) == 'css':
+                # The page's own script may still run from a cache; this build's sheet styles it.
+                return RedirectResponse(f'/assets/{current}', status_code=302)
+            # security_headers keeps the no-store: a rollback makes the name this build's again.
+            return Response(RELOAD_SCRIPT, media_type='text/javascript', headers={'Cache-Control': 'no-store'})
+
+
 def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = None) -> None:
     """Serve the built SPA with per-route head tags spliced at the marker.
 
@@ -294,12 +342,26 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
     if reload_shell is None:
         reload_shell = settings.DEBUG
 
-    assets_dir = os.path.join(client_dist, 'assets')
-    if os.path.isdir(assets_dir):
-        app.mount('/assets', StaticFiles(directory=assets_dir), name='assets')
-
     real_dist = os.path.realpath(client_dist)
     index_path = os.path.join(client_dist, 'index.html')
+
+    assets_dir = os.path.join(client_dist, 'assets')
+    if os.path.isdir(assets_dir):
+        def read_entries():
+            try:
+                with open(index_path, encoding='utf-8') as f:
+                    return entry_files(f.read(), assets_dir)
+            except FileNotFoundError:
+                return {}
+
+        # Read like the shell: once at startup in production, per missing file in DEBUG.
+        at_start = None if reload_shell else read_entries()
+        if at_start is not None and len(at_start) < 2:
+            missing = ' or '.join(kind for ext, kind in (('js', 'script'), ('css', 'stylesheet')) if ext not in at_start)
+            logger.warning("%s names no lone entry %s in %s; an older build's page asking for one gets a 404",
+                           index_path, missing, assets_dir)
+        app.mount('/assets', BuildAssets(assets_dir, read_entries if reload_shell else lambda: at_start),
+                  name='assets')
 
     def read_shell():
         with open(index_path, encoding='utf-8') as f:
