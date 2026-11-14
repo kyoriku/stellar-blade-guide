@@ -29,6 +29,10 @@ jobs:
           # sha256 of the release's uv-x86_64-unknown-linux-gnu.tar.gz; bump with the version,
           # since setup-uv can't verify a uv newer than itself
           checksum: "23f02075b652bb1df64178cfae41b5caf160822e720e2663568f3f5d63bc52c0"
+      # test_seo_head.py runs seo_head's reload script in Node: the client job's Node 22
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
       # --locked like the Dockerfile, so a stale uv.lock fails here before it fails a deploy
       - run: uv sync --locked
       - run: uv run pytest
