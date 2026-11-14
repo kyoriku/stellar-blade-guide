@@ -177,6 +177,21 @@ async def test_a_root_file_spelled_with_escapes_keeps_six_hours(headers_client):
         assert await _cc(headers_client, path) == {"public": True, "max-age": 21600}, path
 
 
+# ── /assets: a year, the favicons 6 hours ────────────────────────────────────
+
+@pytest.mark.parametrize("path", ["/assets/favicon/favicon.svg", "/assets/favicon/apple-touch-icon.png"])
+async def test_the_favicon_paths_get_six_hours(headers_client, path):
+    # The icons the pages link: no hash in their names, like the files at the root.
+    cc = await _cc(headers_client, path)
+    assert cc == {"public": True, "max-age": 21600}
+
+
+@pytest.mark.parametrize("path", ["/assets/index-7yxlAZ1J.js", "/assets/favicon.svg", "/assets/favicons/favicon.svg"])
+async def test_other_assets_keep_a_year(headers_client, path):
+    cc = await _cc(headers_client, path)
+    assert cc == {"public": True, "max-age": 31536000, "immutable": True}
+
+
 # ── the drift guard ──────────────────────────────────────────────────────────
 
 @pytest_asyncio.fixture

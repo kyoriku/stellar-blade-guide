@@ -642,10 +642,28 @@ async def test_another_builds_stylesheet_goes_to_this_builds(tmp_path, monkeypat
         assert r.content == (b'' if method == 'HEAD' else f'/* {CSS} */'.encode())
 
 
-async def test_this_builds_files_stay_immutable(tmp_path, monkeypatch):
+async def test_this_builds_entry_files_stay_immutable(tmp_path, monkeypatch):
     async with production_app(make_build(tmp_path), monkeypatch) as c:
-        for name in (JS, CSS, 'favicon/favicon.svg'):
+        for name in (JS, CSS):
             assert answer(await c.get(f'/assets/{name}')) == (200, None, 'public, max-age=31536000, immutable'), name
+
+
+async def test_the_favicons_get_six_hours(tmp_path, monkeypatch):
+    # Their names carry no hash, so a year's immutable would keep a changed icon from returning visitors.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get('/assets/favicon/favicon.svg')
+        assert answer(r) == (200, None, 'public, max-age=21600')
+        assert answer(await c.head('/assets/favicon/favicon.svg')) == (200, None, 'public, max-age=21600')
+        again = await c.get('/assets/favicon/favicon.svg', headers={'If-None-Match': r.headers['etag']})
+        assert answer(again) == (304, None, 'public, max-age=21600')
+
+
+async def test_the_reload_script_keeps_its_no_store_under_the_favicons(tmp_path, monkeypatch):
+    # An escaped dot segment under /assets/favicon/ still reaches the reload script: its own no-store wins.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get(f'/assets/favicon/%2E%2E/{OLD_JS}')
+        assert answer(r) == (200, None, 'no-store')
+        assert r.text == seo_head.RELOAD_SCRIPT
 
 
 # A hash can hold - and _ anywhere, first and last included; the four scripts are older builds' real names.
