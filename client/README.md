@@ -82,7 +82,7 @@ src/
                      address's path is printable text, and the pure logic
                      behind the Progress page, its Manage progress card, the
                      tip that points to it, and the admin page
-public/              robots.txt, static sitemap.xml, favicons, README screenshots;
+public/              robots.txt, static sitemap.xml, favicons;
                      assets/images/ is gitignored local source imagery (production serves
                      from Cloudflare R2 at img.stellarbladeguide.com)
 ```
