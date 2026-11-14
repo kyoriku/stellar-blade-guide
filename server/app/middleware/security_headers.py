@@ -47,7 +47,9 @@ def add_security_headers_middleware(app: FastAPI):
         # Cache-Control — treat 304 like its 200 so conditional GETs stay cacheable
         if request.method in ("GET", "HEAD") and response.status_code in (200, 304):
             if request.url.path.startswith("/assets/"):
-                response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+                # seo_head's reload script, for an older build's page, sets its own no-store.
+                if response.headers.get("Cache-Control") != "no-store":
+                    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
             elif request.url.path in ("/robots.txt", "/sitemap.xml", "/ads.txt"):
                 # 6 hours
                 response.headers["Cache-Control"] = "public, max-age=21600"

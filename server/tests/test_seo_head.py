@@ -10,6 +10,8 @@ import html
 import json
 import logging
 import os
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -585,6 +587,229 @@ async def test_real_files_bypass_injection(client):
     r = await client.get('/robots.txt')
     assert r.status_code == 200
     assert r.text == 'User-agent: *\n'
+
+
+# --- files from another build --------------------------------------------------
+
+JS, CSS = 'index-7yxlAZ1J.js', 'index-CC38_f9S.css'  # a real build's names
+OLD_JS, OLD_CSS = 'index-CIMew_gD.js', 'index-CLa771vW.css'  # the build before it
+
+
+def make_build(tmp_path, *, js=JS, css=CSS, files=None):
+    """A dist whose shell names its files as Vite writes them."""
+    dist = make_dist(tmp_path)
+    tags = (f'  <script type="module" crossorigin src="/assets/{js}"></script>\n'
+            f'  <link rel="stylesheet" crossorigin href="/assets/{css}">\n')
+    (dist / 'index.html').write_text(SHELL.replace('</head>', tags + '</head>'), encoding='utf-8')
+    (dist / 'assets' / 'favicon').mkdir(parents=True)
+    (dist / 'assets' / 'favicon' / 'favicon.svg').write_text('<svg/>', encoding='utf-8')
+    for name in (js, css) if files is None else files:
+        (dist / 'assets' / name).write_text(f'/* {name} */', encoding='utf-8')
+    return dist
+
+
+def production_app(dist, monkeypatch, **kwargs):
+    # The bot filter runs in production and must let /assets/ through.
+    monkeypatch.setattr(seo_head.settings, 'DEBUG', False)
+    app = make_app(dist, **kwargs)
+    add_bot_filter_middleware(app)
+    add_security_headers_middleware(app)
+    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+
+def answer(r):
+    return r.status_code, r.headers.get('location'), r.headers.get('cache-control')
+
+
+@pytest.mark.parametrize('method', ['GET', 'HEAD'])
+async def test_another_builds_entry_script_gets_the_reload_script(tmp_path, monkeypatch, method):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.request(method, f'/assets/{OLD_JS}')
+        # no-store, kept through security_headers: a rollback makes the name this build's again.
+        assert answer(r) == (200, None, 'no-store')
+        assert r.headers['content-type'] == 'text/javascript; charset=utf-8'
+        if method == 'GET':
+            assert r.text == seo_head.RELOAD_SCRIPT
+
+
+@pytest.mark.parametrize('method', ['GET', 'HEAD'])
+async def test_another_builds_stylesheet_goes_to_this_builds(tmp_path, monkeypatch, method):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.request(method, f'/assets/{OLD_CSS}')
+        assert answer(r) == (302, f'/assets/{CSS}', 'no-store')
+        r = await c.request(method, r.headers['location'])
+        assert answer(r) == (200, None, 'public, max-age=31536000, immutable')
+        assert r.content == (b'' if method == 'HEAD' else f'/* {CSS} */'.encode())
+
+
+async def test_this_builds_files_stay_immutable(tmp_path, monkeypatch):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        for name in (JS, CSS, 'favicon/favicon.svg'):
+            assert answer(await c.get(f'/assets/{name}')) == (200, None, 'public, max-age=31536000, immutable'), name
+
+
+# A hash can hold - and _ anywhere, first and last included; the four scripts are older builds' real names.
+@pytest.mark.parametrize('name', ['index--9aK0GB5.js', 'index-B2104NP-.js', 'index-DJZjP-KI.js', 'index-0y4aRIg_.js',
+                                  'index-_x9-Kq2Z.css', 'index-Ab-cd_E-.css'])
+async def test_every_hash_spelling_gets_its_answer(tmp_path, monkeypatch, name):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        expected = (200, None, 'no-store') if name.endswith('.js') else (302, f'/assets/{CSS}', 'no-store')
+        assert answer(await c.get(f'/assets/{name}')) == expected
+
+
+async def test_a_query_string_changes_nothing(tmp_path, monkeypatch):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get(f'/assets/{OLD_JS}?v=1')
+        assert (answer(r), r.text) == ((200, None, 'no-store'), seo_head.RELOAD_SCRIPT)
+        assert answer(await c.get(f'/assets/{OLD_CSS}?v=1')) == (302, f'/assets/{CSS}', 'no-store')
+
+
+@pytest.mark.parametrize('name', [
+    'index.js', 'index-CIMew_g.js', 'index-CIMew_gD1.js', 'index-CIMew_g!.js',  # no hash, 7, 9, a stray mark
+    'index-CIMew_gD.mjs', 'index-CIMew_gD.js.map', 'index-CIMew_gD.JS', 'Index-CIMew_gD.js',
+    'index-CIMew_gD.png', 'vendor-CIMew_gD.js', 'favicon/index-CIMew_gD.js', 'favicon/missing.svg',
+])
+async def test_other_missing_files_keep_their_404(tmp_path, monkeypatch, name):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        assert answer(await c.get(f'/assets/{name}')) == (404, None, 'no-store')
+
+
+async def test_other_methods_keep_their_405(tmp_path, monkeypatch):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        for name in (OLD_JS, OLD_CSS):
+            assert answer(await c.post(f'/assets/{name}'))[:2] == (405, None), name
+
+
+async def test_nothing_answers_for_a_shell_naming_files_the_build_lacks(tmp_path, monkeypatch):
+    # Never the reload script or a redirect for the shell's own names, so a broken build can't loop.
+    async with production_app(make_build(tmp_path, files=()), monkeypatch) as c:
+        for name in (OLD_JS, OLD_CSS, JS, CSS):
+            assert answer(await c.get(f'/assets/{name}'))[:2] == (404, None), name
+
+
+async def test_this_builds_file_gone_after_startup_is_a_404(tmp_path, monkeypatch):
+    dist = make_build(tmp_path)
+    async with production_app(dist, monkeypatch) as c:
+        for name in (JS, CSS):
+            (dist / 'assets' / name).rename(dist / 'assets' / f'{name}.moved')
+            assert answer(await c.get(f'/assets/{name}'))[:2] == (404, None), name
+
+
+async def test_a_shell_naming_no_files_answers_nothing(tmp_path, monkeypatch):
+    dist = make_build(tmp_path)
+    (dist / 'index.html').write_text(SHELL, encoding='utf-8')
+    async with production_app(dist, monkeypatch) as c:
+        for name in (OLD_JS, OLD_CSS):
+            assert answer(await c.get(f'/assets/{name}'))[:2] == (404, None), name
+
+
+async def test_a_missing_shell_in_debug_answers_nothing(tmp_path, monkeypatch):
+    dist = make_build(tmp_path)
+    (dist / 'index.html').rename(dist / 'index.html.moved')
+    async with production_app(dist, monkeypatch, reload_shell=True) as c:
+        for name in (OLD_JS, OLD_CSS):
+            assert answer(await c.get(f'/assets/{name}'))[:2] == (404, None), name
+
+
+@pytest.mark.parametrize('chunk', ['index-B1x2Y3z4.js', 'vendor-B1x2Y3z4.js'])
+async def test_a_build_with_more_than_one_script_answers_no_script(tmp_path, monkeypatch, chunk):
+    # With code splitting a running page's missing chunk could have an entry file's name.
+    async with production_app(make_build(tmp_path, files=(JS, chunk, CSS)), monkeypatch) as c:
+        assert answer(await c.get(f'/assets/{OLD_JS}'))[:2] == (404, None)
+        assert answer(await c.get(f'/assets/{OLD_CSS}'))[:2] == (302, f'/assets/{CSS}')
+
+
+async def test_a_build_with_more_than_one_stylesheet_answers_no_stylesheet(tmp_path, monkeypatch):
+    async with production_app(make_build(tmp_path, files=(JS, CSS, 'Page-B1x2Y3z4.css')), monkeypatch) as c:
+        assert answer(await c.get(f'/assets/{OLD_CSS}'))[:2] == (404, None)
+        assert answer(await c.get(f'/assets/{OLD_JS}'))[:2] == (200, None)
+
+
+def test_a_build_with_nothing_to_answer_with_says_so_at_startup(tmp_path, caplog):
+    make_app(make_build(tmp_path))
+    assert not [r for r in caplog.records if r.name == 'app.seo_head']
+    for folder, files, kind in (('chunks', (JS, 'index-B1x2Y3z4.js', CSS), 'entry script in'),
+                                ('styles', (JS, CSS, 'Page-B1x2Y3z4.css'), 'entry stylesheet in')):
+        caplog.clear()
+        (tmp_path / folder).mkdir()
+        make_app(make_build(tmp_path / folder, files=files))
+        records = [r for r in caplog.records if r.name == 'app.seo_head']
+        assert [r.levelname for r in records] == ['WARNING'], folder
+        assert kind in records[0].getMessage() and 'older build' in records[0].getMessage(), folder
+
+
+async def test_production_reads_the_names_once_and_debug_per_request(tmp_path, monkeypatch):
+    next_js, next_css = 'index-Nx_9-q2W.js', 'index-Kp3_x-7Q.css'
+    for reload_shell in (False, True):
+        (tmp_path / str(reload_shell)).mkdir()
+        dist = make_build(tmp_path / str(reload_shell))
+        async with production_app(dist, monkeypatch, reload_shell=reload_shell) as c:
+            assert answer(await c.get(f'/assets/{OLD_CSS}'))[:2] == (302, f'/assets/{CSS}')
+            # A rebuild while the server runs, as in dev.
+            for old, new in ((JS, next_js), (CSS, next_css)):
+                (dist / 'assets' / old).rename(dist / 'assets' / new)
+            (dist / 'index.html').write_text((dist / 'index.html').read_text(encoding='utf-8')
+                                             .replace(JS, next_js).replace(CSS, next_css), encoding='utf-8')
+            expected = ((200, None), (302, f'/assets/{next_css}')) if reload_shell else ((404, None), (404, None))
+            assert (answer(await c.get(f'/assets/{JS}'))[:2],
+                    answer(await c.get(f'/assets/{CSS}'))[:2]) == expected, reload_shell
+
+
+# What the browser exposes on each kind of load, and how many reloads the script asks for there.
+RELOAD_CASES = {
+    'navigate': ({'entries': ['navigate']}, 1),
+    'back_forward': ({'entries': ['back_forward']}, 1),
+    'reload': ({'entries': ['reload']}, 0),
+    'prerender': ({'entries': ['prerender']}, 1),
+    'no entry, legacy navigate': ({'entries': [], 'legacy': 0}, 1),
+    'no entry, legacy reload': ({'entries': [], 'legacy': 1}, 0),
+    'no entry, legacy back_forward': ({'entries': [], 'legacy': 2}, 1),
+    'legacy only, navigate': ({'legacy': 0}, 1),
+    'legacy only, reload': ({'legacy': 1}, 0),
+    'legacy only, back_forward': ({'legacy': 2}, 1),
+    'neither': ({}, 1),
+    'no performance': (None, 'threw'),
+}
+
+# Runs the script once per case as an old page does, as a module (strict, no top-level return),
+# with stand-ins for performance and location.
+RELOAD_HARNESS = r'''
+const script = process.argv[1], results = {};
+for (const [name, perf] of Object.entries(JSON.parse(process.argv[2]))) {
+  let reloads = 0, performance;
+  if (perf) {
+    performance = {};
+    if (perf.entries) performance.getEntriesByType = (kind) => kind === 'navigation' ? perf.entries.map((type) => ({ type })) : [];
+    if ('legacy' in perf) performance.navigation = { type: perf.legacy };
+  }
+  Object.defineProperty(globalThis, 'performance', { value: performance, configurable: true, writable: true });
+  globalThis.location = { reload() { reloads += 1; } };
+  try {
+    // The case's name keeps each module's URL new, so no case reuses another's.
+    await import(`data:text/javascript,${encodeURIComponent(`${script}\n// ${name}`)}`);
+    results[name] = reloads;
+  } catch {
+    results[name] = 'threw';
+  }
+}
+console.log(JSON.stringify(results));
+'''
+
+
+@pytest.fixture(scope='module')
+def reload_results():
+    node = shutil.which('node')
+    assert node, 'these tests run the reload script in Node, which the dev container and CI have'
+    cases = json.dumps({name: perf for name, (perf, _) in RELOAD_CASES.items()})
+    run = subprocess.run([node, '--input-type=module', '-e', RELOAD_HARNESS, seo_head.RELOAD_SCRIPT, cases],
+                         capture_output=True, text=True, timeout=30, check=True)
+    return json.loads(run.stdout)
+
+
+@pytest.mark.parametrize('name', RELOAD_CASES)
+def test_the_reload_script_reloads_unless_the_load_is_a_reload(reload_results, name):
+    # A load that is itself a reload stops there, so a page that comes back old twice can't loop.
+    assert reload_results[name] == RELOAD_CASES[name][1]
 
 
 # --- data contract -----------------------------------------------------------
