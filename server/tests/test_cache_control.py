@@ -138,6 +138,27 @@ async def test_non_get_is_no_store(headers_client):
     assert cc == {"no-store": True}
 
 
+# ── files at the root: no hash in their names, so never a year ───────────────
+
+@pytest.mark.parametrize("path", [
+    "/robots.txt", "/sitemap.xml", "/ads.txt",
+    "/favicon.ico", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png",
+    "/apple-touch-icon-152x152.png", "/apple-touch-icon-152x152-precomposed.png",
+])
+async def test_root_files_and_icons_get_six_hours(headers_client, path):
+    cc = await _cc(headers_client, path)
+    assert cc == {"public": True, "max-age": 21600}
+
+
+@pytest.mark.parametrize("path", [
+    "/Favicon.ico", "/favicon.ico/", "/favicon.png", "/apple-touch-icon-152x120.png",
+    "/favicon.ico%3Fx",  # the icon rule reads the path as routed, never cut short
+])
+async def test_a_name_near_a_root_icon_stays_no_cache(headers_client, path):
+    cc = await _cc(headers_client, path)
+    assert cc == {"no-cache": True}
+
+
 # ── the drift guard ──────────────────────────────────────────────────────────
 
 @pytest_asyncio.fixture
