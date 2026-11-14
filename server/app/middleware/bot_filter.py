@@ -182,8 +182,9 @@ async def bot_filter_middleware(request: Request, call_next):
                                sanitize_log_field(original_path, LOG_PATH_MAX), RESET)
                 return await _reject(request, "referer")
 
-    # Allow API, static assets, and SEO files (case-sensitive)
-    if original_path.startswith(ALLOWED_PREFIXES) or original_path in ALLOWED_EXACT:
+    # Allow API, static assets, and SEO files (case-sensitive), the files on the path as routed:
+    # request.url.path ends at a decoded ? or #, so it would take /robots.txt%3Fx for /robots.txt.
+    if original_path.startswith(ALLOWED_PREFIXES) or request.scope["path"] in ALLOWED_EXACT:
         return await call_next(request)
 
     # The icons asked for by name at the root, judged on the path as routed (app/core/root_icons.py)

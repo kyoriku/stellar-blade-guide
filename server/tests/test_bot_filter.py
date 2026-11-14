@@ -167,6 +167,18 @@ async def test_root_seo_files_pass_through(bot_client):
         assert r.status_code == 200, f"{path} must not be treated as a bot probe"
 
 
+async def test_a_root_file_with_a_query_string_passes(bot_client):
+    # A query string is no part of the path as routed, which the files are judged on.
+    for path in ("/robots.txt?v=1", "/sitemap.xml?v=1", "/ads.txt?v=1"):
+        assert (await bot_client.get(path)).status_code == 200, path
+
+
+async def test_a_root_file_spelled_with_escapes_passes(bot_client):
+    # The path as routed is decoded, so /robots%2Etxt is /robots.txt and on the allowlist.
+    for path in ("/robots%2Etxt", "/sitemap%2Exml", "/ads%2Etxt"):
+        assert (await bot_client.get(path)).status_code == 200, path
+
+
 ROOT_ICONS = (
     "/favicon.ico", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png",
     "/apple-touch-icon-152x152.png", "/apple-touch-icon-152x152-precomposed.png", "/apple-touch-icon-120x120.png",
@@ -362,6 +374,12 @@ async def test_other_refusals_keep_their_reason(reason_of, path, reason):
     "/favicon.ico%3Fx", "/apple-touch-icon.png%23x",  # judged on the path as routed, never cut short
 ])
 async def test_a_name_near_a_root_icon_keeps_the_shape_reason(reason_of, path):
+    assert await reason_of(path) == (404, "path-shape")
+
+
+@pytest.mark.parametrize("path", ["/robots.txt%3Fx", "/sitemap.xml%23x", "/ads.txt%3Fx", "/robots.txt%3F"])
+async def test_a_root_file_with_an_escaped_mark_keeps_the_shape_reason(reason_of, path):
+    # Judged on the path as routed: request.url.path ends at the decoded ? or # and would let it through.
     assert await reason_of(path) == (404, "path-shape")
 
 

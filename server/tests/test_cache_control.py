@@ -159,6 +159,24 @@ async def test_a_name_near_a_root_icon_stays_no_cache(headers_client, path):
     assert cc == {"no-cache": True}
 
 
+@pytest.mark.parametrize("path", ["/robots.txt%3Fx", "/sitemap.xml%23x", "/ads.txt%3Fx"])
+async def test_a_root_file_with_an_escaped_mark_gets_no_cache(headers_client, path):
+    # The app answers these with a page, not the file: judged on the path as routed, never cut short.
+    cc = await _cc(headers_client, path)
+    assert cc == {"no-cache": True}
+
+
+async def test_a_root_file_with_a_query_string_keeps_six_hours(headers_client):
+    for path in ("/robots.txt?v=1", "/sitemap.xml?v=1", "/ads.txt?v=1"):
+        assert await _cc(headers_client, path) == {"public": True, "max-age": 21600}, path
+
+
+async def test_a_root_file_spelled_with_escapes_keeps_six_hours(headers_client):
+    # The path as routed is decoded, so /robots%2Etxt is the file.
+    for path in ("/robots%2Etxt", "/sitemap%2Exml", "/ads%2Etxt"):
+        assert await _cc(headers_client, path) == {"public": True, "max-age": 21600}, path
+
+
 # ── the drift guard ──────────────────────────────────────────────────────────
 
 @pytest_asyncio.fixture

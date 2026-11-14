@@ -51,8 +51,9 @@ def add_security_headers_middleware(app: FastAPI):
                 # seo_head's reload script, for an older build's page, sets its own no-store.
                 if response.headers.get("Cache-Control") != "no-store":
                     response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-            elif request.url.path in ("/robots.txt", "/sitemap.xml", "/ads.txt") or root_icon_file(request.scope["path"]):
+            elif request.scope["path"] in ("/robots.txt", "/sitemap.xml", "/ads.txt") or root_icon_file(request.scope["path"]):
                 # 6 hours, never a year: these names carry no hash.
+                # On the path as routed: request.url.path would take the page at /robots.txt%3Fx for the file.
                 response.headers["Cache-Control"] = "public, max-age=21600"
             elif request.url.path.startswith("/api/"):
                 # Hand-maintained security allowlist: any per-user/authenticated

@@ -909,6 +909,36 @@ async def test_other_methods_on_a_root_icon_get_a_405(tmp_path, monkeypatch):
             assert answer(await c.post(path)) == (405, None, 'no-store'), path
 
 
+# --- the root files, judged on the path as routed ------------------------------
+
+@pytest.mark.parametrize('path', ['/robots.txt%3Fx', '/sitemap.xml%23x', '/ads.txt%3Fx'])
+async def test_a_root_file_with_an_escaped_mark_gets_no_six_hours(tmp_path, monkeypatch, path):
+    # On request.url.path, cut short at the decoded ? or #, these would pass and get the file's 6 hours.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        # The bot filter's 404 page.
+        r = await c.get(path)
+        assert answer(r) == (404, None, 'no-store')
+        assert NOT_FOUND_TITLE in r.text
+        # DEBUG, with no bot filter: the shell and its 404 head, no-cache like any page.
+        monkeypatch.setattr(seo_head.settings, 'DEBUG', True)
+        r = await c.get(path)
+        assert answer(r) == (200, None, 'no-cache')
+        assert NOT_FOUND_TITLE in r.text
+
+
+async def test_a_root_file_with_a_query_string_keeps_its_file(tmp_path, monkeypatch):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get('/robots.txt?v=1')
+        assert (answer(r), r.text) == ((200, None, SIX_HOURS), 'User-agent: *\n')
+
+
+async def test_a_root_file_spelled_with_escapes_keeps_its_file(tmp_path, monkeypatch):
+    # The path as routed is decoded, so /robots%2Etxt is the file, with its 6 hours.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get('/robots%2Etxt')
+        assert (answer(r), r.text) == ((200, None, SIX_HOURS), 'User-agent: *\n')
+
+
 # --- data contract -----------------------------------------------------------
 
 def test_seo_json_sections_complete():
