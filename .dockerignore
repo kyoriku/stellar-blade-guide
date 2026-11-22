@@ -15,4 +15,5 @@ client/dist
 
 # Never copied into the image; ignoring them keeps the build context small
 .git
+.github
 .devcontainer

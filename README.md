@@ -6,7 +6,7 @@ An unofficial game guide for *Stellar Blade*: 1,086 collectibles across 21 types
 
 **Key Features:** Progress tracking (guest + authenticated) • Walkthroughs • Full-text search • User authentication • OAuth (Google/Discord) • Threaded comments • AI content moderation • Cloudflare edge and Redis caching • Cloudflare R2 image CDN • Image galleries • Responsive design
 
-![Home Page](client/public/assets/screenshots/homepage.png)
+![Home Page](.github/screenshots/homepage.png)
 
 <details>
 <summary><b>Built With</b></summary>
@@ -119,7 +119,7 @@ server/            FastAPI backend (see server/README.md)
 server/seed-data/  JSON source data for all guide content, in its own private repository (conventions documented in server/README.md)
 e2e/               Playwright end-to-end suite, run against the dev servers (npm run e2e:install once, then npm run e2e)
 .devcontainer/     Docker Compose dev environment (app container + PostgreSQL + Redis)
-.github/           CI workflow (pytest, ESLint, Vitest, type-checking build)
+.github/           CI workflow (pytest, ESLint, Vitest, type-checking build) and this README's screenshots
 Dockerfile         multi-stage production build (Node builds the SPA, Python serves it)
 package.json       root scripts that orchestrate client + server
 ```
@@ -132,9 +132,9 @@ Publishing a content change, from editing the JSON to a production content deplo
 <details>
 <summary><b>View More Screenshots</b></summary>
 
-![Walkthrough Page](client/public/assets/screenshots/walkthrough.png)
-![Level Page](client/public/assets/screenshots/level.png)
-![Collectibles Page](client/public/assets/screenshots/collectibles.png)
+![Walkthrough Page](.github/screenshots/walkthrough.png)
+![Level Page](.github/screenshots/level.png)
+![Collectibles Page](.github/screenshots/collectibles.png)
 
 </details>
 

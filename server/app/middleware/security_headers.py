@@ -1,6 +1,7 @@
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi import FastAPI, Request, Response
 from app.config.settings import settings
+from app.core.root_icons import root_icon_file
 
 
 def add_trusted_host_middleware(app: FastAPI):
@@ -49,9 +50,14 @@ def add_security_headers_middleware(app: FastAPI):
             if request.url.path.startswith("/assets/"):
                 # seo_head's reload script, for an older build's page, sets its own no-store.
                 if response.headers.get("Cache-Control") != "no-store":
-                    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-            elif request.url.path in ("/robots.txt", "/sitemap.xml", "/ads.txt"):
-                # 6 hours
+                    if request.url.path.startswith("/assets/favicon/"):
+                        # The icons the pages link have no hash in their names: 6 hours, as for the root icons, never a year.
+                        response.headers["Cache-Control"] = "public, max-age=21600"
+                    else:
+                        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            elif request.scope["path"] in ("/robots.txt", "/sitemap.xml", "/ads.txt") or root_icon_file(request.scope["path"]):
+                # 6 hours, never a year: these names carry no hash.
+                # On the path as routed: request.url.path would take the page at /robots.txt%3Fx for the file.
                 response.headers["Cache-Control"] = "public, max-age=21600"
             elif request.url.path.startswith("/api/"):
                 # Hand-maintained security allowlist: any per-user/authenticated

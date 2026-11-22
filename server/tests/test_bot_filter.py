@@ -20,8 +20,11 @@ pattern fails cleanly instead of hanging the suite. In-process tests below only 
 feed SHORT or MATCHING inputs, which resolve instantly even against the nested form
 (backtracking only explodes on long NON-matching runs).
 
-The tests after those cover the filter's other checks and what each refusal answers.
+The tests after those cover the filter's other checks and what each refusal answers; the
+last one imports app.main itself.
 """
+import json
+import os
 import re
 import subprocess
 import sys
@@ -34,7 +37,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from httpx import AsyncClient, ASGITransport
 
-from app.config.settings import settings
+from app.config.settings import REQUIRED_IN_PRODUCTION, settings
 from app.middleware.bot_filter import SPA_SAFE_PATH, add_bot_filter_middleware
 from app.middleware.security_headers import add_security_headers_middleware
 from app.seo_head import MARKER, register_spa
@@ -164,6 +167,30 @@ async def test_root_seo_files_pass_through(bot_client):
         assert r.status_code == 200, f"{path} must not be treated as a bot probe"
 
 
+async def test_a_root_file_with_a_query_string_passes(bot_client):
+    # A query string is no part of the path as routed, which the files are judged on.
+    for path in ("/robots.txt?v=1", "/sitemap.xml?v=1", "/ads.txt?v=1"):
+        assert (await bot_client.get(path)).status_code == 200, path
+
+
+async def test_a_root_file_spelled_with_escapes_passes(bot_client):
+    # The path as routed is decoded, so /robots%2Etxt is /robots.txt and on the allowlist.
+    for path in ("/robots%2Etxt", "/sitemap%2Exml", "/ads%2Etxt"):
+        assert (await bot_client.get(path)).status_code == 200, path
+
+
+ROOT_ICONS = (
+    "/favicon.ico", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png",
+    "/apple-touch-icon-152x152.png", "/apple-touch-icon-152x152-precomposed.png", "/apple-touch-icon-120x120.png",
+)
+
+
+@pytest.mark.parametrize("path", ROOT_ICONS)
+async def test_the_root_icons_pass_through(bot_client, path):
+    # Asked for by name (app/core/root_icons.py); the '.' fails SPA_SAFE_PATH, as for the files above.
+    assert (await bot_client.get(path)).status_code == 200
+
+
 async def test_the_admin_page_and_its_api_pass_through(bot_client):
     # /admin is a site route, and the bot signatures hold only longer CMS paths that start
     # with it (/administrator, /admin/controller). The API passes with no Referer and with
@@ -227,7 +254,8 @@ async def spa_client(tmp_path, monkeypatch):
     "/levels/%C3%A9idos-7",                                               # a letter outside ASCII
     "/Levels/Eidos_7",                                                    # refused before the 301
     "/levels/eidos_7%3Fx",                                                # an escaped ? still gets the page
-    "/index.html", "/favicon.ico",                                        # a file the site doesn't have
+    "/index.html", "/favicon.png",                                        # a file the site doesn't have
+    "/Favicon.ico", "/apple-touch-icon-152x120.png",                      # near an icon name the site has
     "/levels//eidos-7",                                                   # an empty segment
     "/wp-login.php", "/docs",                                             # a bot signature
     "/" + "a" * 600,                                                      # past the length guard
@@ -340,6 +368,21 @@ async def test_other_refusals_keep_their_reason(reason_of, path, reason):
     assert await reason_of(path) == (404, reason)
 
 
+@pytest.mark.parametrize("path", [
+    "/Favicon.ico", "/FAVICON.ICO", "/favicon.ico/", "/favicon.ico.", "/favicon.png", "/levels/favicon.ico",
+    "/apple-touch-icon-152x120.png", "/apple-touch-icon-152x152.PNG", "/apple-touch-icon-1000x1000.png",
+    "/favicon.ico%3Fx", "/apple-touch-icon.png%23x",  # judged on the path as routed, never cut short
+])
+async def test_a_name_near_a_root_icon_keeps_the_shape_reason(reason_of, path):
+    assert await reason_of(path) == (404, "path-shape")
+
+
+@pytest.mark.parametrize("path", ["/robots.txt%3Fx", "/sitemap.xml%23x", "/ads.txt%3Fx", "/robots.txt%3F"])
+async def test_a_root_file_with_an_escaped_mark_keeps_the_shape_reason(reason_of, path):
+    # Judged on the path as routed: request.url.path ends at the decoded ? or # and would let it through.
+    assert await reason_of(path) == (404, "path-shape")
+
+
 async def test_head_gets_the_reason_as_get_does(reason_of):
     assert await reason_of("/levels/eidos-7.", "HEAD") == (404, "trailing-punctuation")
 
@@ -348,3 +391,61 @@ async def test_head_gets_the_reason_as_get_does(reason_of):
 async def test_another_method_keeps_the_shape_reason(reason_of, method):
     # Only a GET or HEAD is what a redirect to the page would serve.
     assert await reason_of("/levels/eidos-7.", method) == (404, "path-shape")
+
+
+# ── app.main itself ────────────────────────────────────────────────────────────
+
+SERVER = Path(__file__).resolve().parents[1]
+DIST = SERVER.parent / "client" / "dist"
+
+ICON_PROBE = """
+import asyncio, json, httpx
+from app.main import app
+
+async def probe():
+    reasons = []
+
+    async def recording(scope, receive, send):
+        await app(scope, receive, send)
+        reasons.append((scope.get("state") or {}).get("reject_reason"))
+
+    transport = httpx.ASGITransport(app=recording)
+    async with httpx.AsyncClient(transport=transport, base_url="http://stellarbladeguide.com",
+                                 headers={"x-origin-secret": "probe-origin-secret"}) as client:
+        out = []
+        for path in ("/favicon.ico", "/apple-touch-icon-152x152.png", "/Favicon.ico"):
+            response = await client.get(path)
+            out.append([response.status_code, response.headers.get("content-type"),
+                        response.headers.get("cache-control")])
+    print("RESULT", json.dumps([out, reasons]))
+
+asyncio.run(probe())
+"""
+
+
+def test_the_app_lets_the_root_icons_past_every_layer(tmp_path):
+    # Production is the one place the bot filter runs: DEBUG turns it off in dev and in the e2e suite.
+    env = {
+        "PATH": os.environ["PATH"],
+        "PYTHONPATH": str(SERVER),
+        "PYTHON_DOTENV_DISABLED": "1",
+        # Production: ENVIRONMENT and DEBUG unset, stand-ins for what it requires. Nothing connects.
+        **{name: "stand-in" for name in REQUIRED_IN_PRODUCTION},
+        "ORIGIN_SECRET": "probe-origin-secret",
+        "DATABASE_URL": "postgresql+asyncpg://probe:probe@127.0.0.1:1/probe",
+        "REDIS_URL": "redis://127.0.0.1:1/0",
+    }
+    result = subprocess.run([sys.executable, "-c", ICON_PROBE], cwd=tmp_path, env=env,
+                            capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
+    (line,) = [out for out in result.stdout.splitlines() if out.startswith("RESULT ")]
+    (favicon, sized, capital), reasons = json.loads(line.removeprefix("RESULT "))
+    assert reasons == [None, None, "path-shape"]
+    # The build's file when it has one; a 404 with no built client (CI) or none in it, never the shell.
+    for answer, name, kind in ((favicon, "favicon.ico", "image/vnd.microsoft.icon"),
+                               (sized, "apple-touch-icon.png", "image/png")):
+        if (DIST / name).is_file():
+            assert answer == [200, kind, "public, max-age=21600"], name
+        else:
+            assert answer[0] == 404, name
+    assert (capital[0], capital[2]) == (404, "no-store")

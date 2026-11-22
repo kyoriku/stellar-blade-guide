@@ -642,10 +642,28 @@ async def test_another_builds_stylesheet_goes_to_this_builds(tmp_path, monkeypat
         assert r.content == (b'' if method == 'HEAD' else f'/* {CSS} */'.encode())
 
 
-async def test_this_builds_files_stay_immutable(tmp_path, monkeypatch):
+async def test_this_builds_entry_files_stay_immutable(tmp_path, monkeypatch):
     async with production_app(make_build(tmp_path), monkeypatch) as c:
-        for name in (JS, CSS, 'favicon/favicon.svg'):
+        for name in (JS, CSS):
             assert answer(await c.get(f'/assets/{name}')) == (200, None, 'public, max-age=31536000, immutable'), name
+
+
+async def test_the_favicons_get_six_hours(tmp_path, monkeypatch):
+    # Their names carry no hash, so a year's immutable would keep a changed icon from returning visitors.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get('/assets/favicon/favicon.svg')
+        assert answer(r) == (200, None, 'public, max-age=21600')
+        assert answer(await c.head('/assets/favicon/favicon.svg')) == (200, None, 'public, max-age=21600')
+        again = await c.get('/assets/favicon/favicon.svg', headers={'If-None-Match': r.headers['etag']})
+        assert answer(again) == (304, None, 'public, max-age=21600')
+
+
+async def test_the_reload_script_keeps_its_no_store_under_the_favicons(tmp_path, monkeypatch):
+    # An escaped dot segment under /assets/favicon/ still reaches the reload script: its own no-store wins.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get(f'/assets/favicon/%2E%2E/{OLD_JS}')
+        assert answer(r) == (200, None, 'no-store')
+        assert r.text == seo_head.RELOAD_SCRIPT
 
 
 # A hash can hold - and _ anywhere, first and last included; the four scripts are older builds' real names.
@@ -810,6 +828,133 @@ def reload_results():
 def test_the_reload_script_reloads_unless_the_load_is_a_reload(reload_results, name):
     # A load that is itself a reload stops there, so a page that comes back old twice can't loop.
     assert reload_results[name] == RELOAD_CASES[name][1]
+
+
+# --- icons asked for by name at the root ---------------------------------------
+
+# Placeholder bytes, a different one per file, so each answer names the file it came from.
+ICON_BYTES = {
+    'favicon.ico': b'\x00\x00\x01\x00 favicon placeholder',
+    'apple-touch-icon.png': b'\x89PNG\r\n\x1a\n touch icon placeholder',
+    'apple-touch-icon-precomposed.png': b'\x89PNG\r\n\x1a\n precomposed placeholder',
+}
+# Each name, the file that answers it, and that file's type.
+ICON_ANSWERS = [
+    ('/favicon.ico', 'favicon.ico', 'image/vnd.microsoft.icon'),
+    ('/apple-touch-icon.png', 'apple-touch-icon.png', 'image/png'),
+    ('/apple-touch-icon-precomposed.png', 'apple-touch-icon-precomposed.png', 'image/png'),
+    ('/apple-touch-icon-152x152.png', 'apple-touch-icon.png', 'image/png'),
+    ('/apple-touch-icon-152x152-precomposed.png', 'apple-touch-icon.png', 'image/png'),
+    ('/apple-touch-icon-120x120.png', 'apple-touch-icon.png', 'image/png'),
+    # An escaped spelling counts as the name it decodes to.
+    ('/favicon%2Eico', 'favicon.ico', 'image/vnd.microsoft.icon'),
+]
+SIX_HOURS = 'public, max-age=21600'
+NOT_FOUND_TITLE = f'<title data-seo="server">404 Page Not Found{SUFFIX}</title>'
+
+
+def make_icons(dist, names=tuple(ICON_BYTES)):
+    for name in names:
+        (dist / name).write_bytes(ICON_BYTES[name])
+    return dist
+
+
+@pytest.mark.parametrize('path, name, kind', ICON_ANSWERS)
+async def test_a_root_icon_gets_its_file(tmp_path, monkeypatch, path, name, kind):
+    async with production_app(make_icons(make_build(tmp_path)), monkeypatch) as c:
+        r = await c.get(path)
+        assert answer(r) == (200, None, SIX_HOURS)
+        assert (r.headers['content-type'], r.content) == (kind, ICON_BYTES[name])
+        head = await c.head(path)
+        assert answer(head) == (200, None, SIX_HOURS)
+        assert (head.content, head.headers['content-length'], head.headers['etag']) == (
+            b'', str(len(ICON_BYTES[name])), r.headers['etag'])
+
+
+@pytest.mark.parametrize('path', ['/favicon.ico', '/apple-touch-icon-152x152.png'])
+async def test_a_root_icon_answers_a_revalidation_with_a_304(tmp_path, monkeypatch, path):
+    async with production_app(make_icons(make_build(tmp_path)), monkeypatch) as c:
+        r = await c.get(path)
+        etag, modified = r.headers['etag'], r.headers['last-modified']
+        for headers in ({'If-None-Match': etag}, {'If-None-Match': f'W/{etag}'},
+                        {'If-None-Match': f'"other", {etag}'}, {'If-Modified-Since': modified}):
+            again = await c.get(path, headers=headers)
+            assert answer(again) == (304, None, SIX_HOURS), headers
+            assert (again.content, again.headers['etag']) == (b'', etag), headers
+        changed = await c.get(path, headers={'If-None-Match': '"other"'})
+        assert (answer(changed), changed.content) == ((200, None, SIX_HOURS), r.content)
+
+
+async def test_a_query_string_changes_nothing_for_a_root_icon(tmp_path, monkeypatch):
+    async with production_app(make_icons(make_build(tmp_path)), monkeypatch) as c:
+        r = await c.get('/apple-touch-icon-152x152.png?v=2')
+        assert (answer(r), r.content) == ((200, None, SIX_HOURS), ICON_BYTES['apple-touch-icon.png'])
+
+
+@pytest.mark.parametrize('debug', [False, True])
+async def test_a_build_without_an_icon_gives_the_404_page_never_the_shell(tmp_path, monkeypatch, debug):
+    # This build has the favicon alone, so the touch icon's names have no file to answer with.
+    async with production_app(make_icons(make_build(tmp_path), ['favicon.ico']), monkeypatch,
+                              reload_shell=debug) as c:
+        monkeypatch.setattr(seo_head.settings, 'DEBUG', debug)  # DEBUG turns the bot filter off
+        assert answer(await c.get('/favicon.ico')) == (200, None, SIX_HOURS)
+        for path in ('/apple-touch-icon.png', '/apple-touch-icon-precomposed.png', '/apple-touch-icon-152x152.png'):
+            r = await c.get(path)
+            assert (answer(r), r.headers['content-type']) == ((404, None, 'no-store'), 'text/html; charset=utf-8'), path
+            assert NOT_FOUND_TITLE in r.text, path
+            head = await c.head(path)
+            assert (answer(head), head.content) == ((404, None, 'no-store'), b''), path
+
+
+@pytest.mark.parametrize('path', ['/Favicon.ico', '/favicon.png', '/apple-touch-icon-152x120.png', '/favicon.ico%3Fx'])
+async def test_a_name_near_a_root_icon_keeps_its_answer(tmp_path, monkeypatch, path):
+    async with production_app(make_icons(make_build(tmp_path)), monkeypatch) as c:
+        # The bot filter's 404 page.
+        r = await c.get(path)
+        assert answer(r) == (404, None, 'no-store')
+        assert NOT_FOUND_TITLE in r.text
+        # DEBUG, with no bot filter: the shell and its 404 head, as for any unknown path there.
+        monkeypatch.setattr(seo_head.settings, 'DEBUG', True)
+        r = await c.get(path)
+        assert answer(r) == (200, None, 'no-cache')
+        assert NOT_FOUND_TITLE in r.text
+
+
+async def test_other_methods_on_a_root_icon_get_a_405(tmp_path, monkeypatch):
+    # As /robots.txt does: the catch-all takes GET and HEAD only.
+    async with production_app(make_icons(make_build(tmp_path)), monkeypatch) as c:
+        for path in ('/favicon.ico', '/apple-touch-icon-152x152.png', '/robots.txt'):
+            assert answer(await c.post(path)) == (405, None, 'no-store'), path
+
+
+# --- the root files, judged on the path as routed ------------------------------
+
+@pytest.mark.parametrize('path', ['/robots.txt%3Fx', '/sitemap.xml%23x', '/ads.txt%3Fx'])
+async def test_a_root_file_with_an_escaped_mark_gets_no_six_hours(tmp_path, monkeypatch, path):
+    # On request.url.path, cut short at the decoded ? or #, these would pass and get the file's 6 hours.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        # The bot filter's 404 page.
+        r = await c.get(path)
+        assert answer(r) == (404, None, 'no-store')
+        assert NOT_FOUND_TITLE in r.text
+        # DEBUG, with no bot filter: the shell and its 404 head, no-cache like any page.
+        monkeypatch.setattr(seo_head.settings, 'DEBUG', True)
+        r = await c.get(path)
+        assert answer(r) == (200, None, 'no-cache')
+        assert NOT_FOUND_TITLE in r.text
+
+
+async def test_a_root_file_with_a_query_string_keeps_its_file(tmp_path, monkeypatch):
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get('/robots.txt?v=1')
+        assert (answer(r), r.text) == ((200, None, SIX_HOURS), 'User-agent: *\n')
+
+
+async def test_a_root_file_spelled_with_escapes_keeps_its_file(tmp_path, monkeypatch):
+    # The path as routed is decoded, so /robots%2Etxt is the file, with its 6 hours.
+    async with production_app(make_build(tmp_path), monkeypatch) as c:
+        r = await c.get('/robots%2Etxt')
+        assert (answer(r), r.text) == ((200, None, SIX_HOURS), 'User-agent: *\n')
 
 
 # --- data contract -----------------------------------------------------------

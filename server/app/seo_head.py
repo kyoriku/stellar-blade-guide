@@ -35,6 +35,7 @@ from app.core.cache import get_cache, set_cache, walkthrough_cache_keys
 from app.core.http_cache import etag_matches
 from app.core.logging import LOG_PATH_MAX, exc_frames, exc_text, sanitize_log_field
 from app.core.navigation import canonical_url_type
+from app.core.root_icons import root_icon_file
 from app.core.segments import is_text_segment
 from app.db.database import AsyncSessionLocal
 from app.routers.walkthroughs import _normalize_type, _serialize_full, lookup_walkthrough
@@ -395,6 +396,9 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
     # and serve_spa as its own backstop.
     app.state.not_found_page = not_found_page
 
+    # The icons asked for by name at the root, with StaticFiles' 304s.
+    root_icons = StaticFiles(directory=client_dist)
+
     @app.api_route('/{full_path:path}', methods=["GET", "HEAD"], include_in_schema=False)
     async def serve_spa(request: Request, full_path: str):
         # Unknown API paths should 404 instead of falling through to the SPA.
@@ -416,6 +420,14 @@ def register_spa(app: FastAPI, client_dist: str, *, reload_shell: bool | None = 
         redirect = canonical_page_path(full_path, request.scope.get('query_string', b'').decode())
         if redirect:
             return RedirectResponse(redirect, status_code=301)
+        # An icon asked for by name at the root: its file, or the 180 px touch icon for a sized
+        # name. Never the shell: a build without the file gives the 404 page.
+        icon = root_icon_file(request.scope['path'])
+        if icon:
+            try:
+                return await root_icons.get_response(icon, request.scope)
+            except StarletteHTTPException:
+                return await not_found_page(request)
         file_path = os.path.realpath(os.path.join(client_dist, full_path))
         if file_path.startswith(real_dist + os.sep) and os.path.isfile(file_path):
             return FileResponse(file_path)

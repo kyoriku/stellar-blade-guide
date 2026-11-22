@@ -138,6 +138,60 @@ async def test_non_get_is_no_store(headers_client):
     assert cc == {"no-store": True}
 
 
+# ── files at the root: no hash in their names, so never a year ───────────────
+
+@pytest.mark.parametrize("path", [
+    "/robots.txt", "/sitemap.xml", "/ads.txt",
+    "/favicon.ico", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png",
+    "/apple-touch-icon-152x152.png", "/apple-touch-icon-152x152-precomposed.png",
+])
+async def test_root_files_and_icons_get_six_hours(headers_client, path):
+    cc = await _cc(headers_client, path)
+    assert cc == {"public": True, "max-age": 21600}
+
+
+@pytest.mark.parametrize("path", [
+    "/Favicon.ico", "/favicon.ico/", "/favicon.png", "/apple-touch-icon-152x120.png",
+    "/favicon.ico%3Fx",  # the icon rule reads the path as routed, never cut short
+])
+async def test_a_name_near_a_root_icon_stays_no_cache(headers_client, path):
+    cc = await _cc(headers_client, path)
+    assert cc == {"no-cache": True}
+
+
+@pytest.mark.parametrize("path", ["/robots.txt%3Fx", "/sitemap.xml%23x", "/ads.txt%3Fx"])
+async def test_a_root_file_with_an_escaped_mark_gets_no_cache(headers_client, path):
+    # The app answers these with a page, not the file: judged on the path as routed, never cut short.
+    cc = await _cc(headers_client, path)
+    assert cc == {"no-cache": True}
+
+
+async def test_a_root_file_with_a_query_string_keeps_six_hours(headers_client):
+    for path in ("/robots.txt?v=1", "/sitemap.xml?v=1", "/ads.txt?v=1"):
+        assert await _cc(headers_client, path) == {"public": True, "max-age": 21600}, path
+
+
+async def test_a_root_file_spelled_with_escapes_keeps_six_hours(headers_client):
+    # The path as routed is decoded, so /robots%2Etxt is the file.
+    for path in ("/robots%2Etxt", "/sitemap%2Exml", "/ads%2Etxt"):
+        assert await _cc(headers_client, path) == {"public": True, "max-age": 21600}, path
+
+
+# ── /assets: a year, the favicons 6 hours ────────────────────────────────────
+
+@pytest.mark.parametrize("path", ["/assets/favicon/favicon.svg", "/assets/favicon/apple-touch-icon.png"])
+async def test_the_favicon_paths_get_six_hours(headers_client, path):
+    # The icons the pages link: no hash in their names, like the files at the root.
+    cc = await _cc(headers_client, path)
+    assert cc == {"public": True, "max-age": 21600}
+
+
+@pytest.mark.parametrize("path", ["/assets/index-7yxlAZ1J.js", "/assets/favicon.svg", "/assets/favicons/favicon.svg"])
+async def test_other_assets_keep_a_year(headers_client, path):
+    cc = await _cc(headers_client, path)
+    assert cc == {"public": True, "max-age": 31536000, "immutable": True}
+
+
 # ── the drift guard ──────────────────────────────────────────────────────────
 
 @pytest_asyncio.fixture
