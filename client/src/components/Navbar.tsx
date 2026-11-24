@@ -17,6 +17,7 @@ import DesktopDropdown from './navbar/DesktopDropdown'
 import MobileAccordionSection from './navbar/MobileAccordionSection'
 import { ADMIN_COPY } from '../constants/adminCopy'
 import { useMenuButton } from '../hooks/useMenuButton'
+import { browserEntryKey } from '../utils/historyEntry'
 
 // The account menu's items: the current page's in cyan, the others lit on hover and
 // on keyboard focus alike, as in the admin page's row menus (the arrows move focus
@@ -29,14 +30,6 @@ const accountItemClass = (current: boolean) =>
     ? 'text-cyan-400 bg-cyan-500/10 border-cyan-400 font-medium focus-visible:text-white focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white'
     : 'text-gray-300 border-transparent hover:text-white hover:bg-gray-800/50 hover:border-gray-400 focus-visible:outline-hidden forced-colors:focus-visible:-outline-offset-4 focus-visible:text-white focus-visible:bg-gray-800/50 focus-visible:border-gray-400'
   }`
-
-// React Router's key for the history entry the browser is on: once a navigation starts, the
-// new page's, before the router has rendered it. Contents and Back to top rewrite the address
-// but keep the entry's state, so they leave it alone.
-function browserEntryKey(): string {
-  const key = (window.history.state as { key?: unknown } | null)?.key
-  return typeof key === 'string' ? key : 'default'
-}
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
