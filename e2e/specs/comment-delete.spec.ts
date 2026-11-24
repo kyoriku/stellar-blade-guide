@@ -6,16 +6,24 @@ import { expectBusyNow, expectBusyPattern, idleBox } from '../helpers/busy';
 
 // The comment delete dialog (components/ConfirmModal.tsx), on the bulk dialog's
 // pattern: a labelled modal that takes focus and gives it back, and refuses every
-// way out while the delete is out.
+// way out while the delete is out. Back, Forward and a typed fragment close it.
 
 let fx: Fixtures;
 
 const MESSAGE = 'This comment will be removed. This action cannot be undone.';
+// Short enough that the comment is out of view at the top of the fixture walkthrough.
+const SHORT_WINDOW = { width: 1280, height: 320 };
+// The first entry's offset, with the comment out of view. Not 0, where ScrollToTop puts a page
+// whose hash went: only the browser's restore lands here.
+const ENTRY_OFFSET = 40;
 
 test.describe('comment delete dialog', () => {
   let ip: string;
   let user: TestUser;
   let parentId: number;
+  let pagePath: string;
+  // A walkthrough section near the top of the page.
+  let sectionId: string;
 
   test.beforeAll(() => {
     fx = readFixtures();
@@ -27,8 +35,10 @@ test.describe('comment delete dialog', () => {
     user = makeUser(fx.token, 'cdel');
     await apiRegister(page, user, ip);
     ({ parentId } = await createCommentThread(fx, user.username));
+    pagePath = `/walkthroughs/e2e-fixture/${fx.walkthroughSlug}`;
+    sectionId = fx.titledSection.anchor;
     await page.addInitScript(() => localStorage.setItem('sb_has_session', '1'));
-    await page.goto(`/walkthroughs/e2e-fixture/${fx.walkthroughSlug}`);
+    await page.goto(pagePath);
   });
 
   test.afterEach(async ({ page }) => {
@@ -163,5 +173,109 @@ test.describe('comment delete dialog', () => {
     await page.clock.runFor(100);
     await expect(deletedBody(page)).toBeVisible();
     await expect(heading(page)).toBeFocused();
+  });
+
+  // Under a modal only Back, Forward and a typed fragment can navigate, and Back or Forward between
+  // two entries of one page keeps the comment, and so its dialog, mounted.
+  test.describe('across entries of one page', () => {
+    test.use({ viewport: SHORT_WINDOW });
+
+    const offset = (page: Page) => page.evaluate(() => window.scrollY);
+    const scrollLock = (page: Page) => page.evaluate(() => document.body.style.overflow);
+    // Nothing has focus, so a Delete button out of view can't take the reader's next Space.
+    const focusOnPage = (page: Page) => page.evaluate(() => document.activeElement === document.body);
+
+    // A second entry of the page, by a typed fragment, as the bell's link to a comment on the
+    // page already open makes one. The first entry waits at ENTRY_OFFSET.
+    async function secondEntry(page: Page): Promise<void> {
+      await page.evaluate(y => window.scrollTo(0, y), ENTRY_OFFSET);
+      await expect.poll(() => offset(page)).toBe(ENTRY_OFFSET);
+      await expect(deleteAction(page), 'the comment is out of view on the first entry').not.toBeInViewport();
+      await page.goto(`${pagePath}#comment-${parentId}`);
+      await expect(deleteAction(page)).toBeInViewport();
+    }
+
+    // Chromium's click focuses Delete, so the dialog's close gives focus back to it. Safari's click
+    // never focuses a button, so its close gives focus to nothing, and only the comment's own
+    // focus() can put it on Delete.
+    const clickAsSafari = (page: Page) => page.evaluate(() => {
+      const showModal = HTMLDialogElement.prototype.showModal;
+      HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+        (document.activeElement as HTMLElement | null)?.blur();
+        showModal.call(this);
+      };
+    });
+
+    // The lock goes in the same task as the dialog's onClosed, so focus has settled once it has.
+    async function closed(page: Page): Promise<void> {
+      await expect(dialog(page)).toHaveCount(0);
+      await expect.poll(() => scrollLock(page), 'the scroll lock let go').not.toBe('hidden');
+    }
+
+    for (const browser of ['Chromium', 'Safari'] as const) {
+      test(`Back to the page's other entry closes it, with focus on the page and the offset Back restored (click as in ${browser})`, async ({ page }) => {
+        if (browser === 'Safari') await clickAsSafari(page);
+        await secondEntry(page);
+        await deleteAction(page).click();
+        await expect(dialog(page)).toBeVisible();
+
+        await page.goBack();
+        await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
+        await closed(page);
+        expect(await focusOnPage(page), 'focus on the page, not on Delete out of view').toBe(true);
+        expect(await offset(page), 'the offset Back restored').toBe(ENTRY_OFFSET);
+      });
+
+      test(`Forward to the entry where the comment shows closes it, and gives focus back to Delete (click as in ${browser})`, async ({ page }) => {
+        if (browser === 'Safari') await clickAsSafari(page);
+        await secondEntry(page);
+        await page.goBack();
+        await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
+        await deleteAction(page).click();
+        await expect(dialog(page)).toBeVisible();
+
+        await page.goForward();
+        await expect.poll(() => page.evaluate(() => location.hash)).toBe(`#comment-${parentId}`);
+        await closed(page);
+        await expect(deleteAction(page)).toBeInViewport();
+        await expect(deleteAction(page)).toBeFocused();
+      });
+    }
+
+    test('a fragment typed with it open closes it, and leaves focus on the page at the fragment', async ({ page }) => {
+      await deleteAction(page).scrollIntoViewIfNeeded();
+      await deleteAction(page).click();
+      await expect(dialog(page)).toBeVisible();
+
+      await page.goto(`${pagePath}#${sectionId}`);
+      await expect.poll(() => page.evaluate(() => location.hash)).toBe(`#${sectionId}`);
+      await closed(page);
+      expect(await focusOnPage(page), 'focus on the page, not on Delete out of view').toBe(true);
+      await expect(page.locator(`[id="${sectionId}"]`)).toBeInViewport();
+      await expect(deleteAction(page)).not.toBeInViewport();
+    });
+
+    test('Back while the delete is out closes it, and the delete lands without moving the page', async ({ page }) => {
+      const del = await holdRoute(page, `**/api/comments/${parentId}`);
+      await secondEntry(page);
+      const actionIdle = await idleBox(deleteAction(page));
+      await deleteAction(page).click();
+      await dialog(page).getByRole('button', { name: 'Delete', exact: true }).click();
+      await del.seen;
+
+      await page.goBack();
+      await closed(page);
+      // The comment's own Delete shows it now, as after a forced close.
+      await expectBusyNow(deleteAction(page), actionIdle, {
+        name: 'Delete', busyText: 'Deleting…', live: own(page).locator('[aria-live="polite"]'),
+      });
+      expect(await focusOnPage(page), 'focus on the page, not on Delete out of view').toBe(true);
+      expect(await offset(page), 'the offset Back restored').toBe(ENTRY_OFFSET);
+
+      del.release();
+      await expect(deletedBody(page)).toBeVisible();
+      await expect(heading(page)).toBeFocused();
+      expect(await offset(page), 'the delete landed where the reader was').toBe(ENTRY_OFFSET);
+    });
   });
 });
