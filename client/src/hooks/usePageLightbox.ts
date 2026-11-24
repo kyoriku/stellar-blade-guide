@@ -1,6 +1,7 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { isValidGalleryImage } from '../utils/image'
+import { setTo } from '../utils/setTo'
 
 // The image lightbox on the level, type and walkthrough pages: one slide per
 // thumbnail the page shows, in page order, opened on the thumbnail clicked. A
@@ -105,7 +106,8 @@ export function walkthroughGalleries(
  */
 export function usePageLightbox<T>(rendered: T, galleriesOf: (rendered: T) => readonly GallerySource[]) {
   const page = useMemo(() => buildPageSlides(galleriesOf(rendered)), [rendered, galleriesOf]);
-  const [open, setOpen] = useState(false);
+  // A reducer, so a close always applies (utils/setTo.ts).
+  const [open, setOpen] = useReducer(setTo<boolean>, false);
   const [index, setIndex] = useState(0);
 
   // Closes at once, without the fade, on any navigation, which can bring other slides (Back
@@ -116,6 +118,15 @@ export function usePageLightbox<T>(rendered: T, galleriesOf: (rendered: T) => re
     setLocationFor(location);
     setOpen(false);
   }
+
+  // Back or Forward closes it too when the router hands back the location it already had: a
+  // Back that cancels a page still rendering, as the drawer's popstate listener does.
+  useEffect(() => {
+    if (!open) return;
+    const onPop = () => setOpen(false);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [open]);
 
   // The click handler reads the slides of the last commit, the thumbnails on
   // screen, through a ref set in a layout effect: never during render, which React
