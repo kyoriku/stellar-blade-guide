@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useReducer, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, NavigationType, useLocation, useNavigationType } from 'react-router-dom'
 import { useLevelCollectibles } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
@@ -31,6 +31,7 @@ import MobileBackToTop from '../components/MobileBackToTop'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
 import { DEFAULT_FILTERS, offeredFilters, readFilters, rememberFilters } from '../utils/entryFilters'
+import { setTo } from '../utils/setTo'
 
 // A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
 // 2px Highlight border, with a pixel less padding so its size doesn't change (the
@@ -46,8 +47,9 @@ function LevelDetailPage() {
 
   const { data: locationData = [], isLoading, isError, error, refetch } = useLevelCollectibles(levelName!, !!levelName && isLevelSlug(levelName));
 
-  // A reload, or Back or Forward from another page, opens on the filter this entry showed.
-  const [cycleFilter, setCycleFilter] = useState(() => readFilters(location.state, location.pathname).cycle);
+  // A reload, or Back or Forward from another page, opens on the filter this entry showed. A
+  // reducer, so a pill always applies (utils/setTo.ts).
+  const [cycleFilter, setCycleFilter] = useReducer(setTo<string>, location, l => readFilters(l.state, l.pathname).cycle);
   const { prefetchLevel } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
   // Manage progress names a level by its exact name, which only the nav holds.

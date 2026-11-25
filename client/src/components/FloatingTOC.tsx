@@ -1,6 +1,10 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
+import { useState, useReducer, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
+import { NavigationType, useLocation, useNavigationType } from 'react-router-dom'
 import { List, ChevronRight, X } from 'lucide-react'
 import { scrollToSection, type TocLink } from '../utils/toc'
+import { focusLeftNowhere } from '../utils/focus'
+import { browserEntryKey } from '../utils/historyEntry'
+import { setTo } from '../utils/setTo'
 import { useFloatingControl } from '../hooks/useFloatingControl'
 
 interface FloatingTOCProps {
@@ -18,7 +22,13 @@ interface FloatingTOCProps {
 // long pages. Nothing here writes scroll position, so opening the drawer cannot
 // move the page and there is nothing to restore.
 export default function FloatingTOC({ links, currentLevel, activeSection, onNavigate }: FloatingTOCProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  // A reducer, so a close always applies (utils/setTo.ts).
+  const [isOpen, setIsOpen] = useReducer(setTo<boolean>, false)
+  // False after a navigation, whose close skips the slide; open() turns it back on. Set only
+  // with isOpen, whose render applies it.
+  const [animates, setAnimates] = useState(true)
+  // The history entry the drawer was last opened on, by its key.
+  const [openedFor, setOpenedFor] = useState<string | null>(null)
 
   // Clears the footer's last line of this button — see Footer's pb-20 variant.
   useFloatingControl()
@@ -33,15 +43,42 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
 
   const buttonRef = useRef<HTMLButtonElement>(null)
   const drawerRef = useRef<HTMLDivElement>(null)
-  // Set when the drawer closes with focus inside it: inert would drop that focus to <body>.
+  // Set by close() with focus inside the drawer, and by noteFocus for a link removed while it
+  // held focus: inert, or the removal, would drop that focus to <body>.
   const returnFocus = useRef(false)
 
-  const open = useCallback(() => setIsOpen(true), [])
+  const open = useCallback(() => {
+    setOpenedFor(browserEntryKey())
+    setAnimates(true)
+    setIsOpen(true)
+  }, [])
 
   const close = useCallback(() => {
     returnFocus.current = drawerRef.current?.contains(document.activeElement) ?? false
     setIsOpen(false)
   }, [])
+
+  // On each drawer link: React runs the cleanup before removing the link, as NotificationBell's
+  // markAllRef relies on, so a link the other page's shorter list takes away notes its focus.
+  const noteFocus = useCallback((link: HTMLAnchorElement | null) => {
+    if (!link) return
+    return () => { if (document.activeElement === link) returnFocus.current = true }
+  }, [])
+
+  // Closes at once, without the slide, on any navigation, which can bring another page's
+  // links (Back or Forward keeps the page mounted). In state, not a ref, as the lightbox's is.
+  const location = useLocation()
+  const navigationType = useNavigationType()
+  const [locationFor, setLocationFor] = useState(location)
+  if (location !== locationFor) {
+    setLocationFor(location)
+    // A drawer opened while the page now committing still rendered stays open, as the Navbar's
+    // drawer does. A POP is never late, and two entries can share the key 'default'.
+    if (navigationType === NavigationType.Pop || openedFor !== location.key) {
+      setAnimates(false)
+      setIsOpen(false)
+    }
+  }
 
   // Close on Escape key
   useEffect(() => {
@@ -50,6 +87,15 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [isOpen, close])
+
+  // Back or Forward closes it too when the router hands back the location it already had: a
+  // Back that cancels a page still rendering, as the account menu's popstate listener does.
+  useEffect(() => {
+    if (!isOpen) return
+    const onPop = () => { setAnimates(false); setIsOpen(false) }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [isOpen])
 
   // Runs only once the drawer is closed, so nothing can throw the jump back.
   // useLayoutEffect rather than useEffect so the scroll lands before the
@@ -62,11 +108,13 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
     scrollToSection(href)
   }, [isOpen])
 
-  // The Contents button takes back the focus a closing drawer held.
+  // The Contents button takes back the focus a closing drawer held, unless focus has moved on.
+  // A link that stays still holds it here: no engine moves focus off an inert element this soon.
   useLayoutEffect(() => {
-    if (isOpen || !returnFocus.current) return
+    if (isOpen) return
+    const held = returnFocus.current || !!drawerRef.current?.contains(document.activeElement)
     returnFocus.current = false
-    buttonRef.current?.focus({ preventScroll: true })
+    if (held && focusLeftNowhere(drawerRef.current)) buttonRef.current?.focus({ preventScroll: true })
   }, [isOpen])
 
   // pan-y is only safe while the list has somewhere to scroll. overscroll-behavior
@@ -127,7 +175,7 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
       <div
         ref={drawerRef}
         inert={!isOpen}
-        className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-secondary border-t border-gray-700 rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'
+        className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-secondary border-t border-gray-700 rounded-t-2xl shadow-2xl ${animates ? 'transition-transform duration-300 ease-out' : 'transition-none'} ${isOpen ? 'translate-y-0' : 'translate-y-full'
           }`}
         // The shell and the backdrop together cover the viewport, so this is
         // the other half of holding the page still — a drag on the header must
@@ -170,6 +218,7 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
               return (
                 <li key={index} className="group">
                   <a
+                    ref={noteFocus}
                     href={linkGroup.mainLink}
                     onClick={(e) => { e.preventDefault(); handleLinkClick(linkGroup.mainLink) }}
                     className={`flex items-center gap-2 text-sm font-medium px-2 py-2 rounded-lg transition-all duration-200 ${isCurrentLevel
@@ -188,6 +237,7 @@ export default function FloatingTOC({ links, currentLevel, activeSection, onNavi
                         return (
                           <li key={subIndex}>
                             <a
+                              ref={noteFocus}
                               href={subLink.href}
                               aria-current={isActive ? 'location' : undefined}
                               onClick={(e) => { e.preventDefault(); handleLinkClick(subLink.href) }}

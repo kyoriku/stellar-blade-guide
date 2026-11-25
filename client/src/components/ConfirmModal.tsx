@@ -12,8 +12,8 @@ interface ConfirmModalProps {
   busyLabel?: string
   onConfirm: () => void
   onCancel: () => void
-  // The browser closed the dialog on its own, even mid-action: Chrome's close
-  // watcher can, on an Escape or back gesture after a refused one.
+  // Closed other than through onCancel, even mid-action: by Chrome's close watcher, on an
+  // Escape or back gesture after a refused one, or by Back, Forward or a typed fragment.
   onForcedClose: () => void
   // Runs once the dialog has closed and left the top layer, whatever closed it, so
   // focus can move. Where it goes depends on the outcome, which only the caller knows.
@@ -79,11 +79,19 @@ export default function ConfirmModal({
     }
   }, [])
 
+  // Back, Forward and a typed fragment close it, as the browser's forced close does: each
+  // fires popstate, and nothing behind a modal can be pressed to navigate.
+  useEffect(() => {
+    const close = () => ref.current?.close()
+    window.addEventListener('popstate', close)
+    return () => window.removeEventListener('popstate', close)
+  }, [])
+
   const canConfirm = !isLoading && (!confirmText || confirmTextMatches(typed, confirmText.expected))
 
   const requestClose = () => {
-    // Not mid-action: a closed dialog would hide a change still landing. Only the
-    // browser's own forced close gets past this, and the caller then shows it.
+    // Not mid-action: a closed dialog would hide a change still landing. Only a forced
+    // close, the browser's or a navigation's, gets past this, and the caller then shows it.
     if (!isLoading) onCancel()
   }
 

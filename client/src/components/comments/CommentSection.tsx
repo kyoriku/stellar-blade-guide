@@ -11,6 +11,11 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ contentType, contentId }: CommentSectionProps) {
+  // Keyed on its thread, so a draft or an open dialog never carries over to another page.
+  return <CommentThread key={`${contentType}:${contentId}`} contentType={contentType} contentId={contentId} />
+}
+
+function CommentThread({ contentType, contentId }: CommentSectionProps) {
   const {
     data: comments = [],
     isLoading,

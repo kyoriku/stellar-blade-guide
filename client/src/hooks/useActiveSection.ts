@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import type { DependencyList, Dispatch, SetStateAction } from 'react';
+import { useEffect, useReducer } from 'react';
+import type { DependencyList } from 'react';
+import { setTo } from '../utils/setTo';
 
 // Active band: 80px from the top (clears the 65px navbar) to the top fifth of
 // the viewport. Jumps land at 81/97px (scroll-anchor), just inside it.
@@ -37,8 +38,10 @@ function idAtBand(elements: Element[], lowerEdge: number): string {
 export function useActiveSection(
   selectors: string | readonly string[],
   deps: DependencyList
-): [string, Dispatch<SetStateAction<string>>] {
-  const [activeSection, setActiveSection] = useState<string>('');
+): [string, (id: string) => void] {
+  // A reducer, so a clear always applies (utils/setTo.ts): the level and type pages also clear
+  // it during render on a navigation.
+  const [activeSection, setActiveSection] = useReducer(setTo<string>, '');
 
   useEffect(() => {
     const list = typeof selectors === 'string' ? [selectors] : selectors;

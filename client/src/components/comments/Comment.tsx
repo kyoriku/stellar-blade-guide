@@ -64,7 +64,7 @@ export default function Comment({
   const deleteModalOpen = useRef(false)
   // Where focus goes after the dialog follows the outcome. A cancel or a failed
   // delete gives it back to the Delete button, unless the server refused it
-  // (below). A successful delete takes that button with the comment's actions,
+  // (below) or the button is off screen. A successful delete takes that button with the comment's actions,
   // so the heading gets it once both the dialog's close and the list's update
   // have landed: the list updates on TanStack's timer, in no fixed order with
   // the close.
@@ -193,7 +193,14 @@ export default function Comment({
     // The refusal showed the Delete button is out of date: its refresh or reload
     // normally takes it away, before or after this close.
     else if (refused.current) headingRef.current?.focus({ preventScroll: true })
-    else if (deleteButtonRef.current) deleteButtonRef.current.focus()
+    else if (deleteButtonRef.current) {
+      const button = deleteButtonRef.current
+      const box = button.getBoundingClientRect()
+      // Back, Forward or a typed fragment can leave it off screen, where it would take the
+      // reader's next Space: focus stays on the page then, even where the dialog's close gave it.
+      if (box.bottom > 0 && box.top < window.innerHeight) button.focus()
+      else if (document.activeElement === button) button.blur()
+    }
     // Gone for good already: the session ended, or a refresh landed after a reopen.
     else headingRef.current?.focus({ preventScroll: true })
   }

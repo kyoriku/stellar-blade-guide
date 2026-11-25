@@ -270,4 +270,119 @@ test.describe('filter memory', () => {
     await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
     await expect(page.locator('.yarl__portal')).toHaveCount(0);
   });
+
+  // A page opening another level or type sets these filters, and clears the Contents light,
+  // during render. A Back that cancels that page while it still renders leaves the screen as it
+  // was, but React keeps the value that render set and takes a control setting the same value as
+  // no change: each control must still apply.
+  test.describe('after a Back cancels a page still rendering', () => {
+    const heading = (page: Page) => page.locator('main h1');
+    const lit = (page: Page) => page.locator('aside [aria-current="location"]');
+
+    // A link to `href` in the navbar's `menu`, which stays on screen: at the top of a page its
+    // controls are in view too, so nothing scrolls between the Back and the next press (a scroll
+    // that moves the light renders the page, after which even useState applies the press).
+    // Opened by Enter: a click's hover opens it and the click shuts it.
+    async function menuLink(page: Page, menu: string, href: string) {
+      const arrow = page.getByRole('button', { name: `Toggle ${menu} menu`, exact: true });
+      await arrow.press('Enter');
+      await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+      return page.locator(`[id="${await arrow.getAttribute('aria-controls')}"] a[href="${href}"]`);
+    }
+
+    // `start` reached by Back from `other`, so other's data is cached and it renders in full,
+    // across React's yields.
+    async function startByBack(page: Page, start: string, menu: string, other: string, name: string) {
+      await page.goto(start);
+      await page.locator(CARDS).first().waitFor();
+      await (await menuLink(page, menu, other)).click();
+      await expect(heading(page)).not.toHaveText(name);
+      await page.locator(CARDS).first().waitFor();
+      await page.goBack();
+      await expect(heading(page)).toHaveText(name);
+      await page.locator(CARDS).first().waitFor();
+    }
+
+    // Follows the menu's link to `other` and goes Back as React renders that page: StructuredData
+    // turns its crumbs into JSON after the page has run its navigation block.
+    async function cancel(page: Page, menu: string, other: string, name: string) {
+      await page.evaluate((path) => {
+        const w = window as unknown as { popped: boolean; headings: string[] };
+        w.popped = false;
+        w.headings = [document.querySelector('main h1')?.textContent ?? ''];
+        addEventListener('popstate', () => { w.popped = true; }, { once: true });
+        new MutationObserver(() => {
+          const shown = document.querySelector('main h1')?.textContent ?? '';
+          if (w.headings.at(-1) !== shown) w.headings.push(shown);
+        }).observe(document.body, { subtree: true, childList: true, characterData: true });
+        const stringify = JSON.stringify;
+        JSON.stringify = function (this: JSON, ...args: Parameters<typeof JSON.stringify>) {
+          const [value] = args;
+          if (Array.isArray(value) && value.some(crumb => (crumb as { path?: string } | null)?.path === path)) {
+            JSON.stringify = stringify;
+            setTimeout(() => history.back(), 0);
+          }
+          return stringify.apply(this, args);
+        } as typeof JSON.stringify;
+      }, other);
+      await (await menuLink(page, menu, other)).click();
+      await expect.poll(() => page.evaluate(() => (window as unknown as { popped: boolean }).popped), 'Back landed').toBe(true);
+      await expect(heading(page)).toHaveText(name);
+      expect(await page.evaluate(() => (window as unknown as { headings: string[] }).headings), `${other} never showed`)
+        .toEqual([name]);
+    }
+
+    test('a level keeps its cycle, and All still applies', async ({ page }) => {
+      await startByBack(page, '/levels/eidos-7', 'levels', '/levels/xion', 'Eidos 7');
+      await pill(page, 'NG+').click();
+      await pressed(page, 'NG+');
+      await cancel(page, 'levels', '/levels/xion', 'Eidos 7');
+      await pressed(page, 'NG+');
+      await pill(page, 'All').click();
+      await pressed(page, 'All');
+    });
+
+    test('a type page keeps its cycle, and All still applies', async ({ page }) => {
+      await startByBack(page, '/cosmetics/glasses', 'cosmetics', TYPE, 'Glasses');
+      await pill(page, 'NG+').click();
+      await pressed(page, 'NG+');
+      await cancel(page, 'cosmetics', TYPE, 'Glasses');
+      await pressed(page, 'NG+');
+      await pill(page, 'All').click();
+      await pressed(page, 'All');
+    });
+
+    test('a type page keeps A–Z, and the toggle still turns it off', async ({ page }) => {
+      await startByBack(page, '/cosmetics/glasses', 'cosmetics', TYPE, 'Glasses');
+      await azToggle(page).click();
+      await expect(azToggle(page)).toHaveAttribute('aria-pressed', 'true');
+      await cancel(page, 'cosmetics', TYPE, 'Glasses');
+      await expect(azToggle(page)).toHaveAttribute('aria-pressed', 'true');
+      await azToggle(page).click();
+      await expect(azToggle(page)).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    test('Documents keeps its subtype, and All still applies', async ({ page }) => {
+      await startByBack(page, DOCUMENTS, 'collectibles', '/collectibles/memorysticks', 'Documents');
+      const select = page.locator('select[title$="of a specific subtype"]');
+      const subtype = (await select.locator('option:not([value="All"])').first().getAttribute('value'))!;
+      await select.selectOption(subtype);
+      await expect(select).toHaveValue(subtype);
+      await cancel(page, 'collectibles', '/collectibles/memorysticks', 'Documents');
+      await expect(select).toHaveValue(subtype);
+      await select.selectOption('All');
+      await expect(select).toHaveValue('All');
+    });
+
+    test('Back to top still clears the Contents light', async ({ page }) => {
+      await startByBack(page, '/levels/eidos-7', 'levels', '/levels/xion', 'Eidos 7');
+      await page.locator('section[id]').nth(2).scrollIntoViewIfNeeded();
+      await expect(lit(page), 'a section lit').toHaveCount(1);
+      await cancel(page, 'levels', '/levels/xion', 'Eidos 7');
+      await expect(lit(page), 'still lit').toHaveCount(1);
+      await page.getByRole('button', { name: 'Back to top', exact: true }).click();
+      await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+      await expect(lit(page)).toHaveCount(0);
+    });
+  });
 });
