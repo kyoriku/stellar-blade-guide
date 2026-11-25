@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useReducer, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, NavigationType, useLocation, useNavigationType, type Location } from 'react-router-dom'
 import { useCollectiblesByType } from '../hooks/useCollectibles'
 import QueryError from '../components/QueryError'
@@ -32,7 +32,8 @@ import { TYPE_DESCRIPTIONS } from '../constants/typeDescriptions'
 import { TYPE_SEO, isTypeSlug } from '../constants/typeSeo'
 import { descriptionPlainText } from '../utils/descriptionText'
 import { cycleLabel } from '../constants/cycleLabels'
-import { offeredFilters, readFilters, rememberFilters, revealFilters, type PageFilters } from '../utils/entryFilters'
+import { offeredFilters, readFilters, rememberFilters, revealFilters, type PageFilters, type SortMode } from '../utils/entryFilters'
+import { setTo } from '../utils/setTo'
 import { REVEAL_COPY } from '../constants/revealCopy'
 
 // A selected pill or an on toggle. Forced colours replace its tint, so there it gets a
@@ -69,9 +70,10 @@ function CollectibleTypeDetailPage({ category }: { category: 'collectibles' | 'u
   const { data: levelData = [], isLoading, isError, error, refetch } = useCollectiblesByType(typeName!, category, isValidType);
 
   // A reload, or Back or Forward from another page, opens on the filters this entry showed.
-  const [cycleFilter, setCycleFilter] = useState(() => readFilters(location.state, location.pathname).cycle);
-  const [subtypeFilter, setSubtypeFilter] = useState(() => readFilters(location.state, location.pathname).subtype);
-  const [sortMode, setSortMode] = useState(() => readFilters(location.state, location.pathname).sort);
+  // Reducers, so a control always applies (utils/setTo.ts).
+  const [cycleFilter, setCycleFilter] = useReducer(setTo<string>, location, l => readFilters(l.state, l.pathname).cycle);
+  const [subtypeFilter, setSubtypeFilter] = useReducer(setTo<string>, location, l => readFilters(l.state, l.pathname).subtype);
+  const [sortMode, setSortMode] = useReducer(setTo<SortMode>, location, l => readFilters(l.state, l.pathname).sort);
   const { prefetchCollectiblesByType } = usePrefetch()
   const { isCompleted, isToggling, toggle, completedIds } = useProgress()
   // Manage progress names a type by its slug, which this page's URL already is.
