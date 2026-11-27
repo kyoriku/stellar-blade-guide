@@ -5,6 +5,7 @@ import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
 import { API_BASE_URL, apiError, errorMessage } from '../services/api'
 import type { ProgressWriteResponse } from '../services/api'
+import { STORAGE_COPY } from '../constants/storageCopy'
 import { createGuestMemory, dropGuestIds, guestIds as readGuestIds, markGuest } from '../utils/guestProgress'
 
 const PROGRESS_WRITE_KEY = ['progress', 'write']
@@ -214,10 +215,12 @@ export function useProgress() {
       // and writing the old snapshot back would let the next sync re-add progress the
       // account has since cleared.
       const found = !shownGuestIds.current.has(collectibleId)
-      const { ids } = markGuest(guestMemory, collectibleId, found)
+      const { ids, tell } = markGuest(guestMemory, collectibleId, found)
       setGuestIds(ids)
+      // The tab's first change the browser won't store says how long checkmarks last.
+      if (tell) showToast(STORAGE_COPY.checkmarks[tell])
     }
-  }, [isAuthenticated, writeProgress, queryClient])
+  }, [isAuthenticated, writeProgress, queryClient, showToast])
 
   // isCompleted and isToggling are deliberately NOT stabilised: their identity
   // changing is what repaints a checkbox and disables it mid-write, and

@@ -1,17 +1,23 @@
-import { readItem, removeItem, storageProblem, writeItem, type StorageLike } from './storage'
+import { readItem, removeItem, storageProblem, storageSetting, writeItem, type StorageLike } from './storage'
 
 // A signed-out reader's checkmarks: what sb_progress holds, with each change the browser
 // won't store kept in the tab's memory instead (hooks/useProgress.ts holds it).
 
 export const STORAGE_KEY = 'sb_progress'
 
+// Why a change wasn't stored: the browser's setting ('blocked', 'off'), or 'unsaved' for
+// storage that is there but fails, such as a full or broken disk.
+export type GuestProblem = 'blocked' | 'off' | 'unsaved'
+
 export interface GuestMemory {
   // Each change storage hasn't taken, by id: true for found.
   unsaved: Map<number, boolean>
+  // Whether this tab has said its checkmarks can't be saved.
+  told: boolean
 }
 
 export function createGuestMemory(): GuestMemory {
-  return { unsaved: new Map() }
+  return { unsaved: new Map(), told: false }
 }
 
 type Store = () => StorageLike | null
@@ -46,19 +52,26 @@ export function guestIds(memory: GuestMemory, store?: Store): Set<number> {
 /**
  * Marks one item found or not, applied to what storage holds now. A change storage won't
  * take stays in memory until a write lands with it, and storage that can't be read is
- * never written, since the write would replace whatever it holds.
+ * never written, since the write would replace whatever it holds. `tell` names the
+ * problem on the tab's first change that wasn't stored.
  */
 export function markGuest(
   memory: GuestMemory,
   id: number,
   found: boolean,
   store?: Store,
-): { ids: Set<number> } {
+): { ids: Set<number>; tell: GuestProblem | null } {
   const stored = readStored(store)
   memory.unsaved.set(id, found)
   const ids = withChanges(stored, memory.unsaved)
-  if (stored !== null && writeItem(STORAGE_KEY, JSON.stringify([...ids]), store)) memory.unsaved.clear()
-  return { ids }
+  if (stored !== null && writeItem(STORAGE_KEY, JSON.stringify([...ids]), store)) {
+    memory.unsaved.clear()
+    return { ids, tell: null }
+  }
+  if (memory.told) return { ids, tell: null }
+  memory.told = true
+  // Only a browser setting gets named: storage that is there but fails isn't one.
+  return { ids, tell: storageSetting(store) ?? 'unsaved' }
 }
 
 /**

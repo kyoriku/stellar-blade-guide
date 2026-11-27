@@ -9,7 +9,7 @@ export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 type StorageGetter<K extends keyof StorageLike> = () => Pick<StorageLike, K> | null
 
 // Throws when the browser refuses storage and is null when it's switched off, which is
-// how storageProblem tells the two apart.
+// how storageProblem and storageSetting tell the two apart.
 function getLocalStorage(): Storage | null {
   return window.localStorage
 }
@@ -54,6 +54,19 @@ export function storageProblem(store: StorageGetter<'getItem'> = getLocalStorage
     if (!s) return 'off'
     s.getItem('sb_has_session')
     return null
+  } catch {
+    return 'blocked'
+  }
+}
+
+/**
+ * The browser setting that refuses storage: 'blocked' when the getter throws (a cookie
+ * block), 'off' when there is none, or null. It reads nothing, so storage that is there
+ * but fails (a full or broken disk) is null, even when storageProblem's read throws.
+ */
+export function storageSetting(store: StorageGetter<never> = getLocalStorage): 'blocked' | 'off' | null {
+  try {
+    return store() ? null : 'off'
   } catch {
     return 'blocked'
   }

@@ -66,6 +66,13 @@ describe('a working store', () => {
       expect(saved()).toEqual([3])
     }
   })
+
+  it('never tells', () => {
+    const memory = createGuestMemory()
+    const { store } = memoryStore()
+    expect(markGuest(memory, 1, true, () => store).tell).toBeNull()
+    expect(memory.told).toBe(false)
+  })
 })
 
 describe('storage the browser refuses (the getter throws)', () => {
@@ -89,6 +96,13 @@ describe('storage the browser refuses (the getter throws)', () => {
     markGuest(memory, 1, true, blocked)
     expect(sorted(markGuest(memory, 2, true, blocked).ids)).toEqual([1, 2])
   })
+
+  it('tells once, that storage is blocked', () => {
+    const memory = createGuestMemory()
+    expect(markGuest(memory, 1, true, blocked).tell).toBe('blocked')
+    expect(markGuest(memory, 2, true, blocked).tell).toBeNull()
+    expect(markGuest(memory, 1, false, blocked).tell).toBeNull()
+  })
 })
 
 describe('no storage at all (the getter returns null)', () => {
@@ -97,6 +111,12 @@ describe('no storage at all (the getter returns null)', () => {
     markGuest(memory, 1, true, none)
     markGuest(memory, 2, true, none)
     expect(sorted(guestIds(memory, none))).toEqual([1, 2])
+  })
+
+  it('tells once, that storage is off', () => {
+    const memory = createGuestMemory()
+    expect(markGuest(memory, 1, true, none).tell).toBe('off')
+    expect(markGuest(memory, 2, true, none).tell).toBeNull()
   })
 })
 
@@ -125,6 +145,13 @@ describe('storage that refuses writes', () => {
     markGuest(memory, 1, true, () => store)
     expect(sorted(markGuest(memory, 9, false, () => store).ids)).toEqual([1, 8])
   })
+
+  it('tells once, that changes are not being saved', () => {
+    const memory = createGuestMemory()
+    const { store } = fullStore([9])
+    expect(markGuest(memory, 9, false, () => store).tell).toBe('unsaved')
+    expect(markGuest(memory, 1, true, () => store).tell).toBeNull()
+  })
 })
 
 describe('storage whose reads throw', () => {
@@ -143,6 +170,13 @@ describe('storage whose reads throw', () => {
     markGuest(memory, 1, true, () => store)
     expect(calls.filter(c => c.startsWith('set'))).toEqual([])
     expect(items.get(STORAGE_KEY)).toBe('[9]')
+  })
+
+  it('tells that changes are not being saved, never that storage is blocked', () => {
+    const memory = createGuestMemory()
+    const { store } = unreadableStore([9])
+    expect(markGuest(memory, 1, true, () => store).tell).toBe('unsaved')
+    expect(markGuest(memory, 2, true, () => store).tell).toBeNull()
   })
 })
 

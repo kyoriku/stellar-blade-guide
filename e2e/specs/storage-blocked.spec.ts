@@ -149,6 +149,32 @@ async function serverIds(page: Page, token: string, ip: string): Promise<number[
   return ((await res.json()) as number[]).sort((a, b) => a - b);
 }
 
+// The toast region is the page's only role="status".
+const toast = (page: Page, text: string) => page.getByRole('status').getByText(text, { exact: true });
+
+// Every toast the document shows, from before its first script, with the label the
+// fixture's box wore as the toast was added. A toast a tick raises lands in that tick's
+// commit, so its box already reads 'Mark as not found'; one raised on load can't. The
+// log outlives in-app navigation, and a full load starts it again.
+type ToastEntry = { text: string | null; box: string | null };
+async function recordToasts(page: Page): Promise<void> {
+  await page.addInitScript((id: number) => {
+    const log: { text: string | null; box: string | null }[] = [];
+    (window as unknown as { __sbToastLog: typeof log }).__sbToastLog = log;
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element) || !node.parentElement?.matches('[role="status"]')) continue;
+          const box = document.querySelector(`article#collectible-${id} button[aria-label^="Mark as"]`);
+          log.push({ text: node.textContent, box: box?.getAttribute('aria-label') ?? null });
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  }, fx.collectibleId);
+}
+const toastLog = (page: Page): Promise<ToastEntry[]> =>
+  page.evaluate(() => (window as unknown as { __sbToastLog: ToastEntry[] }).__sbToastLog);
+
 // A guest's tick holds for the page's life, with nowhere to store it.
 async function expectGuestTickHolds(page: Page) {
   await page.goto('/levels/eidos-7');
@@ -245,6 +271,62 @@ test.describe('storage refused', () => {
     await expect(tickedBoxes(page)).toHaveCount(0);
   });
 
+  test('the first checkmark that cannot be saved says so in an error toast, once in the tab', async ({ page }) => {
+    const item = await itemWithTypePage(page);
+    await recordToasts(page);
+    await page.goto('/levels/eidos-7');
+    const first = box(page, fx.collectibleId);
+    await expect(first).toHaveAccessibleName('Mark as found');
+    // Nothing on load: the page says nothing until a checkmark can't be saved.
+    expect(await toastLog(page)).toEqual([]);
+    await first.click();
+    await expect(first).toHaveAccessibleName('Mark as not found');
+    // Raised by the tick, in the tick's own commit.
+    expect(await toastLog(page)).toEqual([{ text: STORAGE_COPY.checkmarks.blocked, box: 'Mark as not found' }]);
+    await expect(toast(page, STORAGE_COPY.checkmarks.blocked)).toBeVisible();
+    await expect(page.getByRole('status').locator(':scope > div', { hasText: STORAGE_COPY.checkmarks.blocked }))
+      .toHaveClass(/\btext-red-400\b/);
+    // The reader's place stays on the box they pressed.
+    await expect(first).toBeFocused();
+
+    // Dismissed, so a repeat isn't dropped as a duplicate of a toast still showing.
+    await page.getByRole('status').getByRole('button', { name: 'Dismiss' }).click();
+    await expect(toast(page, STORAGE_COPY.checkmarks.blocked)).toHaveCount(0);
+    await press(page, item.id, 'Mark as not found');
+    // A toast would land in the same commit as the tick, so the log is final here.
+    expect(await toastLog(page)).toHaveLength(1);
+    // Nor on another page of the tab, for an untick.
+    await typeBadge(page, item).click();
+    await expect(tickedBoxes(page)).toHaveCount(1);
+    await tickedBoxes(page).click();
+    await expect(tickedBoxes(page)).toHaveCount(0);
+    expect(await toastLog(page)).toHaveLength(1);
+
+    // A full load loses the checkmarks, so the next one says it again.
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    expect(await toastLog(page)).toEqual([]);
+    await press(page, fx.collectibleId, 'Mark as not found');
+    expect(await toastLog(page)).toEqual([{ text: STORAGE_COPY.checkmarks.blocked, box: 'Mark as not found' }]);
+  });
+
+  test('the toast goes by itself after 10 seconds', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    // Paused from here, so the toast's timer starts at a known instant.
+    await page.clock.pauseAt(Date.now() + 1000);
+    await press(page, fx.collectibleId, 'Mark as not found');
+    // Away from the toast, which a pointer over it keeps up.
+    await page.mouse.move(5, 700);
+    const shown = toast(page, STORAGE_COPY.checkmarks.blocked);
+    await expect(shown).toBeVisible();
+    await page.clock.runFor(9_999);
+    await expect(shown).toBeVisible();
+    await page.clock.runFor(1);
+    await expect(shown).toHaveCount(0);
+  });
+
   test('a protected route still redirects to login', async ({ page }) => {
     await page.goto('/progress');
     await expect(page).toHaveURL(/\/login/);
@@ -312,6 +394,12 @@ test.describe('storage switched off', () => {
     await expect(box(page, fx.collectibleId)).toHaveCount(0);
     await page.goBack();
     await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+  });
+
+  test('the first checkmark says this browser keeps no site data', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await expect(toast(page, STORAGE_COPY.checkmarks.off)).toBeVisible();
   });
 
   test('sign-in and sign-up say this browser keeps no site data, in place of their controls', async ({ page }) => {
@@ -508,6 +596,12 @@ test.describe('storage that refuses writes, with checkmarks stored before', () =
     await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
     await expect(box(page, stored.id)).toHaveAccessibleName('Mark as found');
   });
+
+  test('the first change says changes are not being saved', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await press(page, stored.id, 'Mark as found');
+    await expect(toast(page, STORAGE_COPY.checkmarks.unsaved)).toBeVisible();
+  });
 });
 
 /**
@@ -542,5 +636,31 @@ test.describe('storage that refuses reads, with checkmarks stored before', () =>
     await press(page, fx.collectibleId, 'Mark as not found');
     const held = await page.evaluate(() => (window as unknown as { __sbStored: () => string | null }).__sbStored());
     expect(held).toBe(JSON.stringify([stored.id]));
+  });
+
+  // Storage is there, so the toast blames no setting, while the sign-in notice, which
+  // reads storage, still shows.
+  test('the first checkmark says changes are not being saved, not that storage is blocked', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await expect(toast(page, STORAGE_COPY.checkmarks.unsaved)).toBeVisible();
+    await expect(toast(page, STORAGE_COPY.checkmarks.blocked)).toHaveCount(0);
+  });
+
+  test('sign-in still shows its storage notice', async ({ page }) => {
+    await page.goto('/login');
+    await expectNotice(page, 'Welcome back', STORAGE_COPY.blocked.login);
+  });
+});
+
+/** With storage working, a guest's checkmark is stored and nothing is said. */
+test.describe('storage that works', () => {
+  test('a guest checkmark is stored, with no toast', async ({ page }) => {
+    await recordToasts(page);
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    expect(await toastLog(page)).toEqual([]);
+    expect(await page.evaluate(() => localStorage.getItem('sb_progress'))).toBe(JSON.stringify([fx.collectibleId]));
   });
 });
