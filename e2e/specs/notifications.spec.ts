@@ -11,7 +11,7 @@ import { pressAsSafari } from '../helpers/safari';
 // success is read out, with focus kept in the panel as the button goes. The panel closes
 // on Back, Forward, a typed fragment and Escape, focus in it going back to the bell, and
 // when focus lands on something outside it, from the panel or from the page, but not when
-// focus goes nowhere.
+// focus goes nowhere. Opening the search closes it too, and a session that ends takes it down.
 
 let fx: Fixtures;
 const REFUSED = 'e2e: Mark all read refused';
@@ -105,6 +105,63 @@ const openWhileRendering = (page: Page, target: InPanel) => page.evaluate((targe
   Array.from(document.querySelectorAll<HTMLAnchorElement>('main a[href="/levels/xion"]'))
     .find(a => /^Next/.test(a.textContent ?? ''))!.click();
 }, target);
+
+// The bell and the search box (the nav's only input) as the search opens.
+interface AtOpen { open: string | null; box: boolean; boxFocused: boolean }
+
+// From here on, each Ctrl+K records the bell and the box in the key's own task, before the box
+// takes focus, which closes the panel by itself. Added after the search's own listener, it runs
+// once React has committed what that one set.
+const recordCtrlK = (page: Page) => page.evaluate(() => {
+  const w = window as unknown as { atCtrlK: AtOpen[] };
+  w.atCtrlK = [];
+  window.addEventListener('keydown', e => {
+    if (!e.ctrlKey || e.key !== 'k') return;
+    const box = document.querySelector('nav input');
+    w.atCtrlK.push({
+      open: document.querySelector('button[aria-label^="Notifications"]')?.getAttribute('aria-expanded') ?? null,
+      box: !!box,
+      boxFocused: !!box && document.activeElement === box,
+    });
+  });
+});
+const atCtrlK = (page: Page) => page.evaluate(() => (window as unknown as { atCtrlK: AtOpen[] }).atCtrlK);
+
+// From here on, logs each element that takes focus.
+const logFocus = (page: Page) => page.evaluate(() => {
+  const w = window as unknown as { focusLog: string[] };
+  w.focusLog = [];
+  document.addEventListener('focusin', e => {
+    const el = e.target as HTMLElement;
+    w.focusLog.push(el.tagName === 'INPUT' ? 'the search box' : el.getAttribute('aria-label') ?? el.textContent ?? '');
+  }, true);
+});
+const focusLog = (page: Page) => page.evaluate(() => (window as unknown as { focusLog: string[] }).focusLog);
+
+// From here on, the panel's fade is held from the moment it closes, the panel still shown and its
+// controls still able to take focus, until fadeEnds. Records how many animations it held.
+const holdFadeOnClose = (page: Page) => page.evaluate(() => {
+  const w = window as unknown as { fadeHeld: { held: number; visibility: string } | null };
+  w.fadeHeld = null;
+  const bell = document.querySelector<HTMLElement>('button[aria-label^="Notifications"]')!;
+  const panel = document.getElementById(bell.getAttribute('aria-controls')!)!;
+  const observer = new MutationObserver(() => {
+    if (bell.getAttribute('aria-expanded') !== 'false') return;
+    observer.disconnect();
+    // Reading the animations applies the closed style, which starts the fade.
+    const fade = panel.getAnimations({ subtree: true });
+    fade.forEach(a => a.pause());
+    w.fadeHeld = { held: fade.length, visibility: getComputedStyle(panel).visibility };
+  });
+  observer.observe(bell, { attributes: true, attributeFilter: ['aria-expanded'] });
+});
+const fadeHeld = (page: Page) => page.evaluate(() => (window as unknown as { fadeHeld: { held: number; visibility: string } | null }).fadeHeld);
+
+// Lets a held fade run on, or waits for a running one, until the panel no longer shows.
+async function fadeEnds(panel: Locator): Promise<void> {
+  await panel.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(a => { a.play(); return a.finished; })).then(() => undefined));
+  await expect.poll(() => panel.evaluate(el => getComputedStyle(el).visibility)).toBe('hidden');
+}
 
 test.describe('notifications', () => {
   let ip: string;
@@ -444,5 +501,129 @@ test.describe('notifications', () => {
     await page.keyboard.press('Escape');
     await expect(bell).toHaveAttribute('aria-expanded', 'false');
     await expect(bell).toBeFocused();
+  });
+
+  test('Ctrl+K closes the panel as it opens the search, even after a click that left focus on the page', async ({ page }) => {
+    await page.goto('/');
+    const bell = bellButton(page);
+    const searchBox = page.getByPlaceholder('Search…', { exact: true });
+
+    // Safari's click focuses nothing. The box takes focus a task after the key, which would close
+    // the panel by itself, so the key's own task is read: the box is there, not yet focused.
+    await pressAsSafari(bell);
+    await expect(bell).toHaveAttribute('aria-expanded', 'true');
+    expect(await focusOnPage(page), 'the click left focus on the page').toBe(true);
+    await recordCtrlK(page);
+    await page.keyboard.press('Control+k');
+    await expect(searchBox).toBeFocused();
+    expect((await atCtrlK(page))[0], 'Ctrl+K after the click closes it in its own task')
+      .toEqual({ open: 'false', box: true, boxFocused: false });
+    await expect(bell, 'Ctrl+K after the click closes it').toHaveAttribute('aria-expanded', 'false');
+    await expect(await bellPanel(page), 'nothing drawn over the results').toBeHidden();
+
+    // And from inside the panel.
+    await page.keyboard.press('Escape');
+    await expect(searchBox).toHaveCount(0);
+    await focusInPanel(page, 'Mark all read');
+    await page.keyboard.press('Control+k');
+    await expect(searchBox).toBeFocused();
+    expect((await atCtrlK(page))[1], 'Ctrl+K from the panel closes it in its own task')
+      .toEqual({ open: 'false', box: true, boxFocused: false });
+    await expect(bell, 'Ctrl+K from the panel closes it').toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('Escape straight after Ctrl+K from Mark all read gives focus to the bell, which keeps it once the panel has faded', async ({ page }) => {
+    await page.goto('/');
+    await page.mouse.move(5, 700);
+    const bell = bellButton(page);
+    await focusInPanel(page, 'Mark all read');
+    const panel = await bellPanel(page);
+    // Held from the moment the panel closes, its fade can't end before the Escape, however long
+    // the steps between take: Mark all read could still take focus.
+    await holdFadeOnClose(page);
+    await logFocus(page);
+    await page.keyboard.press('Control+k');
+    await expect(page.getByPlaceholder('Search…', { exact: true })).toBeFocused();
+    const held = await fadeHeld(page);
+    expect(held?.held, 'the panel closed, its fade held').toBeGreaterThan(0);
+    expect(held?.visibility, 'the closed panel still shows').toBe('visible');
+
+    await page.keyboard.press('Escape');
+    await expect(bell, 'Escape gives focus to the bell, not to Mark all read in the closing panel').toBeFocused();
+    await fadeEnds(panel);
+    await expect(bell, 'the bell keeps focus once the panel has faded').toBeFocused();
+    expect(await focusLog(page), 'nothing in the panel took focus after Ctrl+K').toEqual(['the search box', 'Notifications (1 unread)']);
+  });
+
+  test('Escape after Ctrl+K from Mark all read, once the panel has faded, gives focus to the bell', async ({ page }) => {
+    await page.goto('/');
+    await page.mouse.move(5, 700);
+    const bell = bellButton(page);
+    await focusInPanel(page, 'Mark all read');
+    const panel = await bellPanel(page);
+    await logFocus(page);
+    await page.keyboard.press('Control+k');
+    await expect(page.getByPlaceholder('Search…', { exact: true })).toBeFocused();
+    // Once the fade ends, Mark all read can no longer take focus.
+    await fadeEnds(panel);
+
+    await page.keyboard.press('Escape');
+    await expect(bell, 'Escape gives focus to the bell, not to the Search button').toBeFocused();
+    expect(await focusLog(page), 'nothing else took focus after Ctrl+K').toEqual(['the search box', 'Notifications (1 unread)']);
+  });
+
+  test('the Search button closes the panel as it opens the search, even pressed by a click that moves no focus', async ({ page }) => {
+    await page.goto('/');
+    const bell = bellButton(page);
+    await pressAsSafari(bell);
+    await expect(bell).toHaveAttribute('aria-expanded', 'true');
+    // A script's click moves no focus and presses nothing outside the panel, so only the button
+    // itself can close it before the box takes focus a task later, which would close it anyway.
+    const atOpen: AtOpen = await page.evaluate(async () => {
+      document.querySelector<HTMLElement>('button[aria-label="Search (Ctrl+K)"]')!.click();
+      // React commits the click in a microtask; the box takes focus in a later task.
+      await Promise.resolve();
+      await Promise.resolve();
+      const box = document.querySelector('nav input');
+      return {
+        open: document.querySelector('button[aria-label^="Notifications"]')?.getAttribute('aria-expanded') ?? null,
+        box: !!box,
+        boxFocused: !!box && document.activeElement === box,
+      };
+    });
+    expect(atOpen, 'the press closes it in its own task').toEqual({ open: 'false', box: true, boxFocused: false });
+    await expect(page.getByPlaceholder('Search…', { exact: true })).toBeFocused();
+    await expect(bell).toHaveAttribute('aria-expanded', 'false');
+    await expect(await bellPanel(page)).toBeHidden();
+  });
+
+  test('a panel open in a tab whose session another tab ends comes back closed with the session', async ({ page: a, context }) => {
+    const account = (p: Page) => p.getByRole('button', { name: 'Account menu' });
+    await a.goto('/');
+    await expect(account(a)).toBeVisible();
+    // B, a second tab of the same browser, restored by its own refresh, opens its panel.
+    const b = await context.newPage();
+    await b.setViewportSize({ width: 1280, height: 800 });
+    await b.goto('/');
+    await bellButton(b).click();
+    await expect(bellButton(b)).toHaveAttribute('aria-expanded', 'true');
+
+    // A signs out, which signs B out at once, with B's panel still open.
+    await account(a).click();
+    await expect(bellButton(b), 'still open as A signs out').toHaveAttribute('aria-expanded', 'true');
+    await a.getByRole('menuitem', { name: 'Sign out' }).click();
+    await expect(b.getByRole('button', { name: /^Notifications/ })).toHaveCount(0);
+
+    // A signs in again, and B, with no page change between, recovers on its next focus: its
+    // panel went with the session, so it comes back closed.
+    await a.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true }).click();
+    await a.getByLabel('Email').fill(user.email);
+    await a.getByLabel('Password', { exact: true }).fill(user.password);
+    await a.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(account(a)).toBeVisible();
+    await b.bringToFront();
+    await b.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect(bellButton(b)).toBeVisible();
+    await expect(bellButton(b)).toHaveAttribute('aria-expanded', 'false');
   });
 });

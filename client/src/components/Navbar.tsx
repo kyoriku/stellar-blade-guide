@@ -111,6 +111,8 @@ function Navbar() {
   // The desktop links, handed to the search so its input can size itself around them.
   const navLinksRef = useRef<HTMLDivElement>(null);
   const [openDropdown, setOpenDropdown] = useState<null | 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics'>(null);
+  // The bell's panel, held here so opening the search (its button or Ctrl+K) closes it.
+  const [bellOpen, setBellOpen] = useState(false);
 
   const handleMouseEnter = (menu: 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics') => {
     setOpenDropdown(menu);
@@ -278,11 +280,14 @@ function Navbar() {
     setOpenSections(getActiveSectionFromPath(location.pathname));
   }, [isOpen, location.pathname, searchQuery]);
 
-  // A session that ends underneath an open account menu (signed out in another tab,
-  // say) takes the menu down with it, so a sign-in with no page change between
+  // A session that ends underneath an open account menu or bell panel (signed out in
+  // another tab, say) takes it down with it, so a sign-in with no page change between
   // doesn't bring it back open.
   useEffect(() => {
-    if (!user) closeAccountMenu();
+    if (!user) {
+      closeAccountMenu();
+      setBellOpen(false);
+    }
   }, [user, closeAccountMenu]);
 
   return (
@@ -392,9 +397,9 @@ function Navbar() {
 
             {/* Auth UI */}
             <div className="flex items-center gap-1">
-              <SearchTrigger onExpand={() => setOpenDropdown(null)} avoidRef={navLinksRef} />
+              <SearchTrigger onExpand={() => { setOpenDropdown(null); setBellOpen(false) }} avoidRef={navLinksRef} />
               {isAuthenticated && user ? (
-                <NotificationBell />
+                <NotificationBell open={bellOpen} onOpenChange={setBellOpen} />
               ) : isRestoring ? (
                 // Defensive-only window (hint present, sb_user missing/corrupt
                 // — normally the cached identity renders instead): a static

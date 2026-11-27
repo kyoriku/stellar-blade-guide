@@ -20,24 +20,31 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  // Held by the Navbar, so opening the search closes the panel.
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export default function NotificationBell({ open, onOpenChange }: NotificationBellProps) {
   const { items, unreadCount, markRead, markAllRead, markingAllRead } = useNotifications()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
-  const [open, setOpen] = useState(false)
   // A Mark all read that landed, which the panel's live region reads out. Cleared when
-  // the panel closes, so a reopened panel doesn't read it again.
+  // the panel closes, whatever closed it, so a reopened panel doesn't read it again.
   const [markedAll, setMarkedAll] = useState(false)
+  useEffect(() => { if (!open) setMarkedAll(false) }, [open])
   const panelId = useId()
   const ref = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const headingRef = useRef<HTMLParagraphElement>(null)
+  // The latest onOpenChange, for the listeners below: keyed on one made anew each render, the
+  // popstate listener would be re-added as Back renders its page, before its turn, and miss it.
+  const onOpenChangeRef = useRef(onOpenChange)
+  useEffect(() => { onOpenChangeRef.current = onOpenChange })
   // Moves no focus: a notification link closes the panel too, on its way to the comment.
-  const closePanel = useCallback(() => {
-    setOpen(false)
-    setMarkedAll(false)
-  }, [])
+  const closePanel = useCallback(() => onOpenChangeRef.current(false), [])
   // Read synchronously, so a second press before the busy state renders sends nothing.
   const markingAll = useRef(false)
   const onMarkAllRead = () => {
@@ -118,7 +125,7 @@ export default function NotificationBell() {
     >
       <button
         ref={buttonRef}
-        onClick={() => (open ? closePanel() : setOpen(true))}
+        onClick={() => (open ? closePanel() : onOpenChange(true))}
         // Says whether the panel is open, as the drawer's button does.
         aria-expanded={open}
         aria-controls={panelId}
