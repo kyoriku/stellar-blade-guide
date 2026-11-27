@@ -28,6 +28,10 @@ const navSignIn = (page: Page) => page.locator('nav').getByRole('link', { name: 
 // Sign out's live region, after the drawer toggle, which is hidden from lg; the region
 // itself shows at every width.
 const signOutLive = (page: Page) => page.locator('button[aria-controls="mobile-menu"] ~ span[aria-live="polite"]');
+// The menu's panel, which fades, found open or closed.
+const accountPanel = (page: Page) => page.locator('[role="menu"][aria-label="Account menu"]').locator('xpath=..');
+// The desktop search's box; the drawer's sits outside the bar.
+const searchBox = (page: Page) => page.locator('nav input');
 
 // Holds every sign-out request until release(), then lets the server answer it.
 async function holdSignOut(page: Page) {
@@ -88,6 +92,22 @@ async function home(page: Page): Promise<Locator> {
   await page.goto('/');
   await expect(trigger(page)).toBeVisible();
   return trigger(page);
+}
+
+// Records each element focus lands on, by its name, from the next Escape on.
+async function recordLandings(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { landed: string[] | null };
+    w.landed = null;
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') w.landed ??= [];
+    }, true);
+    document.addEventListener('focusin', e => {
+      const el = e.target as Element;
+      w.landed?.push(el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '');
+    }, true);
+  });
+  return () => page.evaluate(() => (window as unknown as { landed: string[] | null }).landed);
 }
 
 test('the keys open it on its first or last item and move between its items as a menu does', async ({ page }) => {
@@ -255,6 +275,55 @@ test('Down pressed while the page chosen from it is still rendering reopens it, 
   await expect(item(page, PROGRESS)).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(item(page, 'Settings')).toBeFocused();
+});
+
+test('Escape straight after Ctrl+K from an item in the account menu gives focus to the Account menu button, which keeps it once the menu has faded', async ({ page }) => {
+  const button = await home(page);
+  await page.mouse.move(5, 700);
+  await button.focus();
+  await page.keyboard.press('Enter');
+  await expect(item(page, PROGRESS)).toBeFocused();
+  // Faded in first: Ctrl+K during that fade would reverse it and shorten the fade out.
+  await expect.poll(() => accountPanel(page).evaluate(el => el.getAnimations().length)).toBe(0);
+  const landings = await recordLandings(page);
+  // In one go, so the menu is still fading out: Ctrl+K, then Escape once the box has focus.
+  const atEscape = await page.evaluate(async () => {
+    const press = (init: KeyboardEventInit) =>
+      document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }));
+    const box = () => document.querySelector('nav input');
+    press({ key: 'k', ctrlKey: true });
+    // The box takes focus from a timer.
+    for (let i = 0; i < 50 && document.activeElement !== box(); i++) await new Promise(resolve => setTimeout(resolve, 0));
+    const panel = document.querySelector('[role="menu"][aria-label="Account menu"]')!.parentElement!;
+    const state = {
+      boxFocused: document.activeElement === box(),
+      fading: getComputedStyle(panel).visibility === 'visible' && panel.getAnimations().length > 0,
+    };
+    press({ key: 'Escape' });
+    return state;
+  });
+  expect(atEscape, 'Escape came from the box, with the menu still fading out').toEqual({ boxFocused: true, fading: true });
+  await expect(button).toBeFocused();
+  await expect.poll(() => accountPanel(page).evaluate(el => getComputedStyle(el).visibility)).toBe('hidden');
+  await expect(button).toBeFocused();
+  expect(await landings(), 'one focus, on the Account menu button').toEqual(['Account menu']);
+});
+
+test('Escape after Ctrl+K from an item in the account menu, once the menu has faded, gives focus to the Account menu button', async ({ page }) => {
+  const button = await home(page);
+  await page.mouse.move(5, 700);
+  await button.focus();
+  await page.keyboard.press('Enter');
+  await expect(item(page, PROGRESS)).toBeFocused();
+  await page.keyboard.press('Control+k');
+  await expect(searchBox(page)).toBeFocused();
+  await expect(button).toHaveAttribute('aria-expanded', 'false');
+  await expect.poll(() => accountPanel(page).evaluate(el => getComputedStyle(el).visibility)).toBe('hidden');
+  const landings = await recordLandings(page);
+  await page.keyboard.press('Escape');
+  await expect(button).toBeFocused();
+  await settle(page);
+  expect(await landings(), 'one focus, on the Account menu button').toEqual(['Account menu']);
 });
 
 test('Sign out shows the busy pattern in the menu, which stays open until it lands, and a second press sends nothing', async ({ page }) => {

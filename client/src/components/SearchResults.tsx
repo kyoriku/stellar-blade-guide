@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, parsePath, useLocation, useNavigate } from 'react-router-dom'
 import { Compass, Zap, Sparkles, BookOpen, Map, Layers, Book } from 'lucide-react'
 import type { SearchResponse } from '../services/api'
 import { errorMessage } from '../services/api'
@@ -12,7 +12,11 @@ interface SearchResultsProps {
   isLoading: boolean
   isError: boolean
   error?: unknown
-  onResultClick: () => void
+  /**
+   * `stay`: a plain left click on the page already open, where nothing moves. `byPointer`: a press
+   * made the click, not Enter.
+   */
+  onResultClick: (stay: boolean, byPointer?: boolean) => void
   activeIndex?: number
 }
 
@@ -63,9 +67,11 @@ export function SearchResults({
   // page. Link's own test compares the router's location as text, which misses a Greek anchor and
   // an address Contents or Back to top rewrote. Modified clicks keep the browser's new tab.
   const handleClick = (e: MouseEvent<HTMLAnchorElement>, url: string) => {
-    onResultClick()
-    if (e.button !== 0 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey || e.defaultPrevented) return
-    if (!isOpenAddress(url, location)) return
+    const plain = e.button === 0 && !e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey && !e.defaultPrevented
+    const open = plain && isOpenAddress(url, location)
+    // A click from Enter has no detail, so focus goes back with the focus ring.
+    onResultClick(open && !parsePath(url).hash, e.detail > 0)
+    if (!open) return
     e.preventDefault()
     void navigate(url, { replace: true })
   }
