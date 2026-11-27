@@ -203,7 +203,7 @@ function Navbar() {
     setIsOpen(true);
   };
 
-  // Back and Forward close the account menu at once, before the new page renders.
+  // Back and Forward close the account menu in the same task, after the page they land on commits.
   // Every other page change from the menu closes it already (choosing an item, a
   // press outside, Tab), so the location effect above leaves it alone: that effect
   // runs when a navigation commits, which React Router renders as a transition, so
@@ -213,6 +213,30 @@ function Navbar() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, [closeAccountMenu]);
+
+  // Back or Forward closes the drawer too when React Router hands back the very location
+  // object it had, as a Back that cancels a page still rendering can, which the location
+  // effect never sees. On any other Back that effect has closed it already, in the same task,
+  // and this changes nothing.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPop = () => {
+      if (drawerRef.current?.contains(document.activeElement)) menuButtonRef.current?.focus();
+      setIsOpen(false);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [isOpen]);
+
+  // Escape closes the drawer, giving focus back to the menu button from the drawer or from nothing.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.isComposing) closeDrawer(true);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, closeDrawer]);
 
   // The lock belongs to the drawer being open and nothing else. searchQuery used
   // to be in the deps, so a 12-character query unlocked and re-locked the

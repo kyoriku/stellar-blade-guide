@@ -4,9 +4,10 @@ import { tapAsSafari } from '../helpers/safari';
 import { buildSlugMap } from '../../client/src/utils/slugify';
 
 // The phone menu, the drawer under the menu button. When it closes without taking the reader
-// anywhere (the menu button, Back, Forward or a move the site makes with focus in it, picking the
-// page you're on), focus goes back to the menu button, unless it has moved on meanwhile. A link or
-// a pick that lands somewhere leaves focus to the page, and Clear search keeps focus in the box.
+// anywhere (the menu button, Escape, Back, Forward or a move the site makes with focus in it,
+// picking the page you're on), focus goes back to the menu button, unless it has moved on
+// meanwhile. A link or a pick that lands somewhere leaves focus to the page, and Clear search
+// keeps focus in the box. Back closes it even when it cancels a page still rendering.
 // Focus checks after Back and Forward use entries with no fragment: Chromium clears focus after
 // one that lands on a fragment naming an element.
 
@@ -114,6 +115,45 @@ const entry = (page: Page) => page.evaluate(() => ({
   key: (history.state as { key?: string } | null)?.key,
 }));
 
+// Follows the drawer's link to `path` and, while React renders that page, before it commits, opens
+// the drawer again and goes Back: StructuredData turns the new page's crumbs into JSON as it
+// renders (as in contents-drawer.spec.ts), and a press queued then lands when React next yields.
+// Once the drawer has opened again, focus goes into its box, unless `intoBox` is false: the clicks
+// are a script's and move no focus. Records the heading it opened under, and each heading shown,
+// from the one on screen now.
+const reopenThenBackWhileRendering = (page: Page, path: string, intoBox = true) => page.evaluate(({ path, intoBox }) => {
+  const w = window as unknown as { pressed: boolean; reopenedUnder: string | null; headings: string[] };
+  w.pressed = false;
+  w.reopenedUnder = null;
+  w.headings = [document.querySelector('main h1')?.textContent ?? ''];
+  const panel = document.querySelector('#mobile-menu')!;
+  new MutationObserver((_, observer) => {
+    if (panel.hasAttribute('inert') || !w.pressed) return;
+    w.reopenedUnder = document.querySelector('main h1')?.textContent ?? '';
+    if (intoBox) panel.querySelector<HTMLInputElement>('input[name="text"]')!.focus();
+    observer.disconnect();
+  }).observe(panel, { attributes: true, attributeFilter: ['inert'] });
+  new MutationObserver(() => {
+    const heading = document.querySelector('main h1')?.textContent ?? '';
+    if (w.headings.at(-1) !== heading) w.headings.push(heading);
+  }).observe(document.body, { subtree: true, childList: true, characterData: true });
+  const button = document.querySelector<HTMLElement>('button[aria-label="Toggle menu"]')!;
+  const stringify = JSON.stringify;
+  JSON.stringify = function (this: JSON, ...args: Parameters<typeof JSON.stringify>) {
+    const [value] = args;
+    if (Array.isArray(value) && value.some(crumb => (crumb as { path?: string } | null)?.path === path)) {
+      JSON.stringify = stringify;
+      queueMicrotask(() => {
+        w.pressed = true;
+        button.click();
+        setTimeout(() => history.back(), 0);
+      });
+    }
+    return stringify.apply(this, args);
+  } as typeof JSON.stringify;
+  document.querySelector<HTMLAnchorElement>(`#mobile-menu a[href="${path}"]`)!.click();
+}, { path, intoBox });
+
 test.describe('the phone menu', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
@@ -179,6 +219,64 @@ test.describe('the phone menu', () => {
     expect(await focuses(), 'the menu button took no focus').toBe(0);
   });
 
+  test('a Back that cancels a page still rendering closes it, with focus on the menu button, and the page scrolls again', async ({ page }) => {
+    // Eidos 7 reached by Back, so the Back that cancels Xion hands React Router the location it
+    // already had: only the drawer's popstate listener sees it.
+    await page.goto(LEVEL);
+    await showsLevel(page, 'Eidos 7');
+    await nextLink(page).click();
+    await showsLevel(page, 'Xion');
+    await page.goBack();
+    await showsLevel(page, 'Eidos 7');
+    await openDrawer(page);
+    const focuses = await countMenuButtonFocus(page);
+    await reopenThenBackWhileRendering(page, XION);
+    await expect(page).toHaveURL(new RegExp(`${LEVEL}$`));
+    await expect.poll(() => page.evaluate(() => (window as unknown as { reopenedUnder: string | null }).reopenedUnder),
+      'the drawer opened again while Eidos 7 was on screen').toBe('Eidos 7');
+    await expectClosed(page);
+    await expect(menuButton(page)).toBeFocused();
+    expect(await focuses(), 'one move, from the drawer').toBe(1);
+    expect(await page.evaluate(() => document.body.style.overflow), 'the scroll lock let go').not.toBe('hidden');
+    await showsLevel(page, 'Eidos 7');
+    const race = await page.evaluate(() => {
+      const w = window as unknown as { pressed: boolean; headings: string[] };
+      return { pressed: w.pressed, headings: w.headings };
+    });
+    expect(race, 'the press landed, and Xion never showed').toEqual({ pressed: true, headings: ['Eidos 7'] });
+  });
+
+  test('a Back that cancels a page still rendering, with focus outside it, closes it and leaves focus where it is', async ({ page }) => {
+    // Eidos 7 reached by Back, as above: only the drawer's popstate listener sees the Back.
+    await page.goto(LEVEL);
+    await showsLevel(page, 'Eidos 7');
+    await nextLink(page).click();
+    await showsLevel(page, 'Xion');
+    await page.goBack();
+    await showsLevel(page, 'Eidos 7');
+    await openDrawer(page);
+    // The logo, outside the drawer: Chromium's tap focused the menu button, and Shift+Tab
+    // goes back.
+    const logo = page.locator('nav a[href="/"]').first();
+    await page.keyboard.press('Shift+Tab');
+    await expect(logo).toBeFocused();
+    const focuses = await countMenuButtonFocus(page);
+    await reopenThenBackWhileRendering(page, XION, false);
+    await expect(page).toHaveURL(new RegExp(`${LEVEL}$`));
+    await expect.poll(() => page.evaluate(() => (window as unknown as { reopenedUnder: string | null }).reopenedUnder),
+      'the drawer opened again while Eidos 7 was on screen').toBe('Eidos 7');
+    await expectClosed(page);
+    await expect(logo, 'focus stays on the logo').toBeFocused();
+    expect(await focuses(), 'the menu button took no focus').toBe(0);
+    expect(await page.evaluate(() => document.body.style.overflow), 'the scroll lock let go').not.toBe('hidden');
+    await showsLevel(page, 'Eidos 7');
+    const race = await page.evaluate(() => {
+      const w = window as unknown as { pressed: boolean; headings: string[] };
+      return { pressed: w.pressed, headings: w.headings };
+    });
+    expect(race, 'the press landed, and Xion never showed').toEqual({ pressed: true, headings: ['Eidos 7'] });
+  });
+
   test('a typed fragment naming a section still closes it', async ({ page }) => {
     await page.goto(LEVEL);
     await showsLevel(page, 'Eidos 7');
@@ -204,6 +302,50 @@ test.describe('the phone menu', () => {
     await expectClosed(page);
     await expect(menuButton(page)).toBeFocused();
     expect(await focuses(), 'one move, from the drawer').toBe(1);
+  });
+
+  for (const [from, reach, moves] of [
+    ['the box', async (page: Page) => { await field(page).focus(); }, 1],
+    ['a link in it', async (page: Page) => { await drawer(page).getByRole('link', { name: 'Xion', exact: true }).focus(); }, 1],
+    ['the menu button', async (page: Page) => { await menuButton(page).focus(); }, 0],
+    ['nothing', async (page: Page) => { await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur()); }, 1],
+  ] as const) {
+    test(`Escape with focus on ${from} closes it, with focus on the menu button`, async ({ page }) => {
+      await page.goto(LEVEL);
+      await showsLevel(page, 'Eidos 7');
+      await openDrawer(page);
+      await reach(page);
+      const focuses = await countMenuButtonFocus(page);
+      await page.keyboard.press('Escape');
+      await expectClosed(page);
+      await expect(menuButton(page)).toBeFocused();
+      expect(await focuses(), moves ? 'one move' : 'no move').toBe(moves);
+    });
+  }
+
+  test('Escape with focus moved out of it closes it and leaves focus where it is', async ({ page }) => {
+    await page.goto(LEVEL);
+    await showsLevel(page, 'Eidos 7');
+    await openDrawer(page);
+    // The page's own Next link, behind the drawer, which holds no focus trap.
+    await nextLink(page).focus();
+    const focuses = await countMenuButtonFocus(page);
+    await page.keyboard.press('Escape');
+    await expectClosed(page);
+    await expect(nextLink(page)).toBeFocused();
+    expect(await focuses(), 'the menu button took no focus').toBe(0);
+  });
+
+  test('Escape while it is closed does nothing', async ({ page }) => {
+    await page.goto(LEVEL);
+    await showsLevel(page, 'Eidos 7');
+    expect(await focusOnPage(page), 'nothing focused').toBe(true);
+    const focuses = await countMenuButtonFocus(page);
+    await page.keyboard.press('Escape');
+    await settle(page);
+    await expect(menuButton(page)).toHaveAttribute('aria-expanded', 'false');
+    expect(await focusOnPage(page), 'focus still on nothing').toBe(true);
+    expect(await focuses(), 'the menu button took no focus').toBe(0);
   });
 
   for (const [how, press, pressed] of [
