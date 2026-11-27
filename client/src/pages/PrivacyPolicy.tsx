@@ -53,7 +53,7 @@ export default function PrivacyPolicy() {
             <p className="mt-2"><strong>Google and Discord pictures:</strong> An account made through Google or Discord starts with your profile picture there as its avatar, if you have one. We save that picture's link once and never copy or check the picture, so browsers load it from Google or Discord until you set your own avatar or remove it. A Discord picture's link includes your Discord account ID, so anyone who can see your comments can find it.</p>
             <p className="mt-2"><strong>Comments:</strong> When you post a comment, we store its text, the page it's on, the comment it replies to (if any), when it was posted and last edited, and which account posted it. Comments are public. Each one shows your current username and avatar, plus a badge if you're a moderator or admin. The comment data anyone can load also includes your account number and when each comment was last edited.</p>
             <p className="mt-2"><strong>Reply notifications:</strong> When someone replies to your comment, we store a notification for you that says who replied, on which page, and when. We also store whether you've read it. Only you can see your notifications, and they appear only on the site, never by email.</p>
-            <p className="mt-2"><strong>Progress:</strong> The collectibles you mark as found are saved in your browser while you're signed out, and with your account while you're signed in. When you sign in, what your browser saved is added to your account.</p>
+            <p className="mt-2"><strong>Progress:</strong> The collectibles you mark as found are saved in your browser while you're signed out, and with your account while you're signed in. When you sign in, what your browser saved is added to your account. If your browser won't let our site save data, what you mark as found while signed out stays only in the tab you marked it in, until you close that tab, reload it, or leave our site.</p>
             <p className="mt-2"><strong>Contact:</strong> If you email us, we receive your email address and your message.</p>
           </section>
 
@@ -165,7 +165,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <div className="text-sm text-gray-400 text-center pt-6 border-t border-gray-700">
-            Last Updated: November 9, 2026
+            Last Updated: November 27, 2026
           </div>
         </div>
       </div>
