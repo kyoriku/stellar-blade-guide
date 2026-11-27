@@ -13,8 +13,8 @@ interface SearchResultsProps {
   isError: boolean
   error?: unknown
   /**
-   * `stay`: a plain left click on the page already open, where nothing moves. `byPointer`: a press
-   * made the click, not Enter.
+   * A plain left click on a result; `stay` when it's the page already open, where nothing moves,
+   * and `byPointer` when a press made it, not Enter.
    */
   onResultClick: (stay: boolean, byPointer?: boolean) => void
   activeIndex?: number
@@ -65,10 +65,12 @@ export function SearchResults({
 
   // A plain left click on the address already open replaces its entry, so Back still leaves the
   // page. Link's own test compares the router's location as text, which misses a Greek anchor and
-  // an address Contents or Back to top rewrote. Modified clicks keep the browser's new tab.
+  // an address Contents or Back to top rewrote.
   const handleClick = (e: MouseEvent<HTMLAnchorElement>, url: string) => {
-    const plain = e.button === 0 && !e.metaKey && !e.altKey && !e.ctrlKey && !e.shiftKey && !e.defaultPrevented
-    const open = plain && isOpenAddress(url, location)
+    // A click the browser takes (a new tab or window, a download), or one an earlier handler has
+    // prevented, leaves this tab's search as it is, as a middle click does.
+    if (e.button !== 0 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey || e.defaultPrevented) return
+    const open = isOpenAddress(url, location)
     // A click from Enter has no detail, so focus goes back with the focus ring.
     onResultClick(open && !parsePath(url).hash, e.detail > 0)
     if (!open) return

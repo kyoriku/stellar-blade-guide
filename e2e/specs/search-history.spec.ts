@@ -8,8 +8,10 @@ import { REVEAL_COPY } from '../../client/src/constants/revealCopy';
 // also after Contents or Back to top rewrote the address, and for a Greek anchor, which the router
 // holds encoded while the result holds it raw; the page itself stays where it is. A tracking query
 // the address arrived with changes none of this, and the page's own result drops it. Every other
-// pick adds an entry, as a link does, a card Contents or Back to top moved away from included.
-// Back is checked by where it lands, never by an offset.
+// pick adds an entry, as a link does, a card Contents or Back to top moved away from included. A
+// click the browser takes, with Ctrl, Cmd, Shift or Alt, or one another handler has already
+// prevented, leaves this tab's page, history and search as they are. Back is checked by where it
+// lands, never by an offset.
 
 const LEVEL = '/levels/eidos-7';
 const DOCS = '/collectibles/documents';
@@ -455,24 +457,61 @@ test.describe('search history, desktop', () => {
     });
   }
 
-  for (const [key, label] of [['Control', 'Ctrl'], ['Meta', 'Cmd'], ['Shift', 'Shift'], ['Alt', 'Alt']] as const) {
-    test(`${label}+click on the page's own result leaves the click to the browser and this tab's history alone`, async ({ page }) => {
-      await stubSearch(page, [{ kind: 'level', title: 'E2E page', url: LEVEL }]);
+  for (const [whose, title, kept] of [
+    ["the page's own result", 'E2E page', 'history'],
+    ["another page's result", 'E2E other page', 'page'],
+  ] as const) {
+    for (const [key, label] of [['Control', 'Ctrl'], ['Meta', 'Cmd'], ['Shift', 'Shift'], ['Alt', 'Alt']] as const) {
+      test(`${label}+click on ${whose} leaves the click to the browser, and this tab's ${kept} and search as they are`, async ({ page }) => {
+        await stubSearch(page, [
+          { kind: 'level', title: 'E2E page', url: LEVEL },
+          { kind: 'type', title: 'E2E other page', url: DOCS },
+        ]);
+        await arrive(page, 'E2E page', LEVEL, CARDS);
+        const before = await entry(page);
+        await openSearch(page);
+        // Last on the click's way up, after the app's handlers: whether the app left the click (a
+        // new tab or window, or a download) to the browser. It then cancels it, since Playwright
+        // can stall on reporting a new tab.
+        await page.evaluate(() => window.addEventListener('click', e => {
+          (window as unknown as { leftToBrowser: boolean }).leftToBrowser = !e.defaultPrevented;
+          e.preventDefault();
+        }, { once: true }));
+        await resultIn(desktopPanel(page), title).click({ modifiers: [key] });
+        expect(await page.evaluate(() => (window as unknown as { leftToBrowser?: boolean }).leftToBrowser),
+          'the click left to the browser').toBe(true);
+        await settle(page);
+        expect(await entry(page), 'this tab did not navigate').toEqual(before);
+        await expect(page.getByPlaceholder('Search…'), "this tab's search, still open with its text").toHaveValue('e2e');
+        await expect(resultIn(desktopPanel(page), title), 'its results, still showing').toBeVisible();
+      });
+    }
+  }
+
+  for (const [name, title] of [
+    ["a plain click another handler already prevented leaves this tab's page, history and search as they are", 'E2E page'],
+    ["a plain click another handler already prevented, on another page's result, leaves this tab's page and search as they are", 'E2E other page'],
+  ] as const) {
+    test(name, async ({ page }) => {
+      await stubSearch(page, [
+        { kind: 'level', title: 'E2E page', url: LEVEL },
+        { kind: 'type', title: 'E2E other page', url: DOCS },
+      ]);
       await arrive(page, 'E2E page', LEVEL, CARDS);
       const before = await entry(page);
       await openSearch(page);
-      // Last on the click's way up, after the app's handlers: whether the app left the click (a
-      // new tab or window, or a download) to the browser. It then cancels it, since Playwright can
-      // stall on reporting a new tab.
+      // First on the click's way down, before the app's handlers: another script takes it.
       await page.evaluate(() => window.addEventListener('click', e => {
-        (window as unknown as { leftToBrowser: boolean }).leftToBrowser = !e.defaultPrevented;
         e.preventDefault();
-      }, { once: true }));
-      await resultIn(desktopPanel(page), 'E2E page').click({ modifiers: [key] });
-      expect(await page.evaluate(() => (window as unknown as { leftToBrowser?: boolean }).leftToBrowser),
-        'the click left to the browser').toBe(true);
+        (window as unknown as { prevented: boolean }).prevented = true;
+      }, { capture: true, once: true }));
+      await resultIn(desktopPanel(page), title).click();
+      expect(await page.evaluate(() => (window as unknown as { prevented?: boolean }).prevented),
+        'the other handler took the click').toBe(true);
       await settle(page);
       expect(await entry(page), 'this tab did not navigate').toEqual(before);
+      await expect(page.getByPlaceholder('Search…'), "this tab's search, still open with its text").toHaveValue('e2e');
+      await expect(resultIn(desktopPanel(page), title), 'its results, still showing').toBeVisible();
     });
   }
 });

@@ -8,7 +8,8 @@ import { buildSlugMap } from '../../client/src/utils/slugify';
 // picking the page you're on), focus goes back to the menu button, unless it has moved on
 // meanwhile. A link or a pick that lands somewhere leaves focus to the page, and Clear search
 // keeps focus in the box. Back closes it even when it cancels a page still rendering, and the
-// desktop layout closes it too.
+// desktop layout closes it too. A click the browser takes, such as a Ctrl+click on a result,
+// leaves it open with its search.
 // Focus checks after Back and Forward use entries with no fragment: Chromium clears focus after
 // one that lands on a fragment naming an element.
 
@@ -465,5 +466,38 @@ test.describe('the phone menu', () => {
     await settle(page);
     expect(await focusOnPage(page), 'focus on the page').toBe(true);
     expect(await focuses(), 'the menu button took no focus').toBe(0);
+  });
+});
+
+// Below the desktop layout with no touch screen, as on a tablet with a keyboard and trackpad.
+test.describe('the phone menu, with a mouse', () => {
+  test.use({ viewport: { width: 800, height: 1000 } });
+
+  test.beforeEach(async ({ context }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+  });
+
+  test('a Ctrl+click on a result leaves the click to the browser, and the menu open with its search', async ({ page }) => {
+    await stubSearch(page, [{ kind: 'level', title: 'E2E page', url: LEVEL }]);
+    await page.goto('/privacy');
+    await menuButton(page).click();
+    await expect(menuButton(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(drawer(page)).not.toHaveAttribute('inert');
+    await field(page).fill('e2e');
+    await expect(result(page, 'E2E page')).toBeVisible();
+    const before = [await entry(page), page.url()];
+    // Last on the click's way up, after the app's handlers: whether the app left the click (a new
+    // tab) to the browser. It then cancels it, since Playwright can stall on reporting a new tab.
+    await page.evaluate(() => window.addEventListener('click', e => {
+      (window as unknown as { leftToBrowser: boolean }).leftToBrowser = !e.defaultPrevented;
+      e.preventDefault();
+    }, { once: true }));
+    await result(page, 'E2E page').click({ modifiers: ['Control'] });
+    expect(await page.evaluate(() => (window as unknown as { leftToBrowser?: boolean }).leftToBrowser),
+      'the click left to the browser').toBe(true);
+    await settle(page);
+    expect([await entry(page), page.url()], 'this tab did not navigate').toEqual(before);
+    await expect(menuButton(page), 'the menu, still open').toHaveAttribute('aria-expanded', 'true');
+    await expect(field(page), 'its search, still holding its text').toHaveValue('e2e');
   });
 });
