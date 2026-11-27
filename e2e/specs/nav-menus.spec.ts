@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { nextTestIp, TEST_IP_HEADER } from '../helpers/auth';
-import { tapAsSafari } from '../helpers/safari';
+import { pressAsSafari, tapAsSafari } from '../helpers/safari';
 
 // The desktop nav menus (components/navbar/DesktopDropdown.tsx) open from their arrow by
 // keyboard as well as by hover. The arrow's press used to bubble to the menu's own click,
@@ -8,7 +8,12 @@ import { tapAsSafari } from '../helpers/safari';
 // closes an open menu, focus leaving it closes it, and keyboard focus lights an item. Back,
 // Forward and a typed fragment close an open menu, as they close the account menu, giving
 // focus back to the arrow when it was in the menu. A menu opened while a page still renders
-// stays open as that page arrives.
+// stays open as that page arrives. Escape closes an open menu with focus on its arrow, its
+// link or an item, or on nothing, as a tap or Safari's click on the arrow leaves it, giving
+// focus to the arrow from an item, or from nothing when the arrow opened the menu; with
+// focus elsewhere, in the open search say, the menu stays open, even where the search's own
+// Escape gives focus back inside it. With focus on nothing and the search or the bell's panel
+// open as well, Escape closes only that, giving focus back: one Escape closes one panel.
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
@@ -21,6 +26,8 @@ async function levelsMenu(page: Page) {
 }
 
 const focusInside = (panel: ReturnType<Page['locator']>) => panel.evaluate(el => el.contains(document.activeElement));
+
+const focusOnPage = (page: Page) => page.evaluate(() => document.activeElement === document.body);
 
 // Opens the Levels menu from its arrow and moves focus to its first item, with the mouse parked
 // away from the bar: a menu that slides in under a resting pointer can close at the next layout.
@@ -52,6 +59,19 @@ async function countFocus(target: Locator): Promise<() => Promise<number>> {
     el.addEventListener('focus', () => { w.focusCount += 1; });
   });
   return () => target.page().evaluate(() => (window as unknown as { focusCount: number }).focusCount);
+}
+
+// Records each element focus lands on from here on, by its label or its text.
+async function recordLandings(page: Page): Promise<() => Promise<string[]>> {
+  await page.evaluate(() => {
+    const w = window as unknown as { landings: string[] };
+    w.landings = [];
+    document.addEventListener('focusin', e => {
+      const el = e.target as Element;
+      w.landings.push(el.getAttribute('aria-label') || el.textContent?.trim() || el.tagName);
+    }, true);
+  });
+  return () => page.evaluate(() => (window as unknown as { landings: string[] }).landings);
 }
 
 // A level page has rendered in full: its heading, then its cards. The address changes before the
@@ -247,6 +267,220 @@ test.describe('desktop nav menus', () => {
     await expect(arrow).toHaveAttribute('aria-expanded', 'true');
   });
 
+  test('Escape with focus on the arrow closes the menu and leaves focus on the arrow', async ({ page }) => {
+    const { arrow } = await levelsMenu(page);
+    await page.mouse.move(5, 700);
+    await arrow.focus();
+    await page.keyboard.press('Enter');
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    const arrowFocus = await countFocus(arrow);
+    await page.keyboard.press('Escape');
+    await expect(arrow, 'Escape closes the menu').toHaveAttribute('aria-expanded', 'false');
+    await expect(arrow).toBeFocused();
+    expect(await arrowFocus(), 'focus never left the arrow').toBe(0);
+  });
+
+  for (const opened of ['its arrow', 'hover'] as const) {
+    test(`Escape with focus on the section's own link closes a menu ${opened} opened, and leaves focus on the link`, async ({ page }) => {
+      const { arrow, label } = await levelsMenu(page);
+      if (opened === 'hover') {
+        await label.hover();
+        await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+        await label.focus();
+      } else {
+        await page.mouse.move(5, 700);
+        await arrow.focus();
+        await page.keyboard.press('Enter');
+        await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+        // Back to the link beside the arrow, in the menu's wrapper: the menu stays open.
+        await page.keyboard.press('Shift+Tab');
+      }
+      await expect(label).toBeFocused();
+      await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+      const arrowFocus = await countFocus(arrow);
+      await page.keyboard.press('Escape');
+      await expect(arrow, 'Escape closes the menu').toHaveAttribute('aria-expanded', 'false');
+      await settle(page);
+      await expect(label, 'focus stays on the link').toBeFocused();
+      expect(await arrowFocus(), 'the arrow took no focus').toBe(0);
+    });
+  }
+
+  test('Escape closes a menu a Safari-style click opened, giving focus to the arrow', async ({ page }) => {
+    const { arrow } = await levelsMenu(page);
+    // A mouse arriving at the arrow hovers its menu open, and a click then shuts it.
+    await arrow.hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await pressAsSafari(arrow);
+    await expect(arrow).toHaveAttribute('aria-expanded', 'false');
+    // Opened from the arrow this time, and Safari's click focuses nothing.
+    await pressAsSafari(arrow);
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    expect(await focusOnPage(page), 'focus on nothing').toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(arrow, 'Escape closes the menu').toHaveAttribute('aria-expanded', 'false');
+    await expect(arrow, 'the arrow takes focus').toBeFocused();
+    // The pointer hasn't left, so nothing opens it again.
+    await settle(page);
+    await expect(arrow, 'still shut, with the pointer on it').toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('Escape closes a menu hover opened, with focus on the page, and leaves focus there', async ({ page }) => {
+    const { arrow } = await levelsMenu(page);
+    // Opened from the arrow and shut first: opening by hover forgets that.
+    await page.mouse.move(5, 700);
+    await arrow.focus();
+    await page.keyboard.press('Enter');
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Escape');
+    await expect(arrow).toHaveAttribute('aria-expanded', 'false');
+    await arrow.evaluate(el => el.blur());
+    expect(await focusOnPage(page), 'focus on the page').toBe(true);
+    await arrow.hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    const arrowFocus = await countFocus(arrow);
+    await page.keyboard.press('Escape');
+    await expect(arrow, 'Escape closes the menu').toHaveAttribute('aria-expanded', 'false');
+    await settle(page);
+    expect(await focusOnPage(page), 'focus stays on the page').toBe(true);
+    expect(await arrowFocus(), 'the arrow took no focus').toBe(0);
+  });
+
+  test('with focus in the open search, Escape closes the search and leaves a menu hover opened open', async ({ page }) => {
+    await page.route('**/api/search/**', route => route.fulfill({
+      json: { query: 'e2e', total: 1, results: [{ kind: 'level', id: 1, title: 'E2E page', snippet: null, navigation_url: '/levels/eidos-7', score: 4 }] },
+    }));
+    const searchButton = page.getByRole('button', { name: 'Search (Ctrl+K)', exact: true });
+    const box = page.getByPlaceholder('Search\u2026');
+    await searchButton.click();
+    await expect(box).toBeFocused();
+    await box.fill('e2e');
+    await expect(page.getByRole('link', { name: 'E2E page', exact: true })).toBeVisible();
+    // Hovering a menu leaves the search open: the Collectibles label, clear of the open search.
+    const arrow = page.getByRole('button', { name: 'Toggle collectibles menu', exact: true });
+    await arrow.locator('xpath=preceding-sibling::a').hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(box).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(box, 'Escape closes the search').toHaveCount(0);
+    await expect(searchButton).toBeFocused();
+    await settle(page);
+    await expect(arrow, 'the menu, still open').toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('with focus on nothing while the search is open, Escape closes the search and leaves a menu hover opened open', async ({ page }) => {
+    await page.route('**/api/search/**', route => route.fulfill({
+      json: { query: 'e2e', total: 1, results: [{ kind: 'level', id: 1, title: 'E2E page', snippet: null, navigation_url: '/levels/eidos-7', score: 4 }] },
+    }));
+    const searchButton = page.getByRole('button', { name: 'Search (Ctrl+K)', exact: true });
+    const box = page.getByPlaceholder('Search\u2026');
+    const results = page.locator('.animate-drop-in');
+    await searchButton.click();
+    await expect(box).toBeFocused();
+    await box.fill('e2e');
+    await expect(results.getByRole('link', { name: 'E2E page', exact: true })).toBeVisible();
+    // A press on the results panel's padding: focus on nothing, the search still open.
+    const edge = (await results.boundingBox())!;
+    await page.mouse.click(edge.x + 24, edge.y + 2);
+    expect(await focusOnPage(page), 'focus on nothing').toBe(true);
+    const arrow = page.getByRole('button', { name: 'Toggle collectibles menu', exact: true });
+    await arrow.locator('xpath=preceding-sibling::a').hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(box, 'the search, still open').toHaveCount(1);
+    // The search's Escape runs first, giving focus to the Search button: the key was the search's.
+    await page.keyboard.press('Escape');
+    await expect(box, 'Escape closes the search').toHaveCount(0);
+    await expect(searchButton).toBeFocused();
+    await settle(page);
+    await expect(arrow, 'the menu, still open').toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('with focus given back inside a menu hover opened, Escape closes the search and leaves the menu open', async ({ page }) => {
+    const box = page.getByPlaceholder('Search\u2026');
+    const arrow = page.getByRole('button', { name: 'Toggle collectibles menu', exact: true });
+    const link = arrow.locator('xpath=preceding-sibling::a');
+    // Ctrl+K from the section's own link, which sits in the menu's wrapper.
+    await page.mouse.move(5, 700);
+    await link.focus();
+    await page.keyboard.press('Control+k');
+    await expect(box).toBeFocused();
+    // Hovering the label opens the menu and leaves the search open.
+    await link.hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(box).toBeFocused();
+    const landed = await recordLandings(page);
+    // The search's Escape runs first and gives focus back to the link.
+    await page.keyboard.press('Escape');
+    await expect(box, 'Escape closes the search').toHaveCount(0);
+    await settle(page);
+    expect(await arrow.getAttribute('aria-expanded'), 'the menu, still open').toBe('true');
+    await expect(link).toBeFocused();
+    expect(await landed(), 'one focus landing, on the link').toEqual(['Collectibles']);
+  });
+
+  test('with focus in the box, Escape after Ctrl+K from an item of a menu hover opened again gives focus to its arrow and leaves the menu open', async ({ page }) => {
+    const box = page.getByPlaceholder('Search\u2026');
+    // Ctrl+K from an item: opening the search closes the menu, which fades out.
+    const { arrow, label, panel } = await openOnItem(page);
+    await page.keyboard.press('Control+k');
+    await expect(box).toBeFocused();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(() => panel.evaluate(el => getComputedStyle(el).visibility), 'the menu, faded out').toBe('hidden');
+    // Hovering the label opens it again and leaves the search open.
+    await label.hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(box).toBeFocused();
+    const landed = await recordLandings(page);
+    // The search's Escape runs first: opening the search closed the menu, so its arrow takes focus.
+    await page.keyboard.press('Escape');
+    await expect(box, 'Escape closes the search').toHaveCount(0);
+    await settle(page);
+    expect(await arrow.getAttribute('aria-expanded'), 'the menu, still open').toBe('true');
+    await expect(arrow, 'focus on the arrow').toBeFocused();
+    expect(await landed(), 'one focus landing, on the arrow').toEqual(['Toggle levels menu']);
+    // The reason for the arrow: once the pointer leaves and hover's close has faded the menu out,
+    // focus is still there, where an item would have lost it to the page.
+    await page.mouse.move(5, 700);
+    await expect(arrow, "hover's close").toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(() => panel.evaluate(el => getComputedStyle(el).visibility), 'the menu, faded out').toBe('hidden');
+    await settle(page);
+    await expect(arrow, 'focus still on the arrow').toBeFocused();
+    expect(await landed(), 'no landing since').toEqual(['Toggle levels menu']);
+  });
+
+  test('with focus on nothing, Escape after Ctrl+K from an item of a menu hover opened again gives focus to its arrow and leaves the menu open', async ({ page }) => {
+    await page.route('**/api/search/**', route => route.fulfill({
+      json: { query: 'e2e', total: 1, results: [{ kind: 'level', id: 1, title: 'E2E page', snippet: null, navigation_url: '/levels/eidos-7', score: 4 }] },
+    }));
+    const box = page.getByPlaceholder('Search\u2026');
+    const results = page.locator('.animate-drop-in');
+    // Ctrl+K from Eidos 7: opening the search closes the menu, which fades out.
+    const { arrow, label, panel } = await openOnItem(page);
+    await page.keyboard.press('Control+k');
+    await expect(box).toBeFocused();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(() => panel.evaluate(el => getComputedStyle(el).visibility), 'the menu, faded out').toBe('hidden');
+    await box.fill('e2e');
+    await expect(results.getByRole('link', { name: 'E2E page', exact: true })).toBeVisible();
+    // A press on the results panel's padding: focus on nothing, the search still open.
+    const edge = (await results.boundingBox())!;
+    await page.mouse.click(edge.x + 24, edge.y + 2);
+    expect(await focusOnPage(page), 'focus on nothing').toBe(true);
+    await expect(box, 'the search, still open').toHaveCount(1);
+    // Hovering the label opens the menu again and leaves the search open.
+    await label.hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(box, 'the search, still open').toHaveCount(1);
+    const landed = await recordLandings(page);
+    // The search's Escape runs first and gives focus to the arrow: the key was the search's.
+    await page.keyboard.press('Escape');
+    await expect(box, 'Escape closes the search').toHaveCount(0);
+    await settle(page);
+    expect(await arrow.getAttribute('aria-expanded'), 'the menu, still open').toBe('true');
+    await expect(arrow, 'focus on the arrow').toBeFocused();
+    expect(await landed(), 'one focus landing, on the arrow').toEqual(['Toggle levels menu']);
+  });
+
   test('Back, Forward and a typed fragment close a menu, giving focus in it back to the arrow', async ({ page }) => {
     const { arrow } = await levelsMenu(page);
     await toTerms(page);
@@ -404,5 +638,16 @@ test.describe('desktop nav menus by touch', () => {
     await expect(page).toHaveURL(/\/privacy$/);
     await expect(arrow).toHaveAttribute('aria-expanded', 'false');
     expect(await arrowFocus(), 'focus stays where it was').toBe(0);
+  });
+
+  test('Escape closes a menu a tap opened, where the tap left the arrow unfocused, giving focus to the arrow', async ({ page }) => {
+    const { arrow } = await levelsMenu(page);
+    // iOS Safari doesn't focus a tapped button, so focus is on nothing.
+    await tapAsSafari(arrow);
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    expect(await focusOnPage(page), 'focus on nothing').toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(arrow, 'Escape closes the menu').toHaveAttribute('aria-expanded', 'false');
+    await expect(arrow, 'the arrow takes focus').toBeFocused();
   });
 });

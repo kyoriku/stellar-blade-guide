@@ -421,6 +421,26 @@ test.describe('notifications', () => {
     expect(await page.evaluate(() => (window as unknown as { bellFocus: number }).bellFocus), 'focus never left the bell').toBe(0);
   });
 
+  test('with focus on nothing after a Safari-style click on the bell, Escape closes the panel and leaves a menu hover opened open', async ({ page }) => {
+    await page.goto('/');
+    const bell = bellButton(page);
+    await page.mouse.move(5, 700);
+    await pressAsSafari(bell);
+    await expect(bell).toHaveAttribute('aria-expanded', 'true');
+    expect(await focusOnPage(page), 'the click left focus on the page').toBe(true);
+    // Hovering a menu leaves the panel open: the Collectibles label.
+    const arrow = page.getByRole('button', { name: 'Toggle collectibles menu', exact: true });
+    await arrow.locator('xpath=preceding-sibling::a').hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await expect(bell, 'the panel, still open').toHaveAttribute('aria-expanded', 'true');
+    // The panel's Escape runs first and gives focus to the bell.
+    await page.keyboard.press('Escape');
+    await expect(bell, 'Escape closes the panel').toHaveAttribute('aria-expanded', 'false');
+    await expect(bell, 'Escape gives focus to the bell').toBeFocused();
+    await settle(page);
+    await expect(arrow, 'the menu, still open').toHaveAttribute('aria-expanded', 'true');
+  });
+
   test('focus moving on out of the panel closes it, so one panel shows at a time', async ({ page }) => {
     await page.goto('/');
     // Away from the nav's menus, which open under a resting pointer.

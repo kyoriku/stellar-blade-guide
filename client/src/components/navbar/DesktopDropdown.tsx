@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import type { NavSection } from './navSections';
+import { focusLeftNowhere } from '../../utils/focus';
 
 interface DesktopDropdownProps {
   section: NavSection;
@@ -24,6 +25,8 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
   // render, it would be re-added as Back renders its page, before its turn, and miss that popstate.
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; });
+  // Whether the open menu came from its arrow (a tap, a click or a key) rather than hover.
+  const openedByArrow = useRef(false);
 
   // An open menu closes on a press anywhere outside it, whatever the pointer. A tap doesn't
   // focus the arrow in every browser (iOS Safari), so focus leaving can't close it there,
@@ -50,6 +53,26 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
     return () => window.removeEventListener('popstate', onPop);
   }, [isOpen]);
 
+  // Escape closes an open menu with focus in it or nowhere: a tap, or Safari's click, on the arrow
+  // focuses nothing. Focus in the menu, or nowhere when the arrow opened it, goes back to the
+  // arrow; hover leaves focus alone. It goes by where the key was pressed, since the search's
+  // Escape runs first and may give focus back inside this menu. A key pressed on nothing is the
+  // search's or the bell's once their Escape has given focus back: one Escape closes one panel.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.isComposing) return;
+      const from = e.target instanceof Node ? e.target : null;
+      const nowhere = (!from || from === document.body) && focusLeftNowhere();
+      if (!nowhere && !wrapperRef.current?.contains(from)) return;
+      const back = nowhere ? openedByArrow.current : panelRef.current?.contains(from);
+      onCloseRef.current();
+      if (back) toggleRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
   const isItemActive = (slug: string) =>
     itemActiveMatch === 'prefix'
       ? pathname.startsWith(`${basePath}/${slug}`)
@@ -63,20 +86,16 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
       // which opened the menu just before the tap's click on the arrow toggled it shut, so
       // touch screens couldn't open it; for a tap, the arrow is a plain toggle.
       onPointerEnter={e => {
-        if (e.pointerType === 'mouse') onOpen();
+        if (e.pointerType !== 'mouse') return;
+        if (!isOpen) openedByArrow.current = false;
+        onOpen();
       }}
       onPointerLeave={e => {
         if (e.pointerType === 'mouse') onClose();
       }}
       onClick={onClose}
-      // From the keyboard: Escape closes an open menu, giving focus back to its arrow when
-      // it was in the menu, and focus leaving the menu closes it, so it doesn't stay open
-      // over the page. isOpen, since another menu may have opened by hover meanwhile.
-      onKeyDown={e => {
-        if (e.key !== 'Escape' || !isOpen) return;
-        onClose();
-        if (panelRef.current?.contains(document.activeElement)) toggleRef.current?.focus();
-      }}
+      // Focus leaving the menu closes it, so it doesn't stay open over the page. isOpen, since
+      // another menu may have opened by hover meanwhile.
       onBlur={e => {
         if (isOpen && !e.currentTarget.contains(e.relatedTarget)) onClose();
       }}
@@ -92,6 +111,7 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
           // so Enter and Space left it shut.
           onClick={e => {
             e.stopPropagation();
+            openedByArrow.current = !isOpen;
             onToggle();
           }}
           className="cursor-pointer p-1 -mr-1"
