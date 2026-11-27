@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import { Link, NavigationType, useLocation, useNavigationType } from 'react-router-dom'
 import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3, Shield } from 'lucide-react'
 import BusyLabel from './BusyLabel'
@@ -84,9 +84,12 @@ function Navbar() {
   // button. One a link or Back has closed meanwhile took the reader somewhere.
   const [signingOut, setSigningOut] = useState(false)
   const signingOutRef = useRef(false)
+  // Set by the account menu's Sign out; spent once the session has gone (see desktopSignInRef).
+  const signInTakesFocus = useRef(false)
   const handleLogout = async (from: 'menu' | 'drawer') => {
     if (signingOutRef.current) return
     signingOutRef.current = true
+    signInTakesFocus.current = from === 'menu'
     setSigningOut(true)
     try {
       await logout()
@@ -301,6 +304,43 @@ function Navbar() {
     }
   }, [user, closeAccountMenu]);
 
+  // Whether focus was in the account button or menu as they went with the signed-in navbar. React
+  // detaches a ref before it removes the element, so the cleanup can still read focus off it.
+  const accountHeldFocus = useRef(false);
+  const setAccountRoot = accountMenu.rootProps.ref;
+  const accountRootRef = useCallback((el: HTMLDivElement | null) => {
+    setAccountRoot(el);
+    if (!el) return;
+    return () => {
+      accountHeldFocus.current = el.contains(document.activeElement);
+      setAccountRoot(null);
+    };
+  }, [setAccountRoot]);
+  // The same for the bell and its panel while open. They go first, so by the account root's turn
+  // focus that was on them has already dropped to the page. A closed panel doesn't count: a
+  // notification link closes it on its way to the comment.
+  const bellHeldFocus = useRef(false);
+  const bellRootRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    return () => {
+      const bell = el.querySelector('[aria-expanded]');
+      const active = document.activeElement;
+      const open = bell?.getAttribute('aria-expanded') === 'true';
+      bellHeldFocus.current = !!bell && (active === bell || (open && el.contains(active)));
+    };
+  }, []);
+
+  // After the account menu's Sign out, the Sign in link in the menu's place takes the focus the
+  // account controls or the bell took with them. Focus moved meanwhile (a link followed, a press on
+  // the page) stays put. The first commit without a user spends the flag either way, so a later
+  // sign-out, another tab's say, leaves focus alone.
+  const desktopSignInRef = useRef<HTMLAnchorElement>(null);
+  useLayoutEffect(() => {
+    if (user || !signInTakesFocus.current) return;
+    signInTakesFocus.current = false;
+    if ((accountHeldFocus.current || bellHeldFocus.current) && focusLeftNowhere()) desktopSignInRef.current?.focus();
+  }, [user]);
+
   return (
     <>
       <style>{`
@@ -410,7 +450,9 @@ function Navbar() {
             <div className="flex items-center gap-1">
               <SearchTrigger onExpand={() => { setOpenDropdown(null); setBellOpen(false) }} avoidRef={navLinksRef} />
               {isAuthenticated && user ? (
-                <NotificationBell open={bellOpen} onOpenChange={setBellOpen} />
+                <div key="bell" className="contents" ref={bellRootRef}>
+                  <NotificationBell open={bellOpen} onOpenChange={setBellOpen} />
+                </div>
               ) : isRestoring ? (
                 // Defensive-only window (hint present, sb_user missing/corrupt
                 // — normally the cached identity renders instead): a static
@@ -432,7 +474,7 @@ function Navbar() {
                   <div className="w-3.5 h-3.5" />
                 </div>
               ) : isAuthenticated && user ? (
-                <div key="account" className="relative hidden lg:block" {...accountMenu.rootProps}>
+                <div key="account" className="relative hidden lg:block" {...accountMenu.rootProps} ref={accountRootRef}>
                   <button
                     type="button"
                     {...accountMenu.triggerProps}
@@ -503,6 +545,7 @@ function Navbar() {
                 </div>
               ) : (
                 <Link
+                  ref={desktopSignInRef}
                   to="/login"
                   state={{ from: location.pathname }}
                   className="hidden lg:flex items-center justify-center gap-1.5 lg:w-[106px] px-4 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 hover:text-cyan-300 text-sm font-medium transition-all duration-200 cursor-pointer"

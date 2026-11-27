@@ -89,6 +89,62 @@ async function settle(page: Page): Promise<void> {
   }));
 }
 
+// Counts focus events on the bar's Sign in link from here on. It mounts again with each sign-out,
+// so they are counted by what they land on.
+async function countSignInFocus(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { signInFocus?: number };
+    if (w.signInFocus === undefined) {
+      document.addEventListener('focusin', e => {
+        if (e.target instanceof Element && e.target.matches('nav a[href="/login"]')) w.signInFocus! += 1;
+      }, true);
+    }
+    w.signInFocus = 0;
+  });
+  return () => page.evaluate(() => (window as unknown as { signInFocus: number }).signInFocus);
+}
+
+// Chooses Sign out from the menu by its keys, which leaves focus on it while it is out.
+async function chooseSignOutByKeys(page: Page) {
+  await page.mouse.move(5, 700);
+  await trigger(page).focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(item(page, 'Sign out')).toBeFocused();
+  await page.keyboard.press('Enter');
+}
+
+const bell = (page: Page) => page.getByRole('button', { name: /^Notifications/ });
+
+// Answers the bell's list with one unread reply, so its panel holds Mark all read.
+async function oneUnread(page: Page) {
+  await page.route('**/api/notifications', route => route.request().method() === 'GET'
+    ? route.fulfill({ json: { items: [{
+      id: 1, type: 'comment_reply', actor_username: null, label: 'EVE Protocol', url: '/walkthroughs/main-story/eve-protocol#comment-1',
+      content_type: 'walkthrough', content_id: 1, is_read: false, created_at: new Date().toISOString(),
+    }], unread_count: 1 } })
+    : route.fallback());
+}
+
+// From here on, the bell's panel holds its fade from the moment it closes, so it still shows and
+// focus can stay in it. Reading the animations applies the closed style, which starts the fade.
+async function holdBellFadeOnClose(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { bellFade: { held: number; visibility: string } | null };
+    w.bellFade = null;
+    const button = document.querySelector<HTMLElement>('button[aria-label^="Notifications"]')!;
+    const panel = document.getElementById(button.getAttribute('aria-controls')!)!;
+    const observer = new MutationObserver(() => {
+      if (button.getAttribute('aria-expanded') !== 'false') return;
+      observer.disconnect();
+      const fade = panel.getAnimations({ subtree: true });
+      fade.forEach(a => a.pause());
+      w.bellFade = { held: fade.length, visibility: getComputedStyle(panel).visibility };
+    });
+    observer.observe(button, { attributes: true, attributeFilter: ['aria-expanded'] });
+  });
+  return () => page.evaluate(() => (window as unknown as { bellFade: { held: number; visibility: string } | null }).bellFade);
+}
+
 test.beforeAll(() => {
   fx = readFixtures();
 });
@@ -366,6 +422,244 @@ test('Sign out shows the busy pattern in the menu, which stays open until it lan
   await expect(navSignIn(page)).toBeVisible();
   await expect(trigger(page)).toHaveCount(0);
   await expectNoSecondSignOut(page, hold);
+});
+
+for (const [how, choose] of [
+  ['the keyboard', async (page: Page) => {
+    await trigger(page).focus();
+    await page.keyboard.press('ArrowUp');
+    await expect(item(page, 'Sign out')).toBeFocused();
+    await page.keyboard.press('Enter');
+  }],
+  ['a click', async (page: Page) => {
+    await trigger(page).click();
+    await item(page, 'Sign out').click();
+  }],
+] as const) {
+  test(`Sign out chosen by ${how} gives focus to Sign in once it lands`, async ({ page }) => {
+    await home(page);
+    const hold = await holdSignOut(page);
+    await choose(page);
+    await hold.seen;
+    await expect(item(page, 'Sign out'), 'still on Sign out while it is out').toBeFocused();
+    hold.release();
+    await expect(navSignIn(page)).toBeFocused();
+    await expect(trigger(page)).toHaveCount(0);
+  });
+}
+
+for (const [where, inPanel] of [['to the bell', false], ["into the bell's panel", true]] as const) {
+  test(`Sign out chosen from the account menu, with focus moved ${where} while it is out, gives focus to Sign in once it lands`, async ({ page }) => {
+    await oneUnread(page);
+    await home(page);
+    const hold = await holdSignOut(page);
+    await chooseSignOutByKeys(page);
+    await hold.seen;
+    // Shift+Tab closes the menu with focus on its button, and again reaches the bell.
+    await page.keyboard.press('Shift+Tab');
+    await expect(trigger(page)).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(bell(page)).toBeFocused();
+    if (inPanel) {
+      await page.keyboard.press('Enter');
+      await page.keyboard.press('Tab');
+      await expect(page.getByRole('button', { name: 'Mark all read', exact: true })).toBeFocused();
+    }
+    hold.release();
+    await expect(navSignIn(page)).toBeFocused();
+    // The bell went with the signed-in navbar, as the account menu did.
+    await expect(trigger(page)).toHaveCount(0);
+    await expect(bell(page)).toHaveCount(0);
+  });
+}
+
+test('Sign out leaves focus where it was moved while it was out', async ({ page }) => {
+  await home(page);
+  const hold = await holdSignOut(page);
+  await trigger(page).click();
+  await item(page, 'Sign out').click();
+  await hold.seen;
+  const search = page.getByRole('button', { name: 'Search (Ctrl+K)', exact: true });
+  await search.focus();
+  const focuses = await countSignInFocus(page);
+  hold.release();
+  await expect(navSignIn(page)).toBeVisible();
+  await settle(page);
+  await expect(search).toBeFocused();
+  expect(await focuses(), 'Sign in took no focus').toBe(0);
+});
+
+test('a sign-out from another tab afterwards leaves focus where it is', async ({ page, context }) => {
+  await home(page);
+  await trigger(page).click();
+  await item(page, 'Sign out').click();
+  await expect(navSignIn(page)).toBeFocused();
+
+  // Signed in again, from the link, and in a second tab of this browser.
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL('/login');
+  await page.getByLabel('Email').fill(user.email);
+  await page.getByLabel('Password', { exact: true }).fill(user.password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(trigger(page)).toBeVisible();
+  const other = await context.newPage();
+  const restored = other.waitForResponse(r => r.url().includes('/api/auth/refresh') && r.status() === 200);
+  await other.goto('/');
+  await restored;
+
+  // The other tab signs out, which signs this one out as well, with focus on nothing here.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  const focuses = await countSignInFocus(page);
+  await trigger(other).click();
+  await item(other, 'Sign out').click();
+  await expect(navSignIn(page)).toBeVisible();
+  await settle(page);
+  expect(await page.evaluate(() => document.activeElement === document.body), 'focus still on nothing').toBe(true);
+  expect(await focuses(), 'Sign in took no focus').toBe(0);
+});
+
+test('Sign out from the account menu that lands after a page link was followed leaves focus on the page', async ({ page }) => {
+  await page.goto(LEVEL);
+  await showsLevel(page, 'Eidos 7');
+  const hold = await holdSignOut(page);
+  await chooseSignOutByKeys(page);
+  await hold.seen;
+  const focuses = await countSignInFocus(page);
+  // As Safari presses it, focusing nothing: the link Chromium's click focuses
+  // can live on as Xion's Next link.
+  await pressAsSafari(nextLink(page));
+  await showsLevel(page, 'Xion');
+  await expect(trigger(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect.poll(() => focusOnPage(page), 'focus on the page once the link has been followed').toBe(true);
+  hold.release();
+  await expect(navSignIn(page)).toBeVisible();
+  await settle(page);
+  expect(await focusOnPage(page), 'focus still on the page').toBe(true);
+  expect(await focuses(), 'Sign in took no focus').toBe(0);
+});
+
+test("Sign out from the account menu that lands after a notification was followed from the bell's panel leaves focus on the page", async ({ page }) => {
+  await oneUnread(page);
+  await home(page);
+  const hold = await holdSignOut(page);
+  await chooseSignOutByKeys(page);
+  await hold.seen;
+  // Shift+Tab closes the menu with focus on its button, and again reaches the bell.
+  await page.keyboard.press('Shift+Tab');
+  await expect(trigger(page)).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(bell(page)).toBeFocused();
+  // Into the panel, past Mark all read to the notification.
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  const link = page.locator(`[id="${await bell(page).getAttribute('aria-controls')}"]`).getByRole('link');
+  await expect(link).toBeFocused();
+  // The link closes the panel on its way to the comment. The fade is held, so the panel still
+  // shows, with focus on the link, as the sign-out lands.
+  const fade = await holdBellFadeOnClose(page);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#comment-1$/);
+  await expect(bell(page)).toHaveAttribute('aria-expanded', 'false');
+  const held = await fade();
+  expect(held?.held, 'the fade held').toBeGreaterThan(0);
+  expect(held?.visibility, 'the closing panel, still shown').toBe('visible');
+  await expect(link, 'focus still on the link').toBeFocused();
+  const focuses = await countSignInFocus(page);
+  hold.release();
+  await expect(navSignIn(page)).toBeVisible();
+  await settle(page);
+  expect(await focuses(), 'Sign in took no focus').toBe(0);
+  expect(await focusOnPage(page), 'focus on the page').toBe(true);
+});
+
+test('Sign out from the account menu, then a press on the page while it is out, leaves focus on the page', async ({ page }) => {
+  await page.goto(LEVEL);
+  await showsLevel(page, 'Eidos 7');
+  const hold = await holdSignOut(page);
+  await chooseSignOutByKeys(page);
+  await hold.seen;
+  const focuses = await countSignInFocus(page);
+  // The heading takes no focus, so the press drops it to the page.
+  await page.getByRole('heading', { level: 1, name: 'Eidos 7', exact: true }).click();
+  await expect(trigger(page)).toHaveAttribute('aria-expanded', 'false');
+  expect(await focusOnPage(page), 'focus on the page after the press').toBe(true);
+  hold.release();
+  await expect(navSignIn(page)).toBeVisible();
+  await settle(page);
+  expect(await focusOnPage(page), 'focus still on the page').toBe(true);
+  expect(await focuses(), 'Sign in took no focus').toBe(0);
+});
+
+for (const [where, take] of [
+  ['the bell', async (page: Page) => {
+    await bell(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(bell(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(bell(page)).toBeFocused();
+  }],
+  ['the account menu', async (page: Page) => {
+    await trigger(page).focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(item(page, PROGRESS)).toBeFocused();
+  }],
+] as const) {
+  test(`after another tab's sign-out took ${where} with focus in it, Sign out from the account menu, then a press on the page while it is out, leaves focus on the page`, async ({ page, context }) => {
+    await page.goto(LEVEL);
+    await showsLevel(page, 'Eidos 7');
+    await page.mouse.move(5, 700);
+    await take(page);
+    // Another tab of this browser signs out, which takes this tab's signed-in controls, and
+    // focus with them.
+    const other = await context.newPage();
+    const restored = other.waitForResponse(r => r.url().includes('/api/auth/refresh') && r.status() === 200);
+    await other.goto('/');
+    await restored;
+    await trigger(other).click();
+    await item(other, 'Sign out').click();
+    await expect(navSignIn(page)).toBeVisible();
+    await other.close();
+    expect(await focusOnPage(page), 'focus fell to the page').toBe(true);
+    // Signed in again here, from the link: the navbar stays mounted.
+    await navSignIn(page).click();
+    await expect(page).toHaveURL('/login');
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await showsLevel(page, 'Eidos 7');
+    await expect(trigger(page)).toBeVisible();
+    const hold = await holdSignOut(page);
+    await chooseSignOutByKeys(page);
+    await hold.seen;
+    const focuses = await countSignInFocus(page);
+    // The heading takes no focus, so the press drops it to the page.
+    await page.getByRole('heading', { level: 1, name: 'Eidos 7', exact: true }).click();
+    expect(await focusOnPage(page), 'focus on the page after the press').toBe(true);
+    hold.release();
+    await expect(navSignIn(page)).toBeVisible();
+    await settle(page);
+    expect(await focusOnPage(page), 'focus still on the page').toBe(true);
+    expect(await focuses(), 'Sign in took no focus').toBe(0);
+  });
+}
+
+test('Sign out from the account menu, then Back while it is out, gives focus to Sign in once it lands', async ({ page }) => {
+  await page.goto(LEVEL);
+  await showsLevel(page, 'Eidos 7');
+  // A page of the app's own, so Back stays in this document.
+  await nextLink(page).click();
+  await showsLevel(page, 'Xion');
+  const hold = await holdSignOut(page);
+  await chooseSignOutByKeys(page);
+  await hold.seen;
+  await page.goBack();
+  await showsLevel(page, 'Eidos 7');
+  // Back's close gives focus to the button, which goes with the signed-in navbar.
+  await expect(trigger(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(trigger(page)).toBeFocused();
+  hold.release();
+  await expect(navSignIn(page)).toBeFocused();
+  await expect(trigger(page)).toHaveCount(0);
 });
 
 test('in the drawer, Sign out shows the busy pattern, the drawer stays open until it lands, and a second press sends nothing', async ({ page }) => {
