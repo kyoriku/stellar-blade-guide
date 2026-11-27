@@ -11,3 +11,16 @@ describe('the checkmark toast', () => {
     })
   })
 })
+
+describe('the sign-in notice', () => {
+  it('sends a browser with no storage to another browser, and a blocked one to its settings', () => {
+    expect(STORAGE_COPY.off).toEqual({
+      login: "This browser doesn't let sites save data, and signing in needs that. Open the guide in another browser to sign in.",
+      register: "This browser doesn't let sites save data, and creating an account needs that. Open the guide in another browser to create an account.",
+    })
+    expect(STORAGE_COPY.blocked).toEqual({
+      login: "Your browser is blocking cookies and site data for this site, and signing in needs them. Allow them in your browser's settings, then reload this page.",
+      register: "Your browser is blocking cookies and site data for this site, and creating an account needs them. Allow them in your browser's settings, then reload this page.",
+    })
+  })
+})
