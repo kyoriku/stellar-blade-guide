@@ -131,6 +131,24 @@ async function press(page: Page, id: number, to: 'Mark as found' | 'Mark as not 
   await expect(box(page, id)).toHaveAccessibleName(to);
 }
 
+// Kept local, as progress-bulk.spec.ts keeps its own.
+async function apiLoginToken(page: Page, user: TestUser, ip: string): Promise<string> {
+  const res = await page.request.post('/api/auth/login', {
+    data: { email: user.email, password: user.password },
+    headers: { [TEST_IP_HEADER]: ip },
+  });
+  if (res.status() !== 200) throw new Error(`login failed: ${res.status()} ${await res.text()}`);
+  return ((await res.json()) as { access_token: string }).access_token;
+}
+
+async function serverIds(page: Page, token: string, ip: string): Promise<number[]> {
+  const res = await page.request.get('/api/progress', {
+    headers: { Authorization: `Bearer ${token}`, [TEST_IP_HEADER]: ip },
+  });
+  expect(res.status()).toBe(200);
+  return ((await res.json()) as number[]).sort((a, b) => a - b);
+}
+
 // A guest's tick holds for the page's life, with nowhere to store it.
 async function expectGuestTickHolds(page: Page) {
   await page.goto('/levels/eidos-7');
@@ -408,7 +426,7 @@ test.describe('storage that refuses writes', () => {
 
 /**
  * Storage that refuses writes, holding checkmarks stored before. The tab's changes show
- * over them, for the tab's life.
+ * over them, for the tab's life, and a password sign-in adds what the reader saw.
  */
 test.describe('storage that refuses writes, with checkmarks stored before', () => {
   let stored: Item;
@@ -426,6 +444,13 @@ test.describe('storage that refuses writes, with checkmarks stored before', () =
         throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
       };
     }, [stored.id]);
+  });
+
+  let users: TestUser[] = [];
+  let seq = 0;
+  test.afterEach(async ({ page }) => {
+    for (const user of users) await apiDeleteUser(page, user, ip);
+    users = [];
   });
 
   test("the tab's changes show over the stored checkmarks, until a reload", async ({ page }) => {
@@ -449,6 +474,39 @@ test.describe('storage that refuses writes, with checkmarks stored before', () =
     await page.reload();
     await expect(box(page, stored.id)).toHaveAccessibleName('Mark as not found');
     await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+  });
+
+  test('a sign-in adds the checkmarks the reader saw, not the older stored ones', async ({ page, context }) => {
+    const user = makeUser(fx.token, `sk${++seq}`);
+    users.push(user);
+    await apiRegister(page, user, ip);
+    await context.clearCookies();
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await press(page, stored.id, 'Mark as found');
+
+    // An in-app link, so the tab's checkmarks come along.
+    await page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true }).click();
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
+    const sync = page.waitForResponse((r) => r.url().endsWith('/api/progress/sync'));
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    const synced = await sync;
+    expect(synced.request().postDataJSON()).toEqual({ collectible_ids: [fx.collectibleId] });
+    expect(synced.status()).toBe(200);
+
+    // The account holds what the reader saw.
+    const token = await apiLoginToken(page, user, ip);
+    expect(await serverIds(page, token, ip)).toEqual([fx.collectibleId]);
+    // The drop after the 200 takes the reader's untick into storage too (removal works
+    // here; only writes fail), so a later sync adds nothing back.
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sb_progress'))).toBeNull();
+
+    // Back on the level page, signed in, until the tab's next focus or switch ends a
+    // session whose hint couldn't be stored; Playwright fires neither.
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+    await expect(box(page, stored.id)).toHaveAccessibleName('Mark as found');
   });
 });
 

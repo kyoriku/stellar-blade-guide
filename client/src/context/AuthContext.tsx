@@ -5,7 +5,7 @@ import { API_BASE_URL, readError } from '../services/api'
 import { useToast } from './ToastContext'
 import { AuthContext, type AuthUser } from '../hooks/useAuthContext'
 import { NOTIFICATIONS_KEY } from '../hooks/useNotifications'
-import { STORAGE_KEY, dropFromLocalProgress } from '../hooks/useProgress'
+import { dropFromLocalProgress, localProgressIds } from '../hooks/useProgress'
 import { withRefreshLock } from '../utils/refreshLock'
 import { readItem, removeItem, writeItem } from '../utils/storage'
 
@@ -269,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // identity renders before the refresh lands, so an identity-keyed edge read
   // as "already signed in" and a sync that failed at login was never retried.
   // Re-firing after a transient token drop is harmless: the sync is additive
-  // and skipped when sb_progress is empty.
+  // and skipped when the guest copy is empty.
   const prevSyncedRef = useRef(false)
   // The syncs in flight, if any. A bulk clear must not commit before they land: a
   // sync would arrive afterwards and re-add what was just cleared.
@@ -278,45 +278,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const canSync = !!user && accessToken !== null
     if (canSync && !prevSyncedRef.current) {
-      try {
-        const local = readItem(STORAGE_KEY)
-        if (local) {
-          const ids = JSON.parse(local) as number[]
-          if (ids.length > 0) {
-            const sync: Promise<void> = fetch(`${API_BASE_URL}/progress/sync`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${accessToken}`,
-              },
-              body: JSON.stringify({ collectible_ids: ids }),
-            }).then(async res => {
-              if (!res.ok) {
-                showToast("Couldn't sync your saved progress. It's still saved on this device.")
-                return
-              }
-              // Only what this request carried: an id ticked into the guest copy
-              // while it was in flight (a tab still signed out) waits for the next sync.
-              dropFromLocalProgress(ids)
-              // The sign-in commit fired GET /progress and the stats query before
-              // this effect ran, so their cached answers predate the merge. Cancel
-              // first: a load still in flight would otherwise be reused as-is.
-              await queryClient.cancelQueries({ queryKey: ['progress'] })
-              await queryClient.cancelQueries({ queryKey: ['user-stats'] })
-              void queryClient.invalidateQueries({ queryKey: ['progress'] })
-              void queryClient.invalidateQueries({ queryKey: ['user-stats'] })
-            }).catch(() => showToast("Couldn't sync your saved progress. It's still saved on this device."))
-            // Also waits for any sync still in flight: a token drop and recovery
-            // starts a new one before the last has landed.
-            const tracked: Promise<void> = Promise.all([guestSyncRef.current, sync])
-              .then(() => undefined)
-              .finally(() => {
-                if (guestSyncRef.current === tracked) guestSyncRef.current = null
-              })
-            guestSyncRef.current = tracked
+      // What the reader saw signed out, checkmarks the browser wouldn't store included.
+      const ids = localProgressIds()
+      if (ids.length > 0) {
+        const sync: Promise<void> = fetch(`${API_BASE_URL}/progress/sync`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ collectible_ids: ids }),
+        }).then(async res => {
+          if (!res.ok) {
+            showToast("Couldn't sync your saved progress. It's still saved on this device.")
+            return
           }
-        }
-      } catch { /* corrupt sb_progress JSON: nothing to sync */ }
+          // Only what this request carried: an id ticked into the guest copy
+          // while it was in flight (a tab still signed out) waits for the next sync.
+          dropFromLocalProgress(ids)
+          // The sign-in commit fired GET /progress and the stats query before
+          // this effect ran, so their cached answers predate the merge. Cancel
+          // first: a load still in flight would otherwise be reused as-is.
+          await queryClient.cancelQueries({ queryKey: ['progress'] })
+          await queryClient.cancelQueries({ queryKey: ['user-stats'] })
+          void queryClient.invalidateQueries({ queryKey: ['progress'] })
+          void queryClient.invalidateQueries({ queryKey: ['user-stats'] })
+        }).catch(() => showToast("Couldn't sync your saved progress. It's still saved on this device."))
+        // Also waits for any sync still in flight: a token drop and recovery
+        // starts a new one before the last has landed.
+        const tracked: Promise<void> = Promise.all([guestSyncRef.current, sync])
+          .then(() => undefined)
+          .finally(() => {
+            if (guestSyncRef.current === tracked) guestSyncRef.current = null
+          })
+        guestSyncRef.current = tracked
+      }
     }
     prevSyncedRef.current = canSync
   }, [user, accessToken, showToast, queryClient])

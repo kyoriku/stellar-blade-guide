@@ -7,9 +7,6 @@ import { API_BASE_URL, apiError, errorMessage } from '../services/api'
 import type { ProgressWriteResponse } from '../services/api'
 import { createGuestMemory, dropGuestIds, guestIds as readGuestIds, markGuest } from '../utils/guestProgress'
 
-// AuthContext's sign-in sync imports it.
-export { STORAGE_KEY } from '../utils/guestProgress'
-
 const PROGRESS_WRITE_KEY = ['progress', 'write']
 
 // Module scope, not a ref: mutations outlive their hook instance (a click
@@ -40,6 +37,11 @@ function maybeFlushDrift(queryClient: ReturnType<typeof useQueryClient>) {
 
 // A guest's unsaved checkmarks, at module scope so they outlive the page that made them.
 const guestMemory = createGuestMemory()
+
+// What the sign-in sync sends: the guest view, unsaved checkmarks included.
+export function localProgressIds(): number[] {
+  return [...readGuestIds(guestMemory)]
+}
 
 // Removes ids from the guest copy. While signed in, that copy holds ids a failed
 // sign-in sync left behind, or ids a signed-out tab ticked while a sync was out;
