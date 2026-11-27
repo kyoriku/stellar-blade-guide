@@ -3,6 +3,7 @@ import type { RefObject } from 'react'
 import { parsePath, useLocation, useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { useSearch } from '../hooks/useSearch'
+import { DESKTOP_LAYOUT } from '../constants/layout'
 import { focusLeftNowhere } from '../utils/focus'
 import { isOpenAddress } from '../utils/openAddress'
 import { SearchResults } from './SearchResults'
@@ -146,6 +147,8 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        // Below the desktop layout the search doesn't show, so the key is left to the browser.
+        if (!window.matchMedia(DESKTOP_LAYOUT).matches) return
         e.preventDefault()
         // A closed search opened from somewhere on the page gives focus back there when it closes.
         if (triggerRef.current) {

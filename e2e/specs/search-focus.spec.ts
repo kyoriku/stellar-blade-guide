@@ -11,7 +11,8 @@ import { buildSlugMap } from '../../client/src/utils/slugify';
 // and a press outside are left alone, and Clear search keeps focus in the box. A press on Close
 // search, or on the result for the page you're on, gives focus back without the focus ring; a
 // key gives it back with one. Back, Forward and a typed fragment close it, focus in it going to
-// the Search button; focus landing outside it closes it too, and stays where it landed.
+// the Search button; focus landing outside it closes it too, and stays where it landed. Ctrl+K
+// opens it only from the desktop layout up.
 
 const LEVEL = '/levels/eidos-7';
 const SUITS = '/cosmetics/nano-suits';
@@ -894,4 +895,61 @@ test.describe('search on Back, Forward and Tab, desktop', () => {
     await expect(box(page)).toBeFocused();
     await expect(result(page, 'E2E page')).toBeVisible();
   });
+});
+
+// Whether the app took each K pressed from here on, read once the press has reached every listener.
+async function watchK(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { kTaken: boolean[] };
+    w.kTaken = [];
+    addEventListener('keydown', e => {
+      if (e.key === 'k') setTimeout(() => w.kTaken.push(e.defaultPrevented), 0);
+    });
+  });
+  return () => page.evaluate(() => (window as unknown as { kTaken: boolean[] }).kTaken);
+}
+
+const KEYS = [['Ctrl+K', 'Control+k'], ['Cmd+K', 'Meta+k']] as const;
+
+// Ctrl+K and Cmd+K open the search only where it shows, from the desktop layout up. Below it the
+// keys are left to the browser, and nothing opens.
+test.describe('Ctrl+K below the desktop layout', () => {
+  test.use({ viewport: { width: 1023, height: 800 } });
+
+  test.beforeEach(async ({ context }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+  });
+
+  for (const [name, key] of KEYS) {
+    test(`${name} is left to the browser, and opens nothing`, async ({ page }) => {
+      await page.goto('/privacy');
+      await expect(page.getByRole('heading', { level: 1, name: 'Privacy Policy', exact: true })).toBeVisible();
+      const taken = await watchK(page);
+      await page.keyboard.press(key);
+      await expect.poll(taken, 'the press reached the page, and the app left it alone').toEqual([false]);
+      await settle(page);
+      await expect(page.locator(SEARCH_BUTTON), 'the search, still closed').toHaveCount(1);
+      await expect(box(page)).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Toggle menu', exact: true })).toHaveAttribute('aria-expanded', 'false');
+    });
+  }
+});
+
+test.describe('Ctrl+K at the desktop layout', () => {
+  test.use({ viewport: { width: 1024, height: 800 } });
+
+  test.beforeEach(async ({ context }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+  });
+
+  for (const [name, key] of KEYS) {
+    test(`${name} opens the search with focus in the box`, async ({ page }) => {
+      await page.goto('/privacy');
+      await expect(page.getByRole('heading', { level: 1, name: 'Privacy Policy', exact: true })).toBeVisible();
+      const taken = await watchK(page);
+      await page.keyboard.press(key);
+      await expect(box(page)).toBeFocused();
+      await expect.poll(taken, 'the app took the press').toEqual([true]);
+    });
+  }
 });
