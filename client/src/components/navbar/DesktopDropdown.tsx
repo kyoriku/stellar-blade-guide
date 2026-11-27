@@ -20,6 +20,10 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
   const toggleRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  // The latest onClose, for the popstate listener. Keyed on onClose, which Navbar makes anew each
+  // render, it would be re-added as Back renders its page, before its turn, and miss that popstate.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
   // An open menu closes on a press anywhere outside it, whatever the pointer. A tap doesn't
   // focus the arrow in every browser (iOS Safari), so focus leaving can't close it there,
@@ -32,6 +36,19 @@ function DesktopDropdown({ section, isOpen, isActiveCategory, pathname, onOpen, 
     document.addEventListener('pointerdown', onPress);
     return () => document.removeEventListener('pointerdown', onPress);
   }, [isOpen, onClose]);
+
+  // Back, Forward and a typed fragment close an open menu, as they close the account menu, and
+  // focus in it goes back to the arrow. One opened by hover closes too, with the pointer on it.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPop = () => {
+      const held = panelRef.current?.contains(document.activeElement) ?? false;
+      onCloseRef.current();
+      if (held) toggleRef.current?.focus();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [isOpen]);
 
   const isItemActive = (slug: string) =>
     itemActiveMatch === 'prefix'
