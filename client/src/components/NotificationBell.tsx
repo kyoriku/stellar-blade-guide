@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
@@ -30,10 +30,10 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
   const { items, unreadCount, markRead, markAllRead, markingAllRead } = useNotifications()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
-  // A Mark all read that landed, which the panel's live region reads out. Cleared when
-  // the panel closes, whatever closed it, so a reopened panel doesn't read it again.
+  // A Mark all read that landed, which the panel's live region reads out. Cleared before the
+  // panel paints whenever it opens or closes, so one that landed while it was shut is never read.
   const [markedAll, setMarkedAll] = useState(false)
-  useEffect(() => { if (!open) setMarkedAll(false) }, [open])
+  useLayoutEffect(() => { setMarkedAll(false) }, [open])
   const panelId = useId()
   const ref = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)

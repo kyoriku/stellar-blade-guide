@@ -8,10 +8,11 @@ import { pressAsSafari } from '../helpers/safari';
 // The bell (components/NotificationBell.tsx) says whether its panel is open. Its Mark
 // all read shows the busy pattern (helpers/busy.ts) while its request is out, a second
 // press meanwhile sends nothing, a refusal is shown rather than passing silently, and a
-// success is read out, with focus kept in the panel as the button goes. The panel closes
-// on Back, Forward, a typed fragment and Escape, focus in it going back to the bell, and
-// when focus lands on something outside it, from the panel or from the page, but not when
-// focus goes nowhere. Opening the search closes it too, and a session that ends takes it down.
+// success is read out, with focus kept in the panel as the button goes, but never one that
+// landed while the panel was shut. The panel closes on Back, Forward, a typed fragment and
+// Escape, focus in it going back to the bell, and when focus lands on something outside it,
+// from the panel or from the page, but not when focus goes nowhere. Opening the search
+// closes it too, and a session that ends takes it down.
 
 let fx: Fixtures;
 const REFUSED = 'e2e: Mark all read refused';
@@ -163,6 +164,20 @@ async function fadeEnds(panel: Locator): Promise<void> {
   await expect.poll(() => panel.evaluate(el => getComputedStyle(el).visibility)).toBe('hidden');
 }
 
+// The panel's live region and visibility in the first frame after the bell's next press. The frame
+// is queued in the press's own task, so the read comes before any later render.
+interface AtFirstFrame { live: string | null; visibility: string }
+const recordFirstFrame = (page: Page) => page.evaluate(() => {
+  const w = window as unknown as { atFirstFrame: Promise<AtFirstFrame> };
+  const bell = document.querySelector<HTMLElement>('button[aria-label^="Notifications"]')!;
+  const panel = document.getElementById(bell.getAttribute('aria-controls')!)!;
+  w.atFirstFrame = new Promise(resolve => bell.addEventListener('click', () => requestAnimationFrame(() => resolve({
+    live: panel.querySelector('span[aria-live="polite"]')!.textContent,
+    visibility: getComputedStyle(panel).visibility,
+  })), { once: true }));
+});
+const atFirstFrame = (page: Page) => page.evaluate(() => (window as unknown as { atFirstFrame: Promise<AtFirstFrame> }).atFirstFrame);
+
 test.describe('notifications', () => {
   let ip: string;
   let user: TestUser;
@@ -256,13 +271,44 @@ test.describe('notifications', () => {
     expect(await headingFocus()).toBe(1);
     await expect(live).toHaveText('All marked read.');
 
-    // Closing the panel clears the result, so reopening it reads nothing again. The bell
-    // no longer counts anything unread.
+    // Closing the panel clears the result, as opening it does, so a reopened panel reads
+    // nothing. The bell no longer counts anything unread.
     const read = page.getByRole('button', { name: 'Notifications', exact: true });
     await read.click();
     await expect(read).toHaveAttribute('aria-expanded', 'false');
     await expect(live).toHaveText('');
     await read.click();
+    await expect(read).toHaveAttribute('aria-expanded', 'true');
+    await expect(live).toHaveText('');
+  });
+
+  test('a Mark all read that lands while the panel is closed is never read out when it reopens', async ({ page }) => {
+    await page.goto('/');
+    // Away from the nav's menus, which open under a resting pointer.
+    await page.mouse.move(5, 700);
+    const panel = await bellPanel(page);
+    const live = panel.locator('span[aria-live="polite"]');
+    const hold = await holdRoute(page, '**/api/notifications/read-all');
+    await focusInPanel(page, 'Mark all read');
+    await page.keyboard.press('Enter');
+    await hold.seen;
+    await expect(live).toHaveText('Marking all read…');
+
+    // Escape shuts the panel while the request is out, and its fade ends before the result lands
+    // (not fadeEnds: the busy spinner's animation never finishes).
+    await page.keyboard.press('Escape');
+    await expect(bellButton(page)).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(() => panel.evaluate(el => getComputedStyle(el).visibility), 'the fade ends').toBe('hidden');
+    hold.release();
+    // The result lands in the commit that drops the bell's count.
+    const read = page.getByRole('button', { name: 'Notifications', exact: true });
+    await expect(read).toBeVisible();
+    await expect(read).toBeFocused();
+    await expect(live, 'the late result reached the closed panel').toHaveText('All marked read.');
+
+    await recordFirstFrame(page);
+    await page.keyboard.press('Enter');
+    expect(await atFirstFrame(page), 'the reopened panel reads nothing in its first frame').toEqual({ live: '', visibility: 'visible' });
     await expect(read).toHaveAttribute('aria-expanded', 'true');
     await expect(live).toHaveText('');
   });
