@@ -6,9 +6,9 @@ import { buildSlugMap } from '../../client/src/utils/slugify';
 // When the desktop search closes without taking the reader anywhere, focus goes back to what
 // opened it: the Search button, or, after Ctrl+K, whatever had focus then, if it's still on
 // screen and not under the navbar. An opener in a bar panel that opening the search closed (a
-// nav menu or the account menu) gives way to that panel's button. Escape closes it from
-// anywhere while it's open. Focus moved elsewhere meanwhile, a pick that lands somewhere and a
-// press outside are left alone, and Clear search keeps focus in the box. A press on Close
+// nav menu, the account menu, the bell's) gives way to that panel's button. Escape closes it
+// from anywhere while it's open. Focus moved elsewhere meanwhile, a pick that lands somewhere
+// and a press outside are left alone, and Clear search keeps focus in the box. A press on Close
 // search, or on the result for the page you're on, gives focus back without the focus ring; a
 // key gives it back with one. Back, Forward and a typed fragment close it, focus in it going to
 // the Search button; focus landing outside it closes it too, and stays where it landed.

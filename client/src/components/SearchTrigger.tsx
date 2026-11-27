@@ -124,8 +124,8 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
     if (!giveBack || !focusLeftNowhere()) return
     const bar = triggerRef.current?.closest('nav') ?? null
     // An opener in a panel that has closed since Ctrl+K gives way to the panel's button, if that's
-    // on screen: the panel fades out. Opening the search closes the nav menus and the account menu,
-    // and hover may open a nav menu again meanwhile.
+    // on screen: the panel fades out. Opening the search closes the nav menus, the account menu and
+    // the bell's, and hover may open a nav menu again meanwhile.
     const closedPanel = panelButton?.isConnected && (panelClosed || panelButton.getAttribute('aria-expanded') === 'false') && onScreen(panelButton, bar)
     const target = closedPanel ? panelButton : from?.isConnected && onScreen(from, bar) ? from : triggerRef.current
     const options: FocusOptions = quiet ? { preventScroll: true, focusVisible: false } : { preventScroll: true }

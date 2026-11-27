@@ -6,6 +6,7 @@ import BusyLabel from './BusyLabel'
 import { useNotifications } from '../hooks/useNotifications'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../services/api'
+import { focusLeftNowhere } from '../utils/focus'
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -29,11 +30,14 @@ export default function NotificationBell() {
   const [markedAll, setMarkedAll] = useState(false)
   const panelId = useId()
   const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const headingRef = useRef<HTMLParagraphElement>(null)
-  const closePanel = () => {
+  // Moves no focus: a notification link closes the panel too, on its way to the comment.
+  const closePanel = useCallback(() => {
     setOpen(false)
     setMarkedAll(false)
-  }
+  }, [])
   // Read synchronously, so a second press before the busy state renders sends nothing.
   const markingAll = useRef(false)
   const onMarkAllRead = () => {
@@ -62,18 +66,58 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!open) return
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-        setMarkedAll(false)
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) closePanel()
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
-  }, [open])
+  }, [open, closePanel])
+
+  // Back, Forward and a typed fragment close it, as they do the account menu. Focus in the
+  // panel goes back to the bell rather than staying on a control about to hide.
+  useEffect(() => {
+    if (!open) return
+    const onPop = () => {
+      const held = !!panelRef.current?.contains(document.activeElement)
+      closePanel()
+      if (held) buttonRef.current?.focus({ preventScroll: true })
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [open, closePanel])
+
+  // Escape closes it from anywhere, so it also works after Safari's click on the bell, which
+  // leaves focus on the page. Focus in the panel or nowhere goes back to the bell.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.isComposing) return
+      const back = focusLeftNowhere(panelRef.current)
+      closePanel()
+      if (back) buttonRef.current?.focus({ preventScroll: true })
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, closePanel])
+
+  // Focus landing on something outside closes it, from the panel or from the page: Safari's click
+  // on the bell, or a press on the panel's text, focuses nothing, and Tab then blurs nothing here.
+  // Focus going nowhere (that press, the window losing focus) fires no focusin.
+  useEffect(() => {
+    if (!open) return
+    const onFocusIn = (e: FocusEvent) => {
+      if (e.target instanceof Node && !ref.current?.contains(e.target)) closePanel()
+    }
+    document.addEventListener('focusin', onFocusIn, true)
+    return () => document.removeEventListener('focusin', onFocusIn, true)
+  }, [open, closePanel])
 
   return (
-    <div className="relative hidden lg:flex h-10 items-center" ref={ref}>
+    <div
+      className="relative hidden lg:flex h-10 items-center"
+      ref={ref}
+    >
       <button
+        ref={buttonRef}
         onClick={() => (open ? closePanel() : setOpen(true))}
         // Says whether the panel is open, as the drawer's button does.
         aria-expanded={open}
@@ -92,7 +136,7 @@ export default function NotificationBell() {
       {/* Opening leaves visibility out of the transition, so Mark all read and the links can
           take focus in the frame the panel opens (a Tab straight after Enter); closing keeps
           it in, so the panel stays visible while it fades. The desktop nav menus do the same. */}
-      <div id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden duration-200 ${open ? 'transition-[opacity,translate] opacity-100 visible translate-y-0 pointer-events-auto' : 'transition-all opacity-0 invisible translate-y-2 pointer-events-none'}`}>
+      <div ref={panelRef} id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden duration-200 ${open ? 'transition-[opacity,translate] opacity-100 visible translate-y-0 pointer-events-auto' : 'transition-all opacity-0 invisible translate-y-2 pointer-events-none'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
           {/* Focusable for Mark all read leaving with focus on it (markAllRef). */}
           <p ref={headingRef} tabIndex={-1} className="text-sm font-medium text-white">Notifications</p>
