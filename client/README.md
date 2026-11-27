@@ -79,7 +79,8 @@ src/
                      storage reads and writes that never throw, the typed
                      confirmation's match, each history entry's remembered
                      filters, a page path's lowercase spelling, whether an
-                     address's path is printable text, and the pure logic
+                     address's path is printable text, whether a search pick
+                     is the address already open, and the pure logic
                      behind the Progress page, its Manage progress card, the
                      tip that points to it, and the admin page
 public/              robots.txt, ads.txt, static sitemap.xml, favicons;

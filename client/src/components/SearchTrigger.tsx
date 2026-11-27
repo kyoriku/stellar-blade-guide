@@ -1,8 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import type { RefObject } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { useSearch } from '../hooks/useSearch'
+import { isOpenAddress } from '../utils/openAddress'
 import { SearchResults } from './SearchResults'
 
 interface SearchTriggerProps {
@@ -30,6 +31,7 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   const onExpandRef = useRef(onExpand)
   useEffect(() => { onExpandRef.current = onExpand })
   const navigate = useNavigate()
+  const location = useLocation()
   // isPending, as on mobile: TanStack's isLoading is false while the query is still
   // debouncing (disabled), which flashed "No results" on the second character.
   const { data, isPending, isError, error } = useSearch(query)
@@ -121,7 +123,9 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
       setActiveIndex(i => Math.max(i - 1, -1))
     } else if (e.key === 'Enter') {
       if (activeIndex >= 0 && results[activeIndex]) {
-        void navigate(results[activeIndex].navigation_url)
+        // The address already open replaces its entry, so Back still leaves the page.
+        const url = results[activeIndex].navigation_url
+        void navigate(url, { replace: isOpenAddress(url, location) })
         collapse()
       }
     } else if (e.key === 'Escape') {

@@ -1,8 +1,10 @@
-import { Link } from 'react-router-dom'
+import type { MouseEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Compass, Zap, Sparkles, BookOpen, Map, Layers, Book } from 'lucide-react'
 import type { SearchResponse } from '../services/api'
 import { errorMessage } from '../services/api'
 import { usePrefetch } from '../hooks/usePrefetch'
+import { isOpenAddress } from '../utils/openAddress'
 
 interface SearchResultsProps {
   query: string
@@ -54,6 +56,19 @@ export function SearchResults({
   activeIndex = -1,
 }: SearchResultsProps) {
   const { prefetchCollectiblesByType, prefetchWalkthroughBySlug, prefetchWalkthroughsByType, prefetchLevel } = usePrefetch()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // A plain left click on the address already open replaces its entry, so Back still leaves the
+  // page. Link's own test compares the router's location as text, which misses a Greek anchor and
+  // an address Contents or Back to top rewrote. Modified clicks keep the browser's new tab.
+  const handleClick = (e: MouseEvent<HTMLAnchorElement>, url: string) => {
+    onResultClick()
+    if (e.button !== 0 || e.metaKey || e.altKey || e.ctrlKey || e.shiftKey || e.defaultPrevented) return
+    if (!isOpenAddress(url, location)) return
+    e.preventDefault()
+    void navigate(url, { replace: true })
+  }
 
   const handleMouseEnter = (result: SearchResponse['results'][number]) => {
     const target = parsePrefetchTarget(result)
@@ -131,7 +146,10 @@ export function SearchResults({
           <Link
             key={`${result.kind}-${result.id}`}
             to={result.navigation_url}
-            onClick={onResultClick}
+            // Never Link's own test, which would replace a card picked again after Contents or
+            // Back to top moved away.
+            replace={false}
+            onClick={e => handleClick(e, result.navigation_url)}
             onMouseEnter={() => handleMouseEnter(result)}
             className={`group flex items-start gap-3 lg:px-4 py-3 transition-colors rounded-lg lg:mx-1 ${
               isActive ? 'bg-gray-800/70' : 'hover:bg-gray-800/50'
