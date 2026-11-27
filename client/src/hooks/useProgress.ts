@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useState, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
@@ -7,6 +7,7 @@ import { API_BASE_URL, apiError, errorMessage } from '../services/api'
 import type { ProgressWriteResponse } from '../services/api'
 import { STORAGE_COPY } from '../constants/storageCopy'
 import { createGuestMemory, dropGuestIds, guestIds as readGuestIds, markGuest } from '../utils/guestProgress'
+import { setTo } from '../utils/setTo'
 
 const PROGRESS_WRITE_KEY = ['progress', 'write']
 
@@ -67,8 +68,15 @@ export function useProgress() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
-  // Guest state
-  const [guestIds, setGuestIds] = useState<Set<number>>(() => readGuestIds(guestMemory))
+  // Guest state, a reducer since the check below sets it in render as well as on a click.
+  const [guestIds, setGuestIds] = useReducer(setTo<Set<number>>, guestMemory, readGuestIds)
+  // A sign-out under this page, here or in another tab, shows what the browser holds now,
+  // not what it held when the page mounted.
+  const [guestFor, setGuestFor] = useState(isAuthenticated)
+  if (guestFor !== isAuthenticated) {
+    setGuestFor(isAuthenticated)
+    if (!isAuthenticated) setGuestIds(readGuestIds(guestMemory))
+  }
   // What this page shows, which a guest click's intent comes from. Set after each commit,
   // never in render, so toggle keeps one identity.
   const shownGuestIds = useRef(guestIds)

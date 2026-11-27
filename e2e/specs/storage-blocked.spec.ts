@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { holdRoute } from '../helpers/route';
 import { oauthErrorNotice } from '../../client/src/utils/oauthError';
 import { STORAGE_COPY } from '../../client/src/constants/storageCopy';
 import { COLLECTIBLES, UPGRADES, COSMETICS } from '../../client/src/constants/navigation';
@@ -661,6 +662,59 @@ test.describe('storage that works', () => {
     await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
     await press(page, fx.collectibleId, 'Mark as not found');
     expect(await toastLog(page)).toEqual([]);
+    expect(await page.evaluate(() => localStorage.getItem('sb_progress'))).toBe(JSON.stringify([fx.collectibleId]));
+  });
+});
+
+/**
+ * A page that stays mounted through a sign-out shows what the browser holds then, not what
+ * it held when the page mounted.
+ */
+test.describe("a guest's checkmarks after a sign-out", () => {
+  let users: TestUser[] = [];
+  let seq = 0;
+  test.afterEach(async ({ page }) => {
+    for (const user of users) await apiDeleteUser(page, user, ip);
+    users = [];
+  });
+
+  test('signing out on a level page shows what this browser holds now', async ({ page, context }) => {
+    const user = makeUser(fx.token, `so${++seq}`);
+    users.push(user);
+    await apiRegister(page, user, ip);
+    await context.clearCookies();
+    await page.addInitScript((id) => {
+      if (sessionStorage.getItem('sb-test-seeded')) return;
+      sessionStorage.setItem('sb-test-seeded', '1');
+      localStorage.setItem('sb_progress', JSON.stringify([id]));
+    }, fx.collectibleId);
+    // Held, so the level page has mounted again before the sync's drop empties storage.
+    const syncHeld = await holdRoute(page, '**/api/progress/sync');
+
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+    await page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true }).click();
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await syncHeld.seen;
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
+    await expect(box(page, fx.collectibleId)).toBeVisible();
+
+    const synced = page.waitForResponse((r) => r.url().endsWith('/api/progress/sync') && r.status() === 200);
+    syncHeld.release();
+    await synced;
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sb_progress'))).toBeNull();
+
+    // The account has the checkmark now; this browser doesn't.
+    await page.getByRole('button', { name: 'Account menu' }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
+    await expect(page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    // A click goes by what the page shows now.
+    await press(page, fx.collectibleId, 'Mark as not found');
     expect(await page.evaluate(() => localStorage.getItem('sb_progress'))).toBe(JSON.stringify([fx.collectibleId]));
   });
 });
