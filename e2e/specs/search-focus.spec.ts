@@ -10,7 +10,8 @@ import { buildSlugMap } from '../../client/src/utils/slugify';
 // anywhere while it's open. Focus moved elsewhere meanwhile, a pick that lands somewhere and a
 // press outside are left alone, and Clear search keeps focus in the box. A press on Close
 // search, or on the result for the page you're on, gives focus back without the focus ring; a
-// key gives it back with one.
+// key gives it back with one. Back, Forward and a typed fragment close it, focus in it going to
+// the Search button; focus landing outside it closes it too, and stays where it landed.
 
 const LEVEL = '/levels/eidos-7';
 const SUITS = '/cosmetics/nano-suits';
@@ -132,10 +133,10 @@ async function watchFocus(page: Page, named: Record<string, Locator>) {
   return () => page.evaluate(() => (window as unknown as Landings).landed);
 }
 
-// The Levels menu, opened by Enter on its arrow, with focus on its first link and its opening fade
-// run out.
-async function intoTheLevelsMenu(page: Page) {
-  await page.goto('/privacy');
+// The Levels menu, on the page arrive goes to (/privacy unless it says), opened by Enter on its
+// arrow, with focus on its first link and its opening fade run out.
+async function intoTheLevelsMenu(page: Page, arrive = async (page: Page) => { await page.goto('/privacy'); }) {
+  await arrive(page);
   await page.mouse.move(5, 700);
   const arrow = page.getByRole('button', { name: 'Toggle levels menu', exact: true });
   await arrow.focus();
@@ -214,28 +215,6 @@ test.describe('search focus, desktop', () => {
       await expectClosedOnSearchButton(page);
     });
   }
-
-  test('Escape after focus has moved on closes the search and leaves focus where it is', async ({ page }) => {
-    await page.goto('/privacy');
-    await openByButton(page);
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    const moved = await page.evaluate(() => {
-      const active = document.activeElement!;
-      (window as unknown as { movedTo: Element }).movedTo = active;
-      // The results panel's parent holds the whole search.
-      const search = document.querySelector('.animate-drop-in')!.parentElement!;
-      return { onPage: active === document.body, inSearch: search.contains(active) };
-    });
-    expect(moved, 'focus is on something outside the search').toEqual({ onPage: false, inSearch: false });
-    const searchButtonFocus = await countSearchButtonFocus(page);
-    await page.keyboard.press('Escape');
-    await expect(box(page)).toHaveCount(0);
-    await settle(page);
-    expect(await page.evaluate(() => document.activeElement === (window as unknown as { movedTo: Element }).movedTo),
-      'focus still where it moved').toBe(true);
-    expect(await searchButtonFocus(), 'the Search button took no focus').toBe(0);
-  });
 
   for (const [how, press] of [
     ['click', async (x: Locator) => { await x.click(); }],
@@ -564,5 +543,355 @@ test.describe('search focus, desktop', () => {
     await expect(box(page)).toHaveCount(0);
     await expect(contents).toBeFocused();
     expect(await searchButtonFocus(), 'the Search button took no focus').toBe(0);
+  });
+});
+
+// A level page has rendered in full: its heading, then its cards. The address changes before
+// the page does, so a wait on the address alone would find the last page.
+async function showsLevel(page: Page, name: string) {
+  await expect(page.getByRole('heading', { level: 1, name, exact: true })).toBeVisible();
+  await expect(page.locator(CARDS).first()).toBeVisible();
+}
+
+// Xion, reached by a click on Eidos 7's Next link, at the foot of the page: Eidos 7's entry keeps
+// that place for Back.
+async function xionByNext(page: Page) {
+  await page.goto(LEVEL);
+  await showsLevel(page, 'Eidos 7');
+  await page.locator('main a').filter({ hasText: /^Next/ }).click();
+  await showsLevel(page, 'Xion');
+}
+
+// Eidos 7, reached by Back from Xion: Xion's data is cached, so the move back to it renders in
+// full, across React's yields.
+async function eidos7ByBack(page: Page) {
+  await xionByNext(page);
+  await page.goBack();
+  await showsLevel(page, 'Eidos 7');
+}
+
+// The element named 'opener' in watchFocus: still on the page, and what it now holds.
+const openerNow = (page: Page) => page.evaluate(() => {
+  const opener = [...(window as unknown as Landings).named].find(([, name]) => name === 'opener')![0];
+  return { connected: opener.isConnected, href: opener.getAttribute('href'), text: opener.textContent };
+});
+
+// A press on the results panel's padding, above the first result: no control, so focus falls to
+// the page.
+async function pressThePanel(page: Page) {
+  const edge = (await panel(page).boundingBox())!;
+  await page.mouse.click(edge.x + 24, edge.y + 2);
+  expect(await focusOnPage(page), 'focus on the page').toBe(true);
+}
+
+// The footer's Terms link: a second entry, made in the app.
+async function privacyThenTerms(page: Page) {
+  await page.goto('/privacy');
+  await page.locator('footer').getByRole('link', { name: 'Terms', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Terms of Service', exact: true })).toBeVisible();
+}
+
+// Follows the level page's Next link to `path` with a click from script, which moves no focus and
+// fires no pointer event, and goes Back while React renders that page, before it commits:
+// StructuredData turns the new page's crumbs into JSON as it renders. Records each heading shown,
+// from the one on screen now.
+const backWhileRendering = (page: Page, path: string) => page.evaluate((path) => {
+  const w = window as unknown as { backed: boolean; headings: string[] };
+  w.backed = false;
+  w.headings = [document.querySelector('main h1')?.textContent ?? ''];
+  new MutationObserver(() => {
+    const heading = document.querySelector('main h1')?.textContent ?? '';
+    if (w.headings.at(-1) !== heading) w.headings.push(heading);
+  }).observe(document.body, { subtree: true, childList: true, characterData: true });
+  const stringify = JSON.stringify;
+  JSON.stringify = function (this: JSON, ...args: Parameters<typeof JSON.stringify>) {
+    const [value] = args;
+    if (Array.isArray(value) && value.some(crumb => (crumb as { path?: string } | null)?.path === path)) {
+      JSON.stringify = stringify;
+      setTimeout(() => { w.backed = true; history.back(); }, 0);
+    }
+    return stringify.apply(this, args);
+  } as typeof JSON.stringify;
+  Array.from(document.querySelectorAll<HTMLAnchorElement>(`main a[href="${path}"]`))
+    .find(a => /^Next/.test(a.textContent ?? ''))!.click();
+}, path);
+
+// Back, Forward and a typed fragment close the search, and focus in it goes back to the Search
+// button, even after Ctrl+K. Focus landing on something outside it closes it too, from the box or
+// from the page after a press on its panel, and stays where it went; focus going nowhere, as on
+// that press, leaves it open, and so do a move the site makes on its own and a nav menu opened by
+// hover. The entries here have no fragment naming an element: Chromium clears focus after a
+// popstate that lands on one.
+test.describe('search on Back, Forward and Tab, desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ page, context }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+    await stubSearch(page, [{ kind: 'level', title: 'E2E page', url: LEVEL }]);
+  });
+
+  for (const [where, reach] of [
+    ['in the box', async (page: Page) => { await openWithResults(page); }],
+    ['on a result', async (page: Page) => {
+      await openWithResults(page);
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Tab');
+      await expect(result(page, 'E2E page')).toBeFocused();
+    }],
+  ] as const) {
+    for (const [how, before, travel] of [
+      ['Back', privacyThenTerms, async (page: Page) => {
+        await page.goBack();
+        await expect(page).toHaveURL(/\/privacy$/);
+      }],
+      ['Forward', async (page: Page) => {
+        await privacyThenTerms(page);
+        await page.goBack();
+        await expect(page.getByRole('heading', { level: 1, name: 'Privacy Policy', exact: true })).toBeVisible();
+      }, async (page: Page) => {
+        await page.goForward();
+        await expect(page).toHaveURL(/\/terms$/);
+      }],
+      ['a typed fragment that names nothing', async (page: Page) => { await page.goto('/privacy'); }, async (page: Page) => {
+        await page.evaluate(() => { location.hash = 'probe-fragment'; });
+        await expect(page).toHaveURL(/\/privacy#probe-fragment$/);
+      }],
+      ['a Back that cancels a page still rendering', eidos7ByBack, async (page: Page) => {
+        await backWhileRendering(page, '/levels/xion');
+        await expect.poll(() => page.evaluate(() => (window as unknown as { backed: boolean }).backed), 'Back went').toBe(true);
+        await expect(page).toHaveURL(new RegExp(`${LEVEL}$`));
+      }],
+    ] as const) {
+      test(`${how} with focus ${where} closes the search, focus going back to the Search button, and it reopens empty`, async ({ page }) => {
+        await before(page);
+        await reach(page);
+        await travel(page);
+        await expectClosedOnSearchButton(page);
+        if (how === 'a Back that cancels a page still rendering') {
+          await showsLevel(page, 'Eidos 7');
+          expect(await page.evaluate(() => (window as unknown as { headings: string[] }).headings), 'Xion never showed')
+            .toEqual(['Eidos 7']);
+        }
+        await page.keyboard.press('Enter');
+        await expect(box(page)).toBeFocused();
+        await expect(box(page)).toHaveValue('');
+      });
+    }
+  }
+
+  test('a typed fragment naming a section closes the search', async ({ page }) => {
+    await page.goto('/privacy');
+    await expect(page.locator('#cookies'), 'a section of the page').toHaveCount(1);
+    await openWithResults(page);
+    await page.evaluate(() => { location.hash = 'cookies'; });
+    await expect(page).toHaveURL(/\/privacy#cookies$/);
+    await expect(box(page)).toHaveCount(0);
+  });
+
+  test("Back after Ctrl+K gives focus to the Search button, not to the control the next entry shows in the opener's place", async ({ page }) => {
+    await xionByNext(page);
+    await page.mouse.move(5, 700);
+    // Contents keys its links by place: back on Eidos 7, Xion's third link shows Eidos 7's third.
+    const third = page.locator('aside nav a[href^="#"]').nth(2);
+    await expect(third).toHaveAttribute('href', '#main-gate');
+    await third.focus();
+    await page.keyboard.press('Control+k');
+    await expect(box(page)).toBeFocused();
+    const landed = await watchFocus(page, { opener: third });
+    await page.goBack();
+    await showsLevel(page, 'Eidos 7');
+    await expect.poll(landed, 'where focus landed').toEqual(['Search button']);
+    await expectClosedOnSearchButton(page);
+    expect(await openerNow(page), "the opener's link, now Parking Tower's").toMatchObject({ connected: true, href: '#parking-tower' });
+  });
+
+  test("Back after Ctrl+K to an entry far down its page gives focus to the Search button, not to the pill in the opener's place", async ({ page }) => {
+    await xionByNext(page);
+    await page.mouse.move(5, 700);
+    const ng = pill(page, 'NG+');
+    await ng.focus();
+    await page.keyboard.press('Control+k');
+    await expect(box(page)).toBeFocused();
+    const landed = await watchFocus(page, { opener: ng });
+    await page.goBack();
+    await showsLevel(page, 'Eidos 7');
+    // Eidos 7 comes back where its Next link was clicked, far below its pills.
+    await expect.poll(() => ng.evaluate(el => el.getBoundingClientRect().bottom), 'the pill, off screen').toBeLessThan(0);
+    await expect.poll(landed, 'where focus landed').toEqual(['Search button']);
+    await expectClosedOnSearchButton(page);
+    expect(await openerNow(page), "the opener's pill, now Eidos 7's").toMatchObject({ connected: true, text: 'NG+' });
+  });
+
+  for (const [how, arrive, travel] of [
+    ['Back', privacyThenTerms, async (page: Page) => {
+      await page.goBack();
+      await expect(page).toHaveURL(/\/privacy$/);
+    }],
+    ['a typed fragment that names nothing', async (page: Page) => { await page.goto('/privacy'); }, async (page: Page) => {
+      await page.evaluate(() => { location.hash = 'probe-fragment'; });
+      await expect(page).toHaveURL(/\/privacy#probe-fragment$/);
+    }],
+  ] as const) {
+    test(`${how} after Ctrl+K from a link in an open nav menu gives focus to the Search button, not to the menu's arrow`, async ({ page }) => {
+      const { arrow, link } = await intoTheLevelsMenu(page, arrive);
+      await page.keyboard.press('Control+k');
+      await expect(box(page)).toBeFocused();
+      await expect(arrow, 'opening the search closed the menu').toHaveAttribute('aria-expanded', 'false');
+      const landed = await watchFocus(page, { arrow, link });
+      await travel(page);
+      await expect(box(page)).toHaveCount(0);
+      await expect.poll(landed, 'where focus landed').toEqual(['Search button']);
+      await expectClosedOnSearchButton(page);
+    });
+  }
+
+  test('Back after a press on the results panel closes the search, and focus stays on the page', async ({ page }) => {
+    await privacyThenTerms(page);
+    await openWithResults(page);
+    await pressThePanel(page);
+    const searchButtonFocus = await countSearchButtonFocus(page);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(box(page)).toHaveCount(0);
+    await settle(page);
+    expect(await focusOnPage(page), 'focus still on the page').toBe(true);
+    expect(await searchButtonFocus(), 'the Search button took no focus').toBe(0);
+  });
+
+  test('Tab past its last control closes the search, and focus stays where Tab put it', async ({ page }) => {
+    await page.goto('/privacy');
+    await openWithResults(page);
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(result(page, 'E2E page')).toBeFocused();
+    const searchButtonFocus = await countSearchButtonFocus(page);
+    await page.keyboard.press('Tab');
+    await expect(signIn(page)).toBeFocused();
+    await expect(box(page)).toHaveCount(0);
+    await settle(page);
+    await expect(signIn(page)).toBeFocused();
+    expect(await searchButtonFocus(), 'the Search button took no focus').toBe(0);
+  });
+
+  test('Shift+Tab out of the box closes the search, and focus stays where it went', async ({ page }) => {
+    await page.goto('/privacy');
+    await openWithResults(page);
+    const searchButtonFocus = await countSearchButtonFocus(page);
+    await page.keyboard.press('Shift+Tab');
+    // The last nav menu's arrow, before the search in the bar.
+    const arrow = page.getByRole('button', { name: 'Toggle cosmetics menu', exact: true });
+    await expect(arrow).toBeFocused();
+    await expect(box(page)).toHaveCount(0);
+    await settle(page);
+    await expect(arrow).toBeFocused();
+    expect(await searchButtonFocus(), 'the Search button took no focus').toBe(0);
+  });
+
+  test('Tab and Shift+Tab within the search keep it open', async ({ page }) => {
+    await stubSearch(page, [
+      { kind: 'level', title: 'E2E page', url: LEVEL },
+      { kind: 'level', title: 'E2E other page', url: '/levels/xion' },
+    ]);
+    await page.goto('/privacy');
+    await openWithResults(page);
+    const clear = page.getByRole('button', { name: 'Clear search', exact: true });
+    const stops = [box(page), clear, result(page, 'E2E page'), result(page, 'E2E other page')];
+    for (const [key, at] of [['Tab', 1], ['Tab', 2], ['Tab', 3], ['Shift+Tab', 2], ['Shift+Tab', 1], ['Shift+Tab', 0]] as const) {
+      await page.keyboard.press(key);
+      await expect(stops[at]).toBeFocused();
+      await expect(box(page)).toBeVisible();
+    }
+    await settle(page);
+    await expect(box(page)).toBeFocused();
+  });
+
+  test('a press on the results panel keeps the search open, and Escape then closes it with focus on the Search button', async ({ page }) => {
+    await page.goto('/privacy');
+    await openWithResults(page);
+    await pressThePanel(page);
+    await settle(page);
+    await expect(result(page, 'E2E page')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expectClosedOnSearchButton(page);
+  });
+
+  test('a press on the results panel, then Tab, closes the search, and focus stays where Tab put it', async ({ page }) => {
+    await page.goto('/privacy');
+    await openByButton(page);
+    // The prompt holds no link, so Tab carries on from the press, past the search.
+    await panel(page).getByText('Search collectibles, walkthroughs, levels…', { exact: true }).click();
+    expect(await focusOnPage(page), 'focus on the page').toBe(true);
+    await expect(box(page)).toBeVisible();
+    const searchButtonFocus = await countSearchButtonFocus(page);
+    await page.keyboard.press('Tab');
+    await expect(signIn(page)).toBeFocused();
+    await expect(box(page)).toHaveCount(0);
+    await settle(page);
+    await expect(signIn(page)).toBeFocused();
+    expect(await searchButtonFocus(), 'the Search button took no focus').toBe(0);
+  });
+
+  test('a press on the panel showing No results, then Tab to a link and Enter, opens that page with no search open', async ({ page }) => {
+    await stubSearch(page, []);
+    await page.goto('/privacy');
+    await openByButton(page);
+    await box(page).fill('e2e');
+    const none = panel(page).getByText(/^No results for/);
+    await none.click();
+    expect(await focusOnPage(page), 'focus on the page').toBe(true);
+    await page.keyboard.press('Tab');
+    await expect(signIn(page)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { level: 1, name: 'Welcome back', exact: true })).toBeVisible();
+    await settle(page);
+    await expect(box(page)).toHaveCount(0);
+    await expect(searchButton(page)).toBeVisible();
+  });
+
+  test('Tab from the search on into the page, and a link followed there, leaves no search open on the next page', async ({ page }) => {
+    await page.goto('/terms');
+    await openWithResults(page);
+    const disclaimer = page.locator('footer').getByRole('link', { name: 'Disclaimer', exact: true });
+    for (let i = 0; i < 12 && !(await disclaimer.evaluate(a => a === document.activeElement)); i++) {
+      await page.keyboard.press('Tab');
+    }
+    await expect(disclaimer).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { level: 1, name: 'Disclaimer', exact: true })).toBeVisible();
+    await settle(page);
+    await expect(box(page)).toHaveCount(0);
+    await expect(searchButton(page)).toBeVisible();
+  });
+
+  test('a move the site makes on its own leaves the search open with its text', async ({ page }) => {
+    // Answered here, as the API answers a good token: the page then moves on to sign-in in 3 s.
+    await page.route('**/api/auth/reset-password', route => route.fulfill({ status: 204 }));
+    await page.goto('/reset-password?token=e2e');
+    await page.locator('#password').fill('e2e-new-password');
+    await page.getByRole('button', { name: 'Update password', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Password updated', exact: true })).toBeVisible();
+    await openByButton(page);
+    await expect(page, 'the search opened before the page moved on').toHaveURL(/\/reset-password/);
+    await box(page).fill('e2e');
+    await expect(result(page, 'E2E page')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Welcome back', exact: true })).toBeVisible();
+    await settle(page);
+    await expect(box(page)).toHaveValue('e2e');
+    await expect(box(page)).toBeFocused();
+    await expect(result(page, 'E2E page')).toBeVisible();
+  });
+
+  test('hovering a nav menu leaves the search open with its text', async ({ page }) => {
+    await page.goto('/privacy');
+    await page.mouse.move(5, 700);
+    await openWithResults(page);
+    const arrow = page.getByRole('button', { name: 'Toggle collectibles menu', exact: true });
+    // The menu's label, clear of the open search.
+    await arrow.locator('xpath=preceding-sibling::a').hover();
+    await expect(arrow).toHaveAttribute('aria-expanded', 'true');
+    await settle(page);
+    await expect(box(page)).toHaveValue('e2e');
+    await expect(box(page)).toBeFocused();
+    await expect(result(page, 'E2E page')).toBeVisible();
   });
 });

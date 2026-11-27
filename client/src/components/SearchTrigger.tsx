@@ -174,6 +174,33 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
     return () => document.removeEventListener('keydown', handler)
   }, [isExpanded, close])
 
+  // Back, Forward and a typed fragment close it, and focus in it goes back to the Search button: a
+  // Ctrl+K opener belongs to the entry left behind, where React may have reused its node.
+  useEffect(() => {
+    if (!isExpanded) return
+    const onPop = () => {
+      opener.current = null
+      openerPanel.current = null
+      close(!!containerRef.current?.contains(document.activeElement))
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [isExpanded, close])
+
+  // Focus landing on something outside closes it, and stays where it went: from the box, or from
+  // the page after a press on the panel, where Tab blurs nothing in it. Focus going nowhere (that
+  // press, the window losing focus) fires no focusin, so it stays open.
+  useEffect(() => {
+    if (!isExpanded) return
+    const onFocusIn = (e: FocusEvent) => {
+      // No box: the search has closed, and its own focus return is running.
+      const box = containerRef.current
+      if (box && e.target instanceof Node && !box.contains(e.target)) close(false)
+    }
+    document.addEventListener('focusin', onFocusIn, true)
+    return () => document.removeEventListener('focusin', onFocusIn, true)
+  }, [isExpanded, close])
+
   // A press outside closes it, and focus goes where the press puts it.
   useEffect(() => {
     if (!isExpanded) return
