@@ -12,7 +12,7 @@ import { buildSlugMap } from '../../client/src/utils/slugify';
 // search, or on the result for the page you're on, gives focus back without the focus ring; a
 // key gives it back with one. Back, Forward and a typed fragment close it, focus in it going to
 // the Search button; focus landing outside it closes it too, and stays where it landed. Ctrl+K
-// opens it only from the desktop layout up.
+// opens it only from the desktop layout up. The arrow keys keep the highlighted result in view.
 
 const LEVEL = '/levels/eidos-7';
 const SUITS = '/cosmetics/nano-suits';
@@ -30,12 +30,12 @@ async function typeCards(page: Page, path: string): Promise<Card[]> {
 
 // Every search answers these results: what's under test is where focus goes, not the ranking,
 // and no Redis key is left behind.
-async function stubSearch(page: Page, results: { kind: string; title: string; url: string }[]) {
+async function stubSearch(page: Page, results: { kind: string; title: string; url: string; snippet?: string }[]) {
   await page.route('**/api/search/**', route => route.fulfill({
     json: {
       query: 'e2e',
       total: results.length,
-      results: results.map((r, i) => ({ kind: r.kind, id: i + 1, title: r.title, snippet: null, navigation_url: r.url, score: 4 })),
+      results: results.map((r, i) => ({ kind: r.kind, id: i + 1, title: r.title, snippet: r.snippet ?? null, navigation_url: r.url, score: 4 })),
     },
   }));
 }
@@ -952,4 +952,57 @@ test.describe('Ctrl+K at the desktop layout', () => {
       await expect.poll(taken, 'the app took the press').toEqual([true]);
     });
   }
+});
+
+// The arrow keys keep the highlighted result whole in view, scrolling the panel the least they
+// can and never the page, so Enter never opens a row the reader can't see.
+test.describe('the highlighted result, desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ page, context }) => {
+    await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
+    // Rows with a snippet, as tall as most real ones: six fit in the panel.
+    await stubSearch(page, Array.from({ length: 15 }, (_, i) => ({
+      kind: 'level', title: `Row ${i + 1}`, url: `/levels/xion#e2e-row-${i + 1}`, snippet: 'A snippet, as most results have',
+    })));
+  });
+
+  const row = (page: Page, n: number) =>
+    panel(page).getByRole('link').filter({ has: page.getByText(`Row ${n}`, { exact: true }) });
+
+  // Where the row sits against the panel's inside: a whole row has top >= 0 and bottom <= 0.
+  const placeOf = (page: Page, n: number) => row(page, n).evaluate(a => {
+    const panel = a.closest('.animate-drop-in')!;
+    const p = panel.getBoundingClientRect();
+    const r = a.getBoundingClientRect();
+    const top = p.top + panel.clientTop;
+    return { top: r.top - top, bottom: r.bottom - (top + panel.clientHeight) };
+  });
+
+  test('the arrow keys keep the highlighted result in view, and Enter opens it', async ({ page }) => {
+    await page.goto('/privacy');
+    await page.evaluate(() => window.scrollTo(0, 300));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(300);
+    await openByButton(page);
+    await box(page).fill('e2e');
+    await expect(row(page, 15)).toBeAttached();
+    expect((await placeOf(page, 10)).bottom, 'the 10th row starts out of view').toBeGreaterThan(0);
+    for (let n = 1; n <= 10; n++) {
+      await page.keyboard.press('ArrowDown');
+      await expect(row(page, n)).toHaveClass(/bg-gray-800\/70/);
+      const { top, bottom } = await placeOf(page, n);
+      expect(top >= 0 && bottom <= 0, `row ${n} whole in view`).toBe(true);
+    }
+    expect((await placeOf(page, 10)).bottom, 'the 10th row at the foot of the panel').toBe(0);
+    for (let n = 9; n >= 2; n--) {
+      await page.keyboard.press('ArrowUp');
+      await expect(row(page, n)).toHaveClass(/bg-gray-800\/70/);
+      const { top, bottom } = await placeOf(page, n);
+      expect(top >= 0 && bottom <= 0, `row ${n} whole in view`).toBe(true);
+    }
+    expect((await placeOf(page, 2)).top, 'the 2nd row at the head of the panel').toBe(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page stayed put').toBe(300);
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/levels\/xion#e2e-row-2$/);
+  });
 });

@@ -43,6 +43,7 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   // Set by close(true): once the search has closed, focus goes back to what opened it.
   const returnFocus = useRef(false)
   // Set when a pointer press closed it: focus goes back without the focus ring, as after a click.
@@ -95,6 +96,19 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
   useEffect(() => {
     setActiveIndex(-1)
   }, [query])
+
+  // A keyboard move brings the highlighted result whole into view, scrolling the panel the least
+  // it can and never the page.
+  useLayoutEffect(() => {
+    const panel = panelRef.current
+    const row = activeIndex >= 0 ? panel?.querySelector('[data-active]') : null
+    if (!panel || !row) return
+    const top = panel.getBoundingClientRect().top + panel.clientTop
+    const bottom = top + panel.clientHeight
+    const rect = row.getBoundingClientRect()
+    if (rect.top < top) panel.scrollTop -= top - rect.top
+    else if (rect.bottom > bottom) panel.scrollTop += rect.bottom - bottom
+  }, [activeIndex])
 
   // Every way the search closes. One that takes the reader nowhere gives focus back.
   const close = useCallback((giveFocusBack: boolean, byPointer = false) => {
@@ -286,7 +300,7 @@ export function SearchTrigger({ onExpand, avoidRef }: SearchTriggerProps) {
           </button>
         </div>
       </div>
-      <div className="animate-drop-in absolute right-0 mt-2 w-88 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden max-h-96 overflow-y-auto custom-scrollbar">
+      <div ref={panelRef} className="animate-drop-in absolute right-0 mt-2 w-88 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden max-h-96 overflow-y-auto custom-scrollbar">
         <SearchResults
           query={query}
           data={data}

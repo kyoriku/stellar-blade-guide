@@ -155,6 +155,8 @@ export function SearchResults({
             // Never Link's own test, which would replace a card picked again after Contents or
             // Back to top moved away.
             replace={false}
+            // The row the arrow keys have reached, which the panel keeps in view.
+            data-active={isActive || undefined}
             onClick={e => handleClick(e, result.navigation_url)}
             onMouseEnter={() => handleMouseEnter(result)}
             className={`group flex items-start gap-3 lg:px-4 py-3 transition-colors rounded-lg lg:mx-1 ${
