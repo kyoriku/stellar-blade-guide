@@ -670,6 +670,8 @@ test('in the drawer, Sign out shows the busy pattern, the drawer stays open unti
   await toggle.click();
   const signOut = drawer.getByRole('button', { name: 'Sign out', exact: true });
   await expect(signOut).toBeVisible();
+  // Its idle size is taken once the drawer has slid in: mid-slide its box moves by fractions.
+  await drawer.evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)));
   const hold = await holdSignOut(page);
   await expectBusyPattern(signOut, {
     name: 'Sign out', busyText: 'Signing out…', live: signOutLive(page),
