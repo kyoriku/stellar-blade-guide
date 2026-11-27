@@ -3,6 +3,7 @@ import { readFixtures, setUserRole, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
 import { ADMIN_COPY } from '../../client/src/constants/adminCopy';
 import { expectBusyPattern } from '../helpers/busy';
+import { pressAsSafari } from '../helpers/safari';
 
 // The navbar's account menu (desktop) runs on the WAI-ARIA menu button pattern, as the
 // admin page's row menus do (client/src/hooks/useMenuButton.ts): the button opens it
@@ -32,6 +33,27 @@ const signOutLive = (page: Page) => page.locator('button[aria-controls="mobile-m
 const accountPanel = (page: Page) => page.locator('[role="menu"][aria-label="Account menu"]').locator('xpath=..');
 // The desktop search's box; the drawer's sits outside the bar.
 const searchBox = (page: Page) => page.locator('nav input');
+const LEVEL = '/levels/eidos-7';
+// The level page's own Next link, to the level after it.
+const nextLink = (page: Page) => page.locator('main a').filter({ hasText: /^Next/ });
+const focusOnPage = (page: Page) => page.evaluate(() => document.activeElement === document.body);
+
+// A level page has rendered in full: its heading, then its cards. The address changes before
+// the page does, so a wait on the address alone would find the last page.
+async function showsLevel(page: Page, name: string) {
+  await expect(page.getByRole('heading', { level: 1, name, exact: true })).toBeVisible();
+  await expect(page.locator('section[id] article[id]').first()).toBeVisible();
+}
+
+// Counts focus events on the drawer's menu button from here on. It stays mounted across pages.
+async function countMenuButtonFocus(page: Page) {
+  await page.getByRole('button', { name: 'Toggle menu' }).evaluate(button => {
+    const w = window as unknown as { menuButtonFocus?: number };
+    if (w.menuButtonFocus === undefined) button.addEventListener('focus', () => { w.menuButtonFocus! += 1; });
+    w.menuButtonFocus = 0;
+  });
+  return () => page.evaluate(() => (window as unknown as { menuButtonFocus: number }).menuButtonFocus);
+}
 
 // Holds every sign-out request until release(), then lets the server answer it.
 async function holdSignOut(page: Page) {
@@ -367,6 +389,96 @@ test('in the drawer, Sign out shows the busy pattern, the drawer stays open unti
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(drawer.getByRole('link', { name: 'Sign in', exact: true })).toBeAttached();
   await expectNoSecondSignOut(page, hold);
+});
+
+for (const [how, press] of [
+  ['a click', async (signOut: Locator) => { await signOut.click(); }],
+  ['the keyboard', async (signOut: Locator) => { await signOut.focus(); await signOut.press('Enter'); }],
+] as const) {
+  test(`in the drawer, Sign out by ${how} gives focus back to the menu button once it lands`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    const toggle = page.getByRole('button', { name: 'Toggle menu' });
+    const drawer = page.locator('#mobile-menu');
+    await toggle.click();
+    const signOut = drawer.getByRole('button', { name: 'Sign out', exact: true });
+    await expect(signOut).toBeVisible();
+    const hold = await holdSignOut(page);
+    await press(signOut);
+    await hold.seen;
+    await expect(signOut, 'still in the drawer while it is out').toBeFocused();
+    hold.release();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle).toBeFocused();
+  });
+}
+
+test('in the drawer, Sign out pressed as Safari does gives focus back to the menu button once it lands', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const toggle = page.getByRole('button', { name: 'Toggle menu' });
+  const drawer = page.locator('#mobile-menu');
+  await toggle.click();
+  const signOut = drawer.getByRole('button', { name: 'Sign out', exact: true });
+  await expect(signOut).toBeVisible();
+  const hold = await holdSignOut(page);
+  await pressAsSafari(signOut);
+  await hold.seen;
+  expect(await focusOnPage(page), 'focus on nothing while it is out').toBe(true);
+  hold.release();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle).toBeFocused();
+});
+
+test('in the drawer, a Sign out that lands after a drawer link has closed the drawer leaves focus on the page', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(LEVEL);
+  await showsLevel(page, 'Eidos 7');
+  const toggle = page.getByRole('button', { name: 'Toggle menu' });
+  const drawer = page.locator('#mobile-menu');
+  await toggle.click();
+  const signOut = drawer.getByRole('button', { name: 'Sign out', exact: true });
+  await expect(signOut).toBeVisible();
+  const hold = await holdSignOut(page);
+  await signOut.click();
+  await hold.seen;
+  const focuses = await countMenuButtonFocus(page);
+  await drawer.getByRole('link', { name: 'Xion', exact: true }).click();
+  await showsLevel(page, 'Xion');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect.poll(() => focusOnPage(page), 'focus on the page once the link has closed the drawer').toBe(true);
+  hold.release();
+  await expect(drawer.getByRole('link', { name: 'Sign in', exact: true })).toBeAttached();
+  await settle(page);
+  expect(await focusOnPage(page), 'focus still on the page').toBe(true);
+  expect(await focuses(), 'the menu button took no focus').toBe(0);
+});
+
+test('in the drawer, a Sign out pressed as Safari does, then Back while it is out, leaves focus on the page once it lands', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(LEVEL);
+  await showsLevel(page, 'Eidos 7');
+  // A page of the app's own, so Back stays in this document.
+  await nextLink(page).click();
+  await showsLevel(page, 'Xion');
+  const toggle = page.getByRole('button', { name: 'Toggle menu' });
+  const drawer = page.locator('#mobile-menu');
+  await toggle.click();
+  const signOut = drawer.getByRole('button', { name: 'Sign out', exact: true });
+  await expect(signOut).toBeVisible();
+  const hold = await holdSignOut(page);
+  await pressAsSafari(signOut);
+  await hold.seen;
+  expect(await focusOnPage(page), 'focus on nothing while it is out').toBe(true);
+  const focuses = await countMenuButtonFocus(page);
+  await page.goBack();
+  await showsLevel(page, 'Eidos 7');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  hold.release();
+  await expect(drawer.getByRole('link', { name: 'Sign in', exact: true })).toBeAttached();
+  await settle(page);
+  expect(await focusOnPage(page), 'focus still on the page').toBe(true);
+  expect(await focuses(), 'the menu button took no focus').toBe(0);
 });
 
 test("an admin's menu holds Admin between Settings and Sign out, and the keys reach it", async ({ page }) => {

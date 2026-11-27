@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, NavigationType, useLocation, useNavigationType } from 'react-router-dom'
 import { Menu, X, ChevronDown, Search, LogIn, User, LogOut, Settings, BarChart3, Shield } from 'lucide-react'
 import BusyLabel from './BusyLabel'
@@ -18,6 +18,7 @@ import MobileAccordionSection from './navbar/MobileAccordionSection'
 import { ADMIN_COPY } from '../constants/adminCopy'
 import { useMenuButton } from '../hooks/useMenuButton'
 import { browserEntryKey } from '../utils/historyEntry'
+import { focusLeftNowhere } from '../utils/focus'
 
 // The account menu's items: the current page's in cyan, the others lit on hover and
 // on keyboard focus alike, as in the admin page's row menus (the arrows move focus
@@ -78,10 +79,11 @@ function Navbar() {
   // Sign out shows its progress where it was pressed, the account menu or the drawer,
   // which stays open until it lands (it waits for a refresh in another tab of this
   // browser, then the request), and ignores a second press meanwhile. The menu goes
-  // with the signed-in navbar; the drawer closes.
+  // with the signed-in navbar; a drawer still open closes, giving focus back to the menu
+  // button. One a link or Back has closed meanwhile took the reader somewhere.
   const [signingOut, setSigningOut] = useState(false)
   const signingOutRef = useRef(false)
-  const handleLogout = async () => {
+  const handleLogout = async (from: 'menu' | 'drawer') => {
     if (signingOutRef.current) return
     signingOutRef.current = true
     setSigningOut(true)
@@ -92,13 +94,20 @@ function Navbar() {
     } finally {
       signingOutRef.current = false
       setSigningOut(false)
-      setIsOpen(false)
+      closeDrawer(from === 'drawer' && isOpenRef.current)
     }
   }
 
-  // Focus restore target when the drawer is dismissed via the backdrop —
-  // inert blurs the drawer's focused element to <body> otherwise.
+  // Takes back the focus a closing drawer held, which inert would drop to <body>. Always mounted.
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  // A close that takes the reader nowhere gives focus back to the menu button, from the drawer or
+  // from nothing. Focus moved elsewhere meanwhile stays put.
+  const closeDrawer = useCallback((giveFocusBack: boolean) => {
+    setIsOpen(false);
+    if (giveFocusBack && focusLeftNowhere(drawerRef.current)) menuButtonRef.current?.focus();
+  }, []);
   // The desktop links, handed to the search so its input can size itself around them.
   const navLinksRef = useRef<HTMLDivElement>(null);
   const [openDropdown, setOpenDropdown] = useState<null | 'walkthroughs' | 'levels' | 'collectibles' | 'upgrades' | 'cosmetics'>(null);
@@ -171,6 +180,9 @@ function Navbar() {
     // resetting its sections now would undo what the reader has done in it since. A POP is
     // never late, and two entries can share the key 'default', so a POP always closes.
     if (isOpenRef.current && navigationType !== NavigationType.Pop && drawerOpenedFor.current === location.key) return;
+    // Back, Forward or a move the site makes, with focus still in the open drawer: the menu button
+    // takes it. A link in the drawer has closed it already, in its own click.
+    if (isOpenRef.current && drawerRef.current?.contains(document.activeElement)) menuButtonRef.current?.focus();
     setIsOpen(false);
     setSearchQuery('');
     if (!searchQueryRef.current) {
@@ -440,7 +452,7 @@ function Navbar() {
                       )}
                       <button
                         type="button"
-                        {...accountMenu.getItemProps(() => void handleLogout(), { keepOpen: true })}
+                        {...accountMenu.getItemProps(() => void handleLogout('menu'), { keepOpen: true })}
                         aria-busy={signingOut}
                         className={`w-full cursor-pointer aria-busy:cursor-progress ${accountItemClass(false)}`}
                       >
@@ -463,7 +475,7 @@ function Navbar() {
               {/* Mobile menu button */}
               <button
                 ref={menuButtonRef}
-                onClick={() => (isOpen ? setIsOpen(false) : openDrawer())}
+                onClick={() => (isOpen ? closeDrawer(true) : openDrawer())}
                 className="lg:hidden p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200"
                 aria-label="Toggle menu"
                 aria-expanded={isOpen}
@@ -511,6 +523,7 @@ function Navbar() {
           stay in the tab order and a11y tree while invisible */}
       <div
         id="mobile-menu"
+        ref={drawerRef}
         inert={!isOpen}
         className={`lg:hidden fixed left-0 right-0 bottom-0 bg-primary transition-all duration-300 ease-in-out z-50 ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'}`}
         // Must be the full navbar height, border included: this shares the
@@ -542,6 +555,7 @@ function Navbar() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               <input
+                ref={searchInputRef}
                 name='text'
                 type="text"
                 placeholder="Search collectibles, walkthroughs, levels…"
@@ -551,7 +565,10 @@ function Navbar() {
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  // A press leaves focus in the box, so the keyboard stays up, and the box takes it
+                  // back from a key press: this button goes once the box is empty.
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-1"
                   aria-label="Clear search"
                 >
@@ -589,7 +606,7 @@ function Navbar() {
                 // accordion sections, so the results read as a bounded block
                 // rather than running into the auth section below. Mobile only —
                 // desktop renders SearchResults inside its own bordered panel
-                // (SearchTrigger.tsx:163), which already closes it.
+                // (SearchTrigger's results panel), which already closes it.
                 <div className="px-4 py-2 border-b border-gray-800">
                   <SearchResults
                     query={searchQuery}
@@ -597,7 +614,8 @@ function Navbar() {
                     isLoading={mobileSearchPending}
                     isError={mobileSearchError}
                     error={mobileSearchErrorObj}
-                    onResultClick={() => setIsOpen(false)}
+                    // The page you're on, where nothing moves, gives focus back to the menu button.
+                    onResultClick={stay => (stay ? closeDrawer(true) : setIsOpen(false))}
                   />
                 </div>
               ) : (
@@ -673,7 +691,7 @@ function Navbar() {
                         </Link>
                       )}
                       <button
-                        onClick={() => void handleLogout()}
+                        onClick={() => void handleLogout('drawer')}
                         aria-busy={signingOut}
                         className="flex-1 flex items-center justify-center py-3 rounded-lg border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 transition-all duration-200 text-sm font-medium aria-busy:cursor-progress"
                       >
