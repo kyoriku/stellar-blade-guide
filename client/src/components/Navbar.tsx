@@ -16,6 +16,7 @@ import type { NavSection } from './navbar/navSections'
 import DesktopDropdown from './navbar/DesktopDropdown'
 import MobileAccordionSection from './navbar/MobileAccordionSection'
 import { ADMIN_COPY } from '../constants/adminCopy'
+import { DESKTOP_LAYOUT } from '../constants/layout'
 import { useMenuButton } from '../hooks/useMenuButton'
 import { browserEntryKey } from '../utils/historyEntry'
 import { focusLeftNowhere } from '../utils/focus'
@@ -260,6 +261,16 @@ function Navbar() {
     if (!isOpen) return;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
+  }, [isOpen]);
+
+  // The drawer and its backdrop are lg:hidden, so the desktop layout (a tablet turned to landscape,
+  // a window widened) closes the drawer, lock and all. No focus moves: the menu button hides too.
+  useEffect(() => {
+    if (!isOpen) return;
+    const desktop = window.matchMedia(DESKTOP_LAYOUT);
+    const onChange = () => { if (desktop.matches) setIsOpen(false); };
+    desktop.addEventListener('change', onChange);
+    return () => desktop.removeEventListener('change', onChange);
   }, [isOpen]);
 
   // Resets the accordion when the drawer closes with no query in flight — the

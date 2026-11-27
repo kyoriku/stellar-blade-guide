@@ -7,7 +7,8 @@ import { buildSlugMap } from '../../client/src/utils/slugify';
 // anywhere (the menu button, Escape, Back, Forward or a move the site makes with focus in it,
 // picking the page you're on), focus goes back to the menu button, unless it has moved on
 // meanwhile. A link or a pick that lands somewhere leaves focus to the page, and Clear search
-// keeps focus in the box. Back closes it even when it cancels a page still rendering.
+// keeps focus in the box. Back closes it even when it cancels a page still rendering, and the
+// desktop layout closes it too.
 // Focus checks after Back and Forward use entries with no fragment: Chromium clears focus after
 // one that lands on a fragment naming an element.
 
@@ -430,6 +431,27 @@ test.describe('the phone menu', () => {
       expect(await focuses(), 'the menu button took no focus').toBe(0);
     });
   }
+
+  test('the desktop layout closes it from 1024 wide, not before, and the page scrolls again', async ({ page }) => {
+    await page.goto(LEVEL);
+    await showsLevel(page, 'Eidos 7');
+    await openDrawer(page);
+    // One pixel short of lg: the drawer still shows, so it stays open and the page stays locked.
+    await page.setViewportSize({ width: 1023, height: 800 });
+    await expect(drawer(page), 'the drawer still shows').toBeVisible();
+    await expect(menuButton(page), 'still open').toHaveAttribute('aria-expanded', 'true');
+    expect(await page.evaluate(() => document.body.style.overflow), 'still locked').toBe('hidden');
+    // A tablet turned to landscape, or a window widened: the drawer and its backdrop hide from lg.
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await expect(drawer(page), 'the drawer hides').toBeHidden();
+    await expect.poll(() => page.evaluate(() => document.body.style.overflow), 'the scroll lock let go').not.toBe('hidden');
+    // The wheel, which overflow: hidden stops; window.scrollBy would move the page either way.
+    await page.mouse.move(640, 500);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => page.evaluate(() => window.scrollY), 'the page scrolls').toBeGreaterThan(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectClosed(page);
+  });
 
   test('a tap on a link in its sections leaves focus on the page it opens, and the menu button takes none', async ({ page }) => {
     await page.goto(LEVEL);
