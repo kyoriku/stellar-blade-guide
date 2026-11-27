@@ -33,6 +33,16 @@ async function apiLoginToken(page: Page, user: TestUser, ip: string): Promise<st
   return ((await res.json()) as { access_token: string }).access_token;
 }
 
+// React runs what a press set off, its effects included, within two message turns.
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise(resolve => {
+    const ch = new MessageChannel();
+    let turns = 0;
+    ch.port1.onmessage = () => (++turns === 2 ? resolve(null) : ch.port2.postMessage(null));
+    ch.port2.postMessage(null);
+  }));
+}
+
 test.describe('progress page auth gate', () => {
   test('guest is redirected to login', async ({ page, context }) => {
     await context.setExtraHTTPHeaders({ [TEST_IP_HEADER]: nextTestIp() });
@@ -88,6 +98,49 @@ test.describe('authenticated stats', () => {
     await expect(page.getByRole('heading', { level: 2 })).toHaveText([
       'Levels', 'Collectibles', 'Upgrades', 'Cosmetics', 'Other Sources', 'Cycles', BULK_COPY.heading,
     ]);
+  });
+
+  test('Escape after Ctrl+K from the Scope select in the open Manage progress card gives focus back to the select', async ({ page }) => {
+    await gotoProgressAuthed(page);
+    // Away from the nav's menus, which open under a resting pointer.
+    await page.mouse.move(5, 700);
+    // The card's toggle names its panel, which opening the search leaves open.
+    const toggle = page.getByRole('button', { name: BULK_COPY.heading, exact: true });
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const select = page.getByLabel(BULK_COPY.scopeLabel, { exact: true });
+    const panelId = await toggle.getAttribute('aria-controls');
+    expect(await select.evaluate((el, id) => !!id && !!document.getElementById(id)?.contains(el), panelId),
+      'the toggle names the panel holding the select').toBe(true);
+    await select.focus();
+    await expect(select).toBeFocused();
+    // The bar's search box, the nav's only input.
+    const searchBox = page.locator('nav input');
+    await page.keyboard.press('Control+k');
+    await expect(searchBox).toBeFocused();
+    // An opener scrolled away, or under the navbar, would rightly give way to the Search button.
+    const barBottom = await searchBox.evaluate(el => el.closest('nav')!.getBoundingClientRect().bottom);
+    expect(await select.evaluate((el, barBottom) => {
+      const r = el.getBoundingClientRect();
+      return r.top >= barBottom && r.bottom <= window.innerHeight;
+    }, barBottom), 'the select, below the navbar and inside the window').toBe(true);
+    // Each element focus lands on from here on: the select, or anything else by its name.
+    await select.evaluate(el => {
+      const w = window as unknown as { landed: string[] };
+      w.landed = [];
+      document.addEventListener('focusin', e => {
+        const t = e.target as Element;
+        w.landed.push(t === el ? 'the select' : t.getAttribute('aria-label') ?? t.textContent?.trim() ?? t.tagName);
+      }, true);
+    });
+    await page.keyboard.press('Escape');
+    await expect(searchBox).toHaveCount(0);
+    await expect(select, 'focus back on the select').toBeFocused();
+    await settle(page);
+    await expect(select, 'still on the select').toBeFocused();
+    expect(await page.evaluate(() => (window as unknown as { landed: string[] }).landed), 'one focus, on the select').toEqual(['the select']);
+    await expect(toggle, 'the card, still open').toHaveAttribute('aria-expanded', 'true');
   });
 });
 

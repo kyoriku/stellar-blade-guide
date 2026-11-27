@@ -67,10 +67,10 @@ src/
   services/          api.ts: typed fetch wrappers for content and search + most TypeScript
                      interfaces (comment, notification, and auth types live in their hooks)
   constants/         navigation structure, section names, type intros, cycle labels, error
-                     sentences, Manage progress, admin page and hidden-card reveal copy, and
-                     seo.json (the site's static head text and images, also read by the
-                     server) with typed views over it (category images, level, type, and
-                     walkthrough SEO)
+                     sentences, Manage progress, admin page and hidden-card reveal copy, the
+                     desktop layout's media query, and seo.json (the site's static head text
+                     and images, also read by the server) with typed views over it (category
+                     images, level, type, and walkthrough SEO)
   utils/             image URL/srcset helpers (image.ts), image cache, slug
                      generation and dedup, TOC builders, description parser,
                      text layout, username and password validation, role ranks
@@ -79,7 +79,8 @@ src/
                      storage reads and writes that never throw, the typed
                      confirmation's match, each history entry's remembered
                      filters, a page path's lowercase spelling, whether an
-                     address's path is printable text, and the pure logic
+                     address's path is printable text, whether a search pick
+                     is the address already open, and the pure logic
                      behind the Progress page, its Manage progress card, the
                      tip that points to it, and the admin page
 public/              robots.txt, ads.txt, static sitemap.xml, favicons;

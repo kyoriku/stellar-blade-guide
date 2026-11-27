@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
@@ -6,6 +6,7 @@ import BusyLabel from './BusyLabel'
 import { useNotifications } from '../hooks/useNotifications'
 import { useToast } from '../context/ToastContext'
 import { errorMessage } from '../services/api'
+import { focusLeftNowhere } from '../utils/focus'
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -19,21 +20,31 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
 }
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  // Held by the Navbar, so opening the search closes the panel.
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export default function NotificationBell({ open, onOpenChange }: NotificationBellProps) {
   const { items, unreadCount, markRead, markAllRead, markingAllRead } = useNotifications()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
-  const [open, setOpen] = useState(false)
-  // A Mark all read that landed, which the panel's live region reads out. Cleared when
-  // the panel closes, so a reopened panel doesn't read it again.
+  // A Mark all read that landed, which the panel's live region reads out. Cleared before the
+  // panel paints whenever it opens or closes, so one that landed while it was shut is never read.
   const [markedAll, setMarkedAll] = useState(false)
+  useLayoutEffect(() => { setMarkedAll(false) }, [open])
   const panelId = useId()
   const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const headingRef = useRef<HTMLParagraphElement>(null)
-  const closePanel = () => {
-    setOpen(false)
-    setMarkedAll(false)
-  }
+  // The latest onOpenChange, for the listeners below: keyed on one made anew each render, the
+  // popstate listener would be re-added as Back renders its page, before its turn, and miss it.
+  const onOpenChangeRef = useRef(onOpenChange)
+  useEffect(() => { onOpenChangeRef.current = onOpenChange })
+  // Moves no focus: a notification link closes the panel too, on its way to the comment.
+  const closePanel = useCallback(() => onOpenChangeRef.current(false), [])
   // Read synchronously, so a second press before the busy state renders sends nothing.
   const markingAll = useRef(false)
   const onMarkAllRead = () => {
@@ -62,19 +73,59 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!open) return
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-        setMarkedAll(false)
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) closePanel()
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
-  }, [open])
+  }, [open, closePanel])
+
+  // Back, Forward and a typed fragment close it, as they do the account menu. Focus in the
+  // panel goes back to the bell rather than staying on a control about to hide.
+  useEffect(() => {
+    if (!open) return
+    const onPop = () => {
+      const held = !!panelRef.current?.contains(document.activeElement)
+      closePanel()
+      if (held) buttonRef.current?.focus({ preventScroll: true })
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [open, closePanel])
+
+  // Escape closes it from anywhere, so it also works after Safari's click on the bell, which
+  // leaves focus on the page. Focus in the panel or nowhere goes back to the bell.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.isComposing) return
+      const back = focusLeftNowhere(panelRef.current)
+      closePanel()
+      if (back) buttonRef.current?.focus({ preventScroll: true })
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, closePanel])
+
+  // Focus landing on something outside closes it, from the panel or from the page: Safari's click
+  // on the bell, or a press on the panel's text, focuses nothing, and Tab then blurs nothing here.
+  // Focus going nowhere (that press, the window losing focus) fires no focusin.
+  useEffect(() => {
+    if (!open) return
+    const onFocusIn = (e: FocusEvent) => {
+      if (e.target instanceof Node && !ref.current?.contains(e.target)) closePanel()
+    }
+    document.addEventListener('focusin', onFocusIn, true)
+    return () => document.removeEventListener('focusin', onFocusIn, true)
+  }, [open, closePanel])
 
   return (
-    <div className="relative hidden lg:flex h-10 items-center" ref={ref}>
+    <div
+      className="relative hidden lg:flex h-10 items-center"
+      ref={ref}
+    >
       <button
-        onClick={() => (open ? closePanel() : setOpen(true))}
+        ref={buttonRef}
+        onClick={() => (open ? closePanel() : onOpenChange(true))}
         // Says whether the panel is open, as the drawer's button does.
         aria-expanded={open}
         aria-controls={panelId}
@@ -92,7 +143,7 @@ export default function NotificationBell() {
       {/* Opening leaves visibility out of the transition, so Mark all read and the links can
           take focus in the frame the panel opens (a Tab straight after Enter); closing keeps
           it in, so the panel stays visible while it fades. The desktop nav menus do the same. */}
-      <div id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden duration-200 ${open ? 'transition-[opacity,translate] opacity-100 visible translate-y-0 pointer-events-auto' : 'transition-all opacity-0 invisible translate-y-2 pointer-events-none'}`}>
+      <div ref={panelRef} id={panelId} className={`absolute right-0 top-full mt-2 w-80 bg-nav backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-50 overflow-hidden duration-200 ${open ? 'transition-[opacity,translate] opacity-100 visible translate-y-0 pointer-events-auto' : 'transition-all opacity-0 invisible translate-y-2 pointer-events-none'}`}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
           {/* Focusable for Mark all read leaving with focus on it (markAllRef). */}
           <p ref={headingRef} tabIndex={-1} className="text-sm font-medium text-white">Notifications</p>

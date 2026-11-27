@@ -1294,6 +1294,82 @@ test.describe('the actions', () => {
   });
 });
 
+// The bar's search, opened by Ctrl+K from an item in a row's menu, which closes as
+// focus leaves it: Escape gives focus to the row's button while that is on screen,
+// and otherwise to the Search button.
+test.describe('Escape after Ctrl+K from a row menu', () => {
+  // Desktop, and short enough for the page to scroll a row's button away.
+  test.use({ viewport: { width: 1280, height: 520 } });
+
+  const barSearchBox = (page: Page) => page.getByPlaceholder('Search…', { exact: true });
+  const searchButton = (page: Page) => page.getByRole('button', { name: 'Search (Ctrl+K)', exact: true });
+
+  for (const [where, takesFocus] of [
+    ['left on screen', "the row's button"],
+    ['scrolled off screen', 'the Search button'],
+    ['scrolled under the navbar', 'the Search button'],
+  ] as const) {
+    test(`Escape after Ctrl+K from a row's menu, its button ${where}, gives focus to ${takesFocus}`, async ({ page }) => {
+      // Older accounts first: the target's row comes second, under the admin's, with rows below it
+      // to scroll it away by.
+      for (let i = 0; i < 5; i++) await register(page, `rowpad${i}`);
+      const target = await register(page, 'rowmenu');
+      await registerAdmin(page);
+      await gotoAdmin(page);
+      const trigger = actionsButton(page, target);
+      // Away from the nav's menus, which open under a resting pointer; the wheel scrolls
+      // the page here.
+      await page.mouse.move(5, 400);
+      await trigger.focus();
+      await page.keyboard.press('Enter');
+      await expect(menuItem(page, target, ADMIN_COPY.makeModerator)).toBeFocused();
+      await page.keyboard.press('Control+k');
+      await expect(barSearchBox(page)).toBeFocused();
+      await expect(actionsMenu(page, target), 'the row menu closed as focus left it').toHaveCount(0);
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      const barBottom = await barSearchBox(page).evaluate(el => el.closest('nav')!.getBoundingClientRect().bottom);
+      const place = () => trigger.evaluate(el => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, windowBottom: window.innerHeight };
+      });
+      if (where === 'scrolled off screen') {
+        await page.mouse.wheel(0, 3000);
+        await expect.poll(async () => (await place()).bottom, "the row's button, above the window").toBeLessThan(0);
+      } else if (where === 'scrolled under the navbar') {
+        // Its middle to the navbar's.
+        const { top, bottom } = await place();
+        await page.mouse.wheel(0, Math.round((top + bottom - barBottom) / 2));
+        await expect.poll(async () => {
+          const now = await place();
+          return now.top >= 0 && now.bottom <= barBottom;
+        }, "the row's button, under the navbar").toBe(true);
+      } else {
+        const { top, bottom, windowBottom } = await place();
+        expect(top >= barBottom && bottom <= windowBottom, "the row's button, below the navbar and inside the window").toBe(true);
+      }
+      await expect(barSearchBox(page), 'still open, with focus in its box').toBeFocused();
+
+      // Each element focus lands on from here on: the row's button and the Search button by name.
+      await trigger.evaluate(el => {
+        const w = window as unknown as { landed: string[] };
+        w.landed = [];
+        document.addEventListener('focusin', e => {
+          const t = e.target as Element;
+          w.landed.push(t === el ? "the row's button" : t.matches('button[aria-label="Search (Ctrl+K)"]') ? 'the Search button' : t.tagName.toLowerCase());
+        }, true);
+      });
+      await page.keyboard.press('Escape');
+      await expect(barSearchBox(page)).toHaveCount(0);
+      const takes = where === 'left on screen' ? trigger : searchButton(page);
+      await expect(takes, `focus on ${takesFocus}`).toBeFocused();
+      await settle(page);
+      await expect(takes, `still on ${takesFocus}`).toBeFocused();
+      expect(await page.evaluate(() => (window as unknown as { landed: string[] }).landed), `one focus, on ${takesFocus}`).toEqual([takesFocus]);
+    });
+  }
+});
+
 test.describe('on a phone 320px wide', () => {
   test.use({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
 
