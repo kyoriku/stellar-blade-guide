@@ -81,8 +81,9 @@ src/
                      filters, a page path's lowercase spelling, whether an
                      address's path is printable text, whether a search pick
                      is the address already open, and the pure logic
-                     behind the Progress page, its Manage progress card, the
-                     tip that points to it, and the admin page
+                     behind a signed-out reader's checkmarks, the Progress
+                     page, its Manage progress card, the tip that points to
+                     it, and the admin page
 public/              robots.txt, ads.txt, static sitemap.xml, favicons;
                      assets/images/ is gitignored local source imagery (production serves
                      from Cloudflare R2 at img.stellarbladeguide.com)
@@ -112,7 +113,7 @@ There is no react-helmet; the app relies on React 19's native metadata hoisting.
 
 ## Progress and auth state
 
-Guests' completed collectible IDs live in `localStorage` (`sb_progress`). On sign-in the client merges them into the account (`POST /api/progress/sync`, additive only) and, once the server accepts them, drops the IDs it sent from the key; from then on progress is API-backed. Checkmarks send intents (`PUT` to set, `DELETE` to clear), never a toggle: each one updates the cache optimistically and rolls back on failure, and a no-op answer triggers a re-sync. The access token is held in memory only, never persisted; the app refreshes it through the HttpOnly refresh cookie on load when a session hint is set, every 14 minutes, when a returning tab's token is missing or more than 10 minutes old, and from `authFetch` when a request finds no token or gets a 401. The OAuth callback page uses the token in the URL only as a success signal, never stores it, and authenticates off the cookie instead.
+Guests' completed collectible IDs live in `localStorage` (`sb_progress`). When the browser won't store a change, the tab keeps it in memory until the tab is closed or reloaded or the reader leaves the site, and pages show it over what's stored (`utils/guestProgress.ts`); the tab's first such change says so in a toast. On sign-in the client sends the IDs the guest sees, changes the browser wouldn't store included, to be merged into the account (`POST /api/progress/sync`, additive only) and, once the server accepts them, drops the IDs it sent from the key and the tab's memory; from then on progress is API-backed. Checkmarks send intents (`PUT` to set, `DELETE` to clear), never a toggle: each one updates the cache optimistically and rolls back on failure, and a no-op answer triggers a re-sync. The access token is held in memory only, never persisted; the app refreshes it through the HttpOnly refresh cookie on load when a session hint is set, every 14 minutes, when a returning tab's token is missing or more than 10 minutes old, and from `authFetch` when a request finds no token or gets a 401. The OAuth callback page uses the token in the URL only as a success signal, never stores it, and authenticates off the cookie instead.
 
 ## Admin page
 

@@ -1,14 +1,13 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { useAuth } from './useAuth'
 import { useToast } from '../context/ToastContext'
 import { API_BASE_URL, apiError, errorMessage } from '../services/api'
 import type { ProgressWriteResponse } from '../services/api'
-import { readItem, removeItem, storageProblem, writeItem } from '../utils/storage'
-
-// AuthContext's sign-in sync imports it.
-export const STORAGE_KEY = 'sb_progress'
+import { STORAGE_COPY } from '../constants/storageCopy'
+import { createGuestMemory, dropGuestIds, guestIds as readGuestIds, markGuest } from '../utils/guestProgress'
+import { setTo } from '../utils/setTo'
 
 const PROGRESS_WRITE_KEY = ['progress', 'write']
 
@@ -38,36 +37,19 @@ function maybeFlushDrift(queryClient: ReturnType<typeof useQueryClient>) {
   }
 }
 
-function getLocalProgress(fallback: Set<number> = new Set()): Set<number> {
-  const stored = readItem(STORAGE_KEY)
-  // Refused storage keeps the in-memory set; storage holding none is an empty set.
-  if (!stored) return storageProblem() ? new Set(fallback) : new Set()
-  try {
-    const ids: unknown = JSON.parse(stored)
-    // Anything but an id array is corrupt (a JSON string would otherwise become a
-    // set of characters, written back on the next tick and rejected by every sync).
-    return Array.isArray(ids) && ids.every(Number.isInteger) ? new Set(ids as number[]) : new Set(fallback)
-  } catch {
-    return new Set(fallback)
-  }
-}
+// A guest's unsaved checkmarks, at module scope so they outlive the page that made them.
+const guestMemory = createGuestMemory()
 
-// Runs inside the setGuestIds updater, which React replays during render, so it
-// must not throw: refused or full storage would crash the page rather than lose
-// one save. The toggle still holds in memory for this page's life.
-function setLocalProgress(ids: Set<number>): boolean {
-  return writeItem(STORAGE_KEY, JSON.stringify([...ids]))
+// What the sign-in sync sends: the guest view, unsaved checkmarks included.
+export function localProgressIds(): number[] {
+  return [...readGuestIds(guestMemory)]
 }
 
 // Removes ids from the guest copy. While signed in, that copy holds ids a failed
 // sign-in sync left behind, or ids a signed-out tab ticked while a sync was out;
 // the next sync would add either back.
 export function dropFromLocalProgress(ids: number[]): void {
-  if (!readItem(STORAGE_KEY)) return
-  const drop = new Set(ids)
-  const kept = [...getLocalProgress()].filter(id => !drop.has(id))
-  if (kept.length > 0) writeItem(STORAGE_KEY, JSON.stringify(kept))
-  else removeItem(STORAGE_KEY)
+  dropGuestIds(guestMemory, ids)
 }
 
 // For a write outside this hook (the bulk route): re-sync now if no per-item write
@@ -86,8 +68,21 @@ export function useProgress() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
-  // Guest state
-  const [guestIds, setGuestIds] = useState<Set<number>>(() => getLocalProgress())
+  // Guest state, a reducer since the check below sets it in render as well as on a click.
+  const [guestIds, setGuestIds] = useReducer(setTo<Set<number>>, guestMemory, readGuestIds)
+  // A sign-out under this page, here or in another tab, shows what the browser holds now,
+  // not what it held when the page mounted.
+  const [guestFor, setGuestFor] = useState(isAuthenticated)
+  if (guestFor !== isAuthenticated) {
+    setGuestFor(isAuthenticated)
+    if (!isAuthenticated) setGuestIds(readGuestIds(guestMemory))
+  }
+  // What this page shows, which a guest click's intent comes from. Set after each commit,
+  // never in render, so toggle keeps one identity.
+  const shownGuestIds = useRef(guestIds)
+  useLayoutEffect(() => {
+    shownGuestIds.current = guestIds
+  }, [guestIds])
 
   // Per-collectible in-flight tracking for authenticated toggles, so the UI can
   // disable a single checkbox while its write is pending without disabling the rest.
@@ -223,24 +218,17 @@ export function useProgress() {
       writeProgress({ collectibleId, desired })
       return desired
     } else {
-      setGuestIds(prev => {
-        // Intent from what this instance shows, applied to what storage holds now:
-        // a sign-in sync or another tab may have changed it since this instance
-        // read it, and writing the old snapshot back would let the next sync re-add
-        // progress the account has since cleared.
-        const found = !prev.has(collectibleId)
-        const next = getLocalProgress(prev)
-        if (found) next.add(collectibleId)
-        else next.delete(collectibleId)
-        if (setLocalProgress(next)) return next
-        // Storage that reads but will not write: keep today's in-memory behaviour.
-        const kept = new Set(prev)
-        if (found) kept.add(collectibleId)
-        else kept.delete(collectibleId)
-        return kept
-      })
+      // Intent from what this instance shows, applied to what storage holds now: a
+      // sign-in sync or another tab may have changed it since this instance read it,
+      // and writing the old snapshot back would let the next sync re-add progress the
+      // account has since cleared.
+      const found = !shownGuestIds.current.has(collectibleId)
+      const { ids, tell } = markGuest(guestMemory, collectibleId, found)
+      setGuestIds(ids)
+      // The tab's first change the browser won't store says how long checkmarks last.
+      if (tell) showToast(STORAGE_COPY.checkmarks[tell])
     }
-  }, [isAuthenticated, writeProgress, queryClient])
+  }, [isAuthenticated, writeProgress, queryClient, showToast])
 
   // isCompleted and isToggling are deliberately NOT stabilised: their identity
   // changing is what repaints a checkbox and disables it mid-write, and

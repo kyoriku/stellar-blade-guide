@@ -1,8 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFixtures, type Fixtures } from '../helpers/db';
 import { nextTestIp, TEST_IP_HEADER, makeUser, apiRegister, apiDeleteUser, type TestUser } from '../helpers/auth';
+import { holdRoute } from '../helpers/route';
 import { oauthErrorNotice } from '../../client/src/utils/oauthError';
 import { STORAGE_COPY } from '../../client/src/constants/storageCopy';
+import { COLLECTIBLES, UPGRADES, COSMETICS } from '../../client/src/constants/navigation';
 
 let fx: Fixtures;
 let ip: string;
@@ -95,6 +97,85 @@ function recordAuthRequests(page: Page): string[] {
   return paths;
 }
 
+type Item = { id: number; title: string; types: string[]; quantity: number | null };
+
+// Ids come from the live catalogue, never literals, so content edits can't break them.
+async function eidos7Items(page: Page): Promise<Item[]> {
+  const res = await page.request.get('/api/levels/eidos-7');
+  expect(res.status()).toBe(200);
+  return ((await res.json()) as { collectibles: Item[] }[]).flatMap((l) => l.collectibles);
+}
+
+// An Eidos 7 item counted once whose type badge links to a type page; never the fixture,
+// which has no type.
+async function itemWithTypePage(page: Page): Promise<Item> {
+  const names = [...COLLECTIBLES, ...UPGRADES, ...COSMETICS].map((t) => t.name as string);
+  const item = (await eidos7Items(page)).find((c) =>
+    c.id !== fx.collectibleId && c.quantity === 1 && c.types.length === 1 &&
+    names.some((name) => name.startsWith(c.types[0])));
+  expect(item, 'an Eidos 7 item with a type page').toBeDefined();
+  return item!;
+}
+
+const box = (page: Page, id: number) =>
+  page.locator(`article#collectible-${id}`).getByRole('button', { name: /Mark as/ });
+// The badge comes before any link in the card's text.
+const typeBadge = (page: Page, item: Item) =>
+  page.locator(`article#collectible-${item.id}`).getByRole('link', { name: item.types[0], exact: true }).first();
+const tickedBoxes = (page: Page) => page.getByRole('button', { name: 'Mark as not found' });
+const foundNote = (page: Page) => page.getByText(/^· (all )?\d+ found$/);
+const logo = (page: Page) =>
+  page.getByRole('link').filter({ has: page.getByAltText('Stellar Blade Guide Logo', { exact: true }) });
+
+async function press(page: Page, id: number, to: 'Mark as found' | 'Mark as not found') {
+  await box(page, id).click();
+  await expect(box(page, id)).toHaveAccessibleName(to);
+}
+
+// Kept local, as progress-bulk.spec.ts keeps its own.
+async function apiLoginToken(page: Page, user: TestUser, ip: string): Promise<string> {
+  const res = await page.request.post('/api/auth/login', {
+    data: { email: user.email, password: user.password },
+    headers: { [TEST_IP_HEADER]: ip },
+  });
+  if (res.status() !== 200) throw new Error(`login failed: ${res.status()} ${await res.text()}`);
+  return ((await res.json()) as { access_token: string }).access_token;
+}
+
+async function serverIds(page: Page, token: string, ip: string): Promise<number[]> {
+  const res = await page.request.get('/api/progress', {
+    headers: { Authorization: `Bearer ${token}`, [TEST_IP_HEADER]: ip },
+  });
+  expect(res.status()).toBe(200);
+  return ((await res.json()) as number[]).sort((a, b) => a - b);
+}
+
+// The toast region is the page's only role="status".
+const toast = (page: Page, text: string) => page.getByRole('status').getByText(text, { exact: true });
+
+// Every toast the document shows, from before its first script, with the label the
+// fixture's box wore as the toast was added. A toast a tick raises lands in that tick's
+// commit, so its box already reads 'Mark as not found'; one raised on load can't. The
+// log outlives in-app navigation, and a full load starts it again.
+type ToastEntry = { text: string | null; box: string | null };
+async function recordToasts(page: Page): Promise<void> {
+  await page.addInitScript((id: number) => {
+    const log: { text: string | null; box: string | null }[] = [];
+    (window as unknown as { __sbToastLog: typeof log }).__sbToastLog = log;
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element) || !node.parentElement?.matches('[role="status"]')) continue;
+          const box = document.querySelector(`article#collectible-${id} button[aria-label^="Mark as"]`);
+          log.push({ text: node.textContent, box: box?.getAttribute('aria-label') ?? null });
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  }, fx.collectibleId);
+}
+const toastLog = (page: Page): Promise<ToastEntry[]> =>
+  page.evaluate(() => (window as unknown as { __sbToastLog: ToastEntry[] }).__sbToastLog);
+
 // A guest's tick holds for the page's life, with nowhere to store it.
 async function expectGuestTickHolds(page: Page) {
   await page.goto('/levels/eidos-7');
@@ -132,7 +213,7 @@ test.afterEach(async ({ page }) => {
  * A browser that refuses site storage (Safari "Block all cookies", a per-site
  * cookie block, Firefox with cookies off) makes the window.localStorage getter
  * itself throw. The public guide needs no storage, so it must render signed
- * out, keep a guest's ticks in memory for the page's life, and never blank the
+ * out, keep a guest's ticks in memory for the tab's life, and never blank the
  * root: the provider's first render reads the session hint, and the root error
  * boundary's fallback used to render a router Link outside the router. The
  * sign-in pages say so in place of their controls.
@@ -158,6 +239,93 @@ test.describe('storage refused', () => {
 
   test('a guide page renders signed out and a guest toggle holds in memory', async ({ page }) => {
     await expectGuestTickHolds(page);
+  });
+
+  test("a guest's checkmarks stay through moves within the site, until a reload", async ({ page }) => {
+    const item = await itemWithTypePage(page);
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await press(page, item.id, 'Mark as not found');
+    await expect(foundNote(page)).toHaveText('· 2 found');
+
+    // Its type page is another page component, so only the tab's memory can carry them there.
+    await typeBadge(page, item).click();
+    await expect(page).toHaveURL(/\/(collectibles|upgrades|cosmetics)\/[a-z0-9-]+$/);
+    await expect(tickedBoxes(page)).toHaveCount(1);
+    await expect(foundNote(page)).toHaveText('· 1 found');
+
+    // Back mounts the level page again, as does the logo, then Back.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(tickedBoxes(page)).toHaveCount(2);
+    await logo(page).click();
+    await expect(page).toHaveURL(/\/$/);
+    // The level page has gone, so Back mounts it again.
+    await expect(box(page, fx.collectibleId)).toHaveCount(0);
+    await page.goBack();
+    await expect(tickedBoxes(page)).toHaveCount(2);
+    await expect(foundNote(page)).toHaveText('· 2 found');
+
+    // Nothing was stored anywhere, so a reload starts again with nothing ticked.
+    await page.reload();
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    await expect(tickedBoxes(page)).toHaveCount(0);
+  });
+
+  test('the first checkmark that cannot be saved says so in an error toast, once in the tab', async ({ page }) => {
+    const item = await itemWithTypePage(page);
+    await recordToasts(page);
+    await page.goto('/levels/eidos-7');
+    const first = box(page, fx.collectibleId);
+    await expect(first).toHaveAccessibleName('Mark as found');
+    // Nothing on load: the page says nothing until a checkmark can't be saved.
+    expect(await toastLog(page)).toEqual([]);
+    await first.click();
+    await expect(first).toHaveAccessibleName('Mark as not found');
+    // Raised by the tick, in the tick's own commit.
+    expect(await toastLog(page)).toEqual([{ text: STORAGE_COPY.checkmarks.blocked, box: 'Mark as not found' }]);
+    await expect(toast(page, STORAGE_COPY.checkmarks.blocked)).toBeVisible();
+    await expect(page.getByRole('status').locator(':scope > div', { hasText: STORAGE_COPY.checkmarks.blocked }))
+      .toHaveClass(/\btext-red-400\b/);
+    // The reader's place stays on the box they pressed.
+    await expect(first).toBeFocused();
+
+    // Dismissed, so a repeat isn't dropped as a duplicate of a toast still showing.
+    await page.getByRole('status').getByRole('button', { name: 'Dismiss' }).click();
+    await expect(toast(page, STORAGE_COPY.checkmarks.blocked)).toHaveCount(0);
+    await press(page, item.id, 'Mark as not found');
+    // A toast would land in the same commit as the tick, so the log is final here.
+    expect(await toastLog(page)).toHaveLength(1);
+    // Nor on another page of the tab, for an untick.
+    await typeBadge(page, item).click();
+    await expect(tickedBoxes(page)).toHaveCount(1);
+    await tickedBoxes(page).click();
+    await expect(tickedBoxes(page)).toHaveCount(0);
+    expect(await toastLog(page)).toHaveLength(1);
+
+    // A full load loses the checkmarks, so the next one says it again.
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    expect(await toastLog(page)).toEqual([]);
+    await press(page, fx.collectibleId, 'Mark as not found');
+    expect(await toastLog(page)).toEqual([{ text: STORAGE_COPY.checkmarks.blocked, box: 'Mark as not found' }]);
+  });
+
+  test('the toast goes by itself after 10 seconds', async ({ page }) => {
+    await page.clock.install();
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    // Paused from here, so the toast's timer starts at a known instant.
+    await page.clock.pauseAt(Date.now() + 1000);
+    await press(page, fx.collectibleId, 'Mark as not found');
+    // Away from the toast, which a pointer over it keeps up.
+    await page.mouse.move(5, 700);
+    const shown = toast(page, STORAGE_COPY.checkmarks.blocked);
+    await expect(shown).toBeVisible();
+    await page.clock.runFor(9_999);
+    await expect(shown).toBeVisible();
+    await page.clock.runFor(1);
+    await expect(shown).toHaveCount(0);
   });
 
   test('a protected route still redirects to login', async ({ page }) => {
@@ -216,6 +384,23 @@ test.describe('storage switched off', () => {
 
   test('a guide page renders signed out and a guest toggle holds in memory', async ({ page }) => {
     await expectGuestTickHolds(page);
+  });
+
+  test("a guest's checkmark stays through a move to another page", async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await logo(page).click();
+    await expect(page).toHaveURL(/\/$/);
+    // The level page has gone, so Back mounts it again.
+    await expect(box(page, fx.collectibleId)).toHaveCount(0);
+    await page.goBack();
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+  });
+
+  test('the first checkmark says this browser keeps no site data', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await expect(toast(page, STORAGE_COPY.checkmarks.off)).toBeVisible();
   });
 
   test('sign-in and sign-up say this browser keeps no site data, in place of their controls', async ({ page }) => {
@@ -325,5 +510,211 @@ test.describe('storage that refuses writes', () => {
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
     expect(navigations.some((url) => url.includes('/login'))).toBe(true);
     expect(navigations.filter((url) => url.includes('oauth_error'))).toEqual([]);
+  });
+});
+
+/**
+ * Storage that refuses writes, holding checkmarks stored before. The tab's changes show
+ * over them, for the tab's life, and a password sign-in adds what the reader saw.
+ */
+test.describe('storage that refuses writes, with checkmarks stored before', () => {
+  let stored: Item;
+
+  test.beforeEach(async ({ page }) => {
+    [stored] = (await eidos7Items(page)).filter((c) => c.id !== fx.collectibleId && c.quantity === 1);
+    await page.addInitScript((seed) => {
+      const setItem = Storage.prototype.setItem;
+      // Once per test, so a reload shows what storage really kept.
+      if (!sessionStorage.getItem('sb-test-seeded')) {
+        setItem.call(sessionStorage, 'sb-test-seeded', '1');
+        setItem.call(window.localStorage, 'sb_progress', JSON.stringify(seed));
+      }
+      Storage.prototype.setItem = function () {
+        throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+      };
+    }, [stored.id]);
+  });
+
+  let users: TestUser[] = [];
+  let seq = 0;
+  test.afterEach(async ({ page }) => {
+    for (const user of users) await apiDeleteUser(page, user, ip);
+    users = [];
+  });
+
+  test("the tab's changes show over the stored checkmarks, until a reload", async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, stored.id)).toHaveAccessibleName('Mark as not found');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await press(page, stored.id, 'Mark as found');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+
+    await logo(page).click();
+    await expect(page).toHaveURL(/\/$/);
+    // The level page has gone, so Back mounts it again.
+    await expect(box(page, fx.collectibleId)).toHaveCount(0);
+    await page.goBack();
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+    await expect(box(page, stored.id)).toHaveAccessibleName('Mark as found');
+    await expect(foundNote(page)).toHaveText('· 1 found');
+    expect(await page.evaluate(() => localStorage.getItem('sb_progress'))).toBe(JSON.stringify([stored.id]));
+
+    // A reload undoes the changes.
+    await page.reload();
+    await expect(box(page, stored.id)).toHaveAccessibleName('Mark as not found');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+  });
+
+  test('a sign-in adds the checkmarks the reader saw, not the older stored ones', async ({ page, context }) => {
+    const user = makeUser(fx.token, `sk${++seq}`);
+    users.push(user);
+    await apiRegister(page, user, ip);
+    await context.clearCookies();
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await press(page, stored.id, 'Mark as found');
+
+    // An in-app link, so the tab's checkmarks come along.
+    await page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true }).click();
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
+    const sync = page.waitForResponse((r) => r.url().endsWith('/api/progress/sync'));
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    const synced = await sync;
+    expect(synced.request().postDataJSON()).toEqual({ collectible_ids: [fx.collectibleId] });
+    expect(synced.status()).toBe(200);
+
+    // The account holds what the reader saw.
+    const token = await apiLoginToken(page, user, ip);
+    expect(await serverIds(page, token, ip)).toEqual([fx.collectibleId]);
+    // The drop after the 200 takes the reader's untick into storage too (removal works
+    // here; only writes fail), so a later sync adds nothing back.
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sb_progress'))).toBeNull();
+
+    // Back on the level page, signed in, until the tab's next focus or switch ends a
+    // session whose hint couldn't be stored; Playwright fires neither.
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+    await expect(box(page, stored.id)).toHaveAccessibleName('Mark as found');
+  });
+
+  test('the first change says changes are not being saved', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await press(page, stored.id, 'Mark as found');
+    await expect(toast(page, STORAGE_COPY.checkmarks.unsaved)).toBeVisible();
+  });
+});
+
+/**
+ * Storage whose reads throw (Firefox's do when it can't open the site's data), with writes
+ * left working so a write over unread checkmarks would show. The checkmarks stored before
+ * can't be shown, and a tick must never write over them.
+ */
+test.describe('storage that refuses reads, with checkmarks stored before', () => {
+  let stored: Item;
+
+  test.beforeEach(async ({ page }) => {
+    [stored] = (await eidos7Items(page)).filter((c) => c.id !== fx.collectibleId && c.quantity === 1);
+    await page.addInitScript((seed) => {
+      const getItem = Storage.prototype.getItem;
+      // Once per test, before reads start failing.
+      if (!getItem.call(sessionStorage, 'sb-test-seeded')) {
+        sessionStorage.setItem('sb-test-seeded', '1');
+        localStorage.setItem('sb_progress', JSON.stringify(seed));
+      }
+      // The test reads what storage holds through the original.
+      (window as unknown as { __sbStored: () => string | null }).__sbStored = () => getItem.call(localStorage, 'sb_progress');
+      Storage.prototype.getItem = function (this: Storage, key: string) {
+        if (this === window.localStorage) throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        return getItem.call(this, key);
+      };
+    }, [stored.id]);
+  });
+
+  test('a tick never writes over checkmarks it could not read', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, stored.id)).toHaveAccessibleName('Mark as found');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    const held = await page.evaluate(() => (window as unknown as { __sbStored: () => string | null }).__sbStored());
+    expect(held).toBe(JSON.stringify([stored.id]));
+  });
+
+  // Storage is there, so the toast blames no setting, while the sign-in notice, which
+  // reads storage, still shows.
+  test('the first checkmark says changes are not being saved, not that storage is blocked', async ({ page }) => {
+    await page.goto('/levels/eidos-7');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    await expect(toast(page, STORAGE_COPY.checkmarks.unsaved)).toBeVisible();
+    await expect(toast(page, STORAGE_COPY.checkmarks.blocked)).toHaveCount(0);
+  });
+
+  test('sign-in still shows its storage notice', async ({ page }) => {
+    await page.goto('/login');
+    await expectNotice(page, 'Welcome back', STORAGE_COPY.blocked.login);
+  });
+});
+
+/** With storage working, a guest's checkmark is stored and nothing is said. */
+test.describe('storage that works', () => {
+  test('a guest checkmark is stored, with no toast', async ({ page }) => {
+    await recordToasts(page);
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    await press(page, fx.collectibleId, 'Mark as not found');
+    expect(await toastLog(page)).toEqual([]);
+    expect(await page.evaluate(() => localStorage.getItem('sb_progress'))).toBe(JSON.stringify([fx.collectibleId]));
+  });
+});
+
+/**
+ * A page that stays mounted through a sign-out shows what the browser holds then, not what
+ * it held when the page mounted.
+ */
+test.describe("a guest's checkmarks after a sign-out", () => {
+  let users: TestUser[] = [];
+  let seq = 0;
+  test.afterEach(async ({ page }) => {
+    for (const user of users) await apiDeleteUser(page, user, ip);
+    users = [];
+  });
+
+  test('signing out on a level page shows what this browser holds now', async ({ page, context }) => {
+    const user = makeUser(fx.token, `so${++seq}`);
+    users.push(user);
+    await apiRegister(page, user, ip);
+    await context.clearCookies();
+    await page.addInitScript((id) => {
+      if (sessionStorage.getItem('sb-test-seeded')) return;
+      sessionStorage.setItem('sb-test-seeded', '1');
+      localStorage.setItem('sb_progress', JSON.stringify([id]));
+    }, fx.collectibleId);
+    // Held, so the level page has mounted again before the sync's drop empties storage.
+    const syncHeld = await holdRoute(page, '**/api/progress/sync');
+
+    await page.goto('/levels/eidos-7');
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as not found');
+    await page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true }).click();
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password', { exact: true }).fill(user.password);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await syncHeld.seen;
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
+    await expect(box(page, fx.collectibleId)).toBeVisible();
+
+    const synced = page.waitForResponse((r) => r.url().endsWith('/api/progress/sync') && r.status() === 200);
+    syncHeld.release();
+    await synced;
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sb_progress'))).toBeNull();
+
+    // The account has the checkmark now; this browser doesn't.
+    await page.getByRole('button', { name: 'Account menu' }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
+    await expect(page.locator('nav').getByRole('link', { name: 'Sign in' }).filter({ visible: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/levels\/eidos-7$/);
+    await expect(box(page, fx.collectibleId)).toHaveAccessibleName('Mark as found');
+    // A click goes by what the page shows now.
+    await press(page, fx.collectibleId, 'Mark as not found');
+    expect(await page.evaluate(() => localStorage.getItem('sb_progress'))).toBe(JSON.stringify([fx.collectibleId]));
   });
 });

@@ -4,8 +4,9 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 // Lightweight, app-wide toast for feedback that has no inline home: background and
-// optimistic failures (progress toggle and load, guest sync, walkthrough nav) and the
-// bulk progress card's results. Self-dismissing; never blocks the UI.
+// optimistic failures (progress toggle and load, a guest checkmark the browser won't
+// store, guest sync, walkthrough nav) and the bulk progress card's results.
+// Self-dismissing; never blocks the UI.
 //
 // The one toast that isn't feedback is the hand-clear tip (hooks/useHandClearTip.ts),
 // and it should stay the only one. It alone uses `action`, a link-styled button after

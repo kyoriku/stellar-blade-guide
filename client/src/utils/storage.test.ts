@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
-import { readItem, removeItem, storageProblem, writeItem, type StorageLike } from './storage'
+import { readItem, removeItem, storageProblem, storageSetting, writeItem, type StorageLike } from './storage'
 
 // Vitest runs in Node, which has no window, so a Map stands in for storage, and each
 // way a browser's storage can refuse gets a stand-in of its own.
@@ -42,6 +42,12 @@ describe('a working store', () => {
     expect(storageProblem(() => store)).toBeNull()
     expect(calls).toEqual(['get sb_has_session'])
   })
+
+  it('has no setting against it, and that check reads nothing', () => {
+    const { store, calls } = memoryStore()
+    expect(storageSetting(() => store)).toBeNull()
+    expect(calls).toEqual([])
+  })
 })
 
 describe('storage the browser refuses (the getter throws)', () => {
@@ -55,8 +61,9 @@ describe('storage the browser refuses (the getter throws)', () => {
     expect(() => removeItem('a', blocked)).not.toThrow()
   })
 
-  it('is blocked', () => {
+  it('is blocked, by a setting', () => {
     expect(storageProblem(blocked)).toBe('blocked')
+    expect(storageSetting(blocked)).toBe('blocked')
   })
 })
 
@@ -69,8 +76,9 @@ describe('no storage at all (the getter returns null)', () => {
     expect(() => removeItem('a', none)).not.toThrow()
   })
 
-  it('is off', () => {
+  it('is off, by a setting', () => {
     expect(storageProblem(none)).toBe('off')
+    expect(storageSetting(none)).toBe('off')
   })
 })
 
@@ -98,6 +106,11 @@ describe('storage that refuses writes', () => {
     expect(storageProblem(() => store)).toBeNull()
     expect(calls).toEqual(['get sb_has_session'])
   })
+
+  it('has no setting against it', () => {
+    const { store } = fullStore()
+    expect(storageSetting(() => store)).toBeNull()
+  })
 })
 
 describe('storage whose reads throw', () => {
@@ -109,6 +122,10 @@ describe('storage whose reads throw', () => {
   it('reads null and is blocked', () => {
     expect(readItem('a', () => store)).toBeNull()
     expect(storageProblem(() => store)).toBe('blocked')
+  })
+
+  it('has no setting against it, since the getter works', () => {
+    expect(storageSetting(() => store)).toBeNull()
   })
 })
 
@@ -133,14 +150,22 @@ describe('the default store, which reads window.localStorage on each call', () =
     expect(writeItem('a', '1')).toBe(false)
     expect(() => removeItem('a')).not.toThrow()
     expect(storageProblem()).toBe('blocked')
+    expect(storageSetting()).toBe('blocked')
   })
 
   it('is off when storage is switched off (null)', () => {
     vi.stubGlobal('window', { localStorage: null })
     expect(storageProblem()).toBe('off')
+    expect(storageSetting()).toBe('off')
     expect(readItem('a')).toBeNull()
     expect(writeItem('a', '1')).toBe(false)
     expect(() => removeItem('a')).not.toThrow()
+  })
+
+  it('is off when something has removed storage (undefined)', () => {
+    vi.stubGlobal('window', { localStorage: undefined })
+    expect(storageProblem()).toBe('off')
+    expect(storageSetting()).toBe('off')
   })
 
   it('is blocked when the browser refuses it (the getter throws)', () => {
@@ -150,6 +175,7 @@ describe('the default store, which reads window.localStorage on each call', () =
       },
     })
     expect(storageProblem()).toBe('blocked')
+    expect(storageSetting()).toBe('blocked')
     expect(readItem('a')).toBeNull()
     expect(writeItem('a', '1')).toBe(false)
     expect(() => removeItem('a')).not.toThrow()
